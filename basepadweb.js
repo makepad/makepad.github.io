@@ -1,11 +1,11 @@
 (function(){
-	
 	var rooturl = location.origin
 	var WorkerClass
 	// insert meta config tags
 	function init(){
 
-		watchFileChange()
+		if(location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+			watchFileChange()
 
 		var canvasses =	document.getElementsByClassName('basepad')
 		
