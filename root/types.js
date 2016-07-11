@@ -2,16 +2,16 @@ var types = exports
 
 // generic types
 types.void = {
-	_type:'void'
+	_name:'void'
 }
 
 types.bool = {
-	_type:'bool',
+	_name:'bool',
 	_slots:1
 }
 
 types.bvec2 = {
-	_type:'bvec2',
+	_name:'bvec2',
 	_slots:2,
 	_array:Int32Array,
 	x:types.bool,
@@ -19,7 +19,7 @@ types.bvec2 = {
 }
 
 types.bvec3 = {
-	_type:'bvec3',
+	_name:'bvec3',
 	_slots:3,
 	_array:Int32Array,
 	x:types.bool,
@@ -28,7 +28,7 @@ types.bvec3 = {
 }
 
 types.bvec4 = {
-	_type:'bvec4',
+	_name:'bvec4',
 	_slots:4,
 	_array:Int32Array,
 	x:types.bool,
@@ -38,21 +38,22 @@ types.bvec4 = {
 }
 
 types.int = {
-	_type:'int',
+	_name:'int',
 	_slots:1,
 	_array:Int32Array,
 	_cast:parseInt
 }
 
+types.vec1 = 
 types.float = {
-	_type:'float',
+	_name:'float',
 	_slots:1,
 	_array:Float32Array,
 	_cast:parseFloat
 }
 
 types.vec2 = {
-	_type:'vec2',
+	_name:'vec2',
 	_slots:2,
 	_array:Float32Array,
 	x:types.float,
@@ -60,7 +61,7 @@ types.vec2 = {
 }
 
 types.vec3 = {
-	_type:'vec3',
+	_name:'vec3',
 	_slots:3,
 	_array:Float32Array,
 	x:types.float,
@@ -69,7 +70,7 @@ types.vec3 = {
 }
 
 types.vec4 = {
-	_type:'vec4',
+	_name:'vec4',
 	_slots:4,
 	_array:Float32Array,
 	x:types.float,
@@ -79,7 +80,7 @@ types.vec4 = {
 }
 
 types.mat3 = {
-	_type:'mat3',
+	_name:'mat3',
 	_slots:9,
 	_array:Float32Array,
 	a:types.float,
@@ -96,7 +97,7 @@ types.mat3 = {
 }
 
 types.mat4 = {
-	_type:'mat4',
+	_name:'mat4',
 	_slots:16,
 	_array:Float32Array,
 	a:types.float,
@@ -121,30 +122,30 @@ types.mat4 = {
 }
 
 types.gen = {
-	_type:'gen',
+	_name:'gen',
 	_isa:function(type){
 		return true
 	}
 }
 
 types.genorfloat = {
-	_type:'genorfloat',
+	_name:'genorfloat',
 	_isa:function(type){
 		return true
 	}
 }
 
 types.bvec = {
-	_type:'bvec',
+	_name:'bvec',
 	_isa:function(type){
-		return type && type._type && (type._type.indexOf('bvec') === 0|| type._type === 'bool')
+		return type && type._name && (type._name.indexOf('bvec') === 0|| type._name === 'bool')
 	}
 }
 
 types.vec = {
-	_type:'vec',
+	_name:'vec',
 	_isa:function(type){
-		return type && type._type && (type._type.indexOf('vec') === 0 || type._type === 'float')
+		return type && type._name && (type._name.indexOf('vec') === 0 || type._name === 'float')
 	}
 }
 
@@ -174,12 +175,12 @@ types.getSlots = function getSlots(struct){
 }
 
 // value to type conversion, used for attribute mapping
-types.fromvalue = function(value){
+types.typeFromValue = function(value){
 	if(typeof value === 'number') return types.float
 	if(typeof value === 'boolean') return types.float
 	if(typeof value === 'string') return types.vec4
 	if(typeof value === 'object'){
-		if(value._type) return value
+		if(value._name) return value
 		if(Array.isArray(value)){
 			var len = value.length
 			if(len === 1){

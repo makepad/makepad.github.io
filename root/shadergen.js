@@ -3,49 +3,103 @@ module.exports = require('class').extend(function ShaderGen(){
 	var types  = require('types')
 	var parser = require('jsparser/jsparser')
 
-	this.onconstruct = function(root, stamp){
-		// the current variable scope
-		this.scope = {}
-		// wether scope variables got assigned to and need to be marked as in/out
-		this.scopeinout = {}
-		// the attributes found
-		this.attributes = {}
-		// all uniforms found
-		this.uniforms = {}
-		// all structs used
-		this.structs = {}
-		// name of current scope
-		this.scopename = ''
-		//  varyings found
-		this.varyings = {}
-		// functions generated
-		this.functions = {}
-		// textures used
-		this.textures = {}
-		// do our indentation
-		this.indent = ''
-		// default context
-		this.stamp = stamp
+	var parsecache = {}
+	var painter = require('painter')
 
-		this.root = root
-		this.context = root
+	this.constructor.generateGLSL = function(root, fn, mapexception){
+		
+		var gen = new this()
+
+		// the attributes found
+		gen.attributes = {}
+		// all uniforms found
+		gen.uniforms = {}
+		// all structs used
+		gen.structs = {}
+		//  varyings found
+		gen.varyings = {}
+		// functions generated
+		gen.functions = {}
+
+		// the function object info of the current function
+		var sourcecode = fn.toString()
+		gen.function = {
+			inout:{},
+			scope:{},
+			callee:fn,
+			sourcecode:sourcecode
+		}
+		// textures used
+		gen.textures = {}
+		// do our indentation
+		gen.indent = ''
+	
+		gen.root = root
+		gen.context = root
+
+		var ast = parsecache[sourcecode] || (parsecache[sourcecode] = parser.parse(sourcecode))
+
+		if(mapexception){ // very ugly.
+			try{
+				gen.main = gen.block(ast.body[0].body.body)
+			}
+			catch(error){
+				// lets get this to the right file/line
+				// first of all we need to grab the current function
+				var state = error.state
+				var curfn = state.function
+				try{
+					curfn.callee()
+				}
+				catch(efn){
+					// ok lets parse out the line offset of this thing
+					var stack = efn.stack.toString()
+					var fileerr = efn.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
+					var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
+					var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
+					// alright we have a lineoff, now we need to take the node
+					var lines = curfn.sourcecode.split('\n')
+					// lets count the linenumbers
+					var node = error.node
+					var off = 0, realcol = 0
+					for(var line = 0; line < lines.length; line++){
+						if(off >= node.start){
+							realcol = off - node.start - 3
+							break
+						}
+						off += lines[line].length + 1
+					}
+					var realline = line + lineoff - 1
+					if(curfn.sourcecode.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
+					console.error(
+						filename+':'+realline+':'+realcol, error.type + ': '+ error.message
+					)
+				}			
+			}
+		}
+		else{
+			gen.main = gen.block(ast.body[0].body.body)
+		}
+
+		return gen
 	}
 
 	this.walk = function(node, parent){
 		node.parent = parent
 		node.infer = undefined
 		var typefn = this[node.type]
-		if(!typefn) throw new Error('Type not found ' + node.type)
+		if(!typefn) throw this.SyntaxErr(node, 'Type not found ' + node.type)
 		return typefn.call(this,node)
 	}
 
 	this.block = function(array, parent){
-		var s = ''
+		var ret = ''
 		for(var i = 0; i < array.length; i++){
-			s += this.indent + this.walk(array[i], parent) + ';'
-			if(s.charCodeAt(s.length - 1) !== 10) s += '\n'
+			var line = this.walk(array[i], parent)
+			if(line.length) ret += this.indent + line + ';'
+			if(ret.charCodeAt(ret.length - 1) !== 10) ret += '\n'
 		}
-		return s
+		return ret
 	}
 	
 	this.Program = function(node){
@@ -56,11 +110,11 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.BlockStatement = function(node){
 		var oi = this.indent
 		this.indent += '\t'
-		var s = '{\n'
-		s += this.block(node.body, node)
+		var ret = '{\n'
+		ret += this.block(node.body, node)
 		this.indent = oi
-		s += this.indent + '}'
-		return s
+		ret += this.indent + '}'
+		return ret
 	}
 
 	//EmptyStatement:{}
@@ -75,14 +129,14 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//SequenceExpression:{expressions:2}
 	this.SequenceExpression = function(node){
-		var s = ''
+		var ret = ''
 		var exps = node.expressions
 		for(var i = 0; i < exps.length; i++){
 			var exp = exps[i]
 			if(i) i += ', '
-			s += this.walk(exp, node)
+			ret += this.walk(exp, node)
 		}
-		return s
+		return ret
 	}
 
 	//ParenthesizedExpression:{expression:1}
@@ -92,21 +146,30 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//ReturnStatement:{argument:1},
 	this.ReturnStatement = function(node){
-		this.returnvalue = node
+		var ret = 'return ' + this.walk(node.argument, node)
+		var infer = node.argument.infer
+
+		if(infer.kind !== 'value'){
+			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
+		}
+		if(this.function.returninfer && this.function.returninfer.type !== infer.type){
+			throw this.InferErr(node, 'Cant return more than one type '+this.function.returninfer.type._name+'->'+infer.type._name)
+		}
+		node.infer = infer
+		this.function.returninfer = node.infer
 		return 'return '+ this.walk(node.argument)
 	}
 
 	//Identifier:{name:0},
 	this.Identifier = function(node){
 		var name = node.name
-		// first we check the scope
-		var scopetype = this.scope[name]
 
-		if(scopetype){
-			node.infer = {
-				kind: 'scope',
-				type: scopetype
-			}
+		if(name === '$') return ''
+		// first we check the scope
+		var scopeinfer = this.function.scope[name]
+
+		if(scopeinfer){
+			node.infer = scopeinfer
 			return name
 		}
 
@@ -114,8 +177,8 @@ module.exports = require('class').extend(function ShaderGen(){
 		var glslfn = this.glslfunctions[name]
 		if(glslfn){
 			node.infer = {
-				kind: 'functionref',
-				glsl: true,
+				kind: 'function',
+				glsl: name,
 				callee: glslfn
 			}
 			return name
@@ -125,8 +188,8 @@ module.exports = require('class').extend(function ShaderGen(){
 		var glsltype = this.glsltypes[name]
 		if(glsltype){
 			node.infer = {
-				kind: 'typeref',
-				typeref: glsltype
+				kind: 'type',
+				type: glsltype
 			}
 			return name
 		}
@@ -145,7 +208,8 @@ module.exports = require('class').extend(function ShaderGen(){
 		// its a function
 		if(typeof value === 'function'){
 			node.infer = {
-				kind: 'functionref',
+				kind: 'function',
+				name: name,
 				callee: value
 			}
 			return name
@@ -154,78 +218,417 @@ module.exports = require('class').extend(function ShaderGen(){
 		// its a define
 		if(typeof value === 'string'){
 			var ast = parser.parse(value)
-			console.log(ast)
 		}
 
 		// its a struct
-		if(typeof value === 'object' && value._type){
-			node.infer = {
-				kind: 'typeref',
-				typeref: value
+		if(typeof value === 'object'){
+			if(value._name){
+				node.infer = {
+					kind: 'type',
+					type: value
+				}
+				return name
 			}
+			// its a library object
+			node.infer = {
+				kind: 'object',
+				object: value
+			}
+			return name
 		}
 		
-		// otherwise typeref it
-		throw new Err('resolve', 'Cannot resolve '+name, node, this)
+		// otherwise type it
+		throw this.ResolveErr(node, 'Cannot resolve '+name)
 	}
 
 	//Literal:{raw:0, value:0},
 	this.Literal = function(node){
-		if(node.kind === 'regexp') throw Err('syntax','Cant use regexps in shaders',node,this)
-		if(node.kind === 'string'){
-			node.infer = types.vec4
+		var infer = {
+			kind:'value'
 		}
-		return node.raw
+		node.infer = infer
+		if(node.kind === 'regexp') throw this.SyntaxErr(node,'Cant use regexps in shaders')
+		if(node.kind === 'string'){
+			infer.type = types.vec4
+			// return the parsed color!
+		}
+		if(node.kind === 'num'){
+			if(node.raw.indexOf('.') !== -1){
+				infer.type = types.float
+				return node.raw
+			}
+			infer.type = types.int
+			return node.raw
+		}
+		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
 	}
 
 	//ThisExpression:{},
-	this.ThisExpression = function(node){		
+	this.ThisExpression = function(node){
 		console.error("ThisExpression not implemented")
 		return ''
 	}
 
 	//CallExpression:{callee:1, arguments:2},
 	this.CallExpression = function(node){
-		var s = this.walk(node.callee, node)
+		var calleestr = this.walk(node.callee, node)
 		var callee = node.callee
 		var infer = node.callee.infer
 
 		var args = node.arguments
-		s += '('
-		for(var i = 0; i < args.length; i++){
-			if(i) s += ', '
-			s += this.walk(args[i], node)
-		}
-		s += ')'
+		var argstrs = []
 
-		if(infer.kind === 'typeref'){
+		for(var i = 0; i < args.length; i++){
+			argstrs.push(this.walk(args[i], node))
+		}
+
+		if(infer.kind === 'type'){
 			node.infer = {
 				kind:'value',
-				typeref:infer.typeref
+				type:infer.type
 			}
+			return calleestr + '(' +argstrs.join(', ')+')'
 		}
-		else if(infer.kind === 'functionref' && !infer.kind.glsl){
-			// expand function macro
-		}
+		else if(infer.kind === 'function' ){
+			if(infer.glsl){	// check the args
+				var fnname = infer.glsl
+				var glslfn = this.glslfunctions[fnname]
 
+				var gentype
+				var params = glslfn.params
+
+				for(var i = 0; i < args.length; i++){
+					var arg = args[i]
+					var param = params[i]
+
+					if(param.type === types.gen){
+						gentype = arg.infer.type
+					}
+					else if(arg.infer.type !== param.type){
+						// barf
+						throw this.InferErr(arg, "GLSL Builtin wrong arg " +fnname+' arg '+i+' -> ' +param.name)
+					}
+				}
+
+				node.infer = {
+					kind: 'value',
+					type: glslfn.return === types.gen? gentype: glslfn.return
+				}
+
+				return fnname + '(' + argstrs.join() + ')'
+			}
+			// expand function macro
+			var sourcecode = infer.callee.toString()
+
+			// parse it, should never not work since it already parsed 
+			try{
+				var ast = parsecache[sourcecode] || (parsecache[sourcecode] = parser.parse(sourcecode))
+			}
+			catch(e){
+				throw this.SyntaxErr(node, "Cant parse function " + sourcecode)
+			}
+			
+			// lets build the function name
+			var fnname = infer.name
+			var realargs = []
+			fnname += '_T'
+			for(var i = 0; i < args.length; i++){
+				var arg = args[i]
+				var arginfer = arg.infer
+				if(arginfer.kind === 'value'){
+					fnname += '_' +arginfer.type._name
+					realargs.push(argstrs[i])
+				}
+				else if(arginfer.kind === 'function'){ // what do we do?...
+					fnname += '_' + arginfer.name
+				}
+				else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
+			}
+
+			var prevfunction = this.functions[fnname]
+
+			if(prevfunction){
+				for(var i = 0; i < args.length; i++){
+					// write the args on the scope
+					var arg = args[i]
+					var arginfer = arg.infer
+					var name = params[i].name
+					if(arginfer.kind === 'value'){
+						if(prevfunction.inout[name] && !arginfer.lvalue){
+							throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
+						}
+					}
+				}
+				node.infer = {
+					kind: 'value',
+					type: prevfunction.returninfer.type
+				}
+				return fnname + '(' + realargs.join() + ')'
+			}
+			
+			var subfunction = this.functions[fnname] = {
+				scope:{},
+				inout:{},
+				sourcecode:sourcecode,
+				callee:infer.callee
+			}
+
+			var sub = Object.create(this)
+
+			if(!ast.body || !ast.body[0] || ast.body[0].type !== 'FunctionDeclaration'){
+				throw this.SyntaxErr(node, "Not a function")
+			}
+
+			// we have our args, lets process the function declaration
+			// make a new scope
+
+			sub.function = subfunction
+
+			var params = ast.body[0].params
+			var paramdef = ''
+			if(args.length !== params.length){
+				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
+			}
+			for(var i = 0; i < args.length; i++){
+				var arg = args[i]
+				var arginfer = arg.infer
+				var name = params[i].name
+				if(arginfer.kind === 'value'){
+					subfunction.scope[name] = {
+						kind:'value',
+						lvalue:true,
+						type:arginfer.type,
+						scope:true,
+						isarg:true
+					}
+				}
+				else if(arginfer.kind === 'function'){
+					subfunction.scope[name] = {
+						kind:'value',
+						scope:true,
+						isarg:true,
+						function: arginfer.function
+					}
+				}
+			}
+
+			// alright lets run the function body.
+			var body = sub.walk(ast.body[0].body)
+
+			for(var i = 0; i < args.length; i++){
+				// write the args on the scope
+				var arg = args[i]
+				var arginfer = arg.infer
+				var name = params[i].name
+				if(arginfer.kind === 'value'){
+					if(paramdef) paramdef += ', '
+					if(subfunction.inout[name]){
+						paramdef += 'inout '
+						if(!arg.infer.lvalue){
+							throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
+						}
+					}
+
+					paramdef += arginfer.type._name + ' ' + name
+				}
+				else if(arginfer.kind === 'function'){
+
+				}
+			}
+
+			var code = ''
+			if(!subfunction.returninfer){
+				code += 'void'
+			}
+			else code += subfunction.returninfer.type._name 
+			code += ' ' + fnname + '(' + paramdef + ')' + body
+			subfunction.code = code
+
+			node.infer = {
+				kind: 'value',
+				type: subfunction.returninfer.type
+			}
+
+			return fnname + '(' + realargs.join() + ')'
+		}
+		else throw this.SyntaxErr(node,"Not a callable type")
 		// ok so now lets type specialize and call our function
 		// ie generate it
-		return s
 	}
+
+	var swizpick1 = {120:0,114:1,115:2,}
+	var swizset1 = [{120:1},{114:1},{115:1}]
+	var swizpick2 = {120:0, 121:0, 114:1, 103:1, 115:2, 116:2}
+	var swizset2 = [{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]
+	var swizpick3 = {120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}
+	var swizset3 = [{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]
+	var swizpick4 = {120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}
+	var swizset4 = [{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]
 
 	//MemberExpression:{object:1, property:types.gen, computed:0},
 	this.MemberExpression = function(node){
+		// just chuck This
+		if(node.object.type === 'ThisExpression'){
+			var ret = this.walk(node.property)
+			node.infer = node.property.infer
+			return ret
+		}
+
 		var objectstr = this.walk(node.object, node)
 
 		if(node.computed){
-			return 'huh'
+			if(node.object.infer.kind !== 'value'){
+				throw new this.InferErr(node, 'cannot use index[] on non value type')
+			}
+			return console.error('implement node.computed')
 		}
 		else{
-			console.log(node.object.infer)
-			// lets check if node.infer holds property
-			return objectstr + '.' + node.property.name
+			var objectinfer = node.object.infer
+			var propname = node.property.name
+
+			if(objectinfer.kind === 'props'){
+				var props = this.root._props
+				var value = props[propname]
+				if(value === undefined) throw this.InferErr(node, 'cant find props.'+propname)
+				var proptype = types.typeFromValue(value)
+				var ret = 'props_DOT_'+propname
+				this.attributes[ret] = {
+					kind:'props',
+					type:proptype,
+					name:propname
+				}
+
+				node.infer = {
+					kind:'value',
+					type:proptype
+				}
+
+				return ret
+			}
+			else if(objectinfer.kind === 'mesh'){
+				var mesh = this.root._mesh
+				var value = mesh[propname]
+
+				if(!value) throw this.InferErr(node, 'cant find mesh.'+propname)
+				if(!(value instanceof painter.Mesh)) throw this.InferErr(node, 'mesh.'+propname+' is not of type painter.Mesh')
+				proptype = value.struct
+				var ret = 'mesh_DOT_'+propname
+				this.attributes[ret] = {
+					kind:'mesh',
+					type:proptype,
+					name:propname
+				}
+
+				node.infer = {
+					kind:'value',
+					type:proptype
+				}
+
+				return ret
+			}
+			else if(objectinfer.kind === 'vary'){
+				var ret = 'vary_DOT_'+propname
+				// its already defined
+				var prev = this.varyings[ret]
+				if(prev){
+					node.infer = {
+						kind: 'value',
+						type: prev
+					}
+				}
+				else{
+					node.infer = {
+						kind: 'varyundef',
+						name: propname
+					}
+				}
+				// lets check if node.infer holds property
+				return ret
+			}
+			else if(objectinfer.kind === 'view'){
+				console.error("IMPLEMENT VIEW PROPS")
+			}
+			else if(objectinfer.kind === 'stamp'){
+				console.error("IMPLEMENT STAMP PROPS")
+			}
+			else if(objectinfer.kind === 'globals'){
+				var globals = this.root._globals
+				var type = globals[propname]
+
+				if(!type) throw this.InferErr(node, 'cant find type globals.'+propname)
+				var ret = 'globals_DOT_' + propname
+				this.uniforms[ret] = {
+					kind:'globals',
+					type:type,
+					name:propname
+				}
+				node.infer = {
+					kind:'value',
+					type:type
+				}
+				return ret
+			}
+			else if(objectinfer.kind === 'locals'){
+				var locals = this.root._locals
+				var type = locals[propname]
+
+				if(!type) throw this.InferErr(node, 'cant find type locals.'+propname)
+				var ret = 'locals_DOT_' + propname
+				this.uniforms[ret] = {
+					kind:'locals',
+					type:type,
+					name:propname
+				}
+				node.infer = {
+					kind:'value',
+					type:type
+				}
+				return ret
+			}
+			else if(objectinfer.kind === 'object'){
+				// figure out function or string
+			}
+			else if(objectinfer.kind === 'value'){
+				var type = objectinfer.type
+				var proptype = type[propname]
+				if(!proptype){ // do more complicated bits
+					// check swizzling or aliases
+					var len = propname.length
+					if(len < 1 || len > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
+					proptype = types['vec' + len]
+					var typename = type._name
+					if(typename === 'float' || typename === 'int'){
+						for(var i = 0, set = swizset1[swizpick1[propname.charCodeAt(0)]]; i < len; i++){
+							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+						}
+					}
+					else if(typename === 'vec2' || typename === 'ivec2' || typename === 'bvec2'){
+						for(var i = 0, set = swizset2[swizpick2[propname.charCodeAt(0)]]; i < len; i++){
+							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+						}
+					}
+					else  if(typename === 'vec3' || typename === 'ivec3' || typename === 'bvec3'){
+						for(var i = 0, set = swizset3[swizpick3[propname.charCodeAt(0)]]; i < len; i++){
+							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+						}
+					}
+					else  if(typename === 'vec4' || typename === 'ivec4' || typename === 'bvec4'){
+						for(var i = 0, set = swizset4[swizpick4[propname.charCodeAt(0)]]; i < len; i++){
+							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+						}
+					}
+					else throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+				}
+				// look up property propname
+				node.infer = {
+					kind:'value',
+					lvalue:objectinfer.lvalue, // propagate lvalue-ness
+					type:proptype
+				}
+				return objectstr + '.' + propname
+			}
+			throw this.InferErr(node, 'Cant determine type for '+objectstr+'.'+propname)
 		}
-		return ''
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
@@ -236,6 +639,7 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
 	this.FunctionDeclaration = function(node){
+		// an inline function declaration
 		console.error("FunctionDeclaration not implemented")
 		return ''
 	}
@@ -244,149 +648,198 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.VariableDeclaration = function(node){
 		// ok we have to split into the types of the declarations
 		var decls = node.declarations
-		var s = ''
+		var ret = ''
 		for(var i = 0; i < decls.length; i++){
 			if(i) i += ';'
 			var decl = decls[i]
 			var str = this.walk(decl, node)
-			s += decl.infer.typeref._type + ' ' + str
+			if(decl.infer.kind === 'value'){
+				ret += decl.infer.type._name + ' ' + str
+			}
 		}
-		return s
+		return ret
 	}
 
 	//VariableDeclarator:{id:1, init:1},
 	this.VariableDeclarator = function(node){
 
 		if(!node.init){
-			throw Err('inference',node.type + ' cant infer type without initializer '+node.id.name, node, this)
+			throw this.InferErr(node, node.type + ' cant infer type without initializer '+node.id.name)
 		}
 
 		var initstr = this.walk(node.init, node)
 		var init = node.init
+		var initinfer = init.infer
 
-		// lets store it on our scope
-		this.scope[node.id.name] = init.infer
+		if(initinfer.kind === 'value'){
+			node.infer = this.function.scope[node.id.name] = {
+				kind:'value',
+				lvalue:true,
+				scope:true,
+				type:initinfer.type
+			}
+		}
+		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable')
 
-		if(init.infer.kind === 'typeref' && init.type === 'CallExpression' &&
-			init.args.length === 0){
+		if(init.infer.kind === 'type' && init.type === 'CallExpression' && init.args.length === 0){
 			// just take the type, no constructor args
 			return node.id.name
 		}
-		node.infer = init.infer
 
 		return node.id.name + ' = ' + initstr
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
 	this.LogicalExpression = function(node){
-		console.error("LogicalExpression not implemented")
-		return ''
+		//!TODO check node.left.infer and node.right.infer for compatibility
+		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
+		return ret
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
 	this.BinaryExpression = function(node){
-		var s = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
-		return s
+		//!TODO check node.left.infer and node.right.infer for compatibility
+		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
+		var leftinfer = node.left.infer
+		var rightinfer = node.right.infer
+		//!TODO fix this
+		node.infer = {
+			kind:'value',
+			type:leftinfer.type
+		}
+		return ret
 	}
 
 	//AssignmentExpression: {left:1, right:1},
 	this.AssignmentExpression = function(node){
-		console.error("AssignmentExpression not implemented")
-		return ''
+		var leftstr = this.walk(node.left, node)
+		var rightstr =  this.walk(node.right, node)
+		var ret = leftstr+ ' = ' + rightstr
+		var leftinfer = node.left.infer
+		var rightinfer = node.right.infer
+
+		if(leftinfer.kind === 'varyundef'){
+			// create a varying
+			var existvary = this.varyings[leftstr]
+			if(existvary && existvary !== rightinfer.type) throw this.InferErr(node, 'Varying changed type '+existvary._name + ' -> '+ rightinfer.type._name)
+			this.varyings[leftstr] =  rightinfer.type
+			return ret
+		}
+		if(!leftinfer.lvalue){
+			throw this.InferErr(node, 'Left hand side not an lvalue ')
+		}
+		// mark arg as inout
+		if(leftinfer.scope && leftinfer.isarg){
+			this.function.inout[leftstr] = true
+		}
+
+		// lets check
+		if(leftinfer.type !==  rightinfer.type){
+			throw this.InferErr(node, 'lefthand differs from righthand in assignment '+leftinfer.type._name +' = '+ rightinfer.type._name)
+		}
+		node.infer = rightinfer
+		return ret
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
 	this.ConditionalExpression = function(node){
-		console.error("ConditionalExpression not implemented")
-		return ''
+		//!TODO check types
+		var ret = this.walk(node.test, node) + '?' + this.walk(node.consequent, node) + ':' + this.walk(node.alternate, node)
+		return ret
 	}
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
 	this.UpdateExpression = function(node){
-		console.error("UpdateExpression not implemented")
-		return ''
-	}
-
-	//UnaryExpression:{operator:0, prefix:0, argument:1},
-	this.UnaryExpression = function(node){
-		console.error("UnaryExpression not implemented")
-		return ''
-	}
+		var ret = this.walk(node.argument, node)
+		if(prefix){
+			return node.operator + ret
+		}
+		return ret + node.operator
+ 	}
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	this.IfStatement = function(node){
-		var s = 'if(' + this.walk(node.test) + ') ' 
+		var ret = 'if(' + this.walk(node.test) + ') ' 
 
-		s += this.walk(node.consequent, node)
+		ret += this.walk(node.consequent, node)
 
-		//if(s.charCodeAt(s.length - 1) !== '\n') s += '\n'
-		//s += '}'
 		if(node.alternate){
-			s+= 'else '+this.walk(node.alternate, node)
-			//if(s.charCodeAt(s.length - 1) !== '\n') s += '\n'
+			ret+= 'else '+this.walk(node.alternate, node)
 		} 
-		return s
+		return ret
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
 	this.ForStatement = function(node){
-		console.error("ForStatement not implemented")
+		var ret = 'for(' + this.walk(node.init) + ';' 
+		ret += this.walk(node.test)+';'
+		ret += this.walk(node.update)+') '
+		ret += this.walk(node.body, node)
+		return ret
+	}
 
-		return ''
+	function Err(state, node, type, message){
+		this.type = type
+		this.message = message
+		this.node = node
+		this.state = state
+	}
+
+	Err.prototype.toString = function(){
+		return this.message
 	}
 
 	// Exceptions
-	function Err(type, message, node, state){
-		var obj = this
-		if(!(obj instanceof Err)) obj = Objectypes.create(Err.prototype)
-		obj.type = type
-		obj.message = message
-		obj.node = node
-		obj.state = state
-		return obj
+	this.ResolveErr = function(node, message){
+		return new Err(this, node, 'ResolveError', message)
 	}
-	this.Err = Err
-	Err.prototype.toString = function(){
-		return this.type + ' ' + this.message
-	}
-	// Unsupported syntax
 
-	this.YieldExpression = function(node){throw Err('syntax','YieldExpression',node, this)}
-	this.ThrowStatement = function(node){throw Err('syntax','ThrowStatement',node, this)}
-	this.TryStatement = function(node){throw Err('syntax','TryStatement',node, this)}
-	this.CatchClause = function(node){throw Err('syntax','CatchClause',node, this)}
-	this.Super = function(node){throw Err('syntax','Super',node, this)}
-	this.AwaitExpression = function(node){throw Err('syntax','AwaitExpression',node, this)}
-	this.MetaProperty = function(node){throw Err('syntax','MetaProperty',node, this)}
-	this.NewExpression = function(node){throw Err('syntax','NewExpression',node, this)}
-	this.ArrayExpression = function(node){throw Err('syntax','ArrayExpression',node, this)}
-	this.ObjectExpression = function(node){throw Err('syntax','ObjectExpression',node, this)}
-	this.ObjectPattern = function(node){throw Err('syntax','ObjectPattern',node, this)}
-	this.ArrowFunctionExpression = function(node){throw Err('syntax','ArrowFunctionExpression',node, this)}
-	this.ForInStatement = function(node){throw Err('syntax','ForInStatement',node, this)}
-	this.ForOfStatement = function(node){throw Err('syntax','ForOfStatement',node, this)}
-	this.WhileStatement = function(node){throw Err('syntax','WhileStatement',node, this)}
-	this.DoWhileStatement = function(node){throw Err('syntax','DoWhileStatement',node, this)}
-	this.SwitchStatement = function(node){throw Err('syntax','SwitchStatement',node, this)}
-	this.SwitchCase = function(node){throw Err('syntax','SwitchCase',node, this)}
-	this.TaggedTemplateExpression = function(node){throw Err('syntax','TaggedTemplateExpression',node, this)}
-	this.TemplateElement = function(node){throw Err('syntax','TemplateElement',node, this)}
-	this.TemplateLiteral = function(node){throw Err('syntax','TemplateLiteral',node, this)}
-	this.ClassDeclaration = function(node){throw Err('syntax','ClassDeclaration',node, this)}
-	this.ClassExpression = function(node){throw Err('syntax','ClassExpression',node, this)}
-	this.ClassBody = function(node){throw Err('syntax','ClassBody',node, this)}
-	this.MethodDefinition = function(node){throw Err('syntax','MethodDefinition',node, this)}
-	this.ExportAllDeclaration = function(node){throw Err('syntax','ExportAllDeclaration',node, this)}
-	this.ExportDefaultDeclaration = function(node){throw Err('syntax','ExportDefaultDeclaration',node, this)}
-	this.ExportNamedDeclaration = function(node){throw Err('syntax','ExportNamedDeclaration',node, this)}
-	this.ExportSpecifier = function(node){throw Err('syntax','ExportSpecifier',node, this)}
-	this.ImportDeclaration = function(node){throw Err('syntax','ImportDeclaration',node, this)}
-	this.ImportDefaultSpecifier = function(node){throw Err('syntax','ImportDefaultSpecifier',node, this)}
-	this.ImportNamespaceSpecifier = function(node){throw Err('syntax','ImportNamespaceSpecifier',node, this)}
-	this.ImportSpecifier = function(node){throw Err('syntax','ImportSpecifier',node, this)}
-	this.DebuggerStatement = function(node){throw Err('syntax','DebuggerStatement',node, this)}
-	this.LabeledStatement = function(node){throw Err('syntax','LabeledStatement',node, this)}
-	this.WithStatement = function(node){throw Err('syntax','WithStatement',node, this)}
+	this.SyntaxErr = function(node, message){
+		return new Err(this, node, 'SyntaxError', message)
+	}
+
+	this.InferErr = function(node, message){
+		return new Err(this, node, 'InferenceError', message)
+	 }
+	// Unsupported syntax
+	//UnaryExpression:{operator:0, prefix:0, argument:1},
+	this.UnaryExpression = function(node){throw this.SyntaxErr(node,'UnaryExpression')}
+	this.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
+	this.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}
+	this.TryStatement = function(node){throw this.SyntaxErr(node,'TryStatement')}
+	this.CatchClause = function(node){throw this.SyntaxErr(node,'CatchClause')}
+	this.Super = function(node){throw this.SyntaxErr(node,'Super')}
+	this.AwaitExpression = function(node){throw this.SyntaxErr(node,'AwaitExpression')}
+	this.MetaProperty = function(node){throw this.SyntaxErr(node,'MetaProperty')}
+	this.NewExpression = function(node){throw this.SyntaxErr(node,'NewExpression')}
+	this.ArrayExpression = function(node){throw this.SyntaxErr(node,'ArrayExpression')}
+	this.ObjectExpression = function(node){throw this.SyntaxErr(node,'ObjectExpression')}
+	this.ObjectPattern = function(node){throw this.SyntaxErr(node,'ObjectPattern')}
+	this.ArrowFunctionExpression = function(node){throw this.SyntaxErr(node,'ArrowFunctionExpression')}
+	this.ForInStatement = function(node){throw this.SyntaxErr(node,'ForInStatement')}
+	this.ForOfStatement = function(node){throw this.SyntaxErr(node,'ForOfStatement')}
+	this.WhileStatement = function(node){throw this.SyntaxErr(node,'WhileStatement')}
+	this.DoWhileStatement = function(node){throw this.SyntaxErr(node,'DoWhileStatement')}
+	this.SwitchStatement = function(node){throw this.SyntaxErr(node,'SwitchStatement')}
+	this.SwitchCase = function(node){throw this.SyntaxErr(node,'SwitchCase')}
+	this.TaggedTemplateExpression = function(node){throw this.SyntaxErr(node,'TaggedTemplateExpression')}
+	this.TemplateElement = function(node){throw this.SyntaxErr(node,'TemplateElement')}
+	this.TemplateLiteral = function(node){throw this.SyntaxErr(node,'TemplateLiteral')}
+	this.ClassDeclaration = function(node){throw this.SyntaxErr(node,'ClassDeclaration')}
+	this.ClassExpression = function(node){throw this.SyntaxErr(node,'ClassExpression')}
+	this.ClassBody = function(node){throw this.SyntaxErr(node,'ClassBody')}
+	this.MethodDefinition = function(node){throw this.SyntaxErr(node,'MethodDefinition')}
+	this.ExportAllDeclaration = function(node){throw this.SyntaxErr(node,'ExportAllDeclaration')}
+	this.ExportDefaultDeclaration = function(node){throw this.SyntaxErr(node,'ExportDefaultDeclaration')}
+	this.ExportNamedDeclaration = function(node){throw this.SyntaxErr(node,'ExportNamedDeclaration')}
+	this.ExportSpecifier = function(node){throw this.SyntaxErr(node,'ExportSpecifier')}
+	this.ImportDeclaration = function(node){throw this.SyntaxErr(node,'ImportDeclaration')}
+	this.ImportDefaultSpecifier = function(node){throw this.SyntaxErr(node,'ImportDefaultSpecifier')}
+	this.ImportNamespaceSpecifier = function(node){throw this.SyntaxErr(node,'ImportNamespaceSpecifier')}
+	this.ImportSpecifier = function(node){throw this.SyntaxErr(node,'ImportSpecifier')}
+	this.DebuggerStatement = function(node){throw this.SyntaxErr(node,'DebuggerStatement')}
+	this.LabeledStatement = function(node){throw this.SyntaxErr(node,'LabeledStatement')}
+	this.WithStatement = function(node){throw this.SyntaxErr(node,'WithStatement')}
 
 	// Types
 
@@ -425,72 +878,72 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	this.glslfunctions ={
-		typeof:{return:types.gen, params:{type:types.gen}}, 
-		sizeof:{return:types.int, params:{type:types.gen}},
+		typeof:{return:types.gen, params:[{name:'type',type:types.gen}]}, 
+		sizeof:{return:types.int, params:[{name:'type',type:types.gen}]},
 
-		radians:{return:types.gen, params:{x:types.gen}}, 
-		degrees:{return:types.gen, params:{x:types.gen}},
+		radians:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		degrees:{return:types.gen, params:[{name:'x', type:types.gen}]},
 
-		sin:{return:types.gen, params:{x:types.gen}}, 
-		cos:{return:types.gen, params:{x:types.gen}}, 
-		tan:{return:types.gen, params:{x:types.gen}},
-		asin:{return:types.gen, params:{x:types.gen}}, 
-		acos:{return:types.gen, params:{x:types.gen}}, 
-		atan:{return:types.gen, params:{x:types.gen, y:types.genopt}},
+		sin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		cos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		tan:{return:types.gen, params:[{name:'x', type:types.gen}]},
+		asin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		acos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		atan:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.genopt}]},
 
-		pow:{return:types.gen, params:{x:types.gen, y:types.gen}}, 
-		exp:{return:types.gen, params:{x:types.gen}}, 
-		log:{return:types.gen, params:{x:types.gen}}, 
-		exp2:{return:types.gen, params:{x:types.gen}}, 
-		log2:{return:types.gen, params:{x:types.gen}},
+		pow:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]}, 
+		exp:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		log:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		exp2:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		log2:{return:types.gen, params:[{name:'x', type:types.gen}]},
 
-		sqrt:{return:types.gen, params:{x:types.gen}}, 
-		inversesqrt:{return:types.gen, params:{x:types.gen}},
+		sqrt:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		inversesqrt:{return:types.gen, params:[{name:'x', type:types.gen}]},
 
-		abs:{return:types.gen, params:{x:types.gen}},
-		sign:{return:types.gen, params:{x:types.gen}}, 
-		floor:{return:types.gen, params:{x:types.gen}}, 
-		ceil:{return:types.gen, params:{x:types.gen}}, 
-		fract:{return:types.gen, params:{x:types.gen}},
+		abs:{return:types.gen, params:[{name:'x', type:types.gen}]},
+		sign:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		floor:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		ceil:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		fract:{return:types.gen, params:[{name:'x', type:types.gen}]},
 
-		mod:{return:types.gen, params:{x:types.gen, y:types.gen}},
-		min:{return:types.gen, params:{x:types.gen, y:types.gen}},
-		max:{return:types.gen, params:{x:types.gen, y:types.gen}},
-		clamp:{return:types.gen, params:{x:types.gen,min:types.gen,max:types.gen}},
+		mod:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		min:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		max:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		clamp:{return:types.gen, params:[{name:'x', type:types.gen},{name:'min', type:types.gen},{name:'max', type:types.gen}]},
 
-		mix:{return:types.gen, params:{x:types.gen,y:types.gen,t:types.gen}},
-		step:{return:types.gen, params:{edge:types.gen,x:types.gen}}, 
-		smoothstep:{return:types.gen, params:{edge0:types.genfloat, edge1:types.genfloat, x:types.gen}},
+		mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.gen}]},
+		step:{return:types.gen, params:[{name:'edge', type:types.gen},{name:'x', type:types.gen}]}, 
+		smoothstep:{return:types.gen, params:[{name:'edge0', type:types.genfloat}, {name:'edge1', type:types.genfloat}, {name:'x', type:types.gen}]},
 
-		length:{return:types.float, params:{x:types.gen}}, 
-		distance:{return:types.float, params:{p0:types.gen, p1:types.gen}}, 
-		dot:{return:types.float, params:{x:types.gen, y:types.gen}},
-		cross:{return:types.vec3, params:{x:types.vec3, y:types.vec3}},
-		normalize:{return:types.gen, params:{x:types.gen}},
-		faceforward:{return:types.gen, params:{n:types.gen, i:types.gen, nref:types.gen}},
-		reflect:{return:types.gen, params:{i:types.gen, n:types.gen}}, 
-		refract:{return:types.gen, params:{i:types.gen, n:types.gen, eta:types.float}},
-		matrixCompMult:{return:types.mat4,params:{a:types.mat4,b:types.mat4}},
+		length:{return:types.float, params:[{name:'x', type:types.gen}]}, 
+		distance:{return:types.float, params:[{name:'p0', type:types.gen}, {name:'p1', type:types.gen}]}, 
+		dot:{return:types.float, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		cross:{return:types.vec3, params:[{name:'x', type:types.vec3},{name:'y', type:types.vec3}]},
+		normalize:{return:types.gen, params:[{name:'x', type:types.gen}]},
+		faceforward:{return:types.gen, params:[{name:'n', type:types.gen}, {name:'i', type:types.gen}, {name:'nref', type:types.gen}]},
+		reflect:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}]}, 
+		refract:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}, {name:'eta', type:types.float}]},
+		matrixCompMult:{return:types.mat4,params:[{name:'a', type:types.mat4},{name:'b', type:types.mat4}]},
 
-		lessThan:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		lessThanEqual:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		greaterThan:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		greaterThanEqual:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		equal:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		notEqual:{return:types.bvec, params:{x:types.gen, y:types.gen}},
-		any:{return:types.bool, params:{x:types.bvec}},
-		all:{return:types.bool, params:{x:types.bvec}},
-		not:{return:types.bvec, params:{x:types.bvec}},
+		lessThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		lessThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		greaterThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		greaterThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		equal:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		notEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+		any:{return:types.bool, params:[{name:'x', type:types.bvec}]},
+		all:{return:types.bool, params:[{name:'x', type:types.bvec}]},
+		not:{return:types.bvec, params:[{name:'x', type:types.bvec}]},
 
-		dFdx:{return:types.gen, params:{x:types.gen}}, 
-		dFdy:{return:types.gen, params:{x:types.gen}},
+		dFdx:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+		dFdy:{return:types.gen, params:[{name:'x', type:types.gen}]},
 
-		texture2DLod:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec2, lod:types.float}},
-		texture2DProjLod:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec2, lod:types.float}},
-		textureCubeLod:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec3, lod:types.float}},
-		texture2D:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec2, bias:types.floatopt}},
-		texture2DProj:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec2, bias:types.floatopt}},
-		textureCube:{return:types.vec4, params:{sampler:types.sampler2D, coord:types.vec3, bias:types.floatopt}},
+		texture2DLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
+		texture2DProjLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
+		textureCubeLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec3}, {name:'lod', type:types.float}]},
+		texture2D:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
+		texture2DProj:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
+		textureCube:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec3}, {name:'bias', type:types.floatopt}]},
 	}
 
 })

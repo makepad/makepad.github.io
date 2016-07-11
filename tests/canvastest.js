@@ -2,8 +2,7 @@
 var App = require('view').extend(function(){
 
 	this.nested = {
-		Background: require('shaders/rectshader').extend(function(){
-		})
+		Background: require('shaders/rectshader')
 	}
 
 	this.ondraw = function(){

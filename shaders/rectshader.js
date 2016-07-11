@@ -29,32 +29,44 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		visible: 1
 	}
 
-	this.mesh = {
-		pos: painter.Mesh(types.vec2)
-	}
+	var meshpos = painter.Mesh(types.vec2)
 
-	this.mesh.pos.pushQuad(
+	meshpos.pushQuad(
 		0,0,
 		0,1,
 		1,0,
 		1,1
 	)
-	
+
+	this.mesh = {
+		pos: meshpos
+	}
+
 	this.globals = {
 		matrix:types.mat4,
 		camera:types.mat4,
 		projection:types.mat4
 	}
 
-	this.vertex = function(){
+	this.callme = function(x){$
+		x = 20.
+		return 10
+	}
+
+	this.vertex = function(){$
+		var x = 0.5
+		sin(x)
+		this.callme(x)
+		vary.x = x
 		if(props.visible < 0.5){
 			return vec4(0.)
 		}
+
 		var pos = vec4(mesh.pos.x * props.w + props.x, mesh.pos.y * props.h + props.y, 0., 1.)
 		return pos * globals.matrix * globals.camera * globals.projection
 	}
 
-	this.pixel = function(){
+	this.pixel = function(){$
 		return props.color
 	}
 

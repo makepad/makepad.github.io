@@ -52,7 +52,7 @@ pp.toAssignable = function(node, isBinding) {
 			if (!isBinding) break
 
 		default:
-			this.raise(node.start, "Assigning to rvalue")
+			//this.raise(node.start, "Assigning to rvalue")
 		}
 	}
 	return node
@@ -211,6 +211,6 @@ pp.checkLVal = function(expr, isBinding, checkClashes) {
 		break
 
 	default:
-		this.raise(expr.start, (isBinding ? "Binding" : "Assigning to") + " rvalue")
+		//this.raise(expr.start, (isBinding ? "Binding" : "Assigning to") + " rvalue")
 	}
 }

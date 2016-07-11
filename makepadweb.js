@@ -7,7 +7,7 @@
 		if(location.hostname === 'localhost' || location.hostname === '127.0.0.1')
 			watchFileChange()
 
-		var canvasses =	document.getElementsByClassName('basepad')
+		var canvasses =	document.getElementsByClassName('makepad')
 		
 		//!TODO multiple canvasses boot up cycle fix
 		for(var i = 0; i < canvasses.length; i++){
