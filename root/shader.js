@@ -11,8 +11,12 @@ module.exports = require('class').extend(function Shader(){
 		var ast = parser.parse()
 		
 		var vertexgen = ShaderGen.generateGLSL(this, this.vertex, false)
+		var pixelgen = ShaderGen.generateGLSL(this, this.pixel, false)
 
-		console.log(vertexgen)
+		// alright we have vertex and pixels
+		// now what
+		// few things
+		// console.log(vertexgen, pixelgen)
 	}
 
 	this.onextendclass = function(){
@@ -21,7 +25,7 @@ module.exports = require('class').extend(function Shader(){
 	}
 
 	this.compileCanvasMacros = function(target){
-		
+
 	}
 
 	Object.defineProperty(this, 'props', {

@@ -152,11 +152,11 @@ module.exports = require('class').extend(function ShaderGen(){
 		if(infer.kind !== 'value'){
 			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
 		}
-		if(this.function.returninfer && this.function.returninfer.type !== infer.type){
-			throw this.InferErr(node, 'Cant return more than one type '+this.function.returninfer.type._name+'->'+infer.type._name)
+		if(this.function.return && this.function.return.type !== infer.type){
+			throw this.InferErr(node, 'Cant return more than one type '+this.function.return.type._name+'->'+infer.type._name)
 		}
 		node.infer = infer
-		this.function.returninfer = node.infer
+		this.function.return = node.infer
 		return 'return '+ this.walk(node.argument)
 	}
 
@@ -361,7 +361,7 @@ module.exports = require('class').extend(function ShaderGen(){
 				}
 				node.infer = {
 					kind: 'value',
-					type: prevfunction.returninfer.type
+					type: prevfunction.return.type
 				}
 				return fnname + '(' + realargs.join() + ')'
 			}
@@ -387,6 +387,7 @@ module.exports = require('class').extend(function ShaderGen(){
 			var params = ast.body[0].params
 			var paramdef = ''
 			if(args.length !== params.length){
+				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 			}
 			for(var i = 0; i < args.length; i++){
@@ -437,16 +438,16 @@ module.exports = require('class').extend(function ShaderGen(){
 			}
 
 			var code = ''
-			if(!subfunction.returninfer){
+			if(!subfunction.return){
 				code += 'void'
 			}
-			else code += subfunction.returninfer.type._name 
+			else code += subfunction.return.type._name 
 			code += ' ' + fnname + '(' + paramdef + ')' + body
 			subfunction.code = code
 
 			node.infer = {
 				kind: 'value',
-				type: subfunction.returninfer.type
+				type: subfunction.return.type
 			}
 
 			return fnname + '(' + realargs.join() + ')'
@@ -456,14 +457,14 @@ module.exports = require('class').extend(function ShaderGen(){
 		// ie generate it
 	}
 
-	var swizpick1 = {120:0,114:1,115:2,}
-	var swizset1 = [{120:1},{114:1},{115:1}]
-	var swizpick2 = {120:0, 121:0, 114:1, 103:1, 115:2, 116:2}
-	var swizset2 = [{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]
-	var swizpick3 = {120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}
-	var swizset3 = [{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]
-	var swizpick4 = {120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}
-	var swizset4 = [{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]
+	// the swizzle lookup tables
+	var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
+	var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
+	var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
+	var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
+	var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
+	var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
+	var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
 
 	//MemberExpression:{object:1, property:types.gen, computed:0},
 	this.MemberExpression = function(node){
@@ -593,31 +594,17 @@ module.exports = require('class').extend(function ShaderGen(){
 				var proptype = type[propname]
 				if(!proptype){ // do more complicated bits
 					// check swizzling or aliases
-					var len = propname.length
-					if(len < 1 || len > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
-					proptype = types['vec' + len]
+					var proplen = propname.length
+					if(proplen < 1 || proplen > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
 					var typename = type._name
-					if(typename === 'float' || typename === 'int'){
-						for(var i = 0, set = swizset1[swizpick1[propname.charCodeAt(0)]]; i < len; i++){
-							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-						}
+
+					proptype = types[proplen === 1? swizone[typename]: (swiztype[typename] + proplen)]
+
+					var swiz = swizlut[typename]
+					if(!swiz) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+					for(var i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
+						if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
 					}
-					else if(typename === 'vec2' || typename === 'ivec2' || typename === 'bvec2'){
-						for(var i = 0, set = swizset2[swizpick2[propname.charCodeAt(0)]]; i < len; i++){
-							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-						}
-					}
-					else  if(typename === 'vec3' || typename === 'ivec3' || typename === 'bvec3'){
-						for(var i = 0, set = swizset3[swizpick3[propname.charCodeAt(0)]]; i < len; i++){
-							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-						}
-					}
-					else  if(typename === 'vec4' || typename === 'ivec4' || typename === 'bvec4'){
-						for(var i = 0, set = swizset4[swizpick4[propname.charCodeAt(0)]]; i < len; i++){
-							if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-						}
-					}
-					else throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
 				}
 				// look up property propname
 				node.infer = {

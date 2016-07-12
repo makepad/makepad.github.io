@@ -48,6 +48,11 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		projection:types.mat4
 	}
 
+	this.out = {
+		color:types.vec4,
+		pickid:types.vec4
+	}
+
 	this.callme = function(x){$
 		x = 20.
 		return 10
