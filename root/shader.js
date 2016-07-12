@@ -16,7 +16,7 @@ module.exports = require('class').extend(function Shader(){
 		// alright we have vertex and pixels
 		// now what
 		// few things
-		// console.log(vertexgen, pixelgen)
+		console.log(vertexgen, pixelgen)
 	}
 
 	this.onextendclass = function(){

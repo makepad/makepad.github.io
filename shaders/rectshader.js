@@ -73,6 +73,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 	this.pixel = function(){$
 		return props.color
+		//out.color = props.color
 	}
 
 	this.canvasmacros = {
