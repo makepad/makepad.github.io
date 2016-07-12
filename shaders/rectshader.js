@@ -3,6 +3,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	var types = require('types')
 	var painter = require('painter')
 
+	// special
 	this.props = {
 		x: NaN,
 		y: NaN,
@@ -10,7 +11,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		h: NaN,
 		z: 0,
 
-		visible: 1.0,
+		visible: {notween:true, nostyle:true, value:1.0},
 
 		align: 'lefttop',
 		margin: [0,0,0,0],
@@ -25,32 +26,20 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		shadowalpha: 0.5
 	}
 
-	this.notween = {
-		visible: 1
-	}
-
-	var meshpos = painter.Mesh(types.vec2)
-
-	meshpos.pushQuad(
+	this.mesh = painter.Mesh(types.vec2).pushQuad(
 		0,0,
 		0,1,
 		1,0,
 		1,1
 	)
 
-	this.mesh = {
-		pos: meshpos
+	this.view = {
+		position:types.mat4
 	}
 
-	this.globals = {
-		matrix:types.mat4,
-		camera:types.mat4,
+	this.camera = {
+		position:types.mat4,
 		projection:types.mat4
-	}
-
-	this.out = {
-		color:types.vec4,
-		pickid:types.vec4
 	}
 
 	this.callme = function(x){$
@@ -59,21 +48,25 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	}
 
 	this.vertex = function(){$
-		var x = 0.5
-		sin(x)
-		this.callme(x)
-		vary.x = x
 		if(props.visible < 0.5){
 			return vec4(0.)
 		}
 
-		var pos = vec4(mesh.pos.x * props.w + props.x, mesh.pos.y * props.h + props.y, 0., 1.)
-		return pos * globals.matrix * globals.camera * globals.projection
+		var pos = vec4(
+			mesh.x * props.w + props.x, 
+			mesh.y * props.h + props.y, 
+			0., 
+			1.
+		)
+
+		return pos * view.position * camera.position * camera.projection
 	}
 
 	this.pixel = function(){$
-		return props.color
-		//out.color = props.color
+		//props.x
+		//props.borderwidth
+		out.color = props.color
+		//out.color = vec4(1)
 	}
 
 	this.canvasmacros = {

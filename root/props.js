@@ -9,7 +9,7 @@ module.exports = function(){
 	// define props
 	function defineProp(key, value){
 		// default
-		if(typeof value !== 'Object'){
+		if(Object.getPrototypeOf(value) !== Object.prototype){
 			value = {value:value}
 		}
 		var initvalue = value.value

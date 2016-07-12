@@ -6,24 +6,33 @@ module.exports = require('class').extend(function ShaderGen(){
 	var parsecache = {}
 	var painter = require('painter')
 
-	this.constructor.generateGLSL = function(root, fn, mapexception){
+	this.constructor.generateGLSL = function(root, fn, varyin, mapexception){
 		
 		var gen = new this()
 
 		// the attributes found
 		gen.attributes = {}
+		// the props found
+		gen.props = {}
+
 		// all uniforms found
 		gen.uniforms = {}
 		// all structs used
 		gen.structs = {}
 		//  varyings found
-		gen.varyings = {}
+		gen.varyout = {}
+		// varying inputs
+		gen.varyin = varyin
+
+		// outputs used
+		gen.outputs = {}
+
 		// functions generated
-		gen.functions = {}
+		gen.generatedfns = {}
 
 		// the function object info of the current function
 		var sourcecode = fn.toString()
-		gen.function = {
+		gen.currentfn = {
 			inout:{},
 			scope:{},
 			callee:fn,
@@ -32,9 +41,11 @@ module.exports = require('class').extend(function ShaderGen(){
 		// textures used
 		gen.textures = {}
 		// do our indentation
-		gen.indent = ''
+		gen.indent = '\t'
 	
 		gen.root = root
+
+		gen.ctxprefix = ''
 		gen.context = root
 
 		var ast = parsecache[sourcecode] || (parsecache[sourcecode] = parser.parse(sourcecode))
@@ -47,7 +58,7 @@ module.exports = require('class').extend(function ShaderGen(){
 				// lets get this to the right file/line
 				// first of all we need to grab the current function
 				var state = error.state
-				var curfn = state.function
+				var curfn = state.currentfn
 				try{
 					curfn.callee()
 				}
@@ -144,20 +155,123 @@ module.exports = require('class').extend(function ShaderGen(){
 		return '(' + this.walk(node.expression, node) + ')'
 	}
 
-	//ReturnStatement:{argument:1},
-	this.ReturnStatement = function(node){
-		var ret = 'return ' + this.walk(node.argument, node)
-		var infer = node.argument.infer
 
-		if(infer.kind !== 'value'){
-			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
-		}
-		if(this.function.return && this.function.return.type !== infer.type){
-			throw this.InferErr(node, 'Cant return more than one type '+this.function.return.type._name+'->'+infer.type._name)
+	//Literal:{raw:0, value:0},
+	this.Literal = function(node){
+		var infer = {
+			kind:'value'
 		}
 		node.infer = infer
-		this.function.return = node.infer
-		return 'return '+ this.walk(node.argument)
+		if(node.kind === 'regexp') throw this.SyntaxErr(node,'Cant use regexps in shaders')
+		if(node.kind === 'string'){
+			infer.type = types.vec4
+			// return the parsed color!
+			return 'vec4(0.,0.,0.,0.)'
+		}
+		if(node.kind === 'num'){
+			if(node.raw.indexOf('.') !== -1){
+				infer.type = types.float
+				return node.raw
+			}
+			infer.type = types.int
+			return node.raw
+		}
+		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
+	}
+
+	this.mapObjectProperty = function(node, name, value, prefix){
+
+		// its a function
+		if(typeof value === 'function'){
+			node.infer = {
+				kind: 'function',
+				name: prefix + name,
+				prefix: prefix,
+				callee: value
+			}
+			return name
+		}
+
+		if(typeof value === 'string'){
+			console.log("FIX COLOR UNIFORMS")
+			return name
+		}
+
+		if(Array.isArray(value)){
+			console.log("FIX ARRAY UNIFORMS")
+			return name
+		}
+
+		if(typeof value === 'number'){
+			console.log("FIX NUMBER UNIFORMS")
+			return name
+		}
+
+		else if(typeof value === 'boolean'){ 
+			console.log("FIX BOOLEAN UNIFORMS")
+			return name
+			/*
+			else if(objectinfer.kind === 'locals'){
+				var locals = this.root._locals
+				var type = locals[propname]
+
+				if(!type) throw this.InferErr(node, 'cant find type locals.'+propname)
+				var ret = 'locals_DOT_' + propname
+				this.uniforms[ret] = {
+					kind:'locals',
+					type:type,
+					name:propname
+				}
+				node.infer = {
+					kind:'value',
+					type:type
+				}
+				return ret
+			}*/
+		}
+
+		if(typeof value === 'object'){
+	
+			// its a typed uniform!
+			if(value._name){
+				var ret = prefix + name
+				this.uniforms[ret] = {
+					kind:'locals',
+					type:value,
+					name:name
+				}
+				node.infer = {
+					kind:'value',
+					type:value
+				}
+				return ret
+			}
+			
+			// check if its a mesh attribute
+			if(value instanceof painter.Mesh){
+				proptype = value.struct
+				var ret = prefix + name
+				this.attributes[ret] = {
+					kind:'attribute',
+					type:proptype,
+					name:name
+				}
+
+				node.infer = {
+					kind:'value',
+					type:proptype
+				}
+				return ret
+			}
+
+			// its a library object
+			node.infer = {
+				kind: 'object',
+				prefix: prefix + name + "_DOT_",
+				object: value
+			}
+			return name
+		}
 	}
 
 	//Identifier:{name:0},
@@ -165,8 +279,10 @@ module.exports = require('class').extend(function ShaderGen(){
 		var name = node.name
 
 		if(name === '$') return ''
+		if(name === 'REPLACETWEENREPLACE') return name
+
 		// first we check the scope
-		var scopeinfer = this.function.scope[name]
+		var scopeinfer = this.currentfn.scope[name]
 
 		if(scopeinfer){
 			node.infer = scopeinfer
@@ -193,87 +309,180 @@ module.exports = require('class').extend(function ShaderGen(){
 			}
 			return name
 		}
-	
-		// special kind
-		if(name === 'vary' || name === 'props' || name === 'stamp' || name === 'view' || name === 'globals' || name === 'mesh' || name === 'locals'){
+
+		if(name === 'vary' || name === 'props' || name === 'out'){
 			node.infer = {
 				kind:name
 			}
 			return name
 		}
 
+		// check defines
+		var defstr = this.context._defines && this.context._defines[name] || this.root._defines && this.root._defines[name]
+		if(defstr){ // expand the define
+
+		}
+
+		// struct on context
+		var structtype = this.context._structs && this.context._structs[name]
+		if(structtype){ // return struct
+			node.infer = {
+				kind: 'type',
+				type: structtype
+			}
+			return this.ctxprefix + name
+		}
+		// struct on root
+		structtype = this.root._structs && this.root._structs[name]
+		if(structtype){ // return struct
+			node.infer = {
+				kind: 'type',
+				type: structtype
+			}
+			return name
+		}
+
 		// lets check on our context
 		var value = this.context[name]
+		if(value !== undefined)	return this.mapObjectProperty(node, name, value, this.ctxprefix)
 
-		// its a function
-		if(typeof value === 'function'){
-			node.infer = {
-				kind: 'function',
-				name: name,
-				callee: value
-			}
-			return name
-		}
-
-		// its a define
-		if(typeof value === 'string'){
-			var ast = parser.parse(value)
-		}
-
-		// its a struct
-		if(typeof value === 'object'){
-			if(value._name){
-				node.infer = {
-					kind: 'type',
-					type: value
-				}
-				return name
-			}
-			// its a library object
-			node.infer = {
-				kind: 'object',
-				object: value
-			}
-			return name
-		}
-		
+		if(!value) value = this.root[name]
+		if(value !== undefined)	return this.mapObjectProperty(node, name, value, '')
+	
 		// otherwise type it
 		throw this.ResolveErr(node, 'Cannot resolve '+name)
 	}
 
-	//Literal:{raw:0, value:0},
-	this.Literal = function(node){
-		var infer = {
-			kind:'value'
-		}
-		node.infer = infer
-		if(node.kind === 'regexp') throw this.SyntaxErr(node,'Cant use regexps in shaders')
-		if(node.kind === 'string'){
-			infer.type = types.vec4
-			// return the parsed color!
-		}
-		if(node.kind === 'num'){
-			if(node.raw.indexOf('.') !== -1){
-				infer.type = types.float
-				return node.raw
-			}
-			infer.type = types.int
-			return node.raw
-		}
-		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
-	}
+	// the swizzle lookup tables
+	var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
+	var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
+	var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
+	var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
+	var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
+	var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
+	var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
 
-	//ThisExpression:{},
-	this.ThisExpression = function(node){
-		console.error("ThisExpression not implemented")
-		return ''
+	//MemberExpression:{object:1, property:types.gen, computed:0},
+	this.MemberExpression = function(node){
+		// just chuck This
+		if(node.object.type === 'ThisExpression'){
+			var ret = this.walk(node.property)
+			node.infer = node.property.infer
+			return ret
+		}
+
+		var objectstr = this.walk(node.object, node)
+
+		if(node.computed){
+			if(node.object.infer.kind !== 'value'){
+				throw new this.InferErr(node, 'cannot use index[] on non value type')
+			}
+			return console.error('implement node.computed')
+		}
+		else{
+			var objectinfer = node.object.infer
+			var propname = node.property.name
+
+			if(objectinfer.kind === 'value'){
+				var type = objectinfer.type
+				var proptype = type[propname]
+				if(!proptype){ // do more complicated bits
+					// check swizzling or aliases
+					var proplen = propname.length
+					if(proplen < 1 || proplen > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
+					var typename = type._name
+
+					proptype = types[proplen === 1? swizone[typename]: (swiztype[typename] + proplen)]
+
+					var swiz = swizlut[typename]
+					if(!swiz) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+					for(var i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
+						if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
+					}
+				}
+				// look up property propname
+				node.infer = {
+					kind:'value',
+					lvalue:objectinfer.lvalue, // propagate lvalue-ness
+					type:proptype
+				}
+				return objectstr + '.' + propname
+			}
+			else if(objectinfer.kind === 'props'){
+				var props = this.root
+				var value = props[propname]
+				if(value === undefined) throw this.InferErr(node, 'cant find props.'+propname)
+				var proptype = types.typeFromValue(value)
+				var ret = 'props_DOT_'+propname
+
+				this.props[ret] = {
+					type:proptype,
+					name:propname
+				}
+
+				node.infer = {
+					kind:'value',
+					type:proptype
+				}
+
+				return ret
+			}
+			else if(objectinfer.kind === 'object'){
+				var value = objectinfer.object[propname]
+				return this.mapObjectProperty(node, propname, value, objectinfer.prefix)
+			}
+			else if(objectinfer.kind === 'out'){
+				var ret = 'out_DOT_'+propname
+				// its already defined
+				var prev = this.outputs[ret]
+				if(prev){
+					node.infer = {
+						kind: 'value',
+						lvalue:true,
+						type: prev
+					}
+				}
+				else{
+					node.infer = {
+						kind: 'outundef',
+						lvalue:true,
+						name: propname
+					}
+				}
+				// lets check if node.infer holds property
+				return ret
+			}
+			else if(objectinfer.kind === 'vary'){
+				var ret = 'vary_DOT_'+propname
+				// its already defined
+				var prev = this.varyout[ret] || this.varyin && this.varyin[ret]
+				if(prev){
+					this.varyout[ret] = prev
+					node.infer = {
+						kind: 'value',
+						lvalue:true,
+						type: prev
+					}
+				}
+				else{
+					node.infer = {
+						kind: 'varyundef',
+						lvalue:true,
+						name: propname
+					}
+				}
+				// lets check if node.infer holds property
+				return ret
+			}		
+			throw this.InferErr(node, 'Cant determine type for '+objectstr+'.'+propname)
+		}
 	}
 
 	//CallExpression:{callee:1, arguments:2},
 	this.CallExpression = function(node){
 		var calleestr = this.walk(node.callee, node)
 		var callee = node.callee
-		var infer = node.callee.infer
+		var calleeinfer = node.callee.infer
 
 		var args = node.arguments
 		var argstrs = []
@@ -282,16 +491,16 @@ module.exports = require('class').extend(function ShaderGen(){
 			argstrs.push(this.walk(args[i], node))
 		}
 
-		if(infer.kind === 'type'){
+		if(calleeinfer.kind === 'type'){
 			node.infer = {
 				kind:'value',
-				type:infer.type
+				type:calleeinfer.type
 			}
 			return calleestr + '(' +argstrs.join(', ')+')'
 		}
-		else if(infer.kind === 'function' ){
-			if(infer.glsl){	// check the args
-				var fnname = infer.glsl
+		else if(calleeinfer.kind === 'function' ){
+			if(calleeinfer.glsl){	// check the args
+				var fnname = calleeinfer.glsl
 				var glslfn = this.glslfunctions[fnname]
 
 				var gentype
@@ -318,7 +527,7 @@ module.exports = require('class').extend(function ShaderGen(){
 				return fnname + '(' + argstrs.join() + ')'
 			}
 			// expand function macro
-			var sourcecode = infer.callee.toString()
+			var sourcecode = calleeinfer.callee.toString()
 
 			// parse it, should never not work since it already parsed 
 			try{
@@ -329,7 +538,7 @@ module.exports = require('class').extend(function ShaderGen(){
 			}
 			
 			// lets build the function name
-			var fnname = infer.name
+			var fnname = calleeinfer.name
 			var realargs = []
 			fnname += '_T'
 			for(var i = 0; i < args.length; i++){
@@ -345,7 +554,7 @@ module.exports = require('class').extend(function ShaderGen(){
 				else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
 			}
 
-			var prevfunction = this.functions[fnname]
+			var prevfunction = this.generatedfns[fnname]
 
 			if(prevfunction){
 				for(var i = 0; i < args.length; i++){
@@ -366,11 +575,15 @@ module.exports = require('class').extend(function ShaderGen(){
 				return fnname + '(' + realargs.join() + ')'
 			}
 			
-			var subfunction = this.functions[fnname] = {
+			var subfunction = this.generatedfns[fnname] = {
 				scope:{},
 				inout:{},
 				sourcecode:sourcecode,
-				callee:infer.callee
+				callee:calleeinfer.callee,
+				return:{
+					kind:'value',
+					type:types.void
+				}
 			}
 
 			var sub = Object.create(this)
@@ -381,8 +594,9 @@ module.exports = require('class').extend(function ShaderGen(){
 
 			// we have our args, lets process the function declaration
 			// make a new scope
-
-			sub.function = subfunction
+			sub.indent = ''
+			sub.currentfn = subfunction
+			sub.ctxprefix = calleeinfer.prefix
 
 			var params = ast.body[0].params
 			var paramdef = ''
@@ -437,13 +651,9 @@ module.exports = require('class').extend(function ShaderGen(){
 				}
 			}
 
-			var code = ''
-			if(!subfunction.return){
-				code += 'void'
-			}
-			else code += subfunction.return.type._name 
+			var code = subfunction.return.type._name 
 			code += ' ' + fnname + '(' + paramdef + ')' + body
-			subfunction.code = code
+			subfunction.generatedcode = code
 
 			node.infer = {
 				kind: 'value',
@@ -457,165 +667,20 @@ module.exports = require('class').extend(function ShaderGen(){
 		// ie generate it
 	}
 
-	// the swizzle lookup tables
-	var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
-	var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
-	var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
-	var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
-	var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
-	var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
-	var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
+	//ReturnStatement:{argument:1},
+	this.ReturnStatement = function(node){
+		var ret = 'return ' + this.walk(node.argument, node)
+		var infer = node.argument.infer
 
-	//MemberExpression:{object:1, property:types.gen, computed:0},
-	this.MemberExpression = function(node){
-		// just chuck This
-		if(node.object.type === 'ThisExpression'){
-			var ret = this.walk(node.property)
-			node.infer = node.property.infer
-			return ret
+		if(infer.kind !== 'value'){
+			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
 		}
-
-		var objectstr = this.walk(node.object, node)
-
-		if(node.computed){
-			if(node.object.infer.kind !== 'value'){
-				throw new this.InferErr(node, 'cannot use index[] on non value type')
-			}
-			return console.error('implement node.computed')
+		if(this.currentfn.return && this.currentfn.return.type !== types.void && this.currentfn.return.type !== infer.type){
+			throw this.InferErr(node, 'Cant return more than one type '+this.currentfn.return.type._name+'->'+infer.type._name)
 		}
-		else{
-			var objectinfer = node.object.infer
-			var propname = node.property.name
-
-			if(objectinfer.kind === 'props'){
-				var props = this.root._props
-				var value = props[propname]
-				if(value === undefined) throw this.InferErr(node, 'cant find props.'+propname)
-				var proptype = types.typeFromValue(value)
-				var ret = 'props_DOT_'+propname
-				this.attributes[ret] = {
-					kind:'props',
-					type:proptype,
-					name:propname
-				}
-
-				node.infer = {
-					kind:'value',
-					type:proptype
-				}
-
-				return ret
-			}
-			else if(objectinfer.kind === 'mesh'){
-				var mesh = this.root._mesh
-				var value = mesh[propname]
-
-				if(!value) throw this.InferErr(node, 'cant find mesh.'+propname)
-				if(!(value instanceof painter.Mesh)) throw this.InferErr(node, 'mesh.'+propname+' is not of type painter.Mesh')
-				proptype = value.struct
-				var ret = 'mesh_DOT_'+propname
-				this.attributes[ret] = {
-					kind:'mesh',
-					type:proptype,
-					name:propname
-				}
-
-				node.infer = {
-					kind:'value',
-					type:proptype
-				}
-
-				return ret
-			}
-			else if(objectinfer.kind === 'vary'){
-				var ret = 'vary_DOT_'+propname
-				// its already defined
-				var prev = this.varyings[ret]
-				if(prev){
-					node.infer = {
-						kind: 'value',
-						type: prev
-					}
-				}
-				else{
-					node.infer = {
-						kind: 'varyundef',
-						name: propname
-					}
-				}
-				// lets check if node.infer holds property
-				return ret
-			}
-			else if(objectinfer.kind === 'view'){
-				console.error("IMPLEMENT VIEW PROPS")
-			}
-			else if(objectinfer.kind === 'stamp'){
-				console.error("IMPLEMENT STAMP PROPS")
-			}
-			else if(objectinfer.kind === 'globals'){
-				var globals = this.root._globals
-				var type = globals[propname]
-
-				if(!type) throw this.InferErr(node, 'cant find type globals.'+propname)
-				var ret = 'globals_DOT_' + propname
-				this.uniforms[ret] = {
-					kind:'globals',
-					type:type,
-					name:propname
-				}
-				node.infer = {
-					kind:'value',
-					type:type
-				}
-				return ret
-			}
-			else if(objectinfer.kind === 'locals'){
-				var locals = this.root._locals
-				var type = locals[propname]
-
-				if(!type) throw this.InferErr(node, 'cant find type locals.'+propname)
-				var ret = 'locals_DOT_' + propname
-				this.uniforms[ret] = {
-					kind:'locals',
-					type:type,
-					name:propname
-				}
-				node.infer = {
-					kind:'value',
-					type:type
-				}
-				return ret
-			}
-			else if(objectinfer.kind === 'object'){
-				// figure out function or string
-			}
-			else if(objectinfer.kind === 'value'){
-				var type = objectinfer.type
-				var proptype = type[propname]
-				if(!proptype){ // do more complicated bits
-					// check swizzling or aliases
-					var proplen = propname.length
-					if(proplen < 1 || proplen > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
-					var typename = type._name
-
-					proptype = types[proplen === 1? swizone[typename]: (swiztype[typename] + proplen)]
-
-					var swiz = swizlut[typename]
-					if(!swiz) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-					for(var i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
-						if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-					}
-				}
-				// look up property propname
-				node.infer = {
-					kind:'value',
-					lvalue:objectinfer.lvalue, // propagate lvalue-ness
-					type:proptype
-				}
-				return objectstr + '.' + propname
-			}
-			throw this.InferErr(node, 'Cant determine type for '+objectstr+'.'+propname)
-		}
+		node.infer = infer
+		this.currentfn.return = node.infer
+		return 'return '+ this.walk(node.argument)
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
@@ -659,7 +724,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		var initinfer = init.infer
 
 		if(initinfer.kind === 'value'){
-			node.infer = this.function.scope[node.id.name] = {
+			node.infer = this.currentfn.scope[node.id.name] = {
 				kind:'value',
 				lvalue:true,
 				scope:true,
@@ -707,9 +772,19 @@ module.exports = require('class').extend(function ShaderGen(){
 
 		if(leftinfer.kind === 'varyundef'){
 			// create a varying
-			var existvary = this.varyings[leftstr]
+			var existvary = this.varyout[leftstr]
 			if(existvary && existvary !== rightinfer.type) throw this.InferErr(node, 'Varying changed type '+existvary._name + ' -> '+ rightinfer.type._name)
-			this.varyings[leftstr] =  rightinfer.type
+			this.varyout[leftstr] = {
+				type:rightinfer.type
+			}
+			return ret
+		}
+
+		if(leftinfer.kind === 'outundef'){
+			// create a varying
+			var existout = this.outputs[leftstr]
+			if(existout && existout !== rightinfer.type) throw this.InferErr(node, 'Output changed type '+existout._name + ' -> '+ rightinfer.type._name)
+			this.outputs[leftstr] =  rightinfer.type
 			return ret
 		}
 		if(!leftinfer.lvalue){
@@ -717,7 +792,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		}
 		// mark arg as inout
 		if(leftinfer.scope && leftinfer.isarg){
-			this.function.inout[leftstr] = true
+			this.currentfn.inout[leftstr] = true
 		}
 
 		// lets check
@@ -790,6 +865,10 @@ module.exports = require('class').extend(function ShaderGen(){
 	 }
 	// Unsupported syntax
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
+
+
+	//ThisExpression:{},
+	this.ThisExpression = function(node){throw this.SyntaxErr(node,'ThisExpression')}
 	this.UnaryExpression = function(node){throw this.SyntaxErr(node,'UnaryExpression')}
 	this.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
 	this.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}

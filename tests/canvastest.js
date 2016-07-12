@@ -12,7 +12,6 @@ var App = require('view').extend(function(){
 			w:100,
 			h:100
 		})
-
 	}
 })
 

@@ -640,6 +640,8 @@ painter.Mesh = require('class').extend(function Mesh(){
 		}
 		this.dirty = true
 		this.updatemsg.length = this.length = newlength
+
+		return this
 	}
 
 	this.pushQuad = function(){
@@ -682,6 +684,8 @@ painter.Mesh = require('class').extend(function Mesh(){
 
 		this.dirty = true
 		this.updatemsg.length = this.length = newlength
+
+		return this
 	}
 })
 
