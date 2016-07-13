@@ -7,6 +7,7 @@ var App = require('view').extend(function(){
 
 	this.ondraw = function(){
 		this.drawBackground({
+			color:'red',
 			x:0,
 			y:0,
 			w:100,

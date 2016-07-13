@@ -70,11 +70,11 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	}
 
 	this.canvasmacros = {
-		draw:function(){
-			this.LOADPROPS()
-			this.ALLOCSPACE()
+		draw:function(overload){
+			this.$OVERLOADPROPS(len)
+			this.$ALLOCDRAW()
 			this.walkTurtle()
-			this.STOREPROPS()
+			this.$WRITEPROPS()
 		},
 		begin:function(){
 		},

@@ -165,7 +165,7 @@ module.exports = require('class').extend(function View(){
 
 	this.onnestedassign = function(key, cls){
 		if(cls.prototype.compileCanvasMacros){
-			cls.prototype.compileCanvasMacros(this)
+			cls.prototype.compileCanvasMacros(key, this)
 		}
 	}
 })

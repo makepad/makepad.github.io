@@ -215,6 +215,22 @@ todofn[3] = function attribute(i32, f32, o){
 	gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset)
 }
 
+todofn[4] = function attributes(i32, f32, o){
+	var startnameid = i32[o+2]
+	var range = i32[o+3]
+	var meshid = i32[o+4]
+	var stride = i32[o+5]
+	var offset = i32[o+6]
+	var slotoff = 0
+	for(var i = 0; i < range; i++){
+		var loc = current_program.attrlocs[startnameid+i]
+		var mesh = meshids[meshid]
+		gl.enableVertexAttribArray(loc.index)
+		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
+		slotoff += loc.slots
+	}
+}
+
 todofn[10] = function uniformInt(i32, f32, o){
 	gl.uniform1i(current_unilocs[i32[o+2]], i32[o+3])
 }

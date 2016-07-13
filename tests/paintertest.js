@@ -5,7 +5,6 @@ var worker = require('worker')(function(){
 	var owner = require('worker')
 	var painter = require('painter')
 
-
 	owner.onmessage = function(msg){
 		console.log("GOT MESSAGE FROM OWNER", msg)
 	}
@@ -39,8 +38,7 @@ mesh.push(-.5, -.5, 0., .5, .5, -.5)
 var todo = new painter.Todo()
 todo.clearColor(0.1, 0.5, 0., 1.)
 todo.useShader(shader)
-todo.attribute('mesh', mesh)
-todo.uniformVec2('prop', 0.9, 0)
+todo.attribute(painter.nameid('mesh'), mesh)
+todo.vec2(painter.nameid('prop'), [0.9, 0])
 todo.drawTriangles()
 todo.runTodo()
-

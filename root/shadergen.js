@@ -152,9 +152,10 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//ParenthesizedExpression:{expression:1}
 	this.ParenthesizedExpression = function(node){
-		return '(' + this.walk(node.expression, node) + ')'
+		var ret = '(' + this.walk(node.expression, node) + ')'
+		node.infer = node.expression.infer
+		return ret
 	}
-
 
 	//Literal:{raw:0, value:0},
 	this.Literal = function(node){
@@ -193,8 +194,16 @@ module.exports = require('class').extend(function ShaderGen(){
 		}
 
 		if(typeof value === 'string'){
-			console.log("FIX COLOR UNIFORMS")
-			return name
+			var ret = prefix + name
+			this.uniforms[ret] = {
+				type:types.vec4,
+				name:name
+			}
+			node.infer = {
+				kind:'value',
+				type:types.vec4
+			}
+			return ret
 		}
 
 		if(Array.isArray(value)){
@@ -203,31 +212,29 @@ module.exports = require('class').extend(function ShaderGen(){
 		}
 
 		if(typeof value === 'number'){
-			console.log("FIX NUMBER UNIFORMS")
-			return name
+			var ret = prefix + name
+			this.uniforms[ret] = {
+				type:types.float,
+				name:name
+			}
+			node.infer = {
+				kind:'value',
+				type:types.float
+			}
+			return ret
 		}
 
 		else if(typeof value === 'boolean'){ 
-			console.log("FIX BOOLEAN UNIFORMS")
-			return name
-			/*
-			else if(objectinfer.kind === 'locals'){
-				var locals = this.root._locals
-				var type = locals[propname]
-
-				if(!type) throw this.InferErr(node, 'cant find type locals.'+propname)
-				var ret = 'locals_DOT_' + propname
-				this.uniforms[ret] = {
-					kind:'locals',
-					type:type,
-					name:propname
-				}
-				node.infer = {
-					kind:'value',
-					type:type
-				}
-				return ret
-			}*/
+			var ret = prefix + name
+			this.uniforms[ret] = {
+				type:types.bool,
+				name:name
+			}
+			node.infer = {
+				kind:'value',
+				type:types.bool
+			}
+			return ret
 		}
 
 		if(typeof value === 'object'){
@@ -236,7 +243,6 @@ module.exports = require('class').extend(function ShaderGen(){
 			if(value._name){
 				var ret = prefix + name
 				this.uniforms[ret] = {
-					kind:'locals',
 					type:value,
 					name:name
 				}
@@ -279,7 +285,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		var name = node.name
 
 		if(name === '$') return ''
-		if(name === 'REPLACETWEENREPLACE') return name
+		if(name === '$CALCULATETWEEN') return name
 
 		// first we check the scope
 		var scopeinfer = this.currentfn.scope[name]
@@ -409,15 +415,19 @@ module.exports = require('class').extend(function ShaderGen(){
 				return objectstr + '.' + propname
 			}
 			else if(objectinfer.kind === 'props'){
-				var props = this.root
-				var value = props[propname]
-				if(value === undefined) throw this.InferErr(node, 'cant find props.'+propname)
+				var props = this.root._props
+				var config = props[propname]
+				if(config === undefined || config.value === undefined){
+					throw this.InferErr(node, 'cant find props.'+propname)
+				}
+				var value = config.value
 				var proptype = types.typeFromValue(value)
 				var ret = 'props_DOT_'+propname
 
 				this.props[ret] = {
 					type:proptype,
-					name:propname
+					name:propname,
+					config:config
 				}
 
 				node.infer = {
@@ -557,6 +567,7 @@ module.exports = require('class').extend(function ShaderGen(){
 			var prevfunction = this.generatedfns[fnname]
 
 			if(prevfunction){
+				var params = prevfunction.ast.body[0].params
 				for(var i = 0; i < args.length; i++){
 					// write the args on the scope
 					var arg = args[i]
@@ -591,6 +602,7 @@ module.exports = require('class').extend(function ShaderGen(){
 			if(!ast.body || !ast.body[0] || ast.body[0].type !== 'FunctionDeclaration'){
 				throw this.SyntaxErr(node, "Not a function")
 			}
+			subfunction.ast = ast
 
 			// we have our args, lets process the function declaration
 			// make a new scope
@@ -669,9 +681,19 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//ReturnStatement:{argument:1},
 	this.ReturnStatement = function(node){
-		var ret = 'return ' + this.walk(node.argument, node)
-		var infer = node.argument.infer
-
+		var ret = 'return ' 
+		var infer
+		if(node.argument !== null){
+			this.walk(node.argument, node)
+			infer = node.argument.infer
+		}
+		else{
+			infer = {
+				kind:'value',
+				type:types.void
+			}
+		}
+	
 		if(infer.kind !== 'value'){
 			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
 		}
@@ -702,7 +724,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		var decls = node.declarations
 		var ret = ''
 		for(var i = 0; i < decls.length; i++){
-			if(i) i += ';'
+			if(i) ret += ';'
 			var decl = decls[i]
 			var str = this.walk(decl, node)
 			if(decl.infer.kind === 'value'){
@@ -745,6 +767,10 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.LogicalExpression = function(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
 		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
+		node.infer = {
+			kind:'value',
+			type:types.bool
+		}
 		return ret
 	}
 
@@ -813,7 +839,8 @@ module.exports = require('class').extend(function ShaderGen(){
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
 	this.UpdateExpression = function(node){
 		var ret = this.walk(node.argument, node)
-		if(prefix){
+		node.infer = node.argument.infer
+		if(node.prefix){
 			return node.operator + ret
 		}
 		return ret + node.operator
@@ -839,6 +866,15 @@ module.exports = require('class').extend(function ShaderGen(){
 		ret += this.walk(node.body, node)
 		return ret
 	}
+
+	this.BreakStatement = function(node){
+		return 'break'
+	}
+
+	this.ContinueStatement = function(node){
+		return 'continue'
+	}
+
 
 	function Err(state, node, type, message){
 		this.type = type

@@ -8,13 +8,19 @@ module.exports = require('class').extend(function Shader(){
 
 	var compName = ['x','y','z','w']
 
+	// allocate the nameids for attribute ranges
+	for(var i = 0; i < 16; i++) painter.nameid('ATTR_'+i)
+
+	this.time = 0.0
+
 	this.tween = function(){
-		return 1.
+		if(props.duration < 0.01) return 1.
+		return clamp((time - props.tweenstart) / props.duration, 0.0, 1.0)
 	}
 
 	this.vertexEntry = function(){
 		var T = tween()
-		REPLACETWEENREPLACE
+		$CALCULATETWEEN
 		return this.vertex()
 	}
 
@@ -30,11 +36,13 @@ module.exports = require('class').extend(function Shader(){
 		var vtx = ShaderGen.generateGLSL(this, this.vertexEntry, null, false)
 		var pix = ShaderGen.generateGLSL(this, this.pixelEntry, vtx.varyout, false)
 
-		var inputs = {}, attrs = {}, props = {}
+		var inputs = {}, attrs = {}, props = {}, uniforms = {}
 		for(var key in vtx.attributes) inputs[key] = attrs[key] = vtx.attributes[key]
 		for(var key in pix.attributes) inputs[key] = attrs[key] = pix.attributes[key]
 		for(var key in vtx.props) inputs[key] = props[key] = vtx.props[key]
 		for(var key in pix.props) inputs[key] = props[key] = pix.props[key]
+		for(var key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
+		for(var key in pix.uniforms) uniforms[key] = pix.uniforms[key]
 
 		// the shaders
 		var vhead = '', vpre = '', vpost = ''
@@ -47,44 +55,52 @@ module.exports = require('class').extend(function Shader(){
 
 		var propslots = 0
 		var this_props = this._props
+		// Unpack attributes
+
+		var attrid = 0
+
 		for(var key in props){
 			var prop = props[key]
 			var slots = types.getSlots(prop.type)
+			var notween = prop.config.notween
+			prop.offset = propslots
+			prop.slots = slots
+
 			propslots += slots
 			// lets create the unpack / mix code here
-			if(!this_props[prop.name].notween){
+			if(notween){
+				var v1 = prop.type._name + '('
+				if(v1 === 'float(') v1 = '('
+				vpre += '\t' + key + ' = ' + v1
+				for(var i = 0, start = propslots - slots; i < slots; i++){
+					if(i) vpre += ', '
+					vpre += 'ATTR_' +  Math.floor((start + i)/4) + '.' + compName[(start + i)%4]
+				}
+				vpre += ');\n'
+			}
+			else{
 				propslots += slots
 				var v1 = prop.type._name + '('
 				if(v1 === 'float(') v1 = '('
 				var v2 = v1
 				for(var i = 0, start1 = propslots - slots*2, start2 = propslots - slots; i < slots; i++){
 					if(i) v1 += ', ', v2 += ', '
-					v1 += 'PROPS_' +  Math.floor((start1 + i)/4) + '.' + compName[(start1 + i)%4]
-					v2 += 'PROPS_' +  Math.floor((start2 + i)/4) + '.' + compName[(start2 + i)%4]
+					v1 += 'ATTR_' +  Math.floor((start1 + i)/4) + '.' + compName[(start1 + i)%4]
+					v2 += 'ATTR_' +  Math.floor((start2 + i)/4) + '.' + compName[(start2 + i)%4]
 				}
 				v1 += ')'
 				v2 += ')'
 				tweenrep += '\t' + key + ' = mix(' + v1 + ',' + v2 + ',T);\n'
 			}
-			else{
-				var v1 = prop.type._name + '('
-				if(v1 === 'float(') v1 = '('
-				tweenrep += '\t' + key + ' = ' + v1
-				for(var i = 0, start = propslots - slots; i < slots; i++){
-					if(i) vpre += ', '
-					tweenrep += 'PROPS_' +  Math.floor((start + i)/4) + '.' + compName[(start + i)%4]
-				}
-				tweenrep += ');\n'
-			}
 		}
 		for(var i = propslots, pid = 0; i > 0; i-=4){
-			if(i >= 4) vhead += 'attribute vec4 PROPS_'+(pid++)+';\n'
-			if(i == 3) vhead += 'attribute vec3 PROPS_'+(pid++)+';\n'
-			if(i == 2) vhead += 'attribute vec2 PROPS_'+(pid++)+';\n'
-			if(i == 1) vhead += 'attribute float PROPS_'+(pid++)+';\n'
+			if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
+			if(i == 3) vhead += 'attribute vec3 ATTR_'+(attrid)+';\n'
+			if(i == 2) vhead += 'attribute vec2 ATTR_'+(attrid)+';\n'
+			if(i == 1) vhead += 'attribute float ATTR_'+(attrid)+';\n'
+			attrid++
 		}
 
-		// Unpack attributes
 		for(var key in attrs){
 			var attr = attrs[key]
 			var slots = types.getSlots(attr.type)
@@ -95,20 +111,22 @@ module.exports = require('class').extend(function Shader(){
 				vpre += '\t' + key + ' = ' + v1
 				for(var i = 0; i < slots; i++){
 					if(i) vpre += ', '
-					vpre += '\tattr_'+key+Math.floor(i/4) + '.' + compName[i%4]
+					vpre += '\tATTR_'+(attrpid + Math.floor(i/4)) + '.' + compName[i%4]
 				}
 				vpre += ');\n'
 
 				for(var i = slots, pid = 0; i > 0; i-=4){
-					if(i >= 4) vhead += 'attribute vec4 ATTR_'+key+(pid++)+';\n'
-					if(i == 3) vhead += 'attribute vec3 ATTR_'+key+(pid++)+';\n'
-					if(i == 2) vhead += 'attribute vec2 ATTR_'+key+(pid++)+';\n'
-					if(i == 1) vhead += 'attribute float ATTR_'+key+(pid++)+';\n'
+					if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
+					if(i == 3) vhead += 'attribute vec3 ATTR_'+(attrid)+';\n'
+					if(i == 2) vhead += 'attribute vec2 ATTR_'+(attrid)+';\n'
+					if(i == 1) vhead += 'attribute float ATTR_'+(attrid)+';\n'
+					attrid ++
 				}
 			}
 			else{
-				vhead += 'attribute '+attr.type._name+' ATTR_' + key +';\n'
-				vpre += '\t' + key + ' = ATTR_' + key + ';\n'
+				vpre += '\t' + key + ' = ATTR_' + attrid +';\n'
+				vhead += 'attribute '+attr.type._name+' ATTR_' +attrid+';\n'
+				attrid++
 			}
 		}
 
@@ -124,6 +142,7 @@ module.exports = require('class').extend(function Shader(){
 			var vary = vtx.varyout[key]
 			vhead += vary.type._name + ' ' + key + ';\n'
 		}
+
 		// lets pack/unpack varyings and props and attributes used in pixelshader
 		var allvary = {}
 		for(var key in pix.attributes) allvary[key] = pix.attributes[key]
@@ -172,12 +191,25 @@ module.exports = require('class').extend(function Shader(){
 			}
 			ppre += ');\n'
 		}
-		for(var i =(4-curslot%4)%4 - 1; i >= 0; i--){
+		for(var i =(4 - curslot%4)%4 - 1; i >= 0; i--){
 			vpost += ',0.'
 		}
 		if(curslot) vpost += ');\n'
 
+		var hasuniforms = 0
+		for(var key in vtx.uniforms){
+			if(!hasuniforms++)vhead += '\n// uniforms\n'
+			vhead += 'uniform ' + vtx.uniforms[key].type._name + ' ' + key + ';\n'
+		}
+
+		var hasuniforms = 0
+		for(var key in pix.uniforms){
+			if(!hasuniforms++)phead += '\n// uniforms\n'
+			phead += 'uniform ' + pix.uniforms[key].type._name + ' ' + key + ';\n'
+		}
+
 		// define output variables in pixel shader
+		phead += '\n// outputs\n'
 		for(var key in pix.outputs){
 			var output = pix.outputs[key]
 			phead += output._name + ' ' + key + ';\n'
@@ -190,10 +222,10 @@ module.exports = require('class').extend(function Shader(){
 			vertex += '\n'+fn.generatedcode + '\n'
 		}
 		vertex += '\nvec4 _main(){\n'
-		vertex += vtx.main.replace("\tREPLACETWEENREPLACE",tweenrep) 
+		vertex += vtx.main.replace("\t$CALCULATETWEEN",tweenrep)
 		vertex += '}\n'
 		vertex += '\nvoid main(){\n'
-		vertex += vpre 
+		vertex += vpre
 		vertex += '\tgl_Position = _main();\n'
 		vertex += vpost
 		vertex += '}\n'
@@ -211,13 +243,14 @@ module.exports = require('class').extend(function Shader(){
 		pixel += '\tgl_FragColor = out_DOT_color;\n' 
 		pixel += ppost + '}\n'
 
-		this.compileinfo ={
+		this.compileinfo = {
 			attrs:attrs,
+			uniforms:uniforms,
 			props:props,
 			vertex:vertex,
-			pixel:pixel
+			pixel:pixel,
+			propslots:propslots
 		}
-		console.log('Shaders:', vertex,pixel)
 	}
 
 	this.onextendclass = function(){
@@ -225,10 +258,146 @@ module.exports = require('class').extend(function Shader(){
 		this.compileShader()
 	}
 
-	this.compileCanvasMacros = function(target){
-		// compile canvas draw macros!
+	this.$OVERLOADPROPS = function(classname, macroargs, mainargs, indent){
+		// first generate property overload stack
+		// then write them on the turtles' propbag
+		var props = this.compileinfo.props
+		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
+
+		var stack = [mainargs[0],'', 'this._extstate','', 'this._state','', 'this','']
+
+		// lets make the vars
+		var code = indent + 'var _t = this.turtle, _p'
+		for(var key in props){
+			code += ', ' + props[key].name
+		}
+		code += '\n\n'
+
+		// generate the property overload stack
+		for(var i = 0; i < stack.length; i+=2){
+			var object = stack[i]
+			var prefix = stack[i+1]
+			var p = '_p'
+			var subind = indent
+
+			if(object.indexOf('.') !== -1){
+				code += indent + '_p = '+ object + '\n'
+			}
+			else p = object
+			
+			if(p !== 'this'){
+				subind += '\t'
+				code += indent + 'if('+p+'){\n'
+			}
+
+			for(var key in props){
+				var name = props[key].name
+				//var slots = types.getSlots(prop.type)
+				if(i === 0){
+					code += subind+'_'+name+ ' = '+p+'.' + prefix+ name +'\n'
+				}
+				else{
+					code += subind+'if(_'+name+' === undefined) _'+name+ ' = '+p+'.' + prefix+ name +'\n'
+				}
+			}
+			if(subind !== indent) code += indent + '}\n'
+		}
+		// store it on the turtle
+		code += '\n'
+		for(var key in props){
+			var name = props[key].name
+			// store on turtle
+			code += indent + '_t._' + name +' = _' + name + '\n'
+		}
+		return code
 	}
 
+	this.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
+		// lets generate the draw code.
+		// what do we do with uniforms?.. object ref them from this?
+		// lets start a propsbuffer 
+		var info = this.compileinfo
+		var code = ''
+		
+		var need = macroargs || 1
+
+		code += indent+'var _todo = this.todo\n'
+		code += indent+'var _shader = this.shaders.'+classname+'\n'
+		code += indent+'if(!_shader) _shader = this.allocShader("'+classname+'")\n'
+		code += indent+'var _props = _shader._props\n'
+		code += indent+'var _need = _props.length + '+need+'\n'
+		code += indent+'if(_need >= _props.allocated) _props.alloc(_need)\n'
+		code += indent+'if(_props._frame !== this._frame){\n'
+		code += indent+'	var _sp = this._' + classname +'.prototype\n'
+		code += indent+'	_props._frame = this._frame\n'
+		code += indent+'	_props.length = 0\n'
+		code += indent+'	_props.dirty = true\n'
+		code += indent+'	\n'
+		code += indent+'	_todo.useShader(_shader)\n'
+		// first do the normal attributes
+		var attrs = info.attrs
+		var attrid = 0
+		
+		var attrbase = painter.nameid('ATTR_0')
+		// do the props
+		var proprange = Math.floor(info.propslots / 4) + 1
+		code += indent+'	_todo.attributes('+(attrbase+attrid)+','+proprange+',_props)\n'
+		attrid += proprange
+		// set attributes
+		for(var key in attrs){
+			// check if attribute is larger than 4
+			var attr = attrs[key]
+			var attrange = Math.floor(types.getSlots(attr.type) / 4) + 1
+			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_sp.'+key+')\n'
+			attrid += attrange
+		}
+		// set uniforms
+		var uniforms = info.uniforms
+		for(var key in uniforms){
+			var uniform = uniforms[key]
+			var fullname = key.replace(/\_DOT\_/g,'.')
+			// lets look at the type and generate the right uniform setter
+			var typename = uniform.type._name
+			code += indent+'	_todo.'+typename+'('+painter.nameid(key)+',this.'+fullname+')\n'
+		}
+		// lets draw it
+		code += indent + '	_todo.drawTriangles()\n'
+		code += indent + '}\n'
+		return code
+	}
+
+	this.$TWEENJS = function(indent, tweenbody, props){
+		var code = ''
+		code += indent + 'var _duration = _array[_offset + ' + props.props_DOT_duration.offset +']\n'
+		code += indent + 'var _tweenstart = _array[_offset + ' + props.props_DOT_tweenstart.offset +']\n'
+		code += indent + 'if(this.view._time < _tweenstart + _duration){\n'
+		code += indent + '	var _tween = Math.min(1,Math.max(0,(this.view._time - _tweenstart)/_duration))\n'
+		code += indent + tweenbody
+		code += indent + '}'
+		return code
+	}
+
+	this.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
+		// load the turtle
+		var info = this.compileinfo
+		var props = info.props
+		var code = ''
+		code += indent + 'var _turtle = this.turtle\n'
+		code += indent + 'var _shader = this.shaders.'+classname+'\n'
+		code += indent + 'var _props = _shader._props\n'
+		code += indent + 'var _array = _props.array\n'
+		code += indent + 'var _offset = _props.length * ' + info.propslots + '\n'
+		var tweenbody = ''
+		// lets generate the tweenbody
+		for(var key in info.props){
+			var prop = info.props[key]
+			var notween = prop.config.notween
+		}
+		code += indent + this.$TWEENJS(indent, tweenbody, props)
+
+		return code
+	}
+	
 	function defineSetterObject(name){
 		var _name = '_' + name
 		Object.defineProperty(this, name, {
@@ -237,14 +406,13 @@ module.exports = require('class').extend(function Shader(){
 			},
 			set:function(props){
 				if(!this.hasOwnProperty(_name)){
-					this[_name] = this[_name]?Object.create(this[_name]):{}
+					this[_name] = this[_name]? Object.create(this[_name]): {}
 				}
 				for(var key in props){
 					this[_name][key] = props[key]
 				}
 			}
 		})
-
 	}
 
 	Object.defineProperty(this, 'props', {
@@ -267,4 +435,9 @@ module.exports = require('class').extend(function Shader(){
 	})
 	defineSetterObject.call(this, 'defines')
 	defineSetterObject.call(this, 'structs')
+
+	this.props = {
+		duration: {notween:true, value:1.0},
+		tweenstart: {notween:true, value:1.0}
+	}
 })

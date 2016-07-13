@@ -47,11 +47,17 @@ function newName(name){
 var todoidsalloc = 1
 var todoids = {}
 
+painter.nameid = function(name){
+	var nameid = nameids[name]
+	if(nameid) return nameid
+	return newName(name)
+}
+
 painter.Todo = require('class').extend(function Todo(){
 
 	this.initalloc = 256
 
-	this.onconstruct = function(initalloc){
+	this.onconstruct = function(initalloc, painter){
 
 		var todoid = todoidsalloc++
 
@@ -59,7 +65,7 @@ painter.Todo = require('class').extend(function Todo(){
 			fn:'newTodo',
 			todoid:todoid
 		})
-
+		this.painter = painter
 		this.offset = 0
 		this.last = -1
 		this.ended = false
@@ -167,10 +173,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+2] = shader.shaderid
 	}
 
-	this.attribute = function(name, mesh, offset, stride){
-
-		var nameid = nameids[name]
-		if(!nameid) throw new Error("todo.attribute using unknown name "+name)
+	this.attribute = function(nameid, mesh, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
@@ -190,10 +193,28 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+5] = offset || 0
 	}
 
-	this.uniformInt = function(name, x){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.int uses unknown name '+name)
+	this.attributes = function(startnameid, range, mesh){
 
+		var o = (this.last = this.offset)
+		if((this.offset += 7) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		// use the mesh message for lazy serialization
+		if(mesh.dirty){
+			mesh.dirty = false
+			bus.batchMessage(mesh.updatemsg)
+		}
+
+		i32[o+0] = 4
+		i32[o+1] = 5
+		i32[o+2] = startnameid
+		i32[o+3] = range
+		i32[o+3] = mesh.meshid
+		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
+		i32[o+5] = offset || 0
+	}
+
+	this.int = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -204,10 +225,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+3] = x
 	}
 
-	this.uniformFloat = function(name, x){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.float uses unknown name '+name)
-
+	this.float = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -218,28 +236,18 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+3] = x
 	}
 
-	this.uniformVec2 = function(name, x, y){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec2 uses unknown name '+name)
+	this.vec2 = function(nameid, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 		i32[o+0] = 12
 		i32[o+1] = 3
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
 	}
 
-	this.uniformVec3 = function(name, x, y, z){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec3 uses unknown name '+name)
+	this.vec3 = function(nameid, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -247,21 +255,12 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+0] = 13
 		i32[o+1] = 4
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-			f32[o+5] = x[2]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-			f32[o+5] = z
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
+		f32[o+5] = v[2]
 	}
 
-	this.uniformVec4 = function(name, x, y, z, w){ // id:6
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec4 uses unknown name '+name)
+	this.vec4 = function(nameid, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -269,23 +268,13 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+0] = 14
 		i32[o+1] = 5
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-			f32[o+5] = x[2]
-			f32[o+6] = x[3]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-			f32[o+5] = z
-			f32[o+6] = w
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
+		f32[o+5] = v[2]
+		f32[o+6] = v[3]
 	}
 
-	this.uniformMat4 = function(name, m){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.mat4 uses unknown name '+name)
+	this.mat4 = function(nameid, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -311,10 +300,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+18] = m[15]
 	}
 
-	this.globalInt = function(name, x){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.int uses unknown name '+name)
-
+	this.intGlobal = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -326,10 +312,7 @@ painter.Todo = require('class').extend(function Todo(){
 	}
 
 
-	this.globalFloat = function(name, x){ // id:3
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.float uses unknown name '+name)
-
+	this.floatGlobal = function(nameid, x){ // id:3
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -340,28 +323,18 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+3] = x
 	}
 
-	this.globalVec2 = function(name, x, y){ // id:4
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec2 uses unknown name '+name)
+	this.vec2Global = function(nameid, v){ // id:4
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 		i32[o+0] = 22
 		i32[o+1] = 3
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
 	}
 
-	this.globalVec3 = function(name, x, y, z){ // id:5
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec3 uses unknown name '+name)
+	this.vec3Global = function(nameid, v){ // id:5
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -369,21 +342,12 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+0] = 23
 		i32[o+1] = 4
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-			f32[o+5] = x[2]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-			f32[o+5] = z
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
+		f32[o+5] = v[2]
 	}
 
-	this.globalVec4 = function(name, x, y, z, w){ // id:6
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.vec4 uses unknown name '+name)
+	this.vec4Global = function(nameid, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -391,23 +355,13 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+0] = 24
 		i32[o+1] = 5
 		i32[o+2] = nameid
-		if(y === undefined){
-			f32[o+3] = x[0]
-			f32[o+4] = x[1]
-			f32[o+5] = x[2]
-			f32[o+6] = x[3]
-		}
-		else{
-			f32[o+3] = x
-			f32[o+4] = y
-			f32[o+5] = z
-			f32[o+6] = w
-		}
+		f32[o+3] = v[0]
+		f32[o+4] = v[1]
+		f32[o+5] = v[2]
+		f32[o+6] = v[3]
 	}
 
-	this.globalMat4 = function(name, m){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.mat4 uses unknown name '+name)
+	this.globalMat4 = function(nameid, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -431,20 +385,6 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+16] = m[13]
 		f32[o+17] = m[14]
 		f32[o+18] = m[15]
-	}
-
-	this.globalInt = function(name, x){
-		var nameid = nameids[name]
-		if(!nameid) throw new Error('todo.int uses unknown name '+name)
-
-		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
-		var i32 = this.i32
-
-		i32[o+0] = 26
-		i32[o+1] = 2
-		i32[o+2] = nameid
-		i32[o+3] = x
 	}
 
 	this.drawTriangles = function(from, to){ // id:10
@@ -566,7 +506,10 @@ painter.Shader = require('class').extend(function Shader(){
 
 		bus.postMessage({
 			fn:'newShader',
-			code:code,
+			code:{
+				vertex:code.vertex,
+				pixel:code.pixel
+			},
 			shaderid:shaderid
 		})
 
@@ -580,11 +523,18 @@ painter.Shader = require('class').extend(function Shader(){
 var meshidsalloc = 1
 var meshids = {}
 
+painter.ids = nameids
+
 painter.Mesh = require('class').extend(function Mesh(){
 
 	this.onconstruct = function(struct, initalloc){
-
+		var slots = 0
+		if(typeof struct === 'number'){
+			slots = struct
+			struct = types.float
+		}
 		if(!struct) struct = this.struct
+
 		if(!initalloc) alloc = this.initalloc
 
 		var meshid = meshidsalloc++
@@ -596,7 +546,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 
 		this.struct = struct
 		this.arraytype = types.getArray(struct)
-		this.slots = types.getSlots(struct)
+		this.slots = slots || types.getSlots(struct)
 		this.allocated = 0
 		this.length = 0
 		this.updatemsg = {
@@ -614,6 +564,16 @@ painter.Mesh = require('class').extend(function Mesh(){
 	this.struct = types.vec4
 	this.initalloc = 1024
 
+	this.alloc = function(newlength){
+		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
+		var newarray = new this.arraytype(this.allocated * this.slots)
+		var oldarray = this.array
+		for(var i = 0, len = this.length * this.slots; i < len; i++){
+			newarray[i] = oldarray[i]
+		}
+		this.updatemsg.array = this.array = newarray
+	}
+
 	this.push = function(){
 		var arglen = arguments.length
 		var argtuples = arglen / this.slots
@@ -623,21 +583,15 @@ painter.Mesh = require('class').extend(function Mesh(){
 		}
 		// resize it
 		var newlength = this.length + argtuples
-		if(newlength > this.allocated){
-			this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
-			var newarray = new this.arraytype(this.allocated * this.slots)
-			var oldarray = this.array
-			for(var i = 0, len = this.length * this.slots; i < len; i++){
-				newarray[i] = oldarray[i]
-			}
-			this.updatemsg.array = this.array = newarray
-		}
+		if(newlength > this.allocated) this.alloc(newlength)
 		// copy it in
 		var array = this.array
 		var off = this.length * this.slots
+
 		for(var i = 0; i < arglen; i++){
 			array[off + i] = arguments[i]
 		}
+
 		this.dirty = true
 		this.updatemsg.length = this.length = newlength
 
@@ -653,15 +607,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		}
 
 		var newlength = this.length + 6
-		if(newlength > this.allocated){
-			this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
-			var newarray = new this.arraytype(this.allocated * this.slots)
-			var oldarray = this.array
-			for(var i = 0, len = this.length * this.slots; i < len; i++){
-				newarray[i] = oldarray[i]
-			}
-			this.updatemsg.array = this.array = newarray
-		}
+		if(newlength > this.allocated) this.alloc(newlength)
 
 		// copy it in
 		var array = this.array
