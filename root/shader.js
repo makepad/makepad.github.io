@@ -216,11 +216,14 @@ module.exports = require('class').extend(function Shader(){
 		}
 
 		// alright lets put together the shaders
-		var vertex = vhead 
+		var vfunc = ''
 		for(var key in vtx.generatedfns){
 			var fn = vtx.generatedfns[key]
-			vertex += '\n'+fn.generatedcode + '\n'
+			vfunc = '\n'+fn.generatedcode + '\n' + vfunc
 		}
+
+		var vertex = vhead 
+		vertex += vfunc
 		vertex += '\nvec4 _main(){\n'
 		vertex += vtx.main.replace("\t$CALCULATETWEEN",tweenrep)
 		vertex += '}\n'
@@ -230,17 +233,24 @@ module.exports = require('class').extend(function Shader(){
 		vertex += vpost
 		vertex += '}\n'
 
-		var pixel = phead
+		var pfunc = ''
 		for(var key in pix.generatedfns){
 			var fn = pix.generatedfns[key]
-			pixel += '\n'+fn.generatedcode + '\n'
+			pfunc = '\n'+fn.generatedcode + '\n' + pfunc
 		}
+		var pixel = phead
+		pixel += pfunc
 		pixel += '\nvoid main(){\n'
 		pixel += ppre
-		pixel += pix.main
+		if(pix.generatedfns.pixel_T.return.type === types.vec4){
+			pixel +=  '\tgl_FragColor = ' + pix.main
+		}
+		else{
+			pixel += pix.main
+			pixel += '\tgl_FragColor = out_DOT_color;\n' 
+		}
 
 		//!TODO: do MRT stuff
-		pixel += '\tgl_FragColor = out_DOT_color;\n' 
 		pixel += ppost + '}\n'
 
 		this.compileinfo = {
@@ -264,12 +274,12 @@ module.exports = require('class').extend(function Shader(){
 		var props = this.compileinfo.props
 		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
 
-		var stack = [mainargs[0],'', 'this._extstate','', 'this._state','', 'this','']
+		var stack = [mainargs[0],'', 'this._state2','', 'this._state','', 'this','']
 
 		// lets make the vars
-		var code = indent + 'var _t = this.turtle, _p'
+		var code = indent + 'var _turtle = this.turtle'
 		for(var key in props){
-			code += ', ' + props[key].name
+			code += ', _$' + props[key].name
 		}
 		code += '\n\n'
 
@@ -277,11 +287,11 @@ module.exports = require('class').extend(function Shader(){
 		for(var i = 0; i < stack.length; i+=2){
 			var object = stack[i]
 			var prefix = stack[i+1]
-			var p = '_p'
+			var p = '_p'+i
 			var subind = indent
 
 			if(object.indexOf('.') !== -1){
-				code += indent + '_p = '+ object + '\n'
+				code += indent + 'var ' + p+' = '+ object + '\n'
 			}
 			else p = object
 			
@@ -293,11 +303,12 @@ module.exports = require('class').extend(function Shader(){
 			for(var key in props){
 				var name = props[key].name
 				//var slots = types.getSlots(prop.type)
+				if(props[key].config.nostyle) continue
 				if(i === 0){
-					code += subind+'_'+name+ ' = '+p+'.' + prefix+ name +'\n'
+					code += subind+'_$'+name+ ' = '+p+'.' + prefix+ name +'\n'
 				}
 				else{
-					code += subind+'if(_'+name+' === undefined) _'+name+ ' = '+p+'.' + prefix+ name +'\n'
+					code += subind+'if(_$'+name+' === undefined) _$'+name+ ' = '+p+'.' + prefix+ name +'\n'
 				}
 			}
 			if(subind !== indent) code += indent + '}\n'
@@ -306,8 +317,9 @@ module.exports = require('class').extend(function Shader(){
 		code += '\n'
 		for(var key in props){
 			var name = props[key].name
+			if(props[key].config.nostyle) continue
 			// store on turtle
-			code += indent + '_t._' + name +' = _' + name + '\n'
+			code += indent + '_turtle._' + name +' = _$' + name + '\n'
 		}
 		return code
 	}
@@ -323,14 +335,14 @@ module.exports = require('class').extend(function Shader(){
 
 		code += indent+'var _todo = this.todo\n'
 		code += indent+'var _shader = this.shaders.'+classname+'\n'
-		code += indent+'if(!_shader) _shader = this.allocShader("'+classname+'")\n'
+		code += indent+'if(!_shader) _shader = this._allocShader("'+classname+'")\n'
 		code += indent+'var _props = _shader._props\n'
-		code += indent+'var _need = _props.length + '+need+'\n'
+		code += indent+'var _need = _props.self.length + '+need+'\n'
 		code += indent+'if(_need >= _props.allocated) _props.alloc(_need)\n'
 		code += indent+'if(_props._frame !== this._frame){\n'
 		code += indent+'	var _sp = this._' + classname +'.prototype\n'
 		code += indent+'	_props._frame = this._frame\n'
-		code += indent+'	_props.length = 0\n'
+		code += indent+'	_props.self.length = 0\n'
 		code += indent+'	_props.dirty = true\n'
 		code += indent+'	\n'
 		code += indent+'	_todo.useShader(_shader)\n'
@@ -341,13 +353,14 @@ module.exports = require('class').extend(function Shader(){
 		var attrbase = painter.nameid('ATTR_0')
 		// do the props
 		var proprange = Math.floor(info.propslots / 4) + 1
-		code += indent+'	_todo.attributes('+(attrbase+attrid)+','+proprange+',_props)\n'
+		code += indent+'	_todo.instances('+(attrbase+attrid)+','+proprange+',_props)\n'
 		attrid += proprange
 		// set attributes
 		for(var key in attrs){
 			// check if attribute is larger than 4
 			var attr = attrs[key]
 			var attrange = Math.floor(types.getSlots(attr.type) / 4) + 1
+			code += indent+'	_attrlen = _sp.'+key+'.length\n'
 			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_sp.'+key+')\n'
 			attrid += attrange
 		}
@@ -358,6 +371,7 @@ module.exports = require('class').extend(function Shader(){
 			var fullname = key.replace(/\_DOT\_/g,'.')
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type._name
+
 			code += indent+'	_todo.'+typename+'('+painter.nameid(key)+',this.'+fullname+')\n'
 		}
 		// lets draw it
@@ -366,14 +380,37 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 
-	this.$TWEENJS = function(indent, tweenbody, props){
+	this.$TWEENJS = function(indent, tweencode, props){
 		var code = ''
-		code += indent + 'var _duration = _array[_offset + ' + props.props_DOT_duration.offset +']\n'
-		code += indent + 'var _tweenstart = _array[_offset + ' + props.props_DOT_tweenstart.offset +']\n'
+		code += indent + 'var _duration = _a[_o + ' + props.props_DOT_duration.offset +']\n'
+		code += indent + 'var _tweenstart = _a[_o + ' + props.props_DOT_tweenstart.offset +']\n'
 		code += indent + 'if(this.view._time < _tweenstart + _duration){\n'
 		code += indent + '	var _tween = Math.min(1,Math.max(0,(this.view._time - _tweenstart)/_duration))\n'
-		code += indent + tweenbody
+		code += indent + tweencode 
 		code += indent + '}'
+		return code
+	}
+
+	this.$DUMPPROPS = function(props, indent){
+		var code = ''
+		for(var key in props){
+			var prop = props[key]
+			var slots = prop.slots
+			var o = prop.offset
+			var notween = prop.config.notween
+			// generate the code to tween.
+			if(!notween){
+				// new, old
+				for(var i = 0; i < slots; i++){
+					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+_a[_o+'+(o+i+slots)+']+"->"+_a[_o+'+(o+i)+'])\n'
+				}
+			}
+			else{
+				for(var i = 0; i < slots; i++){
+					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+_a[_o+'+(o+i)+'])\n'
+				}
+			}
+		}
 		return code
 	}
 
@@ -382,19 +419,78 @@ module.exports = require('class').extend(function Shader(){
 		var info = this.compileinfo
 		var props = info.props
 		var code = ''
-		code += indent + 'var _turtle = this.turtle\n'
-		code += indent + 'var _shader = this.shaders.'+classname+'\n'
-		code += indent + 'var _props = _shader._props\n'
-		code += indent + 'var _array = _props.array\n'
-		code += indent + 'var _offset = _props.length * ' + info.propslots + '\n'
-		var tweenbody = ''
-		// lets generate the tweenbody
+		code = indent + 'var _turtle = this.turtle\n'
+		code += indent +'var _shader = this.shaders.'+classname+'\n'
+		code += indent +'var _props = _shader._props\n'
+		code += indent +'var _a = _props.self.array\n'
+		code += indent +'var _o = _props.self.length * ' + info.propslots +'\n'
+		code += indent + '_props.self.length++\n'
+
+		var tweencode = '	var _f = _tween, _1mf = _tween\n'
+		var propcode = ''
+
+		// lets generate the tween
 		for(var key in info.props){
 			var prop = info.props[key]
+			var slots = prop.slots
+			var o = prop.offset
 			var notween = prop.config.notween
-		}
-		code += indent + this.$TWEENJS(indent, tweenbody, props)
+			// generate the code to tween.
+			if(!notween){
+				// new, old
+				tweencode += '\n'+indent+'	//' + key + '\n'
+				propcode += '\n'+indent+'// '+key + '\n'
+				for(var i = 0; i < slots; i++){
+					tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
+						'_f * _a[_o+'+(o + i + slots)+'] + ' +
+						'_1mf * _a[_o+'+(o +i)+']\n'
+					propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
+						'_a[_o+'+(o +i)+']\n'
+				}
+			}
+			// assign properties
+			// check if we are a vec4 and typeof string
 
+			var propsource = '_turtle._' + prop.name
+			if(prop.config.nostyle){ // its an arg here
+				if(prop.name === 'tweenstart'){
+					propsource = 'this.view._time'
+				}
+				else{
+
+				}
+			}
+
+			if(prop.type._name === 'vec4'){
+				propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
+				propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+				propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1],_a[_o+'+(o+2)+']=_$'+prop.name+'[2],_a[_o+'+(o+3)+']=_$'+prop.name+'[3]\n'
+				propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=_a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'[0]\n'
+				propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColor(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
+				propcode += indent + '}\n'
+				propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
+				propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+'] = _a[_o+'+(o+1)+'] = _a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'\n'
+			}
+			else{
+				if(slots === 1){
+					propcode += indent + '_a[_o+'+o+'] = '+propsource+'\n'
+				}
+				else{
+					propcode += indent + 'var _$' + prop.name + ' = '+propsource+'\n'
+					propcode += indent + 'if(_$'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")'
+					propcode += indent + 'else '
+					for(var i = 0; i < slots; i++){
+						if(i) propcode += ','
+						propcode += '_a[_o+'+(o+i)+']=_$'+prop.name+'['+i+']\n'
+					}
+					propcode += '\n'
+				}
+			}
+		}
+		code += '\n'+this.$TWEENJS(indent, tweencode, props) +'\n'
+		code += propcode
+		//code += this.$DUMPPROPS(props, indent)+'\n'
+		// lets generate the write-out
 		return code
 	}
 	
@@ -438,6 +534,6 @@ module.exports = require('class').extend(function Shader(){
 
 	this.props = {
 		duration: {notween:true, value:1.0},
-		tweenstart: {notween:true, value:1.0}
+		tweenstart: {notween:true, nostyle:true, value:1.0}
 	}
 })

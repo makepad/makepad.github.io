@@ -114,11 +114,13 @@ var userMessage = {
 	},
 	updateMesh: function(msg){
 		var buffer = meshids[msg.meshid]
+		buffer.array = msg.array
+		buffer.length = msg.length
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
 		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	},
 	syncDraw: function(msg){
-		
+		window.requestAnimationFrame(repaint)
 	}
 }
 
@@ -159,6 +161,11 @@ function resize(){
 	}
 }
 
+var frameid = 0
+function repaint(time){
+	bus.postMessage({fn:'onsyncdraw', time:time, frame:frameid++})
+}
+
 window.addEventListener('resize', resize)
 resize()
 // set the right width / height
@@ -170,8 +177,8 @@ args.h = canvas.offsetHeight
 var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
 var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
 
-var current_program
-var current_unilocs
+var currentprogram
+var currentunilocs
 
 var globals = Array(100)
 var globallen = 0
@@ -195,11 +202,13 @@ todofn[1] = function clear(i32, f32, o){
 	gl.clear(clr)
 }
 
-todofn[2] = function use(i32, f32, o){
+todofn[2] = function useShader(i32, f32, o){
 	var shaderid = i32[o+2]
 	var shader = shaderids[shaderid]
-	current_program = shader
-	current_unilocs = shader.unilocs
+	currentprogram = shader
+	currentunilocs = shader.unilocs
+	shader.instanced = false
+	shader.indexed = false
 	gl.useProgram(shader)
 }
 
@@ -208,9 +217,9 @@ todofn[3] = function attribute(i32, f32, o){
 	var meshid = i32[o+3]
 	var stride = i32[o+4]
 	var offset = i32[o+5]
-	var loc = current_program.attrlocs[nameid]
+	var loc = currentprogram.attrlocs[nameid]
 	var mesh = meshids[meshid]
-
+	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 	gl.enableVertexAttribArray(loc.index)
 	gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset)
 }
@@ -222,37 +231,99 @@ todofn[4] = function attributes(i32, f32, o){
 	var stride = i32[o+5]
 	var offset = i32[o+6]
 	var slotoff = 0
+	var mesh = meshids[meshid]
+	currentprogram.attrlength = mesh.length
+	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 	for(var i = 0; i < range; i++){
-		var loc = current_program.attrlocs[startnameid+i]
-		var mesh = meshids[meshid]
+		var loc = currentprogram.attrlocs[startnameid+i]
 		gl.enableVertexAttribArray(loc.index)
 		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
-		slotoff += loc.slots
+		slotoff += loc.slots * 4
 	}
 }
 
-todofn[10] = function uniformInt(i32, f32, o){
-	gl.uniform1i(current_unilocs[i32[o+2]], i32[o+3])
+todofn[5] = function instance(i32, f32, o){
+	var nameid = i32[o+2]
+	var meshid = i32[o+3]
+	var stride = i32[o+4]
+	var offset = i32[o+5]
+	var divisor = i32[o+6]
+	var loc = currentprogram.attrlocs[nameid]
+	var index = loc.index
+	var mesh = meshids[meshid]
+	currentprogram.instlength = mesh.length
+	currentprogram.instanced = true
+	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+	gl.enableVertexAttribArray(index)
+	gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride, offset)
+	ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 }
 
-todofn[11] = function uniformFloat(i32, f32, o){
-	gl.uniform1f(current_unilocs[i32[o+2]], f32[o+3])
+todofn[6] = function instances(i32, f32, o){
+	var startnameid = i32[o+2]
+	var range = i32[o+3]
+	var meshid = i32[o+4]
+	var stride = i32[o+5]
+	var offset = i32[o+6]
+	var divisor = i32[o+7]
+	var slotoff = 0
+	var mesh = meshids[meshid]
+	currentprogram.instlength = mesh.length
+	currentprogram.instanced = true
+	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+	for(var i = 0; i < range; i++){
+		var loc = currentprogram.attrlocs[startnameid+i]
+		var index = loc.index
+		gl.enableVertexAttribArray(index)
+		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
+		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
+		slotoff += loc.slots * 4
+	}
 }
 
-todofn[12] = function uniformVec2(i32, f32, o){
-	gl.uniform2f(current_unilocs[i32[o+2]], f32[o+3], f32[o+4])
+todofn[7] = function index(){
+
 }
 
-todofn[13] = function uniformVec3(i32, f32, o){
-	gl.uniform2f(current_unilocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5])
+todofn[10] = function int(i32, f32, o){
+	gl.uniform1i(currentunilocs[i32[o+2]], i32[o+3])
 }
 
-todofn[14] = function uniformVec4(i32, f32, o){
-	gl.uniform2f(current_unilocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5], f32[o+6])
+todofn[11] = function float(i32, f32, o){
+	gl.uniform1f(currentunilocs[i32[o+2]], f32[o+3])
 }
 
-todofn[15] = function uniformMat4(i32, f32, o){
-	gl.uniform2f(current_unilocs[i32[o+2]], f32[o+3], f32[o+4])
+todofn[12] = function vec2(i32, f32, o){
+	gl.uniform2f(currentunilocs[i32[o+2]], f32[o+3], f32[o+4])
+}
+
+todofn[13] = function vec3(i32, f32, o){
+	gl.uniform3f(currentunilocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5])
+}
+
+todofn[14] = function vec4(i32, f32, o){
+	gl.uniform4f(currentunilocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5], f32[o+6])
+}
+
+var tmtx = new Float32Array(16)
+todofn[15] = function mat4(i32, f32, o){
+	tmtx[0] = f32[o+3]
+	tmtx[1] = f32[o+4]
+	tmtx[2] = f32[o+5]
+	tmtx[3] = f32[o+6]
+	tmtx[4] = f32[o+7]
+	tmtx[5] = f32[o+8]
+	tmtx[6] = f32[o+9]
+	tmtx[7] = f32[o+10]
+	tmtx[8] = f32[o+11]
+	tmtx[9] = f32[o+12]
+	tmtx[10] = f32[o+13]
+	tmtx[11] = f32[o+14]
+	tmtx[12] = f32[o+15]
+	tmtx[13] = f32[o+16]
+	tmtx[14] = f32[o+17]
+	tmtx[15] = f32[o+18]
+	gl.uniformMatrix4fv(currentunilocs[i32[o+2]], false, tmtx)
 }
 
 todofn[20] = 
@@ -273,15 +344,34 @@ todofn[25] = function globalValue(i32, f32, o){
 todofn[30] = function drawTriangles(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
-	gl.drawArrays(gl.TRIANGLES, i32[o+2], i32[o+3])
+	if(currentprogram.instanced){
+		var start = i32[o+2]
+		var end =  i32[o+3]
+		var inst = i32[o+4]
+		if(start < 0){
+			start = 0
+			end = currentprogram.attrlength
+			inst = currentprogram.instlength
+		}
+		ANGLE_instanced_arrays.drawArraysInstancedANGLE(gl.TRIANGLES, start, end, inst)
+	}
+	else{
+		var start = i32[o+2]
+		var end =  i32[o+3]
+		if(start < 0){
+			start = 0
+			end = currentprogram.attrlength
+		}
+		gl.drawArrays(gl.TRIANGLES, start, end)
+	}
 }
 
 todofn[31] = function drawLines(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	gl.drawArrays(gl.LINES, i32[o+2], i32[o+3])
 }
@@ -289,7 +379,7 @@ todofn[31] = function drawLines(i32, f32, o){
 todofn[32] = function drawLineLoop(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	gl.drawArrays(gl.LINE_LOOP, i32[o+2], i32[o+3])
 }
@@ -297,7 +387,7 @@ todofn[32] = function drawLineLoop(i32, f32, o){
 todofn[33] = function drawLineStrip(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	gl.drawArrays(gl.LINE_STRIP, i32[o+2], i32[o+3])
 }
@@ -305,7 +395,7 @@ todofn[33] = function drawLineStrip(i32, f32, o){
 todofn[34] = function drawTriangleStrip(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	gl.drawArrays(gl.TRIANGLE_STRIP, i32[o+2], i32[o+3])
 }
@@ -313,7 +403,7 @@ todofn[34] = function drawTriangleStrip(i32, f32, o){
 todofn[35] = function drawTriangleFan(i32, f32, o){
 	// set the global uniforms
 	for(var i = 0; i < globallen; i+=5){
-		if(current_unilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentunilocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	gl.drawArrays(gl.TRIANGLE_FAN, i32[o+2], i32[o+3])
 }

@@ -35,8 +35,9 @@ module.exports = function(){
 			set:function(value){
 				var old = this[_key]
 				this[_key] = value
-				if(this[_onkey]){
-					var flags = this[_onkey], id = 1
+				var flags = this[_onkey]
+				if(flags){
+					var id = 1
 					while(flags){
 						if(flags&1) this['onflag'+id]({key:key, old:old, value:value})
 						id = id<<1, flags = flags>>1

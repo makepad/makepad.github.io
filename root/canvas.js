@@ -1,4 +1,4 @@
-//var painter = require('painter')
+var painter = require('painter')
 //var fingers = require('fingers')
 //var types = require('types')
 
@@ -55,5 +55,20 @@ module.exports = function(){
 
 	// end a turtle
 	this.endTurtle = function(){
+	}
+
+	// internal API used by canvas macros
+	this._allocShader = function(classname){
+		var shaders = this.shaders
+		var info = this['_' + classname].prototype.compileinfo
+		var shader = shaders[classname] = new painter.Shader(info)
+		shader._props = new painter.Mesh(info.propslots)
+		return shader
+	}
+
+	this._parseColor = function(str, alpha, a, o){
+		if(!types.colorFromString(str, alpha, a, o)){
+			console.log("Cannot parse color "+str)
+		}
 	}
 }

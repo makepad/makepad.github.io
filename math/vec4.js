@@ -18,13 +18,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = require("./common.js");
+var glMatrix = require("./glmatrix");
 
 /**
  * @class 4 Dimensional Vector
  * @name vec4
  */
-var vec4 = this
+var vec4 = exports
 
 /**
  * Creates a new, empty vec4

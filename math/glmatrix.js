@@ -19,7 +19,7 @@ THE SOFTWARE. */
  * @class Common utilities
  * @name glMatrix
  */
-var glMatrix = this
+var glMatrix = exports
 
 // Configuration Constants
 glMatrix.EPSILON = 0.000001;

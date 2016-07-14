@@ -18,16 +18,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 
-var glMatrix = load.code('./glmatrix')
+var glMatrix = require('./glmatrix')
 
 /**
  * @class 4x4 Matrix
  * @name mat4
  */
-var mat4 = this
-this.scalar: {}
-this.SIMD: {}
-
+var mat4 = exports
+this.scalar = {}
+this.SIMD = {}
 
 /**
  * Creates a new identity mat4

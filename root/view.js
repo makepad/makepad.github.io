@@ -1,6 +1,8 @@
 //var painter = require('painter')
 //var fingers = require('fingers')
-//var types = require('types')
+var painter = require('painter')
+var fingers = require('fingers')
+var mat4 = require('math/mat4')
 
 module.exports = require('class').extend(function View(){
 	// load mixins
@@ -33,13 +35,15 @@ module.exports = require('class').extend(function View(){
 
 	this._onconstruct = function(args){
 		// lets process the args and construct things
-
 		// lets create a todo
 		this.todo = new painter.Todo()
-		
 		this.turtlestack = [
 			new this.Turtle()
 		]
+		this.turtle = this.turtlestack[0]
+		this.view = this
+		this.position = mat4.create()
+		this.shaders = {}
 	}
 
 	this._ondestroy = function(){
@@ -72,6 +76,7 @@ module.exports = require('class').extend(function View(){
 		for(var i = 0; i < children.length; i++){
 			var child = children[i]
 			child.parent = this
+			child.camera = this.root.camera
 			child.root = this.root
 			var oldchild = oldchildren && oldchildren[i]
 			child.composeTree(oldchild && oldchild.children)
@@ -113,7 +118,7 @@ module.exports = require('class').extend(function View(){
 
 		// begin a new todo stack
 		var todo = this.todo
-		todo.begin()
+		todo.beginTodo()
 
 		// begin a new turtle
 		var turtle = this.beginTurtle()
@@ -137,6 +142,11 @@ module.exports = require('class').extend(function View(){
 	this.onflag2 = this.redraw
 
 	this.runApp = function(){
+		this.camera = {
+			position:mat4.create(),
+			projection:mat4.create()
+		}
+		
 		// dispatch mouse events
 		fingers.ondown = function(msg){
 			
@@ -144,7 +154,7 @@ module.exports = require('class').extend(function View(){
 
 		painter.onsyncdraw = function(msg){
 			// we can submit a todo now
-			this._time = msg.time
+			this._time = msg.time / 1000
 			this._frame = msg.frame
 
 			this.redrawView()

@@ -2,7 +2,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	
 	var types  = require('types')
 	var parser = require('jsparser/jsparser')
-
+	var canvas 
 	var parsecache = {}
 	var painter = require('painter')
 
@@ -167,7 +167,12 @@ module.exports = require('class').extend(function ShaderGen(){
 		if(node.kind === 'string'){
 			infer.type = types.vec4
 			// return the parsed color!
-			return 'vec4(0.,0.,0.,0.)'
+			// parse the color
+			var v4 = []
+			if(!types.colorFromString(node.value, 1.0, v4, 0)){
+				throw this.SyntaxErr(node,'Cant parse color '+node.value)
+			}
+			return 'vec4('+v4[0]+','+v4[1]+','+v4[2]+','+v4[3]+')'
 		}
 		if(node.kind === 'num'){
 			if(node.raw.indexOf('.') !== -1){
@@ -523,7 +528,7 @@ module.exports = require('class').extend(function ShaderGen(){
 					if(param.type === types.gen){
 						gentype = arg.infer.type
 					}
-					else if(arg.infer.type !== param.type){
+					else if(arg.infer.type !== param.type && !(param.type === types.genfloat && arg.infer.type === types.float)){
 						// barf
 						throw this.InferErr(arg, "GLSL Builtin wrong arg " +fnname+' arg '+i+' -> ' +param.name)
 					}
@@ -853,7 +858,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		ret += this.walk(node.consequent, node)
 
 		if(node.alternate){
-			ret+= 'else '+this.walk(node.alternate, node)
+			ret+= ';\nelse '+this.walk(node.alternate, node)
 		} 
 		return ret
 	}
@@ -1013,7 +1018,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		max:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
 		clamp:{return:types.gen, params:[{name:'x', type:types.gen},{name:'min', type:types.gen},{name:'max', type:types.gen}]},
 
-		mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.gen}]},
+		mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.genfloat}]},
 		step:{return:types.gen, params:[{name:'edge', type:types.gen},{name:'x', type:types.gen}]}, 
 		smoothstep:{return:types.gen, params:[{name:'edge0', type:types.genfloat}, {name:'edge1', type:types.genfloat}, {name:'x', type:types.gen}]},
 

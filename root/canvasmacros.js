@@ -40,7 +40,7 @@ module.exports = function(){
 			code = code.replace(fnnameRx, function(){
 				return 'function '+methodname+'('
 			})
-			console.log(code)
+
 			// create the function on target
 			target[methodname] = new Function('return ' + code)()
 		}

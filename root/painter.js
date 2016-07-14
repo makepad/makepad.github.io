@@ -182,18 +182,18 @@ painter.Todo = require('class').extend(function Todo(){
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
 			mesh.dirty = false
-			bus.batchMessage(mesh.updatemsg)
+			bus.batchMessage(mesh.self)
 		}
 
 		i32[o+0] = 3
 		i32[o+1] = 4
 		i32[o+2] = nameid
-		i32[o+3] = mesh.meshid
+		i32[o+3] = mesh.self.meshid
 		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+5] = offset || 0
 	}
 
-	this.attributes = function(startnameid, range, mesh){
+	this.attributes = function(startnameid, range, mesh, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
@@ -202,16 +202,58 @@ painter.Todo = require('class').extend(function Todo(){
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
 			mesh.dirty = false
-			bus.batchMessage(mesh.updatemsg)
+			bus.batchMessage(mesh.self)
 		}
-
 		i32[o+0] = 4
 		i32[o+1] = 5
 		i32[o+2] = startnameid
 		i32[o+3] = range
-		i32[o+3] = mesh.meshid
+		i32[o+4] = mesh.self.meshid
+		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
+		i32[o+6] = offset
+	}
+
+
+	this.instance = function(nameid, mesh, divisor, offset, stride){
+
+		var o = (this.last = this.offset)
+		if((this.offset += 7) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		// use the mesh message for lazy serialization
+		if(mesh.dirty){
+			mesh.dirty = false
+			bus.batchMessage(mesh.self)
+		}
+
+		i32[o+0] = 5
+		i32[o+1] = 5
+		i32[o+2] = nameid
+		i32[o+3] = mesh.self.meshid
 		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+5] = offset || 0
+		i32[o+6] = divisor || 1
+	}
+
+	this.instances = function(startnameid, range, mesh, divisor, offset, stride){
+
+		var o = (this.last = this.offset)
+		if((this.offset += 8) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		// use the mesh message for lazy serialization
+		if(mesh.dirty){
+			mesh.dirty = false
+			bus.batchMessage(mesh.self)
+		}
+		i32[o+0] = 6
+		i32[o+1] = 6
+		i32[o+2] = startnameid
+		i32[o+3] = range
+		i32[o+4] = mesh.self.meshid
+		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
+		i32[o+6] = offset
+		i32[o+7] = divisor || 1
 	}
 
 	this.int = function(nameid, x){
@@ -387,70 +429,76 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+18] = m[15]
 	}
 
-	this.drawTriangles = function(from, to){ // id:10
+	this.drawTriangles = function(from, to, instances){ // id:10
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		i32[o+0] = 30
-		i32[o+1] = 2
-		i32[o+2] = from || 0
-		i32[o+3] = to || 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
-	this.drawLines = function(from, to){ // id:11
+	this.drawLines = function(from, to, instances){ // id:11
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		i32[o+0] = 31
-		i32[o+1] = 2
-		i32[o+2] = from || 0
-		i32[o+3] = to || 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
-	this.drawLineLoop = function(from, to){ // id:12
+	this.drawLineLoop = function(from, to, instances){ // id:12
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		i32[o+0] = 32
-		i32[o+1] = 2
-		i32[o+2] = from || 0
-		i32[o+3] = to || 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
-	this.drawLineStrip = function(from, to){ // id:13
+	this.drawLineStrip = function(from, to, instances){ // id:13
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
 
 		i32[o+0] = 33
-		i32[o+1] = 2
-		i32[o+2] = from || 0
-		i32[o+3] = to || 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
-	this.drawTriangleStrip = function(from, to){ // id:14
+	this.drawTriangleStrip = function(from, to, instances){ // id:14
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
 		
 		i32[o+0] = 34
-		i32[o+1] = 2
-		i32[o+2] = from || 0
-		i32[o+3] = to || 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
-	this.drawTriangleFan = function(){ // id:15
+	this.drawTriangleFan = function(from, to, instances){ // id:15
 		var o = (this.last = this.offset)
-		if((this.offset += 4) > this.allocated) this.resize()
+		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
 
 		i32[o+0] = 35
-		i32[o+1] = 2
-		i32[o+2] = 0
-		i32[o+3] = 3
+		i32[o+1] = 3
+		i32[o+2] = from || -1
+		i32[o+3] = to || -1
+		i32[o+4] = instances || -1
 	}
 
 	this.addTodo = function(todo){ // id: 20
@@ -548,8 +596,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		this.arraytype = types.getArray(struct)
 		this.slots = slots || types.getSlots(struct)
 		this.allocated = 0
-		this.length = 0
-		this.updatemsg = {
+		this.self = {
 			fn: 'updateMesh',
 			meshid: meshid,
 			array: undefined,
@@ -557,7 +604,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		}
 		if(initalloc){
 			this.allocated = initalloc
-			this.array = this.msg.array = new this.arraytype(initalloc * this.slots)
+			this.self.array = new this.arraytype(initalloc * this.slots)
 		}
 	}
 
@@ -567,11 +614,11 @@ painter.Mesh = require('class').extend(function Mesh(){
 	this.alloc = function(newlength){
 		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
 		var newarray = new this.arraytype(this.allocated * this.slots)
-		var oldarray = this.array
+		var oldarray = this.self.array
 		for(var i = 0, len = this.length * this.slots; i < len; i++){
 			newarray[i] = oldarray[i]
 		}
-		this.updatemsg.array = this.array = newarray
+		this.self.array = newarray
 	}
 
 	this.push = function(){
@@ -585,15 +632,15 @@ painter.Mesh = require('class').extend(function Mesh(){
 		var newlength = this.length + argtuples
 		if(newlength > this.allocated) this.alloc(newlength)
 		// copy it in
-		var array = this.array
-		var off = this.length * this.slots
+		var array = this.self.array
+		var off = this.self.length * this.slots
 
 		for(var i = 0; i < arglen; i++){
 			array[off + i] = arguments[i]
 		}
 
 		this.dirty = true
-		this.updatemsg.length = this.length = newlength
+		this.self.length = newlength
 
 		return this
 	}
@@ -606,12 +653,12 @@ painter.Mesh = require('class').extend(function Mesh(){
 			throw new Error('pushquad needs '+(4*this.slots)+' arguments, got: '+arglen+' arguments instead of a multiple of '+this.slots)
 		}
 
-		var newlength = this.length + 6
+		var newlength = this.self.length + 6
 		if(newlength > this.allocated) this.alloc(newlength)
 
 		// copy it in
-		var array = this.array
-		var off = this.length * this.slots
+		var array = this.self.array
+		var off = this.self.length * this.slots
 		var slots = this.slots
 
 		for(var i = 0, len = this.slots; i < len; i++){
@@ -624,12 +671,11 @@ painter.Mesh = require('class').extend(function Mesh(){
 			array[off + i + 2 * slots] = 
 			array[off + i + 4 * slots] = arguments[i + 2 * slots]
 			// BR
-			array[off + i + 2 * slots] = 
-			array[off + i + 4 * slots] = arguments[i + 3 * slots]
+			array[off + i + 5 * slots] = arguments[i + 3 * slots]
 		}
 
 		this.dirty = true
-		this.updatemsg.length = this.length = newlength
+		this.self.length = newlength
 
 		return this
 	}

@@ -2,23 +2,21 @@
 var App = require('view').extend(function(){
 
 	this.nested = {
-		Background: require('shaders/rectshader')
+		Background: require('shaders/rectshader').extend(function(){
+			this.pixel = function(){
+				return mix('red','green',mesh.y)
+			}
+		})
 	}
 
 	this.ondraw = function(){
 		this.drawBackground({
-			color:'red',
-			x:0,
-			y:0,
-			w:100,
-			h:100
+			color:'orange',
+			x:-.5,
+			y:-.5,
+			w:1,
+			h:1
 		})
 	}
 })
-
-/*
-// run it
-
-
-App().runApp()*/
-
+App().runApp()
