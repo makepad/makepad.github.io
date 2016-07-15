@@ -475,6 +475,7 @@ module.exports = require('class').extend(function ShaderGen(){
 
 				node.infer = {
 					kind:'value',
+					lvalue:true,
 					type:proptype
 				}
 
@@ -546,6 +547,13 @@ module.exports = require('class').extend(function ShaderGen(){
 		}
 
 		if(calleeinfer.kind === 'type'){
+			if(!args.length){
+				node.infer = {
+					kind:'type',
+					type:calleeinfer.type
+				}
+				return ''
+			}
 			node.infer = {
 				kind:'value',
 				type:calleeinfer.type
@@ -789,7 +797,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		var init = node.init
 		var initinfer = init.infer
 
-		if(initinfer.kind === 'value'){
+		if(initinfer.kind === 'value' || initinfer.kind === 'type'){
 			node.infer = this.currentfn.scope[node.id.name] = {
 				kind:'value',
 				lvalue:true,
@@ -799,7 +807,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		}
 		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable')
 
-		if(init.infer.kind === 'type' && init.type === 'CallExpression' && init.args.length === 0){
+		if(init.infer.kind === 'type'){
 			// just take the type, no constructor args
 			return node.id.name
 		}
@@ -836,6 +844,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.AssignmentExpression = function(node){
 		var leftstr = this.walk(node.left, node)
 		var rightstr =  this.walk(node.right, node)
+
 		var ret = leftstr + node.operator + rightstr
 		var leftinfer = node.left.infer
 		var rightinfer = node.right.infer
@@ -865,11 +874,19 @@ module.exports = require('class').extend(function ShaderGen(){
 			this.currentfn.inout[leftstr] = true
 		}
 
-		// lets check
-		if(leftinfer.type !==  rightinfer.type){
-			throw this.InferErr(node, 'lefthand differs from righthand in assignment '+leftinfer.type._name +' = '+ rightinfer.type._name)
+
+		if(node.operator.length > 1){
+			node.infer = leftinfer
 		}
-		node.infer = rightinfer
+		else{
+			node.infer = rightinfer
+
+			// lets check
+			if(leftinfer.type !==  rightinfer.type){
+				throw this.InferErr(node, 'lefthand differs from righthand in assignment '+leftinfer.type._name +' = '+ rightinfer.type._name)
+			}
+		}
+
 		return ret
 	}
 

@@ -31,27 +31,30 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	this.shadowcolor = [0,0,0,0.5]
 
 	this.mesh = painter.Mesh(types.vec3).pushQuad(
-		-1,-1, 0,
-		 1,-1, 0,
-		-1, 1, 0,
-		 1, 1, 0
+		0,0, 0,
+		1,0, 0,
+		0, 1, 0,
+		1, 1, 0
 	)
 	.pushQuad(
-		-1,-1, 1,
-		 1,-1, 1,
-		-1, 1, 1,
-		 1, 1, 1
+		0,0, 1,
+		1,0, 1,
+		0, 1, 1,
+		1, 1, 1
 	)
 
 	this.vertex = function(){$
+		
+		this.vertexstyle()
+
 		if (props.visible < 0.5) return vec4(0.0)
 
 		var pos = vec2(
-			(mesh.x*.5+.5)*props.w,
-			(mesh.y*.5+.5)*props.h
+			mesh.x*props.w,
+			mesh.y*props.h
 		)
 
-		vary.pos = pos.xy
+		props.borderradius *= .5
 
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
@@ -61,27 +64,34 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		)
 
 		// compute the normal rect positions
+		var meshmz = mesh.xy *2. - 1.
 		if(mesh.z < 0.5){
-			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * mesh.xy+ vec2(props.shadowblur*0.5) * mesh.xy
+			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * meshmz+ vec2(props.shadowblur*0.5) * meshmz
 
 			vary.quick.x += props.shadowblur
 			vary.quick.y += props.shadowblur
 			vary.quick.z -= props.shadowblur
 			vary.quick.w -= props.shadowblur
-
 		}
 
 		var br = props.borderradius * 2. 
 		
-
 		return vec4(pos + vec2(props.x, props.y), 0., 1.0) * view.position * camera.position * camera.projection
+	}
+
+	this.vertexstyle = function(){
+	}
+
+	this.pixelstyle = function(){
+		//props.color = mix('orange','purple',mesh.x*.5+.5)
 	}
 
 	this.pixel = function(){$
 		//var dt = vary.roundcornermax
-		var p = vary.pos
+		var p = mesh.xy * vec2(props.w, props.h)
 
-		//return 'black'
+		this.pixelstyle()
+
 		// quick out
 		if(p.x > vary.quick.x && p.x < vary.quick.z && p.y > vary.quick.y && p.y < vary.quick.w){
 			if(mesh.z < 0.5){
@@ -94,7 +104,6 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		}
 
 		//var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
-
 		var br = props.borderradius * 2. 
 		var hwh = vec2(.5*props.w, .5*props.h)
 		var ph = abs(p-hwh)
@@ -102,9 +111,9 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		var btl = length(max(ph - (hwh - br.xx), 0.)) - br.x
 		var btr = length(max(ph - (hwh - br.yy), 0.)) - br.y
 		var bbr = length(max(ph - (hwh - br.zz), 0.)) - br.z
-		var bbl = length(max(ph - (hwh - br.ww), 0.)) - br.w
-		var mx = clamp(mesh.x*1000., 0., 1.)
-		var my = clamp(mesh.y*1000., 0., 1.)
+		var bbl = length(max(ph - (hwh - br.ww), 0.)) - br.w 
+		var mx = clamp((mesh.x-.5)*1000., 0., 1.)
+		var my = clamp((mesh.y-.5)*1000., 0., 1.)
 
 		// border field (same as shadow)
 		var border = mix(
@@ -124,16 +133,26 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 				max(br.w - max(props.borderwidth.w, props.borderwidth.z), 1.))
 			// the main field
 			var ftl = length(max(ph - (hwh - ir.xx) + props.borderwidth.wx, 0.)) - ir.x
-			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y 
-			var fbr = length(max(ph - (hwh - ir.zz) + props.borderwidth.yz, 0.)) - ir.z 
-			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w 
+			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y
+			var fbr = length(max(ph - (hwh - ir.zz) + props.borderwidth.yz, 0.)) - ir.z
+			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w
 			// mix the fields
 			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
 			
 			// i need to draw a border from border field to fill field?
-			var col = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+			// how do we drop the edge...
+			var col = vec4()
+
+			if(props.borderwidth.x < 0.5 && p.y < 1. || 
+				props.borderwidth.y < 0.5 && p.x > props.w - 1.|| 
+				props.borderwidth.z < 0.5 && p.y > props.h - 1.|| 
+				props.borderwidth.w < 0.5 && p.x < 1.){
+				col = vec4(props.color.rgb,0.)
+			}
+			else col = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+
 			//return col
-			return mix(props.color, col, clamp(fill*2.+1., 0., 1.))
+			return mix(props.color, col, clamp(fill * 2. + 1., 0., 1.))
 			//return mix(col2, vec4(col2.rgb, 0.), clamp(border*2.+1.,0.,1.))
 		}
 	}
