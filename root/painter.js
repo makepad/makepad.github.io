@@ -256,6 +256,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+7] = divisor || 1
 	}
 
+
 	this.int = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
@@ -501,12 +502,36 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
+	// array is src, fn, dest, alphasrc, alphafn, alphadest
+	this.blending = function(array, color){
+
+		var o = (this.last = this.offset)
+		if((this.offset += 12) > this.allocated) this.resize()
+
+		var i32 = this.i32
+		var f32 = this.f32
+		i32[o+0] = 40
+		i32[o+1] = 10
+		i32[o+2] = array[0]
+		i32[o+3] = array[1]
+		i32[o+4] = array[2]
+		i32[o+5] = array[3] || array[0]
+		i32[o+6] = array[4] || array[1]
+		i32[o+7] = array[5] || array[2]
+		if(color){
+			f32[o+8] = color[0]
+			f32[o+9] = color[1]
+			f32[o+10] = color[2]
+			f32[o+11] = color[3]
+		}
+	}
+
 	this.addTodo = function(todo){ // id: 20
 		var o = (this.last = this.offset)
 		if((this.offset += 3) > this.allocated) this.resize()
 		var a = this.i32
 
-		i32[o+0] = 40
+		i32[o+0] = 50
 		i32[o+1] = 1
 		i32[o+2] = todo.todoid
 	}
@@ -523,6 +548,26 @@ painter.Todo = require('class').extend(function Todo(){
 
 var shaderids = {}
 var shaderidsalloc = 1
+
+painter.ZERO = 0x0
+painter.ONE = 0x1
+painter.SRC_COLOR = 0x300
+painter.ONE_MINUS_SRC_COLOR = 0x301
+painter.SRC_ALPHA = 0x302
+painter.ONE_MINUS_SRC_ALPHA = 0x303
+painter.DST_ALPHA = 0x304 
+painter.ONE_MINUS_DST_ALPHA = 0x305
+painter.DST_COLOR = 0x306 
+painter.ONE_MINUS_DST_COLOR = 0x307
+painter.SRC_ALPHA_SATURATE = 0x308
+painter.CONSTANT_COLOR = 0x8001
+painter.ONE_MINUS_CONSTANT_COLOR = 0x8002
+
+painter.FUNC_SUBTRACT = 0x800a
+painter.FUNC_REVERSE_SUBTRACT = 0x800b
+painter.FUNC_ADD = 0x8006
+painter.MIN = 0x8007
+painter.MAX = 0x8008
 
 painter.Shader = require('class').extend(function Shader(){
 
@@ -615,7 +660,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
 		var newarray = new this.arraytype(this.allocated * this.slots)
 		var oldarray = this.self.array
-		for(var i = 0, len = this.length * this.slots; i < len; i++){
+		for(var i = 0, len = this.self.length * this.slots; i < len; i++){
 			newarray[i] = oldarray[i]
 		}
 		this.self.array = newarray
@@ -676,7 +721,6 @@ painter.Mesh = require('class').extend(function Mesh(){
 
 		this.dirty = true
 		this.self.length = newlength
-
 		return this
 	}
 })

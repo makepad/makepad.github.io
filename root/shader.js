@@ -13,6 +13,9 @@ module.exports = require('class').extend(function Shader(){
 
 	this.time = 0.0
 
+	this.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
+	this.constant = undefined
+
 	this.tween = function(){
 		if(props.duration < 0.01) return 1.
 		return clamp((time - props.tweenstart) / props.duration, 0.0, 1.0)
@@ -27,6 +30,8 @@ module.exports = require('class').extend(function Shader(){
 	this.pixelEntry = function(){
 		this.pixel()
 	}
+
+	// ok the alpha blend modes. how do we do it.
 
 	this.compileShader = function(){
 		if(!this.vertex || !this.pixel) return
@@ -278,7 +283,7 @@ module.exports = require('class').extend(function Shader(){
 			pixel:pixel,
 			propslots:propslots
 		}
-		console.log(pixel)
+		//console.log(vertex)
 	}
 
 	this.onextendclass = function(){
@@ -358,7 +363,7 @@ module.exports = require('class').extend(function Shader(){
 		code += indent+'var _need = _props.self.length + '+need+'\n'
 		code += indent+'if(_need >= _props.allocated) _props.alloc(_need)\n'
 		code += indent+'if(_props._frame !== this._frame){\n'
-		code += indent+'	var _sp = this._' + classname +'.prototype\n'
+		code += indent+'	var _proto = this._' + classname +'.prototype\n'
 		code += indent+'	_props._frame = this._frame\n'
 		code += indent+'	_props.self.length = 0\n'
 		code += indent+'	_props.dirty = true\n'
@@ -378,10 +383,14 @@ module.exports = require('class').extend(function Shader(){
 			// check if attribute is larger than 4
 			var attr = attrs[key]
 			var attrange = Math.floor(types.getSlots(attr.type) / 4) + 1
-			code += indent+'	_attrlen = _sp.'+key+'.length\n'
-			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_sp.'+key+')\n'
+			code += indent+'	_attrlen = _proto.'+key+'.length\n'
+			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+key+')\n'
 			attrid += attrange
 		}
+		
+		// lets set the blendmode
+		code += '	_todo.blending(_proto.blending, _proto.constant)\n'
+
 		// set uniforms
 		var uniforms = info.uniforms
 		for(var key in uniforms){
@@ -401,7 +410,7 @@ module.exports = require('class').extend(function Shader(){
 			else if(first === 'time'){
 				source = 'this.view._time'
 			}
-			else source = 'overload && overload.'+key+' || this._'+classname+'.prototype.'+fullname
+			else source = 'overload && overload.'+key+' || _proto.'+fullname
 	
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type._name

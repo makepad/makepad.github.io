@@ -176,6 +176,7 @@ args.h = canvas.offsetHeight
 
 var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
 var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
+var EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
 
 var currentprogram
 var currentunilocs
@@ -284,6 +285,7 @@ todofn[6] = function instances(i32, f32, o){
 todofn[7] = function index(){
 
 }
+
 
 todofn[10] = function int(i32, f32, o){
 	gl.uniform1i(currentunilocs[i32[o+2]], i32[o+3])
@@ -408,6 +410,26 @@ todofn[35] = function drawTriangleFan(i32, f32, o){
 	gl.drawArrays(gl.TRIANGLE_FAN, i32[o+2], i32[o+3])
 }
 
+var csrcRGB
+var cdstRGB
+var cfnRGB
+var csrcALPHA
+var cdstALPHA
+var cfnALPHA
+
+todofn[40] = function blend(i32, f32, o){
+	console.log('here')
+	gl.enable(gl.BLEND)
+	gl.blendEquationSeparate(i32[o+3], i32[o+6])
+	gl.blendFuncSeparate(i32[o+2],i32[o+4],i32[o+5],i32[o+7])
+	if(i32[o+1] == 10){
+		gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
+	}
+}
+
+todofn[50] = function addTodo(i32, f32, o){
+}
+
 bus.onmessage = function(msg){
 	if(msg.fn !== 'runTodo'){
 		userMessage[msg.fn](msg)
@@ -439,5 +461,6 @@ function parseShaderAttributes(code, obj){
 	code.replace(/attribute\s*(\S+)\s+(\S+);/g, function(m, type, name){
 		obj[name] = type
 	})
+
 	return obj
 }

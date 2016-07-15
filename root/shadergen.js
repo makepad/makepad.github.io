@@ -829,7 +829,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.AssignmentExpression = function(node){
 		var leftstr = this.walk(node.left, node)
 		var rightstr =  this.walk(node.right, node)
-		var ret = leftstr+ ' = ' + rightstr
+		var ret = leftstr + node.operator + rightstr
 		var leftinfer = node.left.infer
 		var rightinfer = node.right.infer
 
