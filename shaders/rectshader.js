@@ -58,10 +58,10 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		// compute the inner radii
 
 		vary.quick = vec4(
-			max(props.borderradius.x, props.borderradius.w),
-			max(props.borderradius.x, props.borderradius.y),
-			props.w - max(props.borderradius.y, props.borderradius.z),
-			props.h - max(props.borderradius.z, props.borderradius.w)
+			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
+			max(props.borderradius.x, props.borderradius.y)+ props.borderwidth.x,
+			props.w - max(props.borderradius.y, props.borderradius.z) - props.borderwidth.y,
+			props.h - max(props.borderradius.z, props.borderradius.w) - + props.borderwidth.z
 		)
 
 		return vec4(pos, 1.0) * view.position * camera.position * camera.projection
@@ -77,22 +77,34 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		}
 		else{
 			if(p.x > vary.quick.x && p.x < vary.quick.z && p.y > vary.quick.y && p.y < vary.quick.w){
-				return 'blue'
+				return props.color
 			}
 
-			var br = props.borderradius
+			var br = props.borderradius * 2.
 			var hwh = vec2(.5*props.w, .5*props.h)
 			var ph = abs(p-hwh)
-			var dtl = length(max(ph - (hwh - 2. * br.xx), 0.)) - 2. * br.x
-			var dtr = length(max(ph - (hwh - 2. * br.yy), 0.)) - 2. * br.y
-			var dbr = length(max(ph - (hwh - 2. * br.zz), 0.)) - 2. * br.z
-			var dbl = length(max(ph - (hwh - 2. * br.ww), 0.)) - 2. * br.w
-
-			var fx = clamp(((p.x / props.w)-.5)*1000., 0., 1.)
-			var fy = clamp(((p.y / props.h)-.5)*1000., 0., 1.)
-			var d = mix(mix(dtl, dtr, fx), mix(dbl, dbr, fx),fy)
-
-			return mix('red', 'green',d+1.5)// d*0.1+1.5)
+			var phtl = ph - (hwh - br.xx)
+			var phtr = ph - (hwh - br.yy)
+			var phbr = ph - (hwh - br.zz)
+			var phbl = ph - (hwh - br.ww)
+			// the main field
+			var ftl = length(max(phtl + props.borderwidth.wx, 0.)) - br.x
+			var ftr = length(max(phtr + props.borderwidth.yx, 0.)) - br.y
+			var fbr = length(max(phbr + props.borderwidth.yz, 0.)) - br.z
+			var fbl = length(max(phbl + props.borderwidth.wz, 0.)) - br.w
+			// the border fields
+			var btl = length(max(phtl, 0.)) - br.x 
+			var btr = length(max(phtr, 0.)) - br.y
+			var bbr = length(max(phbr, 0.)) - br.z
+			var bbl = length(max(phbl, 0.)) - br.w
+			var mx = clamp(((p.x / props.w)-.5)*1000., 0., 1.)
+			var my = clamp(((p.y / props.h)-.5)*1000., 0., 1.)
+			// mix the fields
+			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
+			var border = mix(mix(btl, btr, mx), mix(bbl, bbr, mx),my) //+ 20.
+			// i need to draw a border from border field to fill field?
+			var col = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border,0.,1.))
+			return mix(props.color, col, clamp(fill, 0., 1.))
 		}
 		//var screenpos = vary.screenpos
 		return 'red'
