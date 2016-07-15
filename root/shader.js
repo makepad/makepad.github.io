@@ -283,6 +283,7 @@ module.exports = require('class').extend(function Shader(){
 			pixel:pixel,
 			propslots:propslots
 		}
+		console.log(pixel, vertex)
 		//console.log(vertex)
 	}
 

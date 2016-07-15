@@ -179,7 +179,11 @@ module.exports = require('class').extend(function ShaderGen(){
 		if(node.kind === 'num'){
 			if(node.raw.indexOf('.') !== -1){
 				infer.type = types.float
-				if(node.raw.indexOf('.') === node.raw.length - 1){
+				var dotidx = node.raw.indexOf('.')
+				if(dotidx === 0){
+					return '0'+node.raw
+				}
+				if(dotidx === node.raw.length - 1){
 					return node.raw + '0'
 				}
 				return node.raw
