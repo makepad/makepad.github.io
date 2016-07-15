@@ -13,7 +13,7 @@ var App = require('view').extend(function(){
 			borderinner:0.95,
 			shadowradius:0,
 			shadowoffset:[20,20],
-			bordercolor:'black',
+			bordercolor:'red',
 			borderwidth:3,
 			x:10,
 			y:10,

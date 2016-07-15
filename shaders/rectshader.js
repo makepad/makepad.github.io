@@ -83,7 +83,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			}
 		}
 
-		var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
+		//var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
 
 		var br = props.borderradius * 2.
 		var hwh = vec2(.5*props.w, .5*props.h)
@@ -115,6 +115,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			
 			// i need to draw a border from border field to fill field?
 			var col = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+			//return col
 			return mix(props.color, col, clamp(fill*2.+1., 0., 1.))
 			//return mix(col2, vec4(col2.rgb, 0.), clamp(border*2.+1.,0.,1.))
 		}

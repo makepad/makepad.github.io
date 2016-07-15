@@ -59,7 +59,7 @@ var userMessage = {
 		gl.attachShader(shader, pixelshader)
 		gl.linkProgram(shader)
 		if(!gl.getProgramParameter(shader, gl.LINK_STATUS)){
-			console.log(
+			return console.error(
 				gl.getProgramInfoLog(shader),
 				addLineNumbers(vertexcode), 
 				addLineNumbers(pixelcode)
@@ -418,13 +418,10 @@ var cdstALPHA
 var cfnALPHA
 
 todofn[40] = function blend(i32, f32, o){
-	console.log('here')
 	gl.enable(gl.BLEND)
 	gl.blendEquationSeparate(i32[o+3], i32[o+6])
 	gl.blendFuncSeparate(i32[o+2],i32[o+4],i32[o+5],i32[o+7])
-	if(i32[o+1] == 10){
-		gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
-	}
+	gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
 }
 
 todofn[50] = function addTodo(i32, f32, o){
