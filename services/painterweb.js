@@ -220,6 +220,7 @@ todofn[3] = function attribute(i32, f32, o){
 	var offset = i32[o+5]
 	var loc = currentprogram.attrlocs[nameid]
 	var mesh = meshids[meshid]
+	currentprogram.attrlength = mesh.length
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 	gl.enableVertexAttribArray(loc.index)
 	gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset)

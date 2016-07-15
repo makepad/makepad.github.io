@@ -674,7 +674,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 			throw new Error('push alignment error, got: '+arglen+' arguments instead of a multiple of '+this.slots)
 		}
 		// resize it
-		var newlength = this.length + argtuples
+		var newlength = this.self.length + argtuples
 		if(newlength > this.allocated) this.alloc(newlength)
 		// copy it in
 		var array = this.self.array
