@@ -21,7 +21,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		borderwidth: [0,0,0,0],
 		bordercolor: [0,0,0,0],
 		borderradius: [4,4,4,4],
-		//borderinner: 1.0,
+
 		shadowblur: 1.0,
 		shadowspread: 1.0,
 		shadowx: 1.0,
@@ -57,7 +57,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		if(mesh.z < 0.5){
 			borderadjust = max(1.,props.shadowblur)
 		}
-		props.borderradius = min(max(props.borderradius,vec4(borderadjust)),vec4(max(props.w,props.h)*0.5))
+		props.borderradius = min(max(props.borderradius,vec4(borderadjust)),vec4(min(props.w,props.h)*0.5))
 
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
@@ -69,7 +69,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		// compute the normal rect positions
 		var meshmz = mesh.xy *2. - 1.
 		if(mesh.z < 0.5){
-			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * meshmz+ vec2(props.shadowblur*0.5) * meshmz
+			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * meshmz//+ vec2(props.shadowblur*0.25) * meshmz
 
 			vary.quick.x += props.shadowblur
 			vary.quick.y += props.shadowblur
@@ -140,18 +140,13 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w
 			// mix the fields
 			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
-			
-			// i need to draw a border from border field to fill field?
-			// how do we drop the edge...
-			var borderfinal = vec4()
 
+			var borderfinal = vec4()
 			// remove the error in the border
 			if(abs(border - fill) < 0.1) borderfinal = vec4(props.color.rgb,0.)
 			else borderfinal = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
 
-			//return col
 			return mix(props.color, borderfinal, clamp(fill * 2. + 1., 0., 1.))
-			//return mix(col2, vec4(col2.rgb, 0.), clamp(border*2.+1.,0.,1.))
 		}
 	}
 

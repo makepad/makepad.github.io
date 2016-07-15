@@ -411,8 +411,8 @@ module.exports = require('class').extend(function Shader(){
 			else if(first === 'time'){
 				source = 'this.view._time'
 			}
-			else source = 'overload && overload.'+key+' || _proto.'+fullname
-	
+			else source = mainargs[0]+' && '+mainargs[0]+'.'+key+' || _proto.'+fullname
+			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type._name
 			// ok so uniforms... where do we get them
