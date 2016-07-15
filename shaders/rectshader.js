@@ -57,7 +57,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		if(mesh.z < 0.5){
 			borderadjust = max(1.,props.shadowblur)
 		}
-		props.borderradius = max(props.borderradius,vec4(borderadjust))
+		props.borderradius = min(max(props.borderradius,vec4(borderadjust)),vec4(max(props.w,props.h)*0.5))
 
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
@@ -86,7 +86,6 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	}
 
 	this.pixelstyle = function(){
-		//props.color = mix('orange','purple',mesh.x*.5+.5)
 	}
 
 	this.pixel = function(){$
