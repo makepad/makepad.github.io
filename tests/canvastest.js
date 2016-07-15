@@ -14,6 +14,7 @@ var App = require('view').extend(function(){
 	}
 
 	this.ondraw = function(){
+
 		for(var i = 0 ; i < 4000;i++){
 
 			this.drawBackground({

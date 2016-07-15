@@ -13,7 +13,7 @@ module.exports = require('class').extend(function Shader(){
 
 	this.time = 0.0
 
-	this.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
+	this.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	this.constant = undefined
 
 	this.tween = function(){
