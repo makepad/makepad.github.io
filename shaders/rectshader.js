@@ -21,13 +21,14 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		borderwidth: [0,0,0,0],
 		bordercolor: [0,0,0,0],
 		borderradius: [4,4,4,4],
-		borderinner: 1.0,
-		shadowradius: 1.0,
-		shadowoffset: [1.0, 1.0],
-		shadowalpha: 0.5
+		//borderinner: 1.0,
+		shadowblur: 1.0,
+		shadowspread: 1.0,
+		shadowx: 1.0,
+		shadowy: 1.0
 	}
 
-	this.shadowcolor = [0,0,0,1.]
+	this.shadowcolor = [0,0,0,0.5]
 
 	this.mesh = painter.Mesh(types.vec3).pushQuad(
 		-1,-1, 0,
@@ -52,17 +53,23 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 		vary.pos = pos.xy
 
-		// compute the normal rect positions
-		if(mesh.z < 0.5){
-			pos.xy += props.shadowoffset + vec2(props.shadowradius) * mesh.xy
-		}
-
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
 			max(props.borderradius.x, props.borderradius.y)+ props.borderwidth.x,
 			props.w - max(props.borderradius.y, props.borderradius.z) - props.borderwidth.y,
 			props.h - max(props.borderradius.z, props.borderradius.w) - + props.borderwidth.z
 		)
+
+		// compute the normal rect positions
+		if(mesh.z < 0.5){
+			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * mesh.xy+ vec2(props.shadowblur*0.5) * mesh.xy
+
+			vary.quick.x += props.shadowblur
+			vary.quick.y += props.shadowblur
+			vary.quick.z -= props.shadowblur
+			vary.quick.w -= props.shadowblur
+
+		}
 
 		return vec4(pos + vec2(props.x, props.y), 0., 1.0) * view.position * camera.position * camera.projection
 	}
@@ -101,10 +108,11 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 		if(mesh.z < 0.5){
 			// do the shadow
-			return mix(shadowcolor, vec4(shadowcolor.rgb,0.), clamp(border*0.1+1., 0., 1.))
+			var shborder = border / props.shadowblur
+			return mix(shadowcolor, vec4(shadowcolor.rgb,0.), clamp(shborder*2.+1., 0., 1.))
 		}
 		else{ // main shape
-			var ir = br * props.borderinner //inner border radius, todo FIX
+			var ir = br //inner border radius, todo FIX
 			// the main field
 			var ftl = length(max(ph - (hwh - ir.xx) + props.borderwidth.wx, 0.)) - ir.x
 			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y

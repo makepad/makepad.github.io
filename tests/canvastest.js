@@ -10,9 +10,10 @@ var App = require('view').extend(function(){
 		this.drawBackground({
 			color:'purple',
 			borderradius:[20,10,20,10], // LT RT RB LB
-			borderinner:0.95,
-			shadowradius:0,
-			shadowoffset:[20,20],
+			shadowspread:-5,
+			shadowblur:10,
+			shadowx:10,
+			shadowy:10,
 			bordercolor:'red',
 			borderwidth:3,
 			x:10,
