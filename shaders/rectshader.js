@@ -71,6 +71,9 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 		}
 
+		var br = props.borderradius * 2. 
+		
+
 		return vec4(pos + vec2(props.x, props.y), 0., 1.0) * view.position * camera.position * camera.projection
 	}
 
@@ -92,11 +95,11 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 		//var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
 
-		var br = props.borderradius * 2.
+		var br = props.borderradius * 2. 
 		var hwh = vec2(.5*props.w, .5*props.h)
 		var ph = abs(p-hwh)
 		// the border fields
-		var btl = length(max(ph - (hwh - br.xx), 0.)) - br.x 
+		var btl = length(max(ph - (hwh - br.xx), 0.)) - br.x
 		var btr = length(max(ph - (hwh - br.yy), 0.)) - br.y
 		var bbr = length(max(ph - (hwh - br.zz), 0.)) - br.z
 		var bbl = length(max(ph - (hwh - br.ww), 0.)) - br.w
@@ -104,20 +107,26 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		var my = clamp(mesh.y*1000., 0., 1.)
 
 		// border field (same as shadow)
-		var border = mix(mix(btl, btr, mx), mix(bbl, bbr, mx),my) //+ 20.
+		var border = mix(
+			mix(btl, btr, mx), 
+			mix(bbl, bbr, mx),my
+		) //+ 20.
 
 		if(mesh.z < 0.5){
-			// do the shadow
 			var shborder = border / props.shadowblur
-			return mix(shadowcolor, vec4(shadowcolor.rgb,0.), clamp(shborder*2.+1., 0., 1.))
+			return mix(shadowcolor, vec4(shadowcolor.rgb,0.), pow(clamp(shborder*2.+1., 0., 1.),1.2))
 		}
 		else{ // main shape
-			var ir = br //inner border radius, todo FIX
+			var ir = vec4( //- props.borderwidth.x //inner border radius, todo FIX
+				max(br.x - max(props.borderwidth.x, props.borderwidth.w), 1.),
+				max(br.y - max(props.borderwidth.y, props.borderwidth.x), 1.),
+				max(br.z - max(props.borderwidth.y, props.borderwidth.z), 1.),
+				max(br.w - max(props.borderwidth.w, props.borderwidth.z), 1.))
 			// the main field
-			var ftl = length(max(ph - (hwh - ir.xx) + props.borderwidth.wx, 0.)) - ir.x
-			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y
-			var fbr = length(max(ph - (hwh - ir.zz) + props.borderwidth.yz, 0.)) - ir.z
-			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w
+			var ftl = length(max(ph - (hwh - ir.xx) + props.borderwidth.wx, 0.)) - ir.x 
+			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y 
+			var fbr = length(max(ph - (hwh - ir.zz) + props.borderwidth.yz, 0.)) - ir.z 
+			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w 
 			// mix the fields
 			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
 			
