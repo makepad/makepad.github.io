@@ -9,13 +9,13 @@ var App = require('view').extend(function(){
 	this.ondraw = function(){
 		this.drawBackground({
 			color:'white',
-			borderradius:[20,10,20,10], // LT RT RB LB
-			shadowspread:-5,
-			shadowblur:10,
+			borderradius:[20,10,0,10], // LT RT RB LB
+			shadowspread:0,
+			shadowblur:1,
 			shadowx:10,
 			shadowy:10,
 			bordercolor:'red',
-			borderwidth:[2,0,0,0],
+			borderwidth:[4,0,0,0],
 			x:10,
 			y:10,
 			w:100,

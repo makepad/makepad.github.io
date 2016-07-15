@@ -54,7 +54,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			mesh.y*props.h
 		)
 
-		props.borderradius *= .5
+		props.borderradius = max(props.borderradius*.5,vec4(0.5))
 
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
@@ -141,18 +141,14 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			
 			// i need to draw a border from border field to fill field?
 			// how do we drop the edge...
-			var col = vec4()
+			var borderfinal = vec4()
 
-			if(props.borderwidth.x < 0.5 && p.y < 1. || 
-				props.borderwidth.y < 0.5 && p.x > props.w - 1.|| 
-				props.borderwidth.z < 0.5 && p.y > props.h - 1.|| 
-				props.borderwidth.w < 0.5 && p.x < 1.){
-				col = vec4(props.color.rgb,0.)
-			}
-			else col = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+			// remove the error in the border
+			if(abs(border - fill) < 0.01) borderfinal = vec4(props.color.rgb,0.)
+			else borderfinal = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
 
 			//return col
-			return mix(props.color, col, clamp(fill * 2. + 1., 0., 1.))
+			return mix(props.color, borderfinal, clamp(fill * 2. + 1., 0., 1.))
 			//return mix(col2, vec4(col2.rgb, 0.), clamp(border*2.+1.,0.,1.))
 		}
 	}
