@@ -24,7 +24,7 @@ var App = require('view').extend(function(){
 				shadowx:4,
 				shadowy:4,
 				bordercolor:'black',
-				borderwidth:[10*Math.random(),1,1,1],
+				borderwidth:[1+10*Math.random(),1,1,1],
 				x:1700*Math.random(),
 				y:1700*Math.random(),
 				w:40+40*Math.random(),
