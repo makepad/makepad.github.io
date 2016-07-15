@@ -53,8 +53,11 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			mesh.x*props.w,
 			mesh.y*props.h
 		)
-
-		props.borderradius = max(props.borderradius*.5,vec4(0.5))
+		var borderadjust = 1.
+		if(mesh.z < 0.5){
+			borderadjust = max(1.,props.shadowblur)
+		}
+		props.borderradius = max(props.borderradius,vec4(borderadjust))
 
 		vary.quick = vec4(
 			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
@@ -104,7 +107,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		}
 
 		//var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
-		var br = props.borderradius * 2. 
+		var br = props.borderradius 
 		var hwh = vec2(.5*props.w, .5*props.h)
 		var ph = abs(p-hwh)
 		// the border fields

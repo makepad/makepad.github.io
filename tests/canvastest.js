@@ -9,9 +9,9 @@ var App = require('view').extend(function(){
 	this.ondraw = function(){
 		this.drawBackground({
 			color:'white',
-			borderradius:[20,10,0,10], // LT RT RB LB
+			borderradius:[20,10,1,10], // LT RT RB LB
 			shadowspread:0,
-			shadowblur:1,
+			shadowblur:5,
 			shadowx:10,
 			shadowy:10,
 			bordercolor:'red',
