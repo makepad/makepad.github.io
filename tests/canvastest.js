@@ -15,7 +15,7 @@ var App = require('view').extend(function(){
 			shadowx:10,
 			shadowy:10,
 			bordercolor:'red',
-			borderwidth:[10,0,0,0],
+			borderwidth:[2,0,0,0],
 			x:10,
 			y:10,
 			w:100,
