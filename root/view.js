@@ -119,6 +119,7 @@ module.exports = require('class').extend(function View(){
 		// begin a new todo stack
 		var todo = this.todo
 		todo.beginTodo()
+		todo.clearColor(1,1,1,1)
 
 		// begin a new turtle
 		var turtle = this.beginTurtle()

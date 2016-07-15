@@ -132,10 +132,10 @@ exports.pick = function(x, y){
 }
 
 var options = {
-	alpha: canvas.getAttribute("noalpha")?false:true,
+	alpha: canvas.getAttribute("alpha")?true:false,
 	depth: canvas.getAttribute("nodepth")?false:true,
 	stencil: canvas.getAttribute("nostencil")?false:true,
-	antialias: canvas.getAttribute("noantialias")?false:true,
+	antialias: canvas.getAttribute("antialias")?true:false,
 	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
 	preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
 	preferLowPowerToHighPerformance: canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
