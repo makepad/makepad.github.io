@@ -8,7 +8,7 @@ var App = require('view').extend(function(){
 
 	this.ondraw = function(){
 		this.drawBackground({
-			color:'blue',
+			color:'orange',
 			borderradius:[20,10,20,10], // LT RT RB LB
 			borderinner:0.95,
 			shadowradius:0,
