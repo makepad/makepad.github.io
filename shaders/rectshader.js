@@ -147,7 +147,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			var borderfinal = vec4()
 
 			// remove the error in the border
-			if(abs(border - fill) < 0.01) borderfinal = vec4(props.color.rgb,0.)
+			if(abs(border - fill) < 0.1) borderfinal = vec4(props.color.rgb,0.)
 			else borderfinal = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
 
 			//return col
