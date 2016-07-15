@@ -1,4 +1,14 @@
 module.exports = require('shader').extend(function TweenShader(){
+	var types = require('types')
+
+	this.view = {
+		position:types.mat4
+	}
+
+	this.camera = {
+		position:types.mat4,
+		projection:types.mat4
+	}
 
 	var abs = Math.abs
 	this.tweenBezier = function(cp0, cp1, cp2, cp3, t){
@@ -51,14 +61,5 @@ module.exports = require('shader').extend(function TweenShader(){
 
 	this.props = {
 		ease: {notween:true, value:[0,0,1.0,1.0]}
-	}
-
-	this.canvas = {
-		matrix:Array(16)
-	}
-
-	this.todo = {
-		camera: Array(16),
-		projection: Array(16)
 	}
 })

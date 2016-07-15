@@ -129,8 +129,8 @@ module.exports = require('class').extend(function View(){
 
 		// keep redrawing:
 		// if(this._ontime&2 || this._onframe&2)
-
 		this.endTurtle()
+		todo.endTodo()
 	}
 
 	this.ondraw = function(){
@@ -156,6 +156,8 @@ module.exports = require('class').extend(function View(){
 			// we can submit a todo now
 			this._time = msg.time / 1000
 			this._frame = msg.frame
+
+			mat4.ortho(this.camera.projection,0, painter.w, 0, painter.h, -100, 100)
 
 			this.redrawView()
 

@@ -245,7 +245,7 @@ types.colorFromString = function(str, alpha, a, o){
 		return false
 	}
 	var col = types.colorwikipedia[str]
-	if(col){
+	if(col !== undefined){
 		a[o] = (col>>16)/255
 		a[o+1] = ((col>>8)&0xff)/255
 		a[o+2] = (col&0xff)/255

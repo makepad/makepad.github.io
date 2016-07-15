@@ -135,7 +135,9 @@ module.exports = require('class').extend(function ShaderGen(){
 
 	//ExpressionStatement:{expression:1},
 	this.ExpressionStatement = function(node){
-		return this.walk(node.expression, node)
+		var ret = this.walk(node.expression, node)
+		node.infer = node.expression.infer
+		return ret
 	}
 
 	//SequenceExpression:{expressions:2}
@@ -185,6 +187,13 @@ module.exports = require('class').extend(function ShaderGen(){
 		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
 	}
 
+	var uniformslotmap = {
+		1:types.float,
+		2:types.vec2,
+		3:types.vec3,
+		4:types.vec4
+	}
+
 	this.mapObjectProperty = function(node, name, value, prefix){
 
 		// its a function
@@ -209,11 +218,6 @@ module.exports = require('class').extend(function ShaderGen(){
 				type:types.vec4
 			}
 			return ret
-		}
-
-		if(Array.isArray(value)){
-			console.log("FIX ARRAY UNIFORMS")
-			return name
 		}
 
 		if(typeof value === 'number'){
@@ -275,6 +279,21 @@ module.exports = require('class').extend(function ShaderGen(){
 				return ret
 			}
 
+			if(Array.isArray(value) || value instanceof Float32Array){
+				var ret = prefix + name
+				var type = uniformslotmap[value.length]
+				this.uniforms[ret] = {
+					type:type,
+					name:name
+				}
+				node.infer = {
+					kind:'value',
+					type:type
+				}
+				return ret
+			}
+
+
 			// its a library object
 			node.infer = {
 				kind: 'object',
@@ -331,7 +350,17 @@ module.exports = require('class').extend(function ShaderGen(){
 		// check defines
 		var defstr = this.context._defines && this.context._defines[name] || this.root._defines && this.root._defines[name]
 		if(defstr){ // expand the define
-
+			try{
+				var ast = parsecache[defstr] || (parsecache[defstr] = parser.parse(defstr))
+			}
+			catch(e){
+				throw this.SyntaxErr(node, "Cant parse define " + defstr)
+			}
+			// just jump to it
+			var astnode = ast.body[0]
+			var ret = this.walk(astnode, node)
+			node.infer = astnode.infer
+			return ret
 		}
 
 		// struct on context
@@ -393,7 +422,9 @@ module.exports = require('class').extend(function ShaderGen(){
 		else{
 			var objectinfer = node.object.infer
 			var propname = node.property.name
-
+			if(!objectinfer){
+				console.log(node)
+			}
 			if(objectinfer.kind === 'value'){
 				var type = objectinfer.type
 				var proptype = type[propname]
@@ -471,12 +502,13 @@ module.exports = require('class').extend(function ShaderGen(){
 				var ret = 'vary_DOT_'+propname
 				// its already defined
 				var prev = this.varyout[ret] || this.varyin && this.varyin[ret]
+
 				if(prev){
 					this.varyout[ret] = prev
 					node.infer = {
 						kind: 'value',
 						lvalue:true,
-						type: prev
+						type: prev.type
 					}
 				}
 				else{
@@ -851,6 +883,17 @@ module.exports = require('class').extend(function ShaderGen(){
 		return ret + node.operator
  	}
 
+
+	//UnaryExpression:{operator:0, prefix:0, argument:1},
+	this.UnaryExpression = function(node){
+		var ret = this.walk(node.argument, node)
+		node.infer = node.argument.infer
+		if(node.prefix){
+			return node.operator + ret
+		}
+		return ret + node.operator
+ 	}
+
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	this.IfStatement = function(node){
 		var ret = 'if(' + this.walk(node.test) + ') ' 
@@ -858,7 +901,8 @@ module.exports = require('class').extend(function ShaderGen(){
 		ret += this.walk(node.consequent, node)
 
 		if(node.alternate){
-			ret+= ';\nelse '+this.walk(node.alternate, node)
+			if(node.consequent.type !== 'BlockStatement') ret += ';'
+			ret+= '\n'+this.indent+'else '+this.walk(node.alternate, node)
 		} 
 		return ret
 	}
@@ -904,13 +948,10 @@ module.exports = require('class').extend(function ShaderGen(){
 	this.InferErr = function(node, message){
 		return new Err(this, node, 'InferenceError', message)
 	 }
-	// Unsupported syntax
-	//UnaryExpression:{operator:0, prefix:0, argument:1},
 
 
 	//ThisExpression:{},
 	this.ThisExpression = function(node){throw this.SyntaxErr(node,'ThisExpression')}
-	this.UnaryExpression = function(node){throw this.SyntaxErr(node,'UnaryExpression')}
 	this.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
 	this.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}
 	this.TryStatement = function(node){throw this.SyntaxErr(node,'TryStatement')}

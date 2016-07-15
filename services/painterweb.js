@@ -323,7 +323,7 @@ todofn[15] = function mat4(i32, f32, o){
 	tmtx[13] = f32[o+16]
 	tmtx[14] = f32[o+17]
 	tmtx[15] = f32[o+18]
-	gl.uniformMatrix4fv(currentunilocs[i32[o+2]], false, tmtx)
+	gl.uniformMatrix4fv(currentunilocs[i32[o+2]], 0, tmtx)
 }
 
 todofn[20] = 

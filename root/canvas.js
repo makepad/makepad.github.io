@@ -1,6 +1,6 @@
 var painter = require('painter')
 //var fingers = require('fingers')
-//var types = require('types')
+var types = require('types')
 
 module.exports = function(){
 

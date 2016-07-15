@@ -17,56 +17,85 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		margin: [0,0,0,0],
 		padding: [0,0,0,0],
 
-		color: 'white',
+		color: 'red',
 		borderwidth: [0,0,0,0],
 		bordercolor: [0,0,0,0],
-		cornerradius: [4,4,4,4],
+		borderradius: [4,4,4,4],
 		shadowradius: 1.0,
 		shadowoffset: [1.0, 1.0],
 		shadowalpha: 0.5
 	}
 
-	this.mesh = painter.Mesh(types.vec2).pushQuad(
-		0,0,
-		0,1,
-		1,0,
-		1,1
+	this.shadowcolor = [0,0,0,0]
+
+	this.mesh = painter.Mesh(types.vec3).pushQuad(
+		-1,-1, 0,
+		 1,-1, 0,
+		-1, 1, 0,
+		 1, 1, 0
+	).pushQuad(
+		-1,-1, 1,
+		 1,-1, 1,
+		-1, 1, 1,
+		 1, 1, 1
 	)
 
-	this.view = {
-		position:types.mat4
-	}
-
-	this.camera = {
-		position:types.mat4,
-		projection:types.mat4
-	}
-
-	this.callme = function(x){$
-		x = 20.
-		return 10
-	}
-
 	this.vertex = function(){$
-		if(props.visible < 0.5){
-			return vec4(0.)
-		}
+		if (props.visible < 0.5) return vec4(0.0)
 
-		var pos = vec4(
-			mesh.x * props.w + props.x, 
-			mesh.y * props.h + props.y, 
-			0., 
-			1.
+		// store the part id on a varying
+		vary.partid = mesh.z
+
+		// compute the normal rect positions
+		var pos = vec3(
+			(mesh.x*.5+.5)*props.w + props.x,
+			(mesh.y*.5+.5)*props.h + props.y,
+			0.
+		)
+		// pass in the rect
+		vary.pos = pos.xy - vec2(props.x, props.y)
+
+		// compute the inner radii
+
+		vary.quick = vec4(
+			max(props.borderradius.x, props.borderradius.w),
+			max(props.borderradius.x, props.borderradius.y),
+			props.w - max(props.borderradius.y, props.borderradius.z),
+			props.h - max(props.borderradius.z, props.borderradius.w)
 		)
 
-		return pos * view.position * camera.position * camera.projection
+		return vec4(pos, 1.0) * view.position * camera.position * camera.projection
 	}
 
 	this.pixel = function(){$
-		//props.x
-		//props.borderwidth
-		out.color = props.color
-		//out.color = vec4(1)
+		//var dt = vary.roundcornermax
+		var p = vary.pos
+		var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
+
+		if(vary.partid < 0.5){
+			return 'black'
+		}
+		else{
+			if(p.x > vary.quick.x && p.x < vary.quick.z && p.y > vary.quick.y && p.y < vary.quick.w){
+				return 'blue'
+			}
+
+			var br = props.borderradius
+			var hwh = vec2(.5*props.w, .5*props.h)
+			var ph = abs(p-hwh)
+			var dtl = length(max(ph - (hwh - 2. * br.xx), 0.)) - 2. * br.x
+			var dtr = length(max(ph - (hwh - 2. * br.yy), 0.)) - 2. * br.y
+			var dbr = length(max(ph - (hwh - 2. * br.zz), 0.)) - 2. * br.z
+			var dbl = length(max(ph - (hwh - 2. * br.ww), 0.)) - 2. * br.w
+
+			var fx = clamp(((p.x / props.w)-.5)*1000., 0., 1.)
+			var fy = clamp(((p.y / props.h)-.5)*1000., 0., 1.)
+			var d = mix(mix(dtl, dtr, fx), mix(dbl, dbr, fx),fy)
+
+			return mix('red', 'green',d+1.5)// d*0.1+1.5)
+		}
+		//var screenpos = vary.screenpos
+		return 'red'
 	}
 
 	this.canvasmacros = {

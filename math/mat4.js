@@ -1828,26 +1828,28 @@ mat4.perspectiveFromFieldOfView = function (out, fov, near, far) {
  * @param {number} far Far bound of the frustum
  * @returns {mat4} out
  */
-mat4.ortho = function (out, left, right, bottom, top, near, far) {
+mat4.ortho = function (out, left, right, top, bottom, near, far) {
     var lr = 1 / (left - right),
         bt = 1 / (bottom - top),
         nf = 1 / (near - far);
+
     out[0] = -2 * lr;
     out[1] = 0;
     out[2] = 0;
-    out[3] = 0;
+    out[3] = (left + right) * lr;
     out[4] = 0;
     out[5] = -2 * bt;
     out[6] = 0;
-    out[7] = 0;
+    out[7] = (top + bottom) * bt;
     out[8] = 0;
     out[9] = 0;
     out[10] = 2 * nf;
-    out[11] = 0;
-    out[12] = (left + right) * lr;
-    out[13] = (top + bottom) * bt;
-    out[14] = (far + near) * nf;
+    out[11] = (far + near) * nf;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
     out[15] = 1;
+
     return out;
 };
 
