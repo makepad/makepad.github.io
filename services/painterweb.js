@@ -132,8 +132,8 @@ exports.pick = function(x, y){
 }
 
 var options = {
-	alpha: canvas.getAttribute("alpha")?true:false,
-	depth: canvas.getAttribute("depth")?true:false,
+	alpha: canvas.getAttribute("noalpha")?false:true,
+	depth: canvas.getAttribute("nodepth")?false:true,
 	stencil: canvas.getAttribute("nostencil")?false:true,
 	antialias: canvas.getAttribute("antialias")?true:false,
 	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,

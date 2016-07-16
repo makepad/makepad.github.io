@@ -43,6 +43,10 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		1, 1, 1
 	)
 
+	this.shadowcolorfn = function(){
+
+	}
+
 	this.vertex = function(){$
 		
 		this.vertexstyle()
@@ -88,11 +92,27 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	this.pixelstyle = function(){
 	}
 
+	this.colorfn = function(){
+		return props.color
+	}
+
+	this.bordercolorfn = function(){
+		return props.bordercolor
+	}
+
+	this.shadowcolorfn = function(){
+		return shadowcolor
+	}
+
 	this.pixel = function(){$
 		//var dt = vary.roundcornermax
 		var p = mesh.xy * vec2(props.w, props.h)
 
 		this.pixelstyle()
+		
+		var shadowcolor = shadowcolorfn()
+		var bordercolor = bordercolorfn()
+		var color = colorfn()
 
 		// quick out
 		if(p.x > vary.quick.x && p.x < vary.quick.z && p.y > vary.quick.y && p.y < vary.quick.w){
@@ -101,7 +121,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 				return shadowcolor
 			}
 			else{
-				return props.color
+				return color
 			}
 		}
 
@@ -121,7 +141,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		var border = mix(
 			mix(btl, btr, mx), 
 			mix(bbl, bbr, mx),my
-		) //+ 20.
+		) 
 
 		if(mesh.z < 0.5){
 			var shborder = border / props.shadowblur
@@ -143,10 +163,10 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 
 			var borderfinal = vec4()
 			// remove the error in the border
-			if(abs(border - fill) < 0.1) borderfinal = vec4(props.color.rgb,0.)
-			else borderfinal = mix(props.bordercolor, vec4(props.bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+			if(abs(border - fill) < 0.1) borderfinal = vec4(color.rgb,0.)
+			else borderfinal = mix(bordercolor, vec4(bordercolor.rgb, 0.), clamp(border*2.+1.,0.,1.))
 
-			return mix(props.color, borderfinal, clamp(fill * 2. + 1., 0., 1.))
+			return mix(color, borderfinal, clamp(fill * 2. + 1., 0., 1.))
 		}
 	}
 

@@ -7,8 +7,10 @@ var App = require('view').extend(function(){
 			//	type:1.
 			}
 			this.pixelstyle = function(){
-			//	if(props.type<.5) return 'white'
-			//	props.color = mix('orange','purple',mesh.x*.5+.5)
+				//props.borderwidth.y =12.+5.*sin(mesh.y*10.)	
+				//props.borderwidth.x = 12.+5.*sin(mesh.x*10.)		
+				//if(props.type<.5) return 'white'
+				//props.color = mix('orange','purple',mesh.x*.5+.5)
 			}
 		})
 	}
@@ -25,7 +27,7 @@ var App = require('view').extend(function(){
 				shadowx:4,
 				shadowy:4,
 				bordercolor:'black',
-				borderwidth:[1+10*Math.random(),1,1,1],
+				borderwidth:[20,1,1,1],
 				x:1700*Math.random(),
 				y:1700*Math.random(),
 				w:40+40*Math.random(),

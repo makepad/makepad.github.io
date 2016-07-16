@@ -54,7 +54,7 @@ module.exports = require('class').extend(function Shader(){
 		var phead = '', ppre = '', ppost = ''
 
 		// Unpack and tween props
-		vhead += '// attributes\n'
+		vhead += '// prop attributes\n'
 
 		var tweenrep = ''
 
@@ -133,19 +133,20 @@ module.exports = require('class').extend(function Shader(){
 				vpre += ');\n'
 
 				for(var i = slots, pid = 0; i > 0; i -= 4){
-					if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
-					if(i == 3) vhead += 'attribute vec3 ATTR_'+(attrid)+';\n'
-					if(i == 2) vhead += 'attribute vec2 ATTR_'+(attrid)+';\n'
-					if(i == 1) vhead += 'attribute float ATTR_'+(attrid)+';\n'
+					if(i >= 4) vhead = 'attribute vec4 ATTR_'+(attrid)+';\n' + vhead
+					if(i == 3) vhead = 'attribute vec3 ATTR_'+(attrid)+';\n' + vhead
+					if(i == 2) vhead = 'attribute vec2 ATTR_'+(attrid)+';\n' + vhead
+					if(i == 1) vhead = 'attribute float ATTR_'+(attrid)+';\n' + vhead
 					attrid ++
 				}
 			}
 			else{
 				vpre += '\t' + key + ' = ATTR_' + attrid + ';\n'
-				vhead += 'attribute '+attr.type._name+' ATTR_' + attrid + ';\n'
+				vhead = 'attribute '+attr.type._name+' ATTR_' + attrid + ';\n' + vhead
 				attrid++
 			}
 		}
+		vhead = '// mesh attributes\n' + vhead
 
 		// define the input variables
 		vhead += '\n// inputs\n'
@@ -283,7 +284,7 @@ module.exports = require('class').extend(function Shader(){
 			pixel:pixel,
 			propslots:propslots
 		}
-		console.log(vertex,pixel)
+		//console.log(vertex,pixel)
 		//console.log(vertex)
 	}
 
