@@ -4,13 +4,8 @@ var App = require('view').extend(function(){
 	this.nested = {
 		Background: require('shaders/rectshader').extend(function(){
 			this.props = {
-			//	type:1.
 			}
 			this.pixelstyle = function(){
-				//props.borderwidth.y =12.+5.*sin(mesh.y*10.)	
-				//props.borderwidth.x = 12.+5.*sin(mesh.x*10.)		
-				//if(props.type<.5) return 'white'
-				//props.color = mix('orange','purple',mesh.x*.5+.5)
 			}
 		})
 	}

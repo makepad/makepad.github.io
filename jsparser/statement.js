@@ -472,7 +472,7 @@ pp.parseClass = function(node, isStatement) {
 		method.kind = "method"
 		var isGetSet = false
 		if (!method.computed) {
-			var {key} = method
+			var key = method.key
 			if (!isGenerator && key.type === "Identifier" && this.type !== tt.parenL && (key.name === "get" || key.name === "set")) {
 				isGetSet = true
 				method.kind = key.name

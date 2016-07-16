@@ -516,7 +516,7 @@ module.exports = require('class').extend(function Shader(){
 		code += indent +'var _o = _props.self.length * ' + info.propslots +'\n'
 		code += indent + '_props.self.length++\n'
 
-		var tweencode = '	var _f = _tween, _1mf = _tween\n'
+		var tweencode = '	var _f = _tween, _1mf = _tween, _upn, _upo\n'
 		var propcode = ''
 
 		// lets generate the tween
@@ -533,10 +533,15 @@ module.exports = require('class').extend(function Shader(){
 
 				var packing = prop.config.packing
 				if(packing){
+					// we have to unpack before interpolating
 					for(var i = 0; i < slots; i++){
-						tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
-							'_f * _a[_o+'+(o + i + slots)+'] + ' +
-							'_1mf * _a[_o+'+(o +i)+']\n'
+						tweencode += indent + '_upn = _a[_o+'+(o + i)+'], _upo = _a[_o+'+(o + i + slots)+']\n'
+						tweencode += indent + '_a[_o+'+(o +i)+'] = ' +
+							'((_f * Math.floor(_upo/4096) +' +
+							'_1mf * Math.floor(_upn/4096)) << 12) + ' + 
+							'((_f * Math.mod(_upo,4096) +' +
+							'_1mf * Math.mod(_upn,4096))|0)\n'
+
 						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
 							'_a[_o+'+(o +i)+']\n'
 					}
@@ -571,18 +576,18 @@ module.exports = require('class').extend(function Shader(){
 					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
 					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
 					if(packing === 'float'){
-						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)<<0),_a[_o+'+(o+1)+']=((_$'+prop.name+'[2] * 4095)<<12) + ((_$'+prop.name+'[3]*4095)<<0)\n'
+						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)|0),_a[_o+'+(o+1)+']=((_$'+prop.name+'[2] * 4095)<<12) + ((_$'+prop.name+'[3]*4095)|0)\n'
 						propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColorPacked(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
-						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[0]*4095)<<0)\n'
+						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[0]*4095)|0)\n'
 						propcode += indent + '}\n'
 						propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColorPacked(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
-						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)<<0)\n'
+						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)|0)\n'
 					}
-					else{
-						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]<<0),_a[_o+'+(o+1)+']=(_$'+prop.name+'[2]<<12) + (_$'+prop.name+'[3]<<0)\n'
-						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0])<<12) + ((_$'+prop.name+'[0])<<0)\n'
+					else{ // int packing
+						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]|0),_a[_o+'+(o+1)+']=(_$'+prop.name+'[2]<<12) + (_$'+prop.name+'[3]|0)\n'
+						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0])<<12) + ((_$'+prop.name+'[0])|0)\n'
 						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')<<0)\n'
+						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')|0)\n'
 					}
 				}
 				else{
@@ -646,7 +651,7 @@ module.exports = require('class').extend(function Shader(){
 			}
 			for(var key in props){
 				var value = props[key]
-				if(Object.getPrototypeOf(value) !== Object.prototype){
+				if(typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype){
 					value = {value:value}
 				}
 				this._props[key] = value

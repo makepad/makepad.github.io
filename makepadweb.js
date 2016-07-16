@@ -338,7 +338,8 @@
 	}
 	
 	var fontext = {
-		'glf':1
+		'sdffont':1,
+		'arcfont':1
 	}
 
 	var allresources = {}
@@ -433,8 +434,33 @@
 			//order.images.push()
 		}
 		else if(type === 'font'){
-			// xhr a font and parse
-			//order.font.push()
+
+			var req = new XMLHttpRequest()
+			// store in reading
+			resourcerequests[resourceurl] = req
+
+			var resource = {
+				parenturl: parenturl,
+				resourceurl: resourceurl
+			}
+			allresources[resourceurl] = resource
+			resources.fonts.push(resource)
+
+			req.addEventListener("error", function(){
+				console.error('Error loading '+resourceurl+' from '+parenturl)
+				reject(resource)
+			})
+			req.responseType = 'arraybuffer'
+			req.addEventListener("load", function(){
+				if(req.status !== 200){
+					return reject(resource)
+				}
+				resource.response = req.response
+				resolve(resource)
+			})
+			req.open("GET", resourceurl)
+			req.send()
+
 		}
 		else if(type === 'service'){
 			// load up a driver object

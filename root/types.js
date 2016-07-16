@@ -261,30 +261,30 @@ types.colorFromStringPacked = function(str, alpha, a, o){
 			var r = hexlut[str.charCodeAt(1)]
 			var g = hexlut[str.charCodeAt(2)]
 			var b = hexlut[str.charCodeAt(3)]
-			a[o] = (((r|r<<4)/4095)<<12) + ((g|g<<4)/4095)<<0
-			a[o+1] = (((b|b<<4)/4095)<<12) + (alpha*4095)<<0
+			a[o] = (((r|r<<4)/4095)<<12) + (((g|g<<4)/4095)|0)
+			a[o+1] = (((b|b<<4)/4095)<<12) + ((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 7){
 			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12) + 
 				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)<<0)
 			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
-				(alpha*4095)<<0
+				((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 9){
 			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12)+
-				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)<<0)
+				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)|0)
 			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
-				(((hexlut[str.charCodeAt(7)] | (hexlut[str.charCodeAt(8)] << 4))/4095)<<0)
+				(((hexlut[str.charCodeAt(7)] | (hexlut[str.charCodeAt(8)] << 4))/4095)|0)
 			return true
 		}
 		return false
 	}
 	var col = types.colorwikipedia[str]
 	if(col !== undefined){
-		a[o] = (((col>>16)/4095)<<12)+ ((((col>>8)&0xff)/4095)<<0)
-		a[o+1] = (((col&0xff)/4095)<<12)+((alpha*4095)<<0)
+		a[o] = (((col>>16)/4095)<<12)+ ((((col>>8)&0xff)/4095)|0)
+		a[o+1] = (((col&0xff)/4095)<<12)+((alpha*4095)|0)
 		return true
 	}		
 	return false
