@@ -63,10 +63,21 @@ module.exports = require('class').extend(function Shader(){
 		for(var key in props){
 			var prop = props[key]
 			var slots = types.getSlots(prop.type)
+			if(prop.config.packing){
+				if(prop.type._name !== 'vec4') throw new Error('Cant use packing on non vec4 type for '+key)
+				slots = 2
+			}
 			prop.offset = totalslots
 			prop.slots = slots
 			totalslots += slots
 			if(!prop.config.notween) totalslots += slots
+		}
+
+		function propSlot(idx){
+			var slot = Math.floor(idx/4)
+			var ret = 'ATTR_' +  slot
+			if(lastslot !== slot || totalslots%4 !== 1) ret += '.' + compName[idx%4]
+			return ret
 		}
 
 		// Unpack attributes
@@ -77,35 +88,67 @@ module.exports = require('class').extend(function Shader(){
 			var slots = prop.slots
 			// lets create the unpack / mix code here
 			propslots += slots
-			if(prop.config.notween){
-				var v1 = prop.type._name + '('
-				if(v1 === 'float(') v1 = '('
-				vpre += '\t' + key + ' = ' + v1
-				for(var i = 0, start = propslots - slots; i < slots; i++){
-					if(i) vpre += ', '
-					var vslot = Math.floor((start + i)/4)
-					vpre += 'ATTR_' +  vslot
-					if(lastslot !== vslot || totalslots%4 !== 1) vpre += '.' + compName[(start + i)%4]
+			var packing = prop.config.packing
+			if(packing){
+				if(prop.config.notween){
+					vpre += '\t' + key + ' = vec4('
+					var endf = packing === 'float'? '/4095.0':''
+					var start = propslots - slots
+					var p1 = propSlot(start)
+					var p2 = propSlot(start+1)
+					vpre += 'floor('+p1+'/4096.0)' + endf
+					vpre += ',mod('+p1+',4096.0)' + endf
+					vpre += ',floor('+p2+'/4096.0)' + endf
+					vpre += ',mod('+p2+',4096.0)' + endf
+					vpre += ');\n'
 				}
-				vpre += ');\n'
+				else{
+					propslots += slots
+					tweenrep += '\t' + key + ' = mix(vec4('
+					var endf = packing === 'float'? '/4095.0':''
+					var start1 = propslots - slots*2
+					var start2 = propslots - slots
+					var p1 = propSlot(start1)
+					var p2 = propSlot(start1+1)
+					var p3 = propSlot(start2)
+					var p4 = propSlot(start2+1)
+					tweenrep += 'floor('+p1+'/4096.0)' + endf
+					tweenrep += ',mod('+p1+',4096.0)' + endf
+					tweenrep += ',floor('+p2+'/4096.0)' + endf
+					tweenrep += ',mod('+p2+',4096.0)' + endf
+					tweenrep += '),vec4('
+					tweenrep += 'floor('+p3+'/4096.0)' + endf
+					tweenrep += ',mod('+p3+',4096.0)' + endf
+					tweenrep += ',floor('+p4+'/4096.0)' + endf
+					tweenrep += ',mod('+p4+',4096.0)' + endf
+					tweenrep += '),T);\n'
+				}
 			}
 			else{
-				propslots += slots
-				var vnew = prop.type._name + '('
-				if(vnew === 'float(') vnew = '('
-				var vold = vnew
-				for(var i = 0, start1 = propslots - slots*2, start2 = propslots - slots; i < slots; i++){
-					if(i) vnew += ', ', vold += ', '
-					var vnewslot = Math.floor((start1 + i)/4)
-					vnew += 'ATTR_' +  vnewslot
-					if(lastslot !== vnewslot || totalslots%4 !== 1) vnew += '.' + compName[(start1 + i)%4]
-					var voldslot =  Math.floor((start2 + i)/4)
-					vold += 'ATTR_' + voldslot
-					if(lastslot !== voldslot || totalslots%4 !== 1) vold += '.' + compName[(start2 + i)%4]
+				if(prop.config.notween){
+					var vdef = prop.type._name + '('
+					if(vdef === 'float(') vdef = '('
+					for(var i = 0, start = propslots - slots; i < slots; i++){
+						if(i) vdef += ', '
+						vdef += propSlot(start + i)
+					}
+					vdef += ')'
+					vpre += '\t' + key + ' = ' + vdef + ';\n'
 				}
-				vnew += ')'
-				vold += ')'
-				tweenrep += '\t' + key + ' = mix(' + vnew + ',' + vold + ',T);\n'
+				else{
+					propslots += slots
+					var vnew = prop.type._name + '('
+					if(vnew === 'float(') vnew = '('
+					var vold = vnew
+					for(var i = 0, start1 = propslots - slots*2, start2 = propslots - slots; i < slots; i++){
+						if(i) vnew += ', ', vold += ', '
+						vnew += propSlot(start1 + i)
+						vold += propSlot(start2 + i)
+					}
+					vnew += ')'
+					vold += ')'
+					tweenrep += '\t' + key + ' = mix(' + vnew + ',' + vold + ',T);\n'
+				}
 			}
 		}
 
@@ -284,7 +327,7 @@ module.exports = require('class').extend(function Shader(){
 			pixel:pixel,
 			propslots:propslots
 		}
-		//console.log(vertex,pixel)
+		console.log(vertex,pixel)
 		//console.log(vertex)
 	}
 
@@ -487,12 +530,25 @@ module.exports = require('class').extend(function Shader(){
 				// new, old
 				tweencode += '\n'+indent+'	//' + key + '\n'
 				propcode += '\n'+indent+'// '+key + '\n'
-				for(var i = 0; i < slots; i++){
-					tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
-						'_f * _a[_o+'+(o + i + slots)+'] + ' +
-						'_1mf * _a[_o+'+(o +i)+']\n'
-					propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
-						'_a[_o+'+(o +i)+']\n'
+
+				var packing = prop.config.packing
+				if(packing){
+					for(var i = 0; i < slots; i++){
+						tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
+							'_f * _a[_o+'+(o + i + slots)+'] + ' +
+							'_1mf * _a[_o+'+(o +i)+']\n'
+						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
+							'_a[_o+'+(o +i)+']\n'
+					}
+				}
+				else{
+					for(var i = 0; i < slots; i++){
+						tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
+							'_f * _a[_o+'+(o + i + slots)+'] + ' +
+							'_1mf * _a[_o+'+(o +i)+']\n'
+						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
+							'_a[_o+'+(o +i)+']\n'
+					}
 				}
 			}
 			// assign properties
@@ -509,14 +565,36 @@ module.exports = require('class').extend(function Shader(){
 			}
 
 			if(prop.type._name === 'vec4'){
-				propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-				propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
-				propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1],_a[_o+'+(o+2)+']=_$'+prop.name+'[2],_a[_o+'+(o+3)+']=_$'+prop.name+'[3]\n'
-				propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=_a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'[0]\n'
-				propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColor(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
-				propcode += indent + '}\n'
-				propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
-				propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+'] = _a[_o+'+(o+1)+'] = _a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'\n'
+				// check packing
+				var packing = prop.config.packing
+				if(packing){
+					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
+					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					if(packing === 'float'){
+						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)<<0),_a[_o+'+(o+1)+']=((_$'+prop.name+'[2] * 4095)<<12) + ((_$'+prop.name+'[3]*4095)<<0)\n'
+						propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColorPacked(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
+						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[0]*4095)<<0)\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColorPacked(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
+						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)<<0)\n'
+					}
+					else{
+						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]<<0),_a[_o+'+(o+1)+']=(_$'+prop.name+'[2]<<12) + (_$'+prop.name+'[3]<<0)\n'
+						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0])<<12) + ((_$'+prop.name+'[0])<<0)\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')<<0)\n'
+					}
+				}
+				else{
+					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
+					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1],_a[_o+'+(o+2)+']=_$'+prop.name+'[2],_a[_o+'+(o+3)+']=_$'+prop.name+'[3]\n'
+					propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=_a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'[0]\n'
+					propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColor(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
+					propcode += indent + '}\n'
+					propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
+					propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+'] = _a[_o+'+(o+1)+'] = _a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'\n'
+				}
 			}
 			else{
 				if(slots === 1){

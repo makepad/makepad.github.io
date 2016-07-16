@@ -21,13 +21,13 @@ var App = require('view').extend(function(){
 
 			this.drawBackground({
 				color:[Math.random(),Math.random(),Math.random(),1],
-				borderradius:[1,1000,1000,10+Math.random()*10], // LT RT RB LB
+				borderradius:[10,1000,1000,10+Math.random()*10], // LT RT RB LB
 				shadowspread:0,
 				shadowblur:10,
 				shadowx:4,
 				shadowy:4,
 				bordercolor:'black',
-				borderwidth:[20,1,1,1],
+				borderwidth:[10,1,1,1],
 				x:1700*Math.random(),
 				y:1700*Math.random(),
 				w:40+40*Math.random(),

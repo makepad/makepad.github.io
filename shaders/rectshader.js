@@ -11,24 +11,23 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		h: NaN,
 		z: 0,
 
-		visible: {notween:true, nostyle:true, value:1.0},
-
 		align: 'lefttop',
 		margin: [0,0,0,0],
 		padding: [0,0,0,0],
 
-		color: 'red',
-		borderwidth: [0,0,0,0],
-		bordercolor: [0,0,0,0],
-		borderradius: [4,4,4,4],
+		color: {packing:'float',value:'red'},
+		borderwidth: {packing:'int',value:[0,0,0,0]},
+		bordercolor: {packing:'float',value:[0,0,0,1]},
+		borderradius: {packing:'int', value:[4,4,4,4]},
+		shadowcolor: {packing:'float',value:[0,0,0,0.5]},
 
 		shadowblur: 1.0,
 		shadowspread: 1.0,
 		shadowx: 1.0,
-		shadowy: 1.0
-	}
+		shadowy: 1.0,
+		visible: {notween:true, nostyle:true, value:1.0}
 
-	this.shadowcolor = [0,0,0,0.5]
+	}
 
 	this.mesh = painter.Mesh(types.vec3).pushQuad(
 		0,0, 0,
@@ -42,10 +41,6 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		0, 1, 1,
 		1, 1, 1
 	)
-
-	this.shadowcolorfn = function(){
-
-	}
 
 	this.vertex = function(){$
 		
@@ -63,22 +58,10 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		}
 		props.borderradius = min(max(props.borderradius,vec4(borderadjust)),vec4(min(props.w,props.h)*0.5))
 
-		vary.quick = vec4(
-			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
-			max(props.borderradius.x, props.borderradius.y)+ props.borderwidth.x,
-			props.w - max(props.borderradius.y, props.borderradius.z) - props.borderwidth.y,
-			props.h - max(props.borderradius.z, props.borderradius.w) - + props.borderwidth.z
-		)
-
 		// compute the normal rect positions
 		var meshmz = mesh.xy *2. - 1.
 		if(mesh.z < 0.5){
 			pos.xy += vec2(props.shadowx, props.shadowy) + vec2(props.shadowspread) * meshmz//+ vec2(props.shadowblur*0.25) * meshmz
-
-			vary.quick.x += props.shadowblur
-			vary.quick.y += props.shadowblur
-			vary.quick.z -= props.shadowblur
-			vary.quick.w -= props.shadowblur
 		}
 
 		var br = props.borderradius * 2. 
@@ -101,7 +84,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 	}
 
 	this.shadowcolorfn = function(){
-		return shadowcolor
+		return props.shadowcolor
 	}
 
 	this.pixel = function(){$
@@ -114,13 +97,24 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		var bordercolor = bordercolorfn()
 		var color = colorfn()
 
+		// NOT ENOUGH VARYINGS ON IOS. otherwise this goes in the vertex shader
+		var quick = vec4(
+			max(props.borderradius.x, props.borderradius.w) + props.borderwidth.w,
+			max(props.borderradius.x, props.borderradius.y)+ props.borderwidth.x,
+			props.w - max(props.borderradius.y, props.borderradius.z) - props.borderwidth.y,
+			props.h - max(props.borderradius.z, props.borderradius.w) - props.borderwidth.z
+		)
+
 		// quick out
-		if(p.x > vary.quick.x && p.x < vary.quick.z && p.y > vary.quick.y && p.y < vary.quick.w){
-			if(mesh.z < 0.5){
+		if(mesh.z < 0.5){
+			quick += vec4(props.shadowblur,props.shadowblur,-props.shadowblur,-props.shadowblur)
+			if(p.x > quick.x && p.x < quick.z && p.y > quick.y && p.y < quick.w){
 				// alright shadow
 				return shadowcolor
 			}
-			else{
+		}
+		else{
+			if(p.x > quick.x && p.x < quick.z && p.y > quick.y && p.y < quick.w){
 				return color
 			}
 		}

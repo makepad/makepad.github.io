@@ -71,4 +71,11 @@ module.exports = function(){
 			console.log("Cannot parse color "+str)
 		}
 	}
+
+	this._parseColorPacked = function(str, alpha, a, o){
+		if(!types.colorFromStringPacked(str, alpha, a, o)){
+			console.log("Cannot parse color "+str)
+		}
+	}
+
 }

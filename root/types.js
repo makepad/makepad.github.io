@@ -255,6 +255,41 @@ types.colorFromString = function(str, alpha, a, o){
 	return false
 }
 
+types.colorFromStringPacked = function(str, alpha, a, o){
+	if(str.charCodeAt(0) === 35){ // starts with #
+		if(str.length === 4){
+			var r = hexlut[str.charCodeAt(1)]
+			var g = hexlut[str.charCodeAt(2)]
+			var b = hexlut[str.charCodeAt(3)]
+			a[o] = (((r|r<<4)/4095)<<12) + ((g|g<<4)/4095)<<0
+			a[o+1] = (((b|b<<4)/4095)<<12) + (alpha*4095)<<0
+			return true
+		}
+		else if(str.length === 7){
+			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12) + 
+				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)<<0)
+			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
+				(alpha*4095)<<0
+			return true
+		}
+		else if(str.length === 9){
+			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12)+
+				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)<<0)
+			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
+				(((hexlut[str.charCodeAt(7)] | (hexlut[str.charCodeAt(8)] << 4))/4095)<<0)
+			return true
+		}
+		return false
+	}
+	var col = types.colorwikipedia[str]
+	if(col !== undefined){
+		a[o] = (((col>>16)/4095)<<12)+ ((((col>>8)&0xff)/4095)<<0)
+		a[o+1] = (((col&0xff)/4095)<<12)+((alpha*4095)<<0)
+		return true
+	}		
+	return false
+}
+
 types.colorwikipedia = {
 	acidgreen:0xB0BF1A,aero:0x7CB9E8,aeroblue:0xC9FFE5,africanviolet:0xB284BE,airforceblueraf:0x5D8AA8,airforceblueusaf:0x00308F,
 	airsuperiorityblue:0x72A0C1,alabamacrimson:0xAF002A,aliceblue:0xF0F8FF,alizarincrimson:0xE32636,alloyorange:0xC46210,
