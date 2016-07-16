@@ -6,6 +6,11 @@ var App = require('view').extend(function(){
 			this.props = {
 			}
 			this.pixelstyle = function(){
+				props.borderwidth.x = 10.+5.*sin(mesh.x*15.)*cos(mesh.x*5.)
+				var meshh = mesh.y*props.h
+				var propsh = props.borderwidth.x+1.
+				if(meshh <propsh ) props.bordercolor = mix('white','gray',meshh/propsh)
+
 			}
 		})
 	}

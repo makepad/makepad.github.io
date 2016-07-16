@@ -198,7 +198,6 @@ painter.Todo = require('class').extend(function Todo(){
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32
-
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
 			mesh.dirty = false
@@ -568,6 +567,17 @@ painter.FUNC_REVERSE_SUBTRACT = 0x800b
 painter.FUNC_ADD = 0x8006
 painter.MIN = 0x8007
 painter.MAX = 0x8008
+
+painter.RGB = 1 << 0
+painter.RGBA = 1 << 1
+painter.ALPHA = 1 << 3
+painter.DEPTH = 1 << 4
+painter.STENCIL = 1 << 5
+painter.LUMINANCE = 1 << 6
+painter.FLOAT = 1 << 10
+painter.HALF_FLOAT = 1 << 11
+painter.FLOAT_LINEAR = 1 << 12
+painter.HALF_FLOAT_LINEAR = 1 << 13
 
 painter.Shader = require('class').extend(function Shader(){
 

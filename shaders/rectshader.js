@@ -127,20 +127,21 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 			var shborder = border / props.shadowblur
 			return mix(shadowcolor, vec4(shadowcolor.rgb,0.), pow(clamp(shborder*2.+1., 0., 1.),1.2))
 		}
-		else{ // main shape
+		else{ // inner field
+			// inner radius
 			var ir = vec4(
 				max(br.x - max(props.borderwidth.x, props.borderwidth.w), 1.),
 				max(br.y - max(props.borderwidth.y, props.borderwidth.x), 1.),
 				max(br.z - max(props.borderwidth.y, props.borderwidth.z), 1.),
 				max(br.w - max(props.borderwidth.w, props.borderwidth.z), 1.))
-			// the main field
+			// inner field displaced by inner radius and borderwidths
 			var ftl = length(max(ph - (hwh - ir.xx) + props.borderwidth.wx, 0.)) - ir.x
 			var ftr = length(max(ph - (hwh - ir.yy) + props.borderwidth.yx, 0.)) - ir.y
 			var fbr = length(max(ph - (hwh - ir.zz) + props.borderwidth.yz, 0.)) - ir.z
 			var fbl = length(max(ph - (hwh - ir.ww) + props.borderwidth.wz, 0.)) - ir.w
 			// mix the fields
 			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
-
+			
 			var borderfinal = vec4()
 			// remove the error in the border
 			if(abs(border - fill) < 0.1) borderfinal = vec4(color.rgb,0.)

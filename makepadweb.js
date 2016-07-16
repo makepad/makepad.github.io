@@ -46,8 +46,7 @@
 		var resources = {
 			services:[],
 			codefiles:[],
-			images:[],
-			fonts:[]
+			binaries:[]
 		}
 
 		loadResourceAndDeps(mainurl, mainurl, 'code', resources, functionsource).then(function(result){
@@ -115,6 +114,7 @@
 					initUserCode(
 						msg.rooturl, 
 						resources.codefiles, 
+						resources.binaries,
 						modules, 
 						factories,
 						worker, 
@@ -215,10 +215,16 @@
 		}
 	}
 
-	function initUserCode(rooturl, codefiles, modules, factories, worker, userbusses, userargs){
+	function initUserCode(rooturl, codefiles, binaries, modules, factories, worker, userbusses, userargs){
 
 		worker.loadworkerid = 1
 		var last
+		var binarylut = {}
+		for(var i = binaries.length - 1; i >= 0; i--){
+			var binary = binaries[i]
+			binarylut[binary.resourceurl] = binary.response
+		}
+
 		for(var i = codefiles.length - 1; i >=0; i--){
 			var code = codefiles[i]
 
@@ -233,7 +239,7 @@
 			}
 
 			modules[code.resourceurl] = last = {
-				require: createRequire(rooturl, code.resourceurl, modules, worker, userbusses, userargs),
+				require: createRequire(rooturl, code.resourceurl, modules, binarylut, worker, userbusses, userargs),
 				factory: factory
 			}
 		}
@@ -249,8 +255,9 @@
 		if(path.indexOf('services/') == 0){
 			path = path+'web.js'
 		}
-
-		if(path.lastIndexOf('.js') !== path.length - 3) path = path + '.js'
+		var sidx = path.lastIndexOf('/')
+		var didx = path.lastIndexOf('.') 
+		if(didx === -1 || didx < sidx) path = path + '.js'
 
 		var c1 = path.charAt(0)
 		var c2 = path.charAt(1)
@@ -272,7 +279,7 @@
 		return rooturl + '/' + path
 	}
 
-	function createRequire(rooturl, moduleurl, modules, worker, userbusses, userargs){
+	function createRequire(rooturl, moduleurl, modules, binarylut, worker, userbusses, userargs){
 		function require(path, args){
 			if(path.indexOf('services/') === 0){
 				//!TODO lock down this require to root/ modules
@@ -300,6 +307,10 @@
 
 			// require module
 			var url = buildURL(rooturl, moduleurl, path)
+
+			if(url.indexOf('.js') !== url.length - 3){ // its a binary
+				return binarylut[url]
+			}
 			var module = modules[url]
 			if(!module) throw new Error('Cannot require '+url)
 
@@ -333,15 +344,6 @@
 
 	var resourcerequests = {}
 
-	var imageext = {
-		'jpg':1,'jpeg':1,'gif':1,'png':1
-	}
-	
-	var fontext = {
-		'sdffont':1,
-		'arcfont':1
-	}
-
 	var allresources = {}
 
 	function loadResourceAndDeps(parenturl, resourceurl, type, resources, functionsource){
@@ -367,9 +369,8 @@
 		if(allresources[resourceurl]){
 
 			var array
-			if(type === 'image'){
-			}
-			else if(type === 'font'){
+			if(type === 'binary'){
+				array = resources.binaries
 			}
 			else if(type === 'service'){
 				array = resources.services
@@ -418,9 +419,8 @@
 				var deptype = 'code'
 
 				if(path.indexOf('services/') === 0) deptype = 'service'
-				var ext = path.slice(path.lastIndexOf('.')).toLowerCase()
-				if(imageext[ext]) deptype = 'image'
-				else if(fontext[ext]) deptype = 'font'
+				var ext = suburl.slice(suburl.lastIndexOf('.')).toLowerCase()
+				if(ext !== '.js') deptype = 'binary'
 
 				deps.push(loadResourceAndDeps(resourceurl, suburl, deptype, resources))
 			})
@@ -428,12 +428,7 @@
 			return deps
 		}
 
-		// lets return a promise
-		if(type === 'image'){
-			// inject image tag and wait
-			//order.images.push()
-		}
-		else if(type === 'font'){
+		if(type === 'binary'){
 
 			var req = new XMLHttpRequest()
 			// store in reading
@@ -444,7 +439,7 @@
 				resourceurl: resourceurl
 			}
 			allresources[resourceurl] = resource
-			resources.fonts.push(resource)
+			resources.binaries.push(resource)
 
 			req.addEventListener("error", function(){
 				console.error('Error loading '+resourceurl+' from '+parenturl)

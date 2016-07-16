@@ -327,7 +327,7 @@ module.exports = require('class').extend(function Shader(){
 			pixel:pixel,
 			propslots:propslots
 		}
-		console.log(vertex,pixel)
+		if(this.dump) console.log(vertex,pixel)
 		//console.log(vertex)
 	}
 
@@ -416,18 +416,16 @@ module.exports = require('class').extend(function Shader(){
 		code += indent+'	_todo.useShader(_shader)\n'
 		// first do the normal attributes
 		var attrs = info.attrs
-		var attrid = 0
 		
 		var attrbase = painter.nameid('ATTR_0')
 		// do the props
-		var proprange = Math.floor(info.propslots / 4) + 1
-		code += indent+'	_todo.instances('+(attrbase+attrid)+','+proprange+',_props)\n'
-		attrid += proprange
+		var attroffset = Math.ceil(info.propslots / 4)
+		code += indent+'	_todo.instances('+(attrbase)+','+attroffset+',_props)\n'
+		var attrid = attroffset
 		// set attributes
 		for(var key in attrs){
-			// check if attribute is larger than 4
 			var attr = attrs[key]
-			var attrange = Math.floor(types.getSlots(attr.type) / 4) + 1
+			var attrange = Math.ceil(types.getSlots(attr.type) / 4)
 			code += indent+'	_attrlen = _proto.'+key+'.length\n'
 			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+key+')\n'
 			attrid += attrange

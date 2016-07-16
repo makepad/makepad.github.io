@@ -50,7 +50,7 @@ function extend(body){
 
 	if(body){
 		if(typeof body === 'function'){
-			body.call(proto, proto, this.prototype)
+			body.call(proto, this.prototype, proto)
 		}
 		else if(typeof body === 'object'){
 			for(var key in body){

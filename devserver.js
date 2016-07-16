@@ -10,12 +10,6 @@ var mimetable = {
 	'.map':'application/json',
 	'.html':'text/html',
 	'.js':'application/javascript',
-	'.jpg':'image/jpeg',
-	'.jpeg':'image/jpeg',
-	'.png':'image/png',
-	'.gif':'image/gif',
-	'.txt':'text/plain',
-	'.css':'text/css',
 	'.ico':'image/x-icon'
 }
 
@@ -88,8 +82,9 @@ function requestHandler(req, res){
 	// return filename 
 	var fileext = ((filename.match(/\.[a-zA-Z0-9]+$/) || [''])[0]).toLowerCase()
 	if(!fileext) fileext = '.html', filename += '.html'
-	var filemime = mimetable[fileext]
-	if(!filemime || filename.match(/\.\./)){
+	var filemime = mimetable[fileext] || 'application/octet-stream'
+
+	if(filename.match(/\.\./)){
 		res.writeHead(404)
 		res.end()
 		return 
