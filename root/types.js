@@ -121,6 +121,17 @@ types.mat4 = {
 	p:types.float
 }
 
+types.sampler2D = {
+	_name:'sampler2D',
+	_sampler:true
+}
+
+types.samplerCube = {
+	_name:'samplerCube',
+	_sampler:true
+}
+
+
 types.gen = {
 	_name:'gen',
 	_isa:function(type){

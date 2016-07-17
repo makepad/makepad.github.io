@@ -17,12 +17,12 @@ module.exports = require('class').extend(function Shader(){
 	this.constant = undefined
 
 	this.tween = function(){
-		if(props.duration < 0.01) return 1.
-		return clamp((time - props.tweenstart) / props.duration, 0.0, 1.0)
+		if(this.duration < 0.01) return 1.
+		return clamp((time - this.tweenstart) / this.duration, 0.0, 1.0)
 	}
 
 	this.vertexEntry = function(){
-		var T = tween()
+		var T = this.tween()
 		$CALCULATETWEEN
 		return this.vertex()
 	}
@@ -274,6 +274,22 @@ module.exports = require('class').extend(function Shader(){
 			phead += 'uniform ' + pix.uniforms[key].type._name + ' ' + key + ';\n'
 		}
 
+		// the sampler uniforms
+		var hassamplers = 0
+		var samplers = {}
+		for(var key in vtx.samplers){
+			var sampler = samplers[key] = vtx.samplers[key].sampler
+			if(!hassamplers++)vhead += '\n// samplers\n'
+			vhead += 'uniform ' + sampler.type._name + ' ' + key + ';\n'
+		}
+
+		var hassamplers = 0
+		for(var key in pix.samplers){
+			var sampler = samplers[key] = pix.samplers[key].sampler
+			if(!hassamplers++)phead += '\n// samplers\n'
+			phead += 'uniform ' + sampler.type._name + ' ' + key + ';\n'
+		}
+
 		// define output variables in pixel shader
 		phead += '\n// outputs\n'
 		for(var key in pix.outputs){
@@ -308,12 +324,13 @@ module.exports = require('class').extend(function Shader(){
 		pixel += pfunc
 		pixel += '\nvoid main(){\n'
 		pixel += ppre
-		if(pix.generatedfns.pixel_T.return.type === types.vec4){
+
+		if(pix.generatedfns.this_DOT_pixel_T.return.type === types.vec4){
 			pixel +=  '\tgl_FragColor = ' + pix.main
 		}
 		else{
 			pixel += pix.main
-			pixel += '\tgl_FragColor = out_DOT_color;\n' 
+			pixel += '\tgl_FragColor = this_DOT_outcolor;\n' 
 		}
 
 		//!TODO: do MRT stuff
@@ -328,7 +345,6 @@ module.exports = require('class').extend(function Shader(){
 			propslots:propslots
 		}
 		if(this.dump) console.log(vertex,pixel)
-		//console.log(vertex)
 	}
 
 	this.onextendclass = function(){
@@ -426,8 +442,9 @@ module.exports = require('class').extend(function Shader(){
 		for(var key in attrs){
 			var attr = attrs[key]
 			var attrange = Math.ceil(types.getSlots(attr.type) / 4)
-			code += indent+'	_attrlen = _proto.'+key+'.length\n'
-			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+key+')\n'
+			var nodot = key.slice(9)
+			code += indent+'	_attrlen = _proto.'+nodot+'.length\n'
+			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+nodot+')\n'
 			attrid += attrange
 		}
 		
@@ -439,7 +456,9 @@ module.exports = require('class').extend(function Shader(){
 		for(var key in uniforms){
 			var uniform = uniforms[key]
 			// this.canvas....?
-			var segs = key.split("_DOT_")
+			var nodot = key.slice(9)
+
+			var segs = nodot.split("_DOT_")
 			var fullname = segs.join('.')
 			var first = segs[0]
 			// lets check special uniforms view, camera and time
@@ -470,8 +489,8 @@ module.exports = require('class').extend(function Shader(){
 
 	this.$TWEENJS = function(indent, tweencode, props){
 		var code = ''
-		code += indent + 'var _duration = _a[_o + ' + props.props_DOT_duration.offset +']\n'
-		code += indent + 'var _tweenstart = _a[_o + ' + props.props_DOT_tweenstart.offset +']\n'
+		code += indent + 'var _duration = _a[_o + ' + props.this_DOT_duration.offset +']\n'
+		code += indent + 'var _tweenstart = _a[_o + ' + props.this_DOT_tweenstart.offset +']\n'
 		code += indent + 'if(this.view._time < _tweenstart + _duration){\n'
 		code += indent + '	var _tween = Math.min(1,Math.max(0,(this.view._time - _tweenstart)/_duration))\n'
 		code += indent + tweencode 
@@ -486,7 +505,6 @@ module.exports = require('class').extend(function Shader(){
 			var slots = prop.slots
 			var o = prop.offset
 			var notween = prop.config.notween
-			// generate the code to tween.
 			if(!notween){
 				// new, old
 				for(var i = 0; i < slots; i++){
@@ -622,11 +640,11 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 	
-	function defineSetterObject(name){
+	function defineConfiguratorSetter(name){
 		var _name = '_' + name
 		Object.defineProperty(this, name, {
 			get:function(){
-				throw new Error('Please only assign to '+name+': this.'+name+' = {...}')
+				throw new Error(name+' is a configurator, please only assign objects: this.'+name+' = {...}')
 			},
 			set:function(props){
 				if(!this.hasOwnProperty(_name)){
@@ -641,7 +659,7 @@ module.exports = require('class').extend(function Shader(){
 
 	Object.defineProperty(this, 'props', {
 		get:function(){
-			throw new Error('Please only assign to props: this.props = {...}')
+			throw new Error('props is a configurator, please only assign objects: this.props = {...}')
 		},
 		set:function(props){
 			if(!this.hasOwnProperty('_props')){
@@ -657,8 +675,16 @@ module.exports = require('class').extend(function Shader(){
 			}
 		}
 	})
-	defineSetterObject.call(this, 'defines')
-	defineSetterObject.call(this, 'structs')
+
+	defineConfiguratorSetter.call(this, 'defines')
+	defineConfiguratorSetter.call(this, 'structs')
+	defineConfiguratorSetter.call(this, 'samplers')
+	defineConfiguratorSetter.call(this, 'outputs')
+	defineConfiguratorSetter.call(this, 'requires')
+
+	this.outputs = {
+		outcolor: types.vec4
+	}
 
 	this.defines = {
 		'PI':'3.141592653589793',

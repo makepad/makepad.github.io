@@ -6,20 +6,20 @@ var App = require('view').extend(function(){
 			this.props = {
 				random:0,
 			}
-			this.pixelstyle = function(){
-				props.borderwidth.x = 10.+5.*sin(mesh.x*15.*props.random)*cos(mesh.x*5.*props.random)
-				var meshh = mesh.y*props.h
-				var propsh = props.borderwidth.x+1.
-				if(meshh <propsh ) props.bordercolor = mix('white','gray',meshh/propsh)
+			this.pixelstyle = function(){$
+				var m = this.mesh
+				this.borderwidth.x = 10.+5.*sin(m.x*15.*this.random)*cos(m.x*5.*this.random)
+				var meshh = this.mesh.y*this.h
+				var propsh = this.borderwidth.x+1.
+				if(meshh <propsh ) this.bordercolor = mix('white','gray',meshh/propsh)
 
 			}
 		})
 	}
 
 	this.ondraw = function(){
-
-		for(var i = 0 ; i < 4000;i++){
-
+		var dt = performance.now()
+		for(var i = 0 ; i < 16000;i++){
 			this.drawBackground({
 				random:Math.random()+0.1,
 				color:[Math.random(),Math.random(),Math.random(),1],
@@ -36,6 +36,7 @@ var App = require('view').extend(function(){
 				h:40+40*Math.random()
 			})
 		}
+		console.log(performance.now()-dt)
 	}
 })
 App().runApp()

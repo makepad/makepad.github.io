@@ -1,6 +1,8 @@
 module.exports = require('shader').extend(function TweenShader(){
 	var types = require('types')
 
+	this.time = 0.
+
 	this.view = {
 		position:types.mat4
 	}
@@ -49,13 +51,13 @@ module.exports = require('shader').extend(function TweenShader(){
 	}
 
 	this.tween = function(){
-		if(props.duration < 0.01) return 1.
+		if(this.duration < 0.01) return 1.
 		return this.tweenBezier(
-			props.ease.x, 
-			props.ease.y, 
-			props.ease.z, 
-			props.ease.w, 
-			clamp((time - props.tweenstart) / props.duration, 0.0, 1.0)
+			this.ease.x, 
+			this.ease.y, 
+			this.ease.z, 
+			this.ease.w, 
+			clamp((this.time - this.tweenstart) / this.duration, 0.0, 1.0)
 		)
 	}
 

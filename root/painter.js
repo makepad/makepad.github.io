@@ -548,6 +548,7 @@ painter.Todo = require('class').extend(function Todo(){
 var shaderids = {}
 var shaderidsalloc = 1
 
+// blending sources
 painter.ZERO = 0x0
 painter.ONE = 0x1
 painter.SRC_COLOR = 0x300
@@ -561,13 +562,26 @@ painter.ONE_MINUS_DST_COLOR = 0x307
 painter.SRC_ALPHA_SATURATE = 0x308
 painter.CONSTANT_COLOR = 0x8001
 painter.ONE_MINUS_CONSTANT_COLOR = 0x8002
-
+// blending function
 painter.FUNC_SUBTRACT = 0x800a
 painter.FUNC_REVERSE_SUBTRACT = 0x800b
 painter.FUNC_ADD = 0x8006
 painter.MIN = 0x8007
 painter.MAX = 0x8008
 
+// min/magfilter values
+painter.LINEAR = 0x2601
+painter.NEAREST_MIPMAP_NEAREST = 0x2700 
+painter.LINEAR_MIPMAP_NEAREST = 0x2701
+painter.NEAREST_MIPMAP_LINEAR = 0x2702
+painter.LINEAR_MIPMAP_LINEAR = 0x2703
+
+// wraps/t values
+painter.REPEAT = 0x2901
+painter.CLAMP_TO_EDGE = 0x812f
+painter.MIRRORED_REPEAT = 0x8370,
+
+// texture flags
 painter.RGB = 1 << 0
 painter.RGBA = 1 << 1
 painter.ALPHA = 1 << 3
@@ -578,6 +592,23 @@ painter.FLOAT = 1 << 10
 painter.HALF_FLOAT = 1 << 11
 painter.FLOAT_LINEAR = 1 << 12
 painter.HALF_FLOAT_LINEAR = 1 << 13
+
+// prefab sampler types
+painter.sampler2dnearest = {
+	type: types.sampler2D,
+	minfilter: painter.NEAREST,
+	magfilter: painter.NEAREST,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
+
+painter.sampler2dlinear = {
+	type: types.sampler2D,
+	minfilter: painter.LINEAR,
+	magfilter: painter.LINEAR,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
 
 painter.Shader = require('class').extend(function Shader(){
 
@@ -732,6 +763,18 @@ painter.Mesh = require('class').extend(function Mesh(){
 		this.dirty = true
 		this.self.length = newlength
 		return this
+	}
+})
+
+painter.Texture = require('class').extend(function Texture(){
+	var Texture = this.constructor
+	
+	Texture.fromArray2D = function(type, w, h, array){
+
+	}
+
+	this.onconstruct = function(){
+
 	}
 })
 
