@@ -1,4 +1,4 @@
-module.exports = function(){
+module.exports = function(proto){
 
 	var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}])/g)
 	var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
@@ -9,7 +9,7 @@ module.exports = function(){
 	var nameRx = new RegExp(/NAME/g)
 	var fnnameRx = new RegExp(/^function\s*\(/)
 
-	this.compileCanvasMacros = function(classname, target){
+	proto.compileCanvasMacros = function(classname, target){
 		var mainthis = this
 		var _canvasmacros = this._canvasmacros
 		for(var macroname in _canvasmacros){
@@ -46,7 +46,7 @@ module.exports = function(){
 		}
 	}
 
-	Object.defineProperty(this, 'canvasmacros', {
+	Object.defineProperty(proto, 'canvasmacros', {
 		get:function(){
 			return this._canvasmacros
 		},

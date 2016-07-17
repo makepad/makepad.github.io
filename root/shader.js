@@ -1,6 +1,6 @@
-module.exports = require('class').extend(function Shader(){
+module.exports = require('class').extend(function Shader(proto){
 
-	require('./canvasmacros').call(this)
+	require('./canvasmacros')(proto)
 	var painter = require('painter')
 	var types = require('types')
 	var parser = require('jsparser/jsparser')
@@ -11,29 +11,29 @@ module.exports = require('class').extend(function Shader(){
 	// allocate the nameids for attribute ranges
 	for(var i = 0; i < 16; i++) painter.nameid('ATTR_'+i)
 
-	this.time = 0.0
+	proto.time = 0.0
 
-	this.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
-	this.constant = undefined
+	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
+	proto.constant = undefined
 
-	this.tween = function(){
+	proto.tween = function(){
 		if(this.duration < 0.01) return 1.
 		return clamp((time - this.tweenstart) / this.duration, 0.0, 1.0)
 	}
 
-	this.vertexEntry = function(){
+	proto.vertexEntry = function(){
 		var T = this.tween()
 		$CALCULATETWEEN
 		return this.vertex()
 	}
 
-	this.pixelEntry = function(){
+	proto.pixelEntry = function(){
 		this.pixel()
 	}
 
 	// ok the alpha blend modes. how do we do it.
 
-	this.compileShader = function(){
+	proto.compileShader = function(){
 		if(!this.vertex || !this.pixel) return
 
 		var ast = parser.parse()
@@ -347,12 +347,12 @@ module.exports = require('class').extend(function Shader(){
 		if(this.dump) console.log(vertex,pixel)
 	}
 
-	this.onextendclass = function(){
+	proto.onextendclass = function(){
 		// call shader compiler
 		this.compileShader()
 	}
 
-	this.$OVERLOADPROPS = function(classname, macroargs, mainargs, indent){
+	proto.$OVERLOADPROPS = function(classname, macroargs, mainargs, indent){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
 		var props = this.compileinfo.props
@@ -408,7 +408,7 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 
-	this.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
+	proto.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
 		// lets start a propsbuffer 
@@ -487,7 +487,7 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 
-	this.$TWEENJS = function(indent, tweencode, props){
+	proto.$TWEENJS = function(indent, tweencode, props){
 		var code = ''
 		code += indent + 'var _duration = _a[_o + ' + props.this_DOT_duration.offset +']\n'
 		code += indent + 'var _tweenstart = _a[_o + ' + props.this_DOT_tweenstart.offset +']\n'
@@ -498,7 +498,7 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 
-	this.$DUMPPROPS = function(props, indent){
+	proto.$DUMPPROPS = function(props, indent){
 		var code = ''
 		for(var key in props){
 			var prop = props[key]
@@ -520,7 +520,7 @@ module.exports = require('class').extend(function Shader(){
 		return code
 	}
 
-	this.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
+	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
 		// load the turtle
 		var info = this.compileinfo
 		var props = info.props
@@ -657,7 +657,7 @@ module.exports = require('class').extend(function Shader(){
 		})
 	}
 
-	Object.defineProperty(this, 'props', {
+	Object.defineProperty(proto, 'props', {
 		get:function(){
 			throw new Error('props is a configurator, please only assign objects: this.props = {...}')
 		},
@@ -676,17 +676,17 @@ module.exports = require('class').extend(function Shader(){
 		}
 	})
 
-	defineConfiguratorSetter.call(this, 'defines')
-	defineConfiguratorSetter.call(this, 'structs')
-	defineConfiguratorSetter.call(this, 'samplers')
-	defineConfiguratorSetter.call(this, 'outputs')
-	defineConfiguratorSetter.call(this, 'requires')
+	defineConfiguratorSetter.call(proto, 'defines')
+	defineConfiguratorSetter.call(proto, 'structs')
+	defineConfiguratorSetter.call(proto, 'samplers')
+	defineConfiguratorSetter.call(proto, 'outputs')
+	defineConfiguratorSetter.call(proto, 'requires')
 
-	this.outputs = {
+	proto.outputs = {
 		outcolor: types.vec4
 	}
 
-	this.defines = {
+	proto.defines = {
 		'PI':'3.141592653589793',
 		'E':'2.718281828459045',
 		'LN2':'0.6931471805599453',
@@ -696,7 +696,7 @@ module.exports = require('class').extend(function Shader(){
 		'SQRT12':'0.70710678118654757',
 	}
 
-	this.props = {
+	proto.props = {
 		duration: {notween:true, value:1.0},
 		tweenstart: {notween:true, nostyle:true, value:1.0}
 	}

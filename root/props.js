@@ -1,4 +1,4 @@
-module.exports = function(){
+module.exports = function(proto){
 	var types = require('types')
 	// special names for property with name: key
 	// this.key  <- getter setter for the key
@@ -48,7 +48,7 @@ module.exports = function(){
 		})
 	}
 
-	Object.defineProperty(this, 'props', {
+	Object.defineProperty(proto, 'props', {
 		set:function(props){
 			for(var key in props){
 				defineProp.call(this, key, props[key])

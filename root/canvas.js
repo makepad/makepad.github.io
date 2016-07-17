@@ -2,11 +2,11 @@ var painter = require('painter')
 //var fingers = require('fingers')
 var types = require('types')
 
-module.exports = function(){
+module.exports = function(proto){
 
-	this.Turtle = require('turtle')
+	proto.Turtle = require('turtle')
 
-	this.composeTree = function(oldchildren){
+	proto.composeTree = function(oldchildren){
 		// it calls compose recursively
 		if(this.oncompose){
 			this.onflag = 1
@@ -46,19 +46,19 @@ module.exports = function(){
 		if(this.oncomposed) this.oncomposed()
 	}
 
-	this.walkTurtle = function(){
+	proto.walkTurtle = function(){
 	}
 
 	// begin a turtle
-	this.beginTurtle = function(){
+	proto.beginTurtle = function(){
 	}
 
 	// end a turtle
-	this.endTurtle = function(){
+	proto.endTurtle = function(){
 	}
 
 	// internal API used by canvas macros
-	this._allocShader = function(classname){
+	proto._allocShader = function(classname){
 		var shaders = this.shaders
 		var info = this['_' + classname].prototype.compileinfo
 		var shader = shaders[classname] = new painter.Shader(info)
@@ -66,13 +66,13 @@ module.exports = function(){
 		return shader
 	}
 
-	this._parseColor = function(str, alpha, a, o){
+	proto._parseColor = function(str, alpha, a, o){
 		if(!types.colorFromString(str, alpha, a, o)){
 			console.log("Cannot parse color "+str)
 		}
 	}
 
-	this._parseColorPacked = function(str, alpha, a, o){
+	proto._parseColorPacked = function(str, alpha, a, o){
 		if(!types.colorFromStringPacked(str, alpha, a, o)){
 			console.log("Cannot parse color "+str)
 		}

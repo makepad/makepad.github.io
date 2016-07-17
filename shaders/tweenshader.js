@@ -1,19 +1,19 @@
-module.exports = require('shader').extend(function TweenShader(){
+module.exports = require('shader').extend(function TweenShader(proto){
 	var types = require('types')
 
-	this.time = 0.
+	proto.time = 0.
 
-	this.view = {
+	proto.view = {
 		position:types.mat4
 	}
 
-	this.camera = {
+	proto.camera = {
 		position:types.mat4,
 		projection:types.mat4
 	}
 
 	var abs = Math.abs
-	this.tweenBezier = function(cp0, cp1, cp2, cp3, t){
+	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){
 
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 
@@ -50,7 +50,7 @@ module.exports = require('shader').extend(function TweenShader(){
 		return ((ay * u + by) * u + cy) * u
 	}
 
-	this.tween = function(){
+	proto.tween = function(){
 		if(this.duration < 0.01) return 1.
 		return this.tweenBezier(
 			this.ease.x, 
@@ -61,7 +61,7 @@ module.exports = require('shader').extend(function TweenShader(){
 		)
 	}
 
-	this.props = {
+	proto.props = {
 		ease: {notween:true, value:[0,0,1.0,1.0]}
 	}
 })

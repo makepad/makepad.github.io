@@ -1,5 +1,5 @@
 // lets create a constructor
-
+var frozen = Object.freeze({})
 function extend(body){
 
 	var proto = Object.create(this.prototype)
@@ -50,7 +50,7 @@ function extend(body){
 
 	if(body){
 		if(typeof body === 'function'){
-			body.call(proto, this.prototype, proto)
+			body.call(frozen, proto, this.prototype)
 		}
 		else if(typeof body === 'object'){
 			for(var key in body){

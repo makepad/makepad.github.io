@@ -1,4 +1,4 @@
-module.exports = require('class').extend(function ShaderGen(){
+module.exports = require('class').extend(function ShaderGen(proto){
 	
 	var types  = require('types')
 	var parser = require('jsparser/jsparser')
@@ -6,7 +6,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	var parsecache = {}
 	var painter = require('painter')
 
-	this.constructor.generateGLSL = function(root, fn, varyin, mapexception){
+	proto.constructor.generateGLSL = function(root, fn, varyin, mapexception){
 		
 		var gen = new this()
 
@@ -98,7 +98,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		return gen
 	}
 
-	this.walk = function(node, parent){
+	proto.walk = function(node, parent){
 		//node.parent = parent
 		node.infer = undefined
 		var typefn = this[node.type]
@@ -106,7 +106,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		return typefn.call(this,node)
 	}
 
-	this.block = function(array, parent){
+	proto.block = function(array, parent){
 		var ret = ''
 		for(var i = 0; i < array.length; i++){
 			var line = this.walk(array[i], parent)
@@ -116,12 +116,12 @@ module.exports = require('class').extend(function ShaderGen(){
 		return ret
 	}
 	
-	this.Program = function(node){
+	proto.Program = function(node){
 		// ok lets fetch the first function declaration if we have one
 		return this.block(node.body, node)
 	}
 
-	this.BlockStatement = function(node){
+	proto.BlockStatement = function(node){
 		var oi = this.indent
 		this.indent += '\t'
 		var ret = '{\n'
@@ -132,19 +132,19 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//EmptyStatement:{}
-	this.EmptyStatement = function(node){
+	proto.EmptyStatement = function(node){
 		return ''
 	}
 
 	//ExpressionStatement:{expression:1},
-	this.ExpressionStatement = function(node){
+	proto.ExpressionStatement = function(node){
 		var ret = this.walk(node.expression, node)
 		node.infer = node.expression.infer
 		return ret
 	}
 
 	//SequenceExpression:{expressions:2}
-	this.SequenceExpression = function(node){
+	proto.SequenceExpression = function(node){
 		var ret = ''
 		var exps = node.expressions
 		for(var i = 0; i < exps.length; i++){
@@ -156,14 +156,14 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//ParenthesizedExpression:{expression:1}
-	this.ParenthesizedExpression = function(node){
+	proto.ParenthesizedExpression = function(node){
 		var ret = '(' + this.walk(node.expression, node) + ')'
 		node.infer = node.expression.infer
 		return ret
 	}
 
 	//Literal:{raw:0, value:0},
-	this.Literal = function(node){
+	proto.Literal = function(node){
 		var infer = {
 			kind:'value'
 		}
@@ -204,7 +204,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		4:types.vec4
 	}
 
-	this.mapObjectProperty = function(node, name, value, prefix){
+	proto.mapObjectProperty = function(node, name, value, prefix){
 		// we are mapping an object property...
 
 		// its a function
@@ -422,7 +422,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//Identifier:{name:0},
-	this.Identifier = function(node){
+	proto.Identifier = function(node){
 		var name = node.name
 
 		if(name === '$') return ''
@@ -585,7 +585,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//ThisExpression:{},
-	this.ThisExpression = function(node){
+	proto.ThisExpression = function(node){
 		node.infer = {
 			kind:'this',
 			prefix:this.ctxprefix || 'this_DOT_'
@@ -604,7 +604,7 @@ module.exports = require('class').extend(function ShaderGen(){
 
 
 	//MemberExpression:{object:1, property:types.gen, computed:0},
-	this.MemberExpression = function(node){
+	proto.MemberExpression = function(node){
 		// just chuck This
 		//if(node.object.type === 'ThisExpression' || node.object.type === 'Identifier' && ignore_objects[node.object.name]){
 		//	var ret = this.walk(node.property)
@@ -665,7 +665,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//CallExpression:{callee:1, arguments:2},
-	this.CallExpression = function(node){
+	proto.CallExpression = function(node){
 		var calleestr = this.walk(node.callee, node)
 		var callee = node.callee
 		var calleeinfer = node.callee.infer
@@ -867,7 +867,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//ReturnStatement:{argument:1},
-	this.ReturnStatement = function(node){
+	proto.ReturnStatement = function(node){
 		var ret = 'return ' 
 		var infer
 		if(node.argument !== null){
@@ -893,20 +893,20 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
-	this.FunctionExpression = function(node){
+	proto.FunctionExpression = function(node){
 		console.error("FunctionExpression not implemented")
 		return ''
 	}
 
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
-	this.FunctionDeclaration = function(node){
+	proto.FunctionDeclaration = function(node){
 		// an inline function declaration
 		console.error("FunctionDeclaration not implemented")
 		return ''
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
-	this.VariableDeclaration = function(node){
+	proto.VariableDeclaration = function(node){
 		// ok we have to split into the types of the declarations
 		var decls = node.declarations
 		var ret = ''
@@ -922,7 +922,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	this.VariableDeclarator = function(node){
+	proto.VariableDeclarator = function(node){
 
 		if(!node.init){
 			throw this.InferErr(node, node.type + ' cant infer type without initializer '+node.id.name)
@@ -951,7 +951,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
-	this.LogicalExpression = function(node){
+	proto.LogicalExpression = function(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
 		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
 		node.infer = {
@@ -962,7 +962,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
-	this.BinaryExpression = function(node){
+	proto.BinaryExpression = function(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
 		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
 		var leftinfer = node.left.infer
@@ -976,7 +976,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//AssignmentExpression: {left:1, right:1},
-	this.AssignmentExpression = function(node){
+	proto.AssignmentExpression = function(node){
 		var leftstr = this.walk(node.left, node)
 		var rightstr =  this.walk(node.right, node)
 
@@ -1026,14 +1026,14 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
-	this.ConditionalExpression = function(node){
+	proto.ConditionalExpression = function(node){
 		//!TODO check types
 		var ret = this.walk(node.test, node) + '?' + this.walk(node.consequent, node) + ':' + this.walk(node.alternate, node)
 		return ret
 	}
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
-	this.UpdateExpression = function(node){
+	proto.UpdateExpression = function(node){
 		var ret = this.walk(node.argument, node)
 		node.infer = node.argument.infer
 		if(node.prefix){
@@ -1044,7 +1044,7 @@ module.exports = require('class').extend(function ShaderGen(){
 
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
-	this.UnaryExpression = function(node){
+	proto.UnaryExpression = function(node){
 		var ret = this.walk(node.argument, node)
 		node.infer = node.argument.infer
 		if(node.prefix){
@@ -1054,7 +1054,7 @@ module.exports = require('class').extend(function ShaderGen(){
  	}
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
-	this.IfStatement = function(node){
+	proto.IfStatement = function(node){
 		var ret = 'if(' + this.walk(node.test) + ') ' 
 
 		ret += this.walk(node.consequent, node)
@@ -1067,7 +1067,7 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
-	this.ForStatement = function(node){
+	proto.ForStatement = function(node){
 		var ret = 'for(' + this.walk(node.init) + ';' 
 		ret += this.walk(node.test)+';'
 		ret += this.walk(node.update)+') '
@@ -1075,21 +1075,21 @@ module.exports = require('class').extend(function ShaderGen(){
 		return ret
 	}
 
-	this.BreakStatement = function(node){
+	proto.BreakStatement = function(node){
 		return 'break'
 	}
 
-	this.ContinueStatement = function(node){
+	proto.ContinueStatement = function(node){
 		return 'continue'
 	}
 
 	// non GLSL literals
-	this.ArrayExpression = function(node){
+	proto.ArrayExpression = function(node){
 		throw this.SyntaxErr(node,'ArrayExpression')
 	}
 
 
-	this.ObjectExpression = function(node){
+	proto.ObjectExpression = function(node){
 		node.infer = {
 			kind:'objectexpression',
 			object:node
@@ -1109,57 +1109,57 @@ module.exports = require('class').extend(function ShaderGen(){
 	}
 
 	// Exceptions
-	this.ResolveErr = function(node, message){
+	proto.ResolveErr = function(node, message){
 		return new Err(this, node, 'ResolveError', message)
 	}
 
-	this.SyntaxErr = function(node, message){
+	proto.SyntaxErr = function(node, message){
 		return new Err(this, node, 'SyntaxError', message)
 	}
 
-	this.InferErr = function(node, message){
+	proto.InferErr = function(node, message){
 		return new Err(this, node, 'InferenceError', message)
 	}
 
 
-	this.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
-	this.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}
-	this.TryStatement = function(node){throw this.SyntaxErr(node,'TryStatement')}
-	this.CatchClause = function(node){throw this.SyntaxErr(node,'CatchClause')}
-	this.Super = function(node){throw this.SyntaxErr(node,'Super')}
-	this.AwaitExpression = function(node){throw this.SyntaxErr(node,'AwaitExpression')}
-	this.MetaProperty = function(node){throw this.SyntaxErr(node,'MetaProperty')}
-	this.NewExpression = function(node){throw this.SyntaxErr(node,'NewExpression')}
-	this.ObjectPattern = function(node){throw this.SyntaxErr(node,'ObjectPattern')}
-	this.ArrowFunctionExpression = function(node){throw this.SyntaxErr(node,'ArrowFunctionExpression')}
-	this.ForInStatement = function(node){throw this.SyntaxErr(node,'ForInStatement')}
-	this.ForOfStatement = function(node){throw this.SyntaxErr(node,'ForOfStatement')}
-	this.WhileStatement = function(node){throw this.SyntaxErr(node,'WhileStatement')}
-	this.DoWhileStatement = function(node){throw this.SyntaxErr(node,'DoWhileStatement')}
-	this.SwitchStatement = function(node){throw this.SyntaxErr(node,'SwitchStatement')}
-	this.SwitchCase = function(node){throw this.SyntaxErr(node,'SwitchCase')}
-	this.TaggedTemplateExpression = function(node){throw this.SyntaxErr(node,'TaggedTemplateExpression')}
-	this.TemplateElement = function(node){throw this.SyntaxErr(node,'TemplateElement')}
-	this.TemplateLiteral = function(node){throw this.SyntaxErr(node,'TemplateLiteral')}
-	this.ClassDeclaration = function(node){throw this.SyntaxErr(node,'ClassDeclaration')}
-	this.ClassExpression = function(node){throw this.SyntaxErr(node,'ClassExpression')}
-	this.ClassBody = function(node){throw this.SyntaxErr(node,'ClassBody')}
-	this.MethodDefinition = function(node){throw this.SyntaxErr(node,'MethodDefinition')}
-	this.ExportAllDeclaration = function(node){throw this.SyntaxErr(node,'ExportAllDeclaration')}
-	this.ExportDefaultDeclaration = function(node){throw this.SyntaxErr(node,'ExportDefaultDeclaration')}
-	this.ExportNamedDeclaration = function(node){throw this.SyntaxErr(node,'ExportNamedDeclaration')}
-	this.ExportSpecifier = function(node){throw this.SyntaxErr(node,'ExportSpecifier')}
-	this.ImportDeclaration = function(node){throw this.SyntaxErr(node,'ImportDeclaration')}
-	this.ImportDefaultSpecifier = function(node){throw this.SyntaxErr(node,'ImportDefaultSpecifier')}
-	this.ImportNamespaceSpecifier = function(node){throw this.SyntaxErr(node,'ImportNamespaceSpecifier')}
-	this.ImportSpecifier = function(node){throw this.SyntaxErr(node,'ImportSpecifier')}
-	this.DebuggerStatement = function(node){throw this.SyntaxErr(node,'DebuggerStatement')}
-	this.LabeledStatement = function(node){throw this.SyntaxErr(node,'LabeledStatement')}
-	this.WithStatement = function(node){throw this.SyntaxErr(node,'WithStatement')}
+	proto.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
+	proto.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}
+	proto.TryStatement = function(node){throw this.SyntaxErr(node,'TryStatement')}
+	proto.CatchClause = function(node){throw this.SyntaxErr(node,'CatchClause')}
+	proto.Super = function(node){throw this.SyntaxErr(node,'Super')}
+	proto.AwaitExpression = function(node){throw this.SyntaxErr(node,'AwaitExpression')}
+	proto.MetaProperty = function(node){throw this.SyntaxErr(node,'MetaProperty')}
+	proto.NewExpression = function(node){throw this.SyntaxErr(node,'NewExpression')}
+	proto.ObjectPattern = function(node){throw this.SyntaxErr(node,'ObjectPattern')}
+	proto.ArrowFunctionExpression = function(node){throw this.SyntaxErr(node,'ArrowFunctionExpression')}
+	proto.ForInStatement = function(node){throw this.SyntaxErr(node,'ForInStatement')}
+	proto.ForOfStatement = function(node){throw this.SyntaxErr(node,'ForOfStatement')}
+	proto.WhileStatement = function(node){throw this.SyntaxErr(node,'WhileStatement')}
+	proto.DoWhileStatement = function(node){throw this.SyntaxErr(node,'DoWhileStatement')}
+	proto.SwitchStatement = function(node){throw this.SyntaxErr(node,'SwitchStatement')}
+	proto.SwitchCase = function(node){throw this.SyntaxErr(node,'SwitchCase')}
+	proto.TaggedTemplateExpression = function(node){throw this.SyntaxErr(node,'TaggedTemplateExpression')}
+	proto.TemplateElement = function(node){throw this.SyntaxErr(node,'TemplateElement')}
+	proto.TemplateLiteral = function(node){throw this.SyntaxErr(node,'TemplateLiteral')}
+	proto.ClassDeclaration = function(node){throw this.SyntaxErr(node,'ClassDeclaration')}
+	proto.ClassExpression = function(node){throw this.SyntaxErr(node,'ClassExpression')}
+	proto.ClassBody = function(node){throw this.SyntaxErr(node,'ClassBody')}
+	proto.MethodDefinition = function(node){throw this.SyntaxErr(node,'MethodDefinition')}
+	proto.ExportAllDeclaration = function(node){throw this.SyntaxErr(node,'ExportAllDeclaration')}
+	proto.ExportDefaultDeclaration = function(node){throw this.SyntaxErr(node,'ExportDefaultDeclaration')}
+	proto.ExportNamedDeclaration = function(node){throw this.SyntaxErr(node,'ExportNamedDeclaration')}
+	proto.ExportSpecifier = function(node){throw this.SyntaxErr(node,'ExportSpecifier')}
+	proto.ImportDeclaration = function(node){throw this.SyntaxErr(node,'ImportDeclaration')}
+	proto.ImportDefaultSpecifier = function(node){throw this.SyntaxErr(node,'ImportDefaultSpecifier')}
+	proto.ImportNamespaceSpecifier = function(node){throw this.SyntaxErr(node,'ImportNamespaceSpecifier')}
+	proto.ImportSpecifier = function(node){throw this.SyntaxErr(node,'ImportSpecifier')}
+	proto.DebuggerStatement = function(node){throw this.SyntaxErr(node,'DebuggerStatement')}
+	proto.LabeledStatement = function(node){throw this.SyntaxErr(node,'LabeledStatement')}
+	proto.WithStatement = function(node){throw this.SyntaxErr(node,'WithStatement')}
 
 	// Types
 
-	this.glslvariables = {
+	proto.glslvariables = {
 		gl_Position:types.vec4,
 		gl_FragCoord:types.vec4,
 		gl_PointCoord:types.vec2,
@@ -1179,7 +1179,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		discard:types.void
 	}
 
-	this.glsltypes = {
+	proto.glsltypes = {
 		float:types.float,
 		bool:types.bool,
 		vec2:types.vec2,
@@ -1193,7 +1193,7 @@ module.exports = require('class').extend(function ShaderGen(){
 		mat4:types.mat4
 	}
 
-	this.glslfunctions ={
+	proto.glslfunctions ={
 		typeof:{return:types.gen, params:[{name:'type',type:types.gen}]}, 
 		sizeof:{return:types.int, params:[{name:'type',type:types.gen}]},
 

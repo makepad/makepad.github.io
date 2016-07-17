@@ -1,10 +1,10 @@
-module.exports = require('./tweenshader').extend(function RectShader(){
+module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 	var types = require('types')
 	var painter = require('painter')
 
 	// special
-	this.props = {
+	proto.props = {
 		visible: {notween:true, nostyle:true, value:1.0},
 
 		x: NaN,
@@ -29,7 +29,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		shadowy: 1.0
 	}
 
-	this.mesh = painter.Mesh(types.vec3).pushQuad(
+	proto.mesh = painter.Mesh(types.vec3).pushQuad(
 		0,0, 0,
 		1,0, 0,
 		0, 1, 0,
@@ -42,10 +42,10 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		1, 1, 1
 	)
 
-	this.vertexstyle = function(){}
-	this.pixelstyle = function(){}
+	proto.vertexstyle = function(){}
+	proto.pixelstyle = function(){}
 
-	this.vertex = function(){$
+	proto.vertex = function(){$
 		
 		this.vertexstyle()
 
@@ -77,7 +77,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		return vec4(pos + vec2(this.x, this.y), 0., 1.0) * this.view.position * this.camera.position * this.camera.projection
 	}
 
-	this.pixel = function(){$
+	proto.pixel = function(){$
 		//var dt = vary.roundcornermax
 		var p = this.mesh.xy * vec2(this.w, this.h)
 
@@ -151,7 +151,7 @@ module.exports = require('./tweenshader').extend(function RectShader(){
 		}
 	}
 
-	this.canvasmacros = {
+	proto.canvasmacros = {
 		draw:function(overload){
 			this.$OVERLOADPROPS(len)
 			this.$ALLOCDRAW()

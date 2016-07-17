@@ -4,14 +4,16 @@ var painter = require('painter')
 var fingers = require('fingers')
 var mat4 = require('math/mat4')
 
-module.exports = require('class').extend(function View(){
+module.exports = require('class').extend(function View(proto){
 	// load mixins
-	require('props').call(this)
-	require('events').call(this)
-	require('canvas').call(this)
+	require('props')(proto)
+	require('events')(proto)
+	require('canvas')(proto)
+	
+	proto.Turtle = require('turtle')
 
 	// lets define some props
-	this.props = {
+	proto.props = {
 		x:NaN,
 		y:NaN,
 		z:NaN,
@@ -33,7 +35,7 @@ module.exports = require('class').extend(function View(){
 	//this.onfingerhover
 	//this.onfingerwheel
 
-	this._onconstruct = function(args){
+	proto._onconstruct = function(args){
 		// lets process the args and construct things
 		// lets create a todo
 		this.todo = new painter.Todo()
@@ -46,13 +48,13 @@ module.exports = require('class').extend(function View(){
 		this.shaders = {}
 	}
 
-	this._ondestroy = function(){
+	proto._ondestroy = function(){
 		// destroy the todo
 		this.todo.destroyTodo()
 		this.todo = undefined
 	}
 
-	this.composeTree = function(oldchildren){
+	proto.composeTree = function(oldchildren){
 		// it calls compose recursively
 		if(this.oncompose){
 			this.onflag = 1
@@ -93,16 +95,16 @@ module.exports = require('class').extend(function View(){
 		if(this.oncomposed) this.oncomposed()
 	}
 
-	this.recompose = function(){
+	proto.recompose = function(){
 	}
 
-	this.redraw = function(){
+	proto.redraw = function(){
 	}
 
-	this.relayout = function(){
+	proto.relayout = function(){
 	}
 
-	this.redrawChildren = function(){
+	proto.redrawChildren = function(){
 		var todo = this.todo
 		var children = this.children
 		for(var i = 0; i < children.length; i++){
@@ -112,7 +114,7 @@ module.exports = require('class').extend(function View(){
 		}
 	}
 
-	this.redrawView = function(){
+	proto.redrawView = function(){
 		this._time = this.root._time
 		this._frame = this.root._frame
 
@@ -134,15 +136,15 @@ module.exports = require('class').extend(function View(){
 		todo.endTodo()
 	}
 
-	this.ondraw = function(){
+	proto.ondraw = function(){
 		this.redrawBackground()
 		this.redrawChildren()
 	}
 	
-	this.onflag1 = this.recompose
-	this.onflag2 = this.redraw
+	proto.onflag1 = this.recompose
+	proto.onflag2 = this.redraw
 
-	this.runApp = function(){
+	proto.runApp = function(){
 		this.camera = {
 			position:mat4.create(),
 			projection:mat4.create()
@@ -176,7 +178,7 @@ module.exports = require('class').extend(function View(){
 		painter.syncDraw()
 	}
 
-	this.onnestedassign = function(key, cls){
+	proto.onnestedassign = function(key, cls){
 		if(cls.prototype.compileCanvasMacros){
 			cls.prototype.compileCanvasMacros(key, this)
 		}

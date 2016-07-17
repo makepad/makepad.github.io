@@ -18,8 +18,8 @@ bus.onmessage = function(msg){
 
 exports.onrequire = function(args, resolve, moduleurl){
 
-	var Worker = require('class').extend(function Worker(){
-		this.onconstruct = function(onrun){
+	var Worker = require('class').extend(function Worker(proto){
+		proto.onconstruct = function(onrun){
 
 			if(!onrun) onrun = this.onrun
 
@@ -55,11 +55,11 @@ exports.onrequire = function(args, resolve, moduleurl){
 			workerids[workerid] = this
 		}
 
-		this.onrun = function(){}
+		proto.onrun = function(){}
 		
-		this.onmessage = function(msg){}
+		proto.onmessage = function(msg){}
 
-		var construct = this.constructor
+		var construct = proto.constructor
 
 		construct.onmessage = function(msg){}
 		construct.postMessage = function(msg){

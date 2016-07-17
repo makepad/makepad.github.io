@@ -53,11 +53,11 @@ painter.nameid = function(name){
 	return newName(name)
 }
 
-painter.Todo = require('class').extend(function Todo(){
+painter.Todo = require('class').extend(function Todo(proto){
 
-	this.initalloc = 256
+	proto.initalloc = 256
 
-	this.onconstruct = function(initalloc, painter){
+	proto.onconstruct = function(initalloc, painter){
 
 		var todoid = todoidsalloc++
 
@@ -79,13 +79,13 @@ painter.Todo = require('class').extend(function Todo(){
 		todoids[todoid] = this
 	}
 
-	this.beginTodo = function(){
+	proto.beginTodo = function(){
 		this.ended = false
 		this.offset = 0
 		this.last = -1
 	}
 
-	this.endTodo = function(){
+	proto.endTodo = function(){
 		this.ended = true
 		// sync our todo
 		bus.batchMessage({
@@ -96,7 +96,7 @@ painter.Todo = require('class').extend(function Todo(){
 		})
 	}
 
-	this.clearColor = function(red, green, blue, alpha){ // id:0
+	proto.clearColor = function(red, green, blue, alpha){ // id:0
 		// patch previous
 		if(this.last >= 0 && this.i32[this.last] === 1){
 			var o = this.last
@@ -123,7 +123,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+6] = alpha
 	}
 
-	this.clearDepth = function(depth){ // id:0
+	proto.clearDepth = function(depth){ // id:0
 		// patch previous
 		if(this.last >= 0 && this.array[this.last] === 1){
 			var o = this.last
@@ -143,7 +143,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+7] = depth
 	}
 
-	this.clearStencil = function(stencil){
+	proto.clearStencil = function(stencil){
 		// patch previous
 		if(this.last >= 0 && this.array[this.last] === 1){
 			var o = this.last 
@@ -163,7 +163,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+8] = stencil
 	}
 
-	this.useShader = function(shader){
+	proto.useShader = function(shader){
 		var o = (this.last = this.offset)
 		if((this.offset += 3) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -173,7 +173,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+2] = shader.shaderid
 	}
 
-	this.attribute = function(nameid, mesh, offset, stride){
+	proto.attribute = function(nameid, mesh, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
@@ -193,7 +193,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+5] = offset || 0
 	}
 
-	this.attributes = function(startnameid, range, mesh, offset, stride){
+	proto.attributes = function(startnameid, range, mesh, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
@@ -213,7 +213,7 @@ painter.Todo = require('class').extend(function Todo(){
 	}
 
 
-	this.instance = function(nameid, mesh, divisor, offset, stride){
+	proto.instance = function(nameid, mesh, divisor, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
@@ -234,7 +234,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+6] = divisor || 1
 	}
 
-	this.instances = function(startnameid, range, mesh, divisor, offset, stride){
+	proto.instances = function(startnameid, range, mesh, divisor, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 8) > this.allocated) this.resize()
@@ -256,7 +256,7 @@ painter.Todo = require('class').extend(function Todo(){
 	}
 
 
-	this.int = function(nameid, x){
+	proto.int = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -267,7 +267,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+3] = x
 	}
 
-	this.float = function(nameid, x){
+	proto.float = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -278,7 +278,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+3] = x
 	}
 
-	this.vec2 = function(nameid, v){
+	proto.vec2 = function(nameid, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -289,7 +289,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+4] = v[1]
 	}
 
-	this.vec3 = function(nameid, v){
+	proto.vec3 = function(nameid, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -302,7 +302,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+5] = v[2]
 	}
 
-	this.vec4 = function(nameid, v){ // id:6
+	proto.vec4 = function(nameid, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -316,7 +316,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+6] = v[3]
 	}
 
-	this.mat4 = function(nameid, m){
+	proto.mat4 = function(nameid, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -342,7 +342,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+18] = m[15]
 	}
 
-	this.intGlobal = function(nameid, x){
+	proto.intGlobal = function(nameid, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -354,7 +354,7 @@ painter.Todo = require('class').extend(function Todo(){
 	}
 
 
-	this.floatGlobal = function(nameid, x){ // id:3
+	proto.floatGlobal = function(nameid, x){ // id:3
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -365,7 +365,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+3] = x
 	}
 
-	this.vec2Global = function(nameid, v){ // id:4
+	proto.vec2Global = function(nameid, v){ // id:4
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -376,7 +376,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+4] = v[1]
 	}
 
-	this.vec3Global = function(nameid, v){ // id:5
+	proto.vec3Global = function(nameid, v){ // id:5
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -389,7 +389,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+5] = v[2]
 	}
 
-	this.vec4Global = function(nameid, v){ // id:6
+	proto.vec4Global = function(nameid, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -403,7 +403,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+6] = v[3]
 	}
 
-	this.globalMat4 = function(nameid, m){
+	proto.globalMat4 = function(nameid, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -429,7 +429,7 @@ painter.Todo = require('class').extend(function Todo(){
 		f32[o+18] = m[15]
 	}
 
-	this.drawTriangles = function(from, to, instances){ // id:10
+	proto.drawTriangles = function(from, to, instances){ // id:10
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -441,7 +441,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
-	this.drawLines = function(from, to, instances){ // id:11
+	proto.drawLines = function(from, to, instances){ // id:11
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -453,7 +453,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
-	this.drawLineLoop = function(from, to, instances){ // id:12
+	proto.drawLineLoop = function(from, to, instances){ // id:12
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -465,7 +465,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
-	this.drawLineStrip = function(from, to, instances){ // id:13
+	proto.drawLineStrip = function(from, to, instances){ // id:13
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
@@ -477,7 +477,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
-	this.drawTriangleStrip = function(from, to, instances){ // id:14
+	proto.drawTriangleStrip = function(from, to, instances){ // id:14
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
@@ -489,7 +489,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+4] = instances || -1
 	}
 
-	this.drawTriangleFan = function(from, to, instances){ // id:15
+	proto.drawTriangleFan = function(from, to, instances){ // id:15
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var a = this.i32
@@ -502,7 +502,7 @@ painter.Todo = require('class').extend(function Todo(){
 	}
 
 	// array is src, fn, dest, alphasrc, alphafn, alphadest
-	this.blending = function(array, color){
+	proto.blending = function(array, color){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 12) > this.allocated) this.resize()
@@ -525,7 +525,7 @@ painter.Todo = require('class').extend(function Todo(){
 		}
 	}
 
-	this.addTodo = function(todo){ // id: 20
+	proto.addTodo = function(todo){ // id: 20
 		var o = (this.last = this.offset)
 		if((this.offset += 3) > this.allocated) this.resize()
 		var a = this.i32
@@ -535,7 +535,7 @@ painter.Todo = require('class').extend(function Todo(){
 		i32[o+2] = todo.todoid
 	}
 
-	this.runTodo = function(){
+	proto.runTodo = function(){
 		if(!this.ended) this.endTodo()
 		// the commandset and overload uniform sets
 		bus.batchMessage({
@@ -610,10 +610,10 @@ painter.sampler2dlinear = {
 	wrapt: painter.CLAMP_TO_EDGE
 }
 
-painter.Shader = require('class').extend(function Shader(){
+painter.Shader = require('class').extend(function Shader(proto){
 
 	// default code
-	this.code = {
+	proto.code = {
 		pixel:
 			"uniform vec2 prop;\n"+
 			"void main(){\n"+
@@ -626,7 +626,7 @@ painter.Shader = require('class').extend(function Shader(){
 			"}\n"
 	}
 
-	this.onconstruct = function(code){
+	proto.onconstruct = function(code){
 		if(!code) code = this.code
 
 		var shaderid = shaderidsalloc++
@@ -659,9 +659,9 @@ var meshids = {}
 
 painter.ids = nameids
 
-painter.Mesh = require('class').extend(function Mesh(){
+painter.Mesh = require('class').extend(function Mesh(proto){
 
-	this.onconstruct = function(struct, initalloc){
+	proto.onconstruct = function(struct, initalloc){
 		var slots = 0
 		if(typeof struct === 'number'){
 			slots = struct
@@ -694,10 +694,10 @@ painter.Mesh = require('class').extend(function Mesh(){
 		}
 	}
 
-	this.struct = types.vec4
-	this.initalloc = 1024
+	proto.struct = types.vec4
+	proto.initalloc = 1024
 
-	this.alloc = function(newlength){
+	proto.alloc = function(newlength){
 		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
 		var newarray = new this.arraytype(this.allocated * this.slots)
 		var oldarray = this.self.array
@@ -707,7 +707,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		this.self.array = newarray
 	}
 
-	this.push = function(){
+	proto.push = function(){
 		var arglen = arguments.length
 		var argtuples = arglen / this.slots
 
@@ -731,7 +731,7 @@ painter.Mesh = require('class').extend(function Mesh(){
 		return this
 	}
 
-	this.pushQuad = function(){
+	proto.pushQuad = function(){
 
 		var arglen = arguments.length
 		
@@ -766,14 +766,14 @@ painter.Mesh = require('class').extend(function Mesh(){
 	}
 })
 
-painter.Texture = require('class').extend(function Texture(){
-	var Texture = this.constructor
+painter.Texture = require('class').extend(function Texture(proto){
+	var Texture = proto.constructor
 	
 	Texture.fromArray2D = function(type, w, h, array){
 
 	}
 
-	this.onconstruct = function(){
+	proto.onconstruct = function(){
 
 	}
 })
