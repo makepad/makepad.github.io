@@ -154,7 +154,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 	proto.canvasMacros = {
 		draw:function(overload){
-			this.$OVERLOADPROPS(len)
+			this.$STYLEPROPS(len)
 			this.$ALLOCDRAW()
 			this.walkTurtle()
 			this.$WRITEPROPS()

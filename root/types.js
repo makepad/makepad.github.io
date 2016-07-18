@@ -44,6 +44,33 @@ types.int = {
 	_cast:parseInt
 }
 
+types.ivec2 = {
+	_name:'ivec2',
+	_slots:2,
+	_array:Int32Array,
+	x:types.int,
+	y:types.int
+}
+
+types.ivec3 = {
+	_name:'ivec3',
+	_slots:3,
+	_array:Int32Array,
+	x:types.int,
+	y:types.int,
+	z:types.int
+}
+
+types.ivec4 = {
+	_name:'ivec4',
+	_slots:4,
+	_array:Int32Array,
+	x:types.int,
+	y:types.int,
+	z:types.int,
+	w:types.int
+}
+
 types.vec1 = 
 types.float = {
 	_name:'float',
@@ -77,6 +104,16 @@ types.vec4 = {
 	y:types.float,
 	z:types.float,
 	w:types.float
+}
+
+types.mat2 = {
+	_name:'mat2',
+	_slots:4,
+	_array:Float32Array,
+	a:types.float,
+	b:types.float,
+	c:types.float,
+	d:types.float,	
 }
 
 types.mat3 = {
@@ -294,8 +331,9 @@ types.colorFromStringPacked = function(str, alpha, a, o){
 	}
 	var col = types.colorwikipedia[str]
 	if(col !== undefined){
-		a[o] = (((col>>16)/4095)<<12)+ ((((col>>8)&0xff)/4095)|0)
-		a[o+1] = (((col&0xff)/4095)<<12)+((alpha*4095)|0)
+		var dx = 4095/255
+		a[o] = (((col>>16)*dx)<<12)+ ((((col>>8)&0xff)*dx)|0)
+		a[o+1] = (((col&0xff)*dx)<<12)+((alpha*4095)|0)
 		return true
 	}		
 	return false

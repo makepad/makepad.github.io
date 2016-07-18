@@ -1,4 +1,4 @@
-module.exports = require('class').extend(function ShaderGen(proto){
+module.exports = require('class').extend(function ShaderInfer(proto){
 	
 	var types  = require('types')
 	var parser = require('jsparser/jsparser')
@@ -10,9 +10,9 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		
 		var gen = new this()
 
-		// the attributes found
+		// geometry props
 		gen.geometryProps = {}
-		// the instance properties
+		// instance props
 		gen.instanceProps = {}
 
 		// all samplers
@@ -58,37 +58,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				gen.main = gen.block(ast.body[0].body.body)
 			}
 			catch(error){
-				// lets get this to the right file/line
-				// first of all we need to grab the current function
-				var state = error.state
-				var curfn = state.curFunction
-				try{
-					curfn.callee()
-				}
-				catch(efn){
-					// ok lets parse out the line offset of this thing
-					var stack = efn.stack.toString()
-					var fileerr = efn.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
-					var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
-					var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
-					// alright we have a lineoff, now we need to take the node
-					var lines = curfn.source.split('\n')
-					// lets count the linenumbers
-					var node = error.node
-					var off = 0, realcol = 0
-					for(var line = 0; line < lines.length; line++){
-						if(off >= node.start){
-							realcol = off - node.start - 3
-							break
-						}
-						off += lines[line].length + 1
-					}
-					var realline = line + lineoff - 1
-					if(curfn.source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
-					console.error(
-						filename+':'+realline+':'+realcol, error.type + ': '+ error.message
-					)
-				}			
+				gen.mapException(error)
 			}
 		}
 		else{
@@ -97,6 +67,50 @@ module.exports = require('class').extend(function ShaderGen(proto){
 
 		return gen
 	}
+
+	proto.mapException = function(error){
+		// lets get this to the right file/line
+		// first of all we need to grab the current function
+		var state = error.state
+		var curfn = state.curFunction
+		try{
+			curfn.callee()
+		}
+		catch(efn){
+			// ok lets parse out the line offset of this thing
+			var stack = efn.stack.toString()
+			var fileerr = efn.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
+			var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
+			var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
+			// alright we have a lineoff, now we need to take the node
+			var lines = curfn.source.split('\n')
+			// lets count the linenumbers
+			var node = error.node
+			var off = 0, realcol = 0
+			for(var line = 0; line < lines.length; line++){
+				if(off >= node.start){
+					realcol = off - node.start - 3
+					break
+				}
+				off += lines[line].length + 1
+			}
+			var realline = line + lineoff - 1
+			if(curfn.source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
+
+			this.exception = {
+				filename:filename,
+				line:realline,
+				col:realcol,
+				type:error.type,
+				message:error.message
+			}
+
+			console.error(
+				filename+':'+realline+':'+realcol, error.type + ': '+ error.message
+			)
+		}			
+	}
+
 
 	proto.walk = function(node, parent){
 		node.parent = parent
@@ -191,6 +205,10 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				}
 				return node.raw
 			}
+			else if(node.raw.indexOf('e') !== -1){
+				infer.type = types.float
+				return node.raw
+			}
 			infer.type = types.int
 			return node.raw
 		}
@@ -237,6 +255,19 @@ module.exports = require('class').extend(function ShaderGen(proto){
 			return name
 		}
 
+		// native functions
+		var glslvar = this.glslvariables[name]
+		if(glslvar){
+			node.infer = {
+				kind: 'value',
+				lvalue:true,
+				type:glslvar,
+				glsl: name
+			}
+
+			return name
+		}
+
 		// then we check the native types
 		var glsltype = this.glsltypes[name]
 		if(glsltype){
@@ -245,6 +276,32 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				type: glsltype
 			}
 			return name
+		}
+
+		if(name === 'base'){
+			// lets find the current function on the protochain
+			var fn = this.curFunction
+			var proto = this.root
+			var basecallee
+
+			while(proto){
+				if(proto.hasOwnProperty(fn.name) && proto[fn.name] === fn.callee){
+					// found it!
+					proto = Object.getPrototypeOf(proto)
+					basecallee = proto[fn.name]
+					break
+				}
+				proto = Object.getPrototypeOf(proto)
+			}
+
+			var ret = 'base_'+fn.fullname
+			node.infer = {
+				kind:'function',
+				fullname:ret,
+				callee:basecallee,
+			}
+
+			return ret
 		}
 
 		// check defines
@@ -303,71 +360,6 @@ module.exports = require('class').extend(function ShaderGen(proto){
 			return name
 		}
 
-		/*
-		// check context samplers
-		var sampler = this.context !== this.root && this.context.samplers && this.context.samplers[name]
-		if(sampler){ // return sampler
-			var ret = this.ctxprefix + name
-			this.samplers[ret] = {
-				name:ret,
-				sampler:sampler
-			}
-			node.infer = {
-				kind:'value',
-				name:ret,
-				sampler:sampler,
-				type:sampler.type
-			}
-			return ret
-		}
-
-		// check root samplers
-		var sampler = this.root._samplers && this.root._samplers[name]
-		if(sampler){ // return sampler
-			var ret = name
-			this.samplers[ret] = {
-				name:ret,
-				sampler:sampler
-			}
-			node.infer = {
-				kind:'value',
-				name:ret,
-				sampler:sampler,
-				type:sampler.type
-			}
-			return ret
-		}
-
-		// its a props access
-		var props = this.root._props
-		var config = props[name]
-		if(config !== undefined && config.value !== undefined){
-			var value = config.value
-			var proptype = types.typeFromValue(value)
-			var ret = 'props_DOT_'+name
-
-			this.props[ret] = {
-				type:proptype,
-				name:name,
-				config:config
-			}
-
-			node.infer = {
-				kind:'value',
-				lvalue:true,
-				type:proptype
-			}
-
-			return ret
-		}
-
-		// lets check on our context
-		var value = this.context[name]
-		if(value !== undefined)	return this.mapObjectProperty(node, name, value, this.ctxprefix)
-
-		if(!value) value = this.root[name]
-		if(value !== undefined)	return this.mapObjectProperty(node, name, value, '')
-		*/
 		// otherwise type it
 		throw this.ResolveErr(node, 'Cannot resolve '+name)
 	}
@@ -439,13 +431,14 @@ module.exports = require('class').extend(function ShaderGen(proto){
 			else if(objectinfer.kind === 'this'){
 
 				var value = this.root[propname]
-
 				var fullname = 'this_DOT_' + propname
+
 				// its a function
 				if(typeof value === 'function'){
 					node.infer = {
 						kind: 'function',
-						name: fullname,
+						name: propname,
+						fullname: fullname,
 						callee: value
 					}
 					return fullname
@@ -579,10 +572,29 @@ module.exports = require('class').extend(function ShaderGen(proto){
 						}
 					}
 					else{
-						node.infer = {
-							kind: 'varyundef',
-							lvalue:true,
-							name: propname
+						if(this.varyIn){
+							var out = this.outputs[fullname]
+							if(out){
+								node.infer = {
+									kind: 'value',
+									lvalue:true,
+									type:out
+								}
+							}
+							else{
+								node.infer = {
+									kind: 'outundef',
+									lvalue:true,
+									name: propname
+								}
+							}
+						}
+						else{
+							node.infer = {
+								kind: 'varyundef',
+								lvalue:true,
+								name: propname
+							}
 						}
 					}
 					// lets check if node.infer holds property
@@ -674,18 +686,18 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				return fnname + '(' + argstrs.join() + ')'
 			}
 			// expand function macro
-			var sourcecode = calleeinfer.callee.toString()
+			var source = calleeinfer.callee.toString()
 
 			// parse it, should never not work since it already parsed 
 			try{
-				var ast = parsecache[sourcecode] || (parsecache[sourcecode] = parser.parse(sourcecode))
+				var ast = parsecache[source] || (parsecache[source] = parser.parse(source))
 			}
 			catch(e){
-				throw this.SyntaxErr(node, "Cant parse function " + sourcecode)
+				throw this.SyntaxErr(node, "Cant parse function " + source)
 			}
 			
 			// lets build the function name
-			var fnname = calleeinfer.name
+			var fnname = calleeinfer.fullname
 			var realargs = []
 			fnname += '_T'
 			for(var i = 0; i < args.length; i++){
@@ -726,8 +738,10 @@ module.exports = require('class').extend(function ShaderGen(proto){
 			var subfunction = this.genFunctions[fnname] = {
 				scope:{},
 				inout:{},
-				sourcecode:sourcecode,
+				source:source,
 				callee:calleeinfer.callee,
+				name:calleeinfer.name,
+				fullname:calleeinfer.fullname,
 				return:{
 					kind:'value',
 					type:types.void
@@ -811,7 +825,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 
 			return fnname + '(' + realargs.join() + ')'
 		}
-		else throw this.SyntaxErr(node,"Not a callable type"+calleeinfer.kind)
+		else throw this.SyntaxErr(node,"Not a callable type: "+calleeinfer.name+" "+calleeinfer.kind)
 		// ok so now lets type specialize and call our function
 		// ie generate it
 	}
@@ -965,10 +979,12 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		}
 		else{
 			node.infer = rightinfer
-
+			if(!leftinfer || !rightinfer){
+				console.log(node)
+			}
 			// lets check
 			if(leftinfer.type !==  rightinfer.type){
-				throw this.InferErr(node, 'lefthand differs from righthand in assignment '+leftinfer.type._name +' = '+ rightinfer.type._name)
+				throw this.InferErr(node, 'lefthand differs from righthand in assignment '+JSON.stringify(leftinfer) +' = '+ JSON.stringify(rightinfer))
 			}
 		}
 
@@ -979,6 +995,11 @@ module.exports = require('class').extend(function ShaderGen(proto){
 	proto.ConditionalExpression = function(node){
 		//!TODO check types
 		var ret = this.walk(node.test, node) + '?' + this.walk(node.consequent, node) + ':' + this.walk(node.alternate, node)
+		// check types
+		if(node.consequent.infer.type !== node.alternate.infer.type){
+			throw this.InferErr(node, 'Conditional expression returning more than one type '+ret)
+		}
+		node.infer = node.consequent.infer
 		return ret
 	}
 
@@ -1131,6 +1152,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 
 	proto.glsltypes = {
 		float:types.float,
+		int:types.int,
 		bool:types.bool,
 		vec2:types.vec2,
 		vec3:types.vec3,
@@ -1138,6 +1160,9 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		bvec2:types.bvec2,
 		bvec3:types.bvec3,
 		bvec4:types.bvec4,
+		ivec2:types.ivec2,
+		ivec3:types.ivec3,
+		ivec4:types.ivec4,
 		mat2:types.mat2,
 		mat3:types.mat3,
 		mat4:types.mat4

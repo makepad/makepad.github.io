@@ -4,7 +4,7 @@ module.exports = require('class').extend(function Shader(proto){
 	var painter = require('painter')
 	var types = require('types')
 	var parser = require('jsparser/jsparser')
-	var ShaderGen = require('./shadergen')
+	var ShaderInfer = require('./shaderinfer')
 
 	var compName = ['x','y','z','w']
 
@@ -32,20 +32,21 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// ok the alpha blend modes. how do we do it.
+	proto.nocatch = false
 
 	proto.compileShader = function(){
 		if(!this.vertex || !this.pixel) return
 
 		var ast = parser.parse()
 		
-		var vtx = ShaderGen.generateGLSL(this, this.vertexEntry, null, false)
-		var pix = ShaderGen.generateGLSL(this, this.pixelEntry, vtx.varyOut, false)
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, this.nocatch)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, this.nocatch)
 
-		var inputs = {}, geometryProps = {}, instanceProps = {}, uniforms = {}
+		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
 		for(var key in pix.geometryProps) inputs[key] = geometryProps[key] = pix.geometryProps[key]
-		for(var key in vtx.instanceProps) inputs[key] = instanceProps[key] = vtx.instanceProps[key]
-		for(var key in pix.instanceProps) inputs[key] = instanceProps[key] = pix.instanceProps[key]
+		for(var key in vtx.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = vtx.instanceProps[key]
+		for(var key in pix.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = pix.instanceProps[key]
 		for(var key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
 		for(var key in pix.uniforms) uniforms[key] = pix.uniforms[key]
 
@@ -304,6 +305,17 @@ module.exports = require('class').extend(function Shader(proto){
 			vfunc = '\n'+fn.code + '\n' + vfunc
 		}
 
+		if(vtx.genFunctions.this_DOT_vertex_T.return.type !== types.vec4){
+			vtx.mapException({
+				state:{
+					curFunction:vtx.genFunctions.this_DOT_vertex_T
+				},
+				type:'generate',
+				message:'vertex function not returning a vec4',
+				node:vtx.genFunctions.this_DOT_vertex_T.ast
+			})
+		}
+
 		var vertex = vhead 
 		vertex += vfunc
 		vertex += '\nvec4 _main(){\n'
@@ -336,14 +348,33 @@ module.exports = require('class').extend(function Shader(proto){
 		//!TODO: do MRT stuff
 		pixel += ppost + '}\n'
 
+		// add all the props we didnt compile but we do need for styling to styleProps
+		for(var key in this._props){
+			var config = this._props[key]
+			var propname = 'this_DOT_' + key
+			if(config.doStyle && !styleProps[propname]){
+				styleProps[propname] = {
+					name:key,
+					config:config
+				}
+			}
+		}
+
+		if(vtx.exception || pix.exception){
+			return
+		}
+
 		this.compileinfo = {
-			geometryProps:geometryProps,
-			uniforms:uniforms,
 			instanceProps:instanceProps,
+			geometryProps:geometryProps,
+			styleProps:styleProps,
+			uniforms:uniforms,
+			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
 			propslots:propslots
 		}
+		this._samplers = samplers
 		if(this.dump) console.log(vertex,pixel)
 	}
 
@@ -352,18 +383,18 @@ module.exports = require('class').extend(function Shader(proto){
 		this.compileShader()
 	}
 
-	proto.$OVERLOADPROPS = function(classname, macroargs, mainargs, indent){
+	proto.$STYLEPROPS = function(classname, macroargs, mainargs, indent){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
-		var instanceProps = this.compileinfo.instanceProps
+		var styleProps = this.compileinfo.styleProps
 		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
 
 		var stack = [mainargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
 
 		// lets make the vars
 		var code = indent + 'var _turtle = this.turtle'
-		for(var key in instanceProps){
-			code += ', _$' + instanceProps[key].name
+		for(var key in styleProps){
+			code += ', _$' + styleProps[key].name
 		}
 		code += '\n\n'
 
@@ -384,10 +415,10 @@ module.exports = require('class').extend(function Shader(proto){
 				code += indent + 'if('+p+'){\n'
 			}
 
-			for(var key in instanceProps){
-				var name = instanceProps[key].name
+			for(var key in styleProps){
+				var name = styleProps[key].name
 				//var slots = types.getSlots(prop.type)
-				if(instanceProps[key].config.noStyle) continue
+				if(styleProps[key].config.noStyle) continue
 				if(i === 0){
 					code += subind+'_$'+name+ ' = '+p+'.' + prefix+ name +'\n'
 				}
@@ -395,18 +426,19 @@ module.exports = require('class').extend(function Shader(proto){
 					code += subind+'if(_$'+name+' === undefined) _$'+name+ ' = '+p+'.' + prefix+ name +'\n'
 				}
 			}
+
 			if(subind !== indent) code += indent + '}\n'
+
 		}
 		// store it on the turtle
 		code += '\n'
-		for(var key in instanceProps){
-			var name = instanceProps[key].name
-			if(instanceProps[key].config.noStyle) continue
+		for(var key in styleProps){
+			var name = styleProps[key].name
+			if(styleProps[key].config.noStyle) continue
 			// store on turtle
 			code += indent + '_turtle._' + name +' = _$' + name + '\n'
 		}
 		return code
-
 	}
 
 	proto.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
@@ -458,7 +490,6 @@ module.exports = require('class').extend(function Shader(proto){
 			var uniform = uniforms[key]
 			// this.canvas....?
 			var thisname = key.slice(9)
-
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| _proto.'+thisname
 			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
@@ -467,6 +498,17 @@ module.exports = require('class').extend(function Shader(proto){
 			// we can get them from overload or the class prototype
 			code += indent+'	_todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 			//code += indent+'console.log("'+key+'",'+source+')\n'
+		}
+
+		// do the samplers
+		var samplers = info.samplers
+		for(var key in samplers){
+			var sampler = samplers[key]
+
+			var thisname = key.slice(9)
+			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || _proto.'+thisname
+
+			code += indent +'	_todo.sampler('+painter.nameId(key)+','+source+',_proto._samplers.'+key+')\n'
 		}
 		// lets draw it
 		code += indent + '	_todo.drawTriangles()\n'
@@ -563,13 +605,13 @@ module.exports = require('class').extend(function Shader(proto){
 			// check if we are a vec4 and typeof string
 
 			var propsource = '_turtle._' + prop.name
-			if(prop.config.nostyle){ // its an arg here
+			
+			if(prop.config.noStyle){ // its an arg here
+				// tweenstart?
 				if(prop.name === 'tweenstart'){
 					propsource = 'this.view._time'
 				}
-				else{
-
-				}
+				else propsource = macroargs[prop.name]
 			}
 
 			if(prop.type._name === 'vec4'){
@@ -622,7 +664,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
 		code += propcode
-		//code += this.$DUMPPROPS(props, indent)+'debugger\n'
+		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
 		// lets generate the write-out
 		return code
 	}

@@ -131,15 +131,11 @@ var userMessage = {
 		}
 	},
 	updateTexture: function(msg){
-		// since we dont have sampler objects in webGL 1.0
-		// we have to lazily create duplicate textures
-		// in 'samplers'
 		var tex = textureIds[msg.id]
 		tex.w = msg.w
 		tex.h = msg.h
+		tex.flags = msg.flags
 		tex.array = msg.array
-		tex.yFlip = msg.yFlip
-		tex.premulAlpha = msg.premulAlpha
 		tex.updateId = frameId
 	},
 	sync: function(msg){
@@ -199,6 +195,10 @@ args.h = canvas.offsetHeight
 var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
 var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
 var EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
+var OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
+var OES_texture_float_linear = gl.getExtension('OES_texture_float_linear')
+var OES_texture_half_float = gl.getExtension('OES_texture_half_float')
+var OES_texture_float = gl.getExtension('OES_texture_float')
 
 var currentprogram
 var currentunilocs
@@ -232,6 +232,7 @@ todofn[2] = function useShader(i32, f32, o){
 	currentunilocs = shader.unilocs
 	shader.instanced = false
 	shader.indexed = false
+	shader.samplers = 0
 	gl.useProgram(shader)
 }
 
@@ -310,21 +311,102 @@ todofn[7] = function indexes(){
 
 }
 
+// texture flags
+var texFlags ={}
+// texture flags
+texFlags.RGB = 1 << 0
+texFlags.ALPHA = 1 << 1
+texFlags.RGBA = texFlags.RGB|texFlags.ALPHA
+texFlags.DEPTH = 1 << 2
+texFlags.STENCIL = 1 << 3
+texFlags.LUMINANCE = 1 << 4
+
+texFlags.UNSIGNED_BYTE = 1<<10
+texFlags.FLOAT = 1 << 11
+texFlags.HALF_FLOAT = 1<<12
+texFlags.FLOAT_LINEAR = 1 << 13
+texFlags.HALF_FLOAT_LINEAR = 1 << 14
+
+texFlags.FLIP_Y = 1<<16
+texFlags.PREMULTIPLY_ALPHA =  1<<17
+
+function bufTypeFromFlags(flags){
+	if(flags & texFlags.RGBA === texFlags.RGBA){
+		return gl.RGBA
+	}
+	if(flags & texFlags.ALPHA){
+		if(flags & texFlags.LUMINANCE) return gl.LUMINANCE_ALPHA
+		return gl.ALPHA
+	}
+	if(flags & texFlags.LUMINANCE) return gl.LUMINANCE
+	if(flags & texFlags.RGB){
+		return gl.RGB
+	}
+}
+
+function dataTypeFromFlags(flags){
+	if(flags & texFlags.FLOAT){
+		return OES_texture_float && gl.FLOAT
+	}
+	if(flags & texFlags.HALF_FLOAT){
+		return OES_texture_half_float.HALF_FLOAT_OES
+	}
+	if(flags &texFlags.FLOAT_LINEAR){
+		return OES_texture_float_linear.FLOAT_LINEAR_OES
+	}
+	if(flags & texFlags.HALF_FLOAT_LINEAR){
+		return OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
+	}
+	return gl.UNSIGNED_BYTE
+}
+
+// sampler props
+var samplerProps = {
+	1: gl.NEAREST,
+	2: gl.LINEAR,
+	3: gl.NEAREST_MIPMAP_NEAREST,
+	4: gl.LINEAR_MIPMAP_NEAREST,
+	5: gl.NEAREST_MIPMAP_LINEAR,
+	6: gl.LINEAR_MIPMAP_LINEAR,
+	10: gl.REPEAT,
+	11: gl.CLAMP_TO_EDGE,
+	12: gl.MIRRORED_REPEAT
+}
+
 todofn[8] = function sampler(i32, f32, o){
 	// this thing lazily creates textures and samplers
-	var tex = textureIds[i32[o+2]]
+	var nameid = i32[o+2]
+	var tex = textureIds[i32[o+3]]
 
-	// see if we need to update the texure
+	var samplerType = i32[o+4]
+	var sam = tex.samplers[samplerType] || (tex.samplers[samplerType] = {})
 
-		var gltexture = gl.createTexture()
-		gl.bindTexture(gl.TEXTURE_2D, gltexture)
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, samplerdef.UNPACK_FLIP_Y_WEBGL || false)
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, samplerdef.UNPACK_PREMULTIPLY_ALPHA_WEBGL || false)
+	var texid = currentprogram.samplers++
 
-		//if(this.array){
-			this.typeFlagsToGLType(gl, this.type)
-			gl.texImage2D(gl.TEXTURE_2D, 0, this.glbuf_type, this.width, this.height, 0, this.glbuf_type, this.gldata_type, new Uint8Array(this.array))
+	if(sam.updateId !== tex.updateId){
+		if(sam.gltex) gl.deleteTexture(sam.gltex)
 
+		sam.gltex = gl.createTexture()
+		gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
+
+		// lets set the flipy/premul
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, tex.flags & texFlags.FLIP_Y?gl.TRUE:gl.FALSE)
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, tex.flags & texFlags.PREMULTIPLY_ALPHA?gl.TRUE:gl.FALSE)
+
+		// lets figure out the flags
+		var bufType = bufTypeFromFlags(tex.flags)
+		var dataType = dataTypeFromFlags(tex.flags)
+		// upload array
+		gl.texImage2D(gl.TEXTURE_2D, 0, bufType, tex.w, tex.h, 0, bufType, dataType, new Uint8Array(tex.array))
+
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, samplerProps[(samplerType>>0)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, samplerProps[(samplerType>>4)&0xf])
+
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, samplerProps[(samplerType>>8)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, samplerProps[(samplerType>>12)&0xf])
+	}
+	
+	// bind texture sampler slot?
 }
 
 

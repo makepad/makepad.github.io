@@ -1,6 +1,6 @@
 module.exports = function(proto){
 
-	var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}])/g)
+	var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 	var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
 	var comment2Rx = new RegExp(/\/\/[^\n]*/g)
 	var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*)/)

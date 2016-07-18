@@ -71,8 +71,8 @@ function extend(body){
 
 module.exports = extend.call(Object)
 
-function defineNestedGetterSetter(key){
-	Object.defineProperty(this, key, {
+function defineNestedGetterSetter(proto, key){
+	Object.defineProperty(proto, key, {
 		configurable:true,
 		get:function(){
 			var cls = this['_' + key]
@@ -98,7 +98,7 @@ Object.defineProperty(module.exports.prototype, 'nested', {
 			var cls =  nested[key]
 			this._nested[key] = true
 			this['_' + key] = cls
-			defineNestedGetterSetter.call(key)
+			defineNestedGetterSetter(this, key)
 			if(this.onnestedassign) this.onnestedassign(key, cls)
 		}	
 	}
