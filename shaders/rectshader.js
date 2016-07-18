@@ -27,9 +27,6 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		shadowSpread: 1.0,
 		shadowOffset: [1.0,1.0],
 
-		viewPosition:{kind:'uniform', type:types.mat4},
-		camPosition:{kind:'uniform', type:types.mat4},
-		camProjection:{kind:'uniform', type:types.mat4},
 		mesh:{kind:'geometry', type:types.vec3},
 	}
 
@@ -155,7 +152,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		}
 	}
 
-	proto.canvasmacros = {
+	proto.canvasMacros = {
 		draw:function(overload){
 			this.$OVERLOADPROPS(len)
 			this.$ALLOCDRAW()

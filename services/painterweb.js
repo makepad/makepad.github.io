@@ -12,14 +12,14 @@ function addLineNumbers(code){
 }
 
 // resources
-var shaderids = {}
-var nameids = {}
+var shaderIds = {}
+var nameIds = {}
 var meshids = {}
-var todoids = {}
-var textureids = {}
-var frameid = 0
+var todoIds = {}
+var textureIds = {}
+var frameId = 0
 
-var slotstable = {
+var slotsTable = {
 	'float':1,
 	'vec2':2,
 	'vec3':3,
@@ -28,7 +28,7 @@ var slotstable = {
 
 var userMessage = {
 	newName: function(msg){
-		nameids[msg.name] = msg.nameid
+		nameIds[msg.name] = msg.id
 	},
 	newTarget: function(msg){
 		
@@ -37,7 +37,7 @@ var userMessage = {
 
 		var pixelcode = msg.code.pixel
 		var vertexcode = msg.code.vertex
-		var shaderid = msg.shaderid
+		var shaderid = msg.id
 
 		pixelcode =  "#extension GL_OES_standard_derivatives : enable\n"+
 		             "precision highp float;\n"+pixelcode
@@ -81,52 +81,52 @@ var userMessage = {
 		// look up attribute ids
 		var attrlocs = {}
 		for(var name in attrs){
-			var nameid = nameids[name]
+			var nameid = nameIds[name]
 			var index = gl.getAttribLocation(shader, name)
 			attrlocs[nameid] = {
 				index: index,
-				slots: slotstable[attrs[name]]
+				slots: slotsTable[attrs[name]]
 			}
 		}
 		shader.attrlocs = attrlocs
 
 		var unilocs = {}
 		for(var name in uniforms){
-			var nameid = nameids[name]
+			var nameid = nameIds[name]
 			var index = gl.getUniformLocation(shader, name)
 			unilocs[nameid] = index
 		}
 		shader.unilocs = unilocs
 		// store it
-		shaderids[shaderid] = shader
+		shaderIds[shaderid] = shader
 
 	},
 	newMesh: function(msg){
 		var glbuffer = gl.createBuffer()
-		meshids[msg.meshid] = glbuffer
+		meshids[msg.id] = glbuffer
 	},
 	updateMesh: function(msg){
-		var glbuffer = meshids[msg.meshid]
+		var glbuffer = meshids[msg.id]
 		glbuffer.array = msg.array
 		glbuffer.length = msg.length
 		gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
 		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	},
 	newTodo: function(msg){
-		todoids[msg.todoid] = {f32:undefined, i32:undefined, length:0}
+		todoIds[msg.todoid] = {f32:undefined, i32:undefined, length:0}
 	},
 	updateTodo: function(msg){
-		var todo = todoids[msg.todoid]
+		var todo = todoIds[msg.id]
 		todo.f32 = new Float32Array(msg.buffer)
 		todo.i32 = new Int32Array(msg.buffer)
 		todo.length = msg.length
 	},
 	newTexture: function(msg){
-		textureids[msg.textureid] = {
+		textureIds[msg.id] = {
 			w:0,
 			h:0,
 			array:0,
-			updateid:-1,
+			updateId:-1,
 			samplers:{}
 		}
 	},
@@ -134,15 +134,15 @@ var userMessage = {
 		// since we dont have sampler objects in webGL 1.0
 		// we have to lazily create duplicate textures
 		// in 'samplers'
-		var tex = textureids[msg.textureid]
+		var tex = textureIds[msg.id]
 		tex.w = msg.w
 		tex.h = msg.h
 		tex.array = msg.array
-		tex.yflip = msg.yflip
-		tex.premulalpha = msg.premulalpha
-		tex.updateid = frameid
+		tex.yFlip = msg.yFlip
+		tex.premulAlpha = msg.premulAlpha
+		tex.updateId = frameId
 	},
-	syncDraw: function(msg){
+	sync: function(msg){
 		window.requestAnimationFrame(repaint)
 	}
 }
@@ -185,7 +185,7 @@ function resize(){
 }
 
 function repaint(time){
-	bus.postMessage({fn:'onsyncdraw', time:time, frame:frameid++})
+	bus.postMessage({fn:'onsync', time:time, frame:frameId++})
 }
 
 window.addEventListener('resize', resize)
@@ -227,7 +227,7 @@ todofn[1] = function clear(i32, f32, o){
 
 todofn[2] = function useShader(i32, f32, o){
 	var shaderid = i32[o+2]
-	var shader = shaderids[shaderid]
+	var shader = shaderIds[shaderid]
 	currentprogram = shader
 	currentunilocs = shader.unilocs
 	shader.instanced = false
@@ -292,6 +292,7 @@ todofn[6] = function instances(i32, f32, o){
 	var divisor = i32[o+7]
 	var slotoff = 0
 	var mesh = meshids[meshid]
+
 	currentprogram.instlength = mesh.length
 	currentprogram.instanced = true
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
@@ -311,7 +312,7 @@ todofn[7] = function indexes(){
 
 todofn[8] = function sampler(i32, f32, o){
 	// this thing lazily creates textures and samplers
-	var tex = textureids[i32[o+2]]
+	var tex = textureIds[i32[o+2]]
 
 	// see if we need to update the texure
 
@@ -474,7 +475,7 @@ bus.onmessage = function(msg){
 	}
 
 	// run todo
-	var todo = todoids[msg.todoid]
+	var todo = todoIds[msg.todoid]
 	var f32 = todo.f32
 	var i32 = todo.i32
 	var len = todo.length

@@ -22,34 +22,34 @@ bus.onmessage = function(msg){
 	if(painter[msg.fn]) painter[msg.fn](msg)
 }
 
-painter.syncDraw = function(){
+painter.sync = function(){
 	// we send the painter a request for a 'sync'
 	// if there is still a previous sync waiting we wait till thats fired
 	bus.postMessage({
-		fn:'syncDraw'
+		fn:'sync'
 	})
 }
 
-var nameids = {}
-var nameidsalloc = 1
+var nameIds = {}
+var nameIdsAlloc = 1
 
 function newName(name){
 
-	var nameid = nameids[name] = nameidsalloc++
+	var nameId = nameIds[name] = nameIdsAlloc++
 	bus.postMessage({
 		fn:'newName',
 		name: name,
-		nameid: nameid
+		id: nameId
 	})
-	return nameid
+	return nameId
 }
 
-var todoidsalloc = 1
-var todoids = {}
+var todoIdsAlloc = 1
+var todoIds = {}
 
-painter.nameid = function(name){
-	var nameid = nameids[name]
-	if(nameid) return nameid
+painter.nameId = function(name){
+	var nameId = nameIds[name]
+	if(nameId) return nameId
 	return newName(name)
 }
 
@@ -59,24 +59,24 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 	proto.onconstruct = function(initalloc, painter){
 
-		var todoid = todoidsalloc++
+		var todoId = todoIdsAlloc++
 
 		bus.postMessage({
 			fn:'newTodo',
-			todoid:todoid
+			todoId:todoId
 		})
 		this.painter = painter
 		this.offset = 0
 		this.last = -1
 		this.ended = false
 		this.allocated = initalloc || this.initalloc
-		this.todoid = todoid
+		this.todoId = todoId
 		// the two datamappings
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
 
 		// store the todo
-		todoids[todoid] = this
+		todoIds[todoId] = this
 	}
 
 	proto.beginTodo = function(){
@@ -90,7 +90,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 		// sync our todo
 		bus.batchMessage({
 			fn:'updateTodo',
-			todoid:this.todoid,
+			todoId:this.todoId,
 			buffer:this.f32.buffer,
 			length:this.offset
 		})
@@ -170,10 +170,10 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 2
 		i32[o+1] = 1
-		i32[o+2] = shader.shaderid
+		i32[o+2] = shader.id
 	}
 
-	proto.attribute = function(nameid, mesh, offset, stride){
+	proto.attribute = function(nameId, mesh, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
@@ -187,8 +187,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 3
 		i32[o+1] = 4
-		i32[o+2] = nameid
-		i32[o+3] = mesh.self.meshid
+		i32[o+2] = nameId
+		i32[o+3] = mesh.self.id
 		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+5] = offset || 0
 	}
@@ -207,13 +207,13 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+1] = 5
 		i32[o+2] = startnameid
 		i32[o+3] = range
-		i32[o+4] = mesh.self.meshid
+		i32[o+4] = mesh.self.id
 		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+6] = offset
 	}
 
 
-	proto.instance = function(nameid, mesh, divisor, offset, stride){
+	proto.instance = function(nameId, mesh, divisor, offset, stride){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
@@ -227,8 +227,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 5
 		i32[o+1] = 5
-		i32[o+2] = nameid
-		i32[o+3] = mesh.self.meshid
+		i32[o+2] = nameId
+		i32[o+3] = mesh.self.id
 		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+5] = offset || 0
 		i32[o+6] = divisor || 1
@@ -245,17 +245,18 @@ painter.Todo = require('class').extend(function Todo(proto){
 			mesh.dirty = false
 			bus.batchMessage(mesh.self)
 		}
+
 		i32[o+0] = 6
 		i32[o+1] = 6
 		i32[o+2] = startnameid
 		i32[o+3] = range
-		i32[o+4] = mesh.self.meshid
+		i32[o+4] = mesh.self.id
 		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+6] = offset
 		i32[o+7] = divisor || 1
 	}
 
-	proto.indexes = function(nameid, mesh){
+	proto.indexes = function(nameId, mesh){
 
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
@@ -269,11 +270,11 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 7
 		i32[o+1] = 2
-		i32[o+2] = nameid
-		i32[o+3] = mesh.self.meshid
+		i32[o+2] = nameId
+		i32[o+3] = mesh.self.id
 	}
 
-	proto.sampler = function(nameid, texture, sam){
+	proto.sampler = function(nameId, texture, sam){
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -285,79 +286,79 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 8
 		i32[o+1] = 3
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		i32[o+3] = texture.self.textureid
 		i32[o+4] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
 	}
 
-	proto.int = function(nameid, x){
+	proto.int = function(nameId, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		i32[o+0] = 10
 		i32[o+1] = 2
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		i32[o+3] = x
 	}
 
-	proto.float = function(nameid, x){
+	proto.float = function(nameId, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 11
 		i32[o+1] = 2
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = x
 	}
 
-	proto.vec2 = function(nameid, v){
+	proto.vec2 = function(nameId, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 		i32[o+0] = 12
 		i32[o+1] = 3
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 	}
 
-	proto.vec3 = function(nameid, v){
+	proto.vec3 = function(nameId, v){
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 13
 		i32[o+1] = 4
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 		f32[o+5] = v[2]
 	}
 
-	proto.vec4 = function(nameid, v){ // id:6
+	proto.vec4 = function(nameId, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 14
 		i32[o+1] = 5
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 		f32[o+5] = v[2]
 		f32[o+6] = v[3]
 	}
 
-	proto.mat4 = function(nameid, m){
+	proto.mat4 = function(nameId, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 15
 		i32[o+1] = 17
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = m[0]
 		f32[o+4] = m[1]
 		f32[o+5] = m[2]
@@ -376,75 +377,75 @@ painter.Todo = require('class').extend(function Todo(proto){
 		f32[o+18] = m[15]
 	}
 
-	proto.intGlobal = function(nameid, x){
+	proto.intGlobal = function(nameId, x){
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		i32[o+0] = 20
 		i32[o+1] = 2
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		i32[o+3] = x
 	}
 
 
-	proto.floatGlobal = function(nameid, x){ // id:3
+	proto.floatGlobal = function(nameId, x){ // id:3
 		var o = (this.last = this.offset)
 		if((this.offset += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 21
 		i32[o+1] = 2
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = x
 	}
 
-	proto.vec2Global = function(nameid, v){ // id:4
+	proto.vec2Global = function(nameId, v){ // id:4
 		var o = (this.last = this.offset)
 		if((this.offset += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 		i32[o+0] = 22
 		i32[o+1] = 3
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 	}
 
-	proto.vec3Global = function(nameid, v){ // id:5
+	proto.vec3Global = function(nameId, v){ // id:5
 		var o = (this.last = this.offset)
 		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 23
 		i32[o+1] = 4
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 		f32[o+5] = v[2]
 	}
 
-	proto.vec4Global = function(nameid, v){ // id:6
+	proto.vec4Global = function(nameId, v){ // id:6
 		var o = (this.last = this.offset)
 		if((this.offset += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 24
 		i32[o+1] = 5
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = v[0]
 		f32[o+4] = v[1]
 		f32[o+5] = v[2]
 		f32[o+6] = v[3]
 	}
 
-	proto.globalMat4 = function(nameid, m){
+	proto.globalMat4 = function(nameId, m){
 		var o = (this.last = this.offset)
 		if((this.offset += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 25
 		i32[o+1] = 17
-		i32[o+2] = nameid
+		i32[o+2] = nameId
 		f32[o+3] = m[0]
 		f32[o+4] = m[1]
 		f32[o+5] = m[2]
@@ -566,7 +567,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 50
 		i32[o+1] = 1
-		i32[o+2] = todo.todoid
+		i32[o+2] = todo.todoId
 	}
 
 	proto.runTodo = function(){
@@ -574,13 +575,13 @@ painter.Todo = require('class').extend(function Todo(proto){
 		// the commandset and overload uniform sets
 		bus.batchMessage({
 			fn: 'runTodo',
-			todoid:this.todoid
+			id:this.todoId
 		})
 	}
 })
 
-var shaderids = {}
-var shaderidsalloc = 1
+var shaderIds = {}
+var shaderIdsAlloc = 1
 
 // blending sources
 painter.ZERO = 0x0
@@ -636,14 +637,14 @@ painter.Shader = require('class').extend(function Shader(proto){
 	proto.onconstruct = function(code){
 		if(!code) code = this.code
 
-		var shaderid = shaderidsalloc++
+		var id = shaderIdsAlloc++
 
 		var refs = {}
 
 		parseShaderAttributes(code.vertex, refs)
 		parseShaderUniforms(code.vertex, refs)
 		parseShaderUniforms(code.pixel, refs)
-		for(var name in refs) if(!nameids[name]) newName(name)
+		for(var name in refs) if(!nameIds[name]) newName(name)
 
 		bus.postMessage({
 			fn:'newShader',
@@ -651,20 +652,20 @@ painter.Shader = require('class').extend(function Shader(proto){
 				vertex:code.vertex,
 				pixel:code.pixel
 			},
-			shaderid:shaderid
+			id:id
 		})
 
-		this.shaderid = shaderid
+		this.id = id
 		this.code = code
 
-		shaderids[shaderid] = this
+		shaderIds[id] = this
 	}
 })
 
-var meshidsalloc = 1
-var meshids = {}
+var meshIdsAlloc = 1
+var meshIds = {}
 
-//painter.ids = nameids
+//painter.ids = nameIds
 
 painter.Mesh = require('class').extend(function Mesh(proto){
 
@@ -678,11 +679,11 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 
 		if(!initalloc) alloc = this.initalloc
 
-		var meshid = meshidsalloc++
+		var id = meshIdsAlloc++
 
 		bus.postMessage({
 			fn:'newMesh',
-			meshid:meshid
+			id:id
 		})
 
 		this.type = type
@@ -691,7 +692,7 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		this.allocated = 0
 		this.self = {
 			fn: 'updateMesh',
-			meshid: meshid,
+			id: id,
 			array: undefined,
 			length: 0
 		}

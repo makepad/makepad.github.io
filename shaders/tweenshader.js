@@ -52,6 +52,9 @@ module.exports = require('shader').extend(function TweenShader(proto){
 
 	proto.props = {
 		time: {kind:'uniform', value:0.},
-		ease: {noTween:true, value:[0,0,1.0,1.0]}
+		ease: {noTween:true, value:[0,0,1.0,1.0]},
+		viewPosition:{kind:'uniform', type:types.mat4},
+		camPosition:{kind:'uniform', type:types.mat4},
+		camProjection:{kind:'uniform', type:types.mat4},
 	}
 })

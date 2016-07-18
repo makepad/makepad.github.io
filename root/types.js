@@ -220,19 +220,19 @@ types.typeFromValue = function(value){
 	}
 }
 
-var hexlut = Array(128)
+var hex = Array(128)
 for(var hexl = 0; hexl <10; hexl++){
-	hexlut[String(hexl).charCodeAt(0)] = hexl
-	hexlut["ABCDEF".charCodeAt(hexl)] = 10+hexl
-	hexlut["abcdef".charCodeAt(hexl)] = 10+hexl
+	hex[String(hexl).charCodeAt(0)] = hexl
+	hex["ABCDEF".charCodeAt(hexl)] = 10+hexl
+	hex["abcdef".charCodeAt(hexl)] = 10+hexl
 }
 
 types.colorFromString = function(str, alpha, a, o){
 	if(str.charCodeAt(0) === 35){ // starts with #
 		if(str.length === 4){
-			var r = hexlut[str.charCodeAt(1)]
-			var g = hexlut[str.charCodeAt(2)]
-			var b = hexlut[str.charCodeAt(3)]
+			var r = hex[str.charCodeAt(1)]
+			var g = hex[str.charCodeAt(2)]
+			var b = hex[str.charCodeAt(3)]
 			a[o] = (r|r<<4)/255
 			a[o+1] = (g|g<<4)/255
 			a[o+2] = (b|b<<4)/255
@@ -240,17 +240,17 @@ types.colorFromString = function(str, alpha, a, o){
 			return true
 		}
 		else if(str.length === 7){
-			a[o] = (hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/255
-			a[o+1] = (hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/255
-			a[o+2] = (hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/255
+			a[o] = (hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/255
+			a[o+1] = (hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/255
+			a[o+2] = (hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/255
 			a[o+3] = alpha
 			return true
 		}
 		else if(str.length === 9){
-			a[o] = (hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/255
-			a[o+1] = (hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/255
-			a[o+2] = (hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/255
-			a[o+3] = (hexlut[str.charCodeAt(7)] | (hexlut[str.charCodeAt(8)] << 4))/255
+			a[o] = (hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/255
+			a[o+1] = (hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/255
+			a[o+2] = (hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/255
+			a[o+3] = (hex[str.charCodeAt(7)] | (hex[str.charCodeAt(8)] << 4))/255
 			return true
 		}
 		return false
@@ -269,25 +269,25 @@ types.colorFromString = function(str, alpha, a, o){
 types.colorFromStringPacked = function(str, alpha, a, o){
 	if(str.charCodeAt(0) === 35){ // starts with #
 		if(str.length === 4){
-			var r = hexlut[str.charCodeAt(1)]
-			var g = hexlut[str.charCodeAt(2)]
-			var b = hexlut[str.charCodeAt(3)]
+			var r = hex[str.charCodeAt(1)]
+			var g = hex[str.charCodeAt(2)]
+			var b = hex[str.charCodeAt(3)]
 			a[o] = (((r|r<<4)/4095)<<12) + (((g|g<<4)/4095)|0)
 			a[o+1] = (((b|b<<4)/4095)<<12) + ((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 7){
-			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12) + 
-				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)<<0)
-			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
+			a[o] = (((hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/4095)<<12) + 
+				(((hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/4095)<<0)
+			a[o+1] = (((hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/4095)<<12)+
 				((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 9){
-			a[o] = (((hexlut[str.charCodeAt(1)] | (hexlut[str.charCodeAt(2)] << 4))/4095)<<12)+
-				(((hexlut[str.charCodeAt(3)] | (hexlut[str.charCodeAt(4)] << 4))/4095)|0)
-			a[o+1] = (((hexlut[str.charCodeAt(5)] | (hexlut[str.charCodeAt(6)] << 4))/4095)<<12)+
-				(((hexlut[str.charCodeAt(7)] | (hexlut[str.charCodeAt(8)] << 4))/4095)|0)
+			a[o] = (((hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/4095)<<12)+
+				(((hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/4095)|0)
+			a[o+1] = (((hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/4095)<<12)+
+				(((hex[str.charCodeAt(7)] | (hex[str.charCodeAt(8)] << 4))/4095)|0)
 			return true
 		}
 		return false

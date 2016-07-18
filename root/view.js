@@ -54,7 +54,7 @@ module.exports = require('class').extend(function View(proto){
 		this.todo = undefined
 	}
 
-	proto.composeTree = function(oldchildren){
+	proto.composeTree = function(oldChildren){
 		// it calls compose recursively
 		if(this.oncompose){
 			this.onflag = 1
@@ -80,12 +80,12 @@ module.exports = require('class').extend(function View(proto){
 			child.parent = this
 			child.camera = this.root.camera
 			child.root = this.root
-			var oldchild = oldchildren && oldchildren[i]
+			var oldchild = oldChildren && oldChildren[i]
 			child.composeTree(oldchild && oldchild.children)
 		}
 
-		if(oldchildren) for(;i < oldchildren.length; i++){
-			var oldchild = oldchildren[i]
+		if(oldChildren) for(;i < oldChildren.length; i++){
+			var oldchild = oldChildren[i]
 			oldchild.destroyed = true
 			if(oldchild.ondestroy) oldchild.ondestroy()
 			if(oldchild._ondestroy) oldchild._ondestroy()
@@ -155,7 +155,7 @@ module.exports = require('class').extend(function View(proto){
 			
 		}
 
-		painter.onsyncdraw = function(msg){
+		painter.onsync = function(msg){
 			// we can submit a todo now
 			this._time = msg.time / 1000
 			this._frame = msg.frame
@@ -175,7 +175,7 @@ module.exports = require('class').extend(function View(proto){
 		this.composeTree()
 
 		// then lets draw it
-		painter.syncDraw()
+		painter.sync()
 	}
 
 	proto.onnestedassign = function(key, cls){

@@ -6,7 +6,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 	var parsecache = {}
 	var painter = require('painter')
 
-	proto.constructor.generateGLSL = function(root, fn, varyin, mapexception){
+	proto.constructor.generateGLSL = function(root, fn, varyIn, mapexception){
 		
 		var gen = new this()
 
@@ -22,24 +22,24 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		gen.uniforms = {}
 		// all structs used
 		gen.structs = {}
-		//  varyings found
-		gen.varyout = {}
-		// varying inputs
-		gen.varyin = varyin
+		//  varyIngs found
+		gen.varyOut = {}
+		// varyIng inputs
+		gen.varyIn = varyIn
 
 		// outputs used
 		gen.outputs = {}
 
 		// functions generated
-		gen.generatedfns = {}
+		gen.genFunctions = {}
 
 		// the function object info of the current function
-		var sourcecode = fn.toString()
-		gen.currentfn = {
+		var source = fn.toString()
+		gen.curFunction = {
 			inout:{},
 			scope:{},
 			callee:fn,
-			sourcecode:sourcecode
+			source:source
 		}
 		// textures used
 		gen.textures = {}
@@ -51,7 +51,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		gen.ctxprefix = ''
 		gen.context = root
 
-		var ast = parsecache[sourcecode] || (parsecache[sourcecode] = parser.parse(sourcecode))
+		var ast = parsecache[source] || (parsecache[source] = parser.parse(source))
 
 		if(mapexception){ // very ugly.
 			try{
@@ -61,7 +61,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				// lets get this to the right file/line
 				// first of all we need to grab the current function
 				var state = error.state
-				var curfn = state.currentfn
+				var curfn = state.curFunction
 				try{
 					curfn.callee()
 				}
@@ -72,7 +72,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 					var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
 					var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
 					// alright we have a lineoff, now we need to take the node
-					var lines = curfn.sourcecode.split('\n')
+					var lines = curfn.source.split('\n')
 					// lets count the linenumbers
 					var node = error.node
 					var off = 0, realcol = 0
@@ -84,7 +84,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 						off += lines[line].length + 1
 					}
 					var realline = line + lineoff - 1
-					if(curfn.sourcecode.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
+					if(curfn.source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
 					console.error(
 						filename+':'+realline+':'+realcol, error.type + ': '+ error.message
 					)
@@ -218,7 +218,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		if(name.indexOf('$') === 0) return name
 
 		// first we check the scope
-		var scopeinfer = this.currentfn.scope[name]
+		var scopeinfer = this.curFunction.scope[name]
 
 		if(scopeinfer){
 			node.infer = scopeinfer
@@ -563,15 +563,15 @@ module.exports = require('class').extend(function ShaderGen(proto){
 						kind:'value',
 						type:proptype
 					}
-					return ret
+					return fullname
 				}
 
 				if(value === undefined){ // something undefined
 					// its already defined
-					var prev = this.varyout[fullname] || this.varyin && this.varyin[fullname]
+					var prev = this.varyOut[fullname] || this.varyIn && this.varyIn[fullname]
 
 					if(prev){
-						this.varyout[fullname] = prev
+						this.varyOut[fullname] = prev
 						node.infer = {
 							kind: 'value',
 							lvalue:true,
@@ -701,7 +701,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
 			}
 
-			var prevfunction = this.generatedfns[fnname]
+			var prevfunction = this.genFunctions[fnname]
 
 			if(prevfunction){
 				var params = prevfunction.ast.body[0].params
@@ -723,7 +723,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				return fnname + '(' + realargs.join() + ')'
 			}
 			
-			var subfunction = this.generatedfns[fnname] = {
+			var subfunction = this.genFunctions[fnname] = {
 				scope:{},
 				inout:{},
 				sourcecode:sourcecode,
@@ -744,7 +744,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 			// we have our args, lets process the function declaration
 			// make a new scope
 			sub.indent = ''
-			sub.currentfn = subfunction
+			sub.curFunction = subfunction
 			sub.ctxprefix = calleeinfer.prefix
 
 			var params = ast.body[0].params
@@ -802,7 +802,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 
 			var code = subfunction.return.type._name 
 			code += ' ' + fnname + '(' + paramdef + ')' + body
-			subfunction.generatedcode = code
+			subfunction.code = code
 
 			node.infer = {
 				kind: 'value',
@@ -834,11 +834,11 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		if(infer.kind !== 'value'){
 			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
 		}
-		if(this.currentfn.return && this.currentfn.return.type !== types.void && this.currentfn.return.type !== infer.type){
-			throw this.InferErr(node, 'Cant return more than one type '+this.currentfn.return.type._name+'->'+infer.type._name)
+		if(this.curFunction.return && this.curFunction.return.type !== types.void && this.curFunction.return.type !== infer.type){
+			throw this.InferErr(node, 'Cant return more than one type '+this.curFunction.return.type._name+'->'+infer.type._name)
 		}
 		node.infer = infer
-		this.currentfn.return = node.infer
+		this.curFunction.return = node.infer
 		return 'return '+ this.walk(node.argument)
 	}
 
@@ -883,7 +883,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		var initinfer = init.infer
 
 		if(initinfer.kind === 'value' || initinfer.kind === 'type'){
-			node.infer = this.currentfn.scope[node.id.name] = {
+			node.infer = this.curFunction.scope[node.id.name] = {
 				kind:'value',
 				lvalue:true,
 				scope:true,
@@ -935,17 +935,17 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		var rightinfer = node.right.infer
 
 		if(leftinfer.kind === 'varyundef'){
-			// create a varying
-			var existvary = this.varyout[leftstr]
+			// create a varyIng
+			var existvary = this.varyOut[leftstr]
 			if(existvary && existvary !== rightinfer.type) throw this.InferErr(node, 'Varying changed type '+existvary._name + ' -> '+ rightinfer.type._name)
-			this.varyout[leftstr] = {
+			this.varyOut[leftstr] = {
 				type:rightinfer.type
 			}
 			return ret
 		}
 
 		if(leftinfer.kind === 'outundef'){
-			// create a varying
+			// create a varyIng
 			var existout = this.outputs[leftstr]
 			if(existout && existout !== rightinfer.type) throw this.InferErr(node, 'Output changed type '+existout._name + ' -> '+ rightinfer.type._name)
 			this.outputs[leftstr] =  rightinfer.type
@@ -956,7 +956,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		}
 		// mark arg as inout
 		if(leftinfer.scope && leftinfer.isarg){
-			this.currentfn.inout[leftstr] = true
+			this.curFunction.inout[leftstr] = true
 		}
 
 

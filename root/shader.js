@@ -9,7 +9,7 @@ module.exports = require('class').extend(function Shader(proto){
 	var compName = ['x','y','z','w']
 
 	// allocate the nameids for attribute ranges
-	for(var i = 0; i < 16; i++) painter.nameid('ATTR_'+i)
+	for(var i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
 	proto.time = 0.0
 
@@ -39,7 +39,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var ast = parser.parse()
 		
 		var vtx = ShaderGen.generateGLSL(this, this.vertexEntry, null, false)
-		var pix = ShaderGen.generateGLSL(this, this.pixelEntry, vtx.varyout, false)
+		var pix = ShaderGen.generateGLSL(this, this.pixelEntry, vtx.varyOut, false)
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
@@ -199,15 +199,15 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 
 		// define the varying targets
-		for(var key in vtx.varyout){
-			var vary = vtx.varyout[key]
+		for(var key in vtx.varyOut){
+			var vary = vtx.varyOut[key]
 			vhead += vary.type._name + ' ' + key + ';\n'
 		}
 
-		// lets pack/unpack varyings and props and attributes used in pixelshader
+		// lets pack/unpack varying and props and attributes used in pixelshader
 		var allvary = {}
 		for(var key in pix.geometryProps) allvary[key] = pix.geometryProps[key]
-		for(var key in pix.varyout) allvary[key] = pix.varyout[key]
+		for(var key in pix.varyOut) allvary[key] = pix.varyOut[key]
 		for(var key in pix.instanceProps) allvary[key] = pix.instanceProps[key]
 		
 		// make varying packing and unpacking
@@ -299,9 +299,9 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// alright lets put together the shaders
 		var vfunc = ''
-		for(var key in vtx.generatedfns){
-			var fn = vtx.generatedfns[key]
-			vfunc = '\n'+fn.generatedcode + '\n' + vfunc
+		for(var key in vtx.genFunctions){
+			var fn = vtx.genFunctions[key]
+			vfunc = '\n'+fn.code + '\n' + vfunc
 		}
 
 		var vertex = vhead 
@@ -316,16 +316,16 @@ module.exports = require('class').extend(function Shader(proto){
 		vertex += '}\n'
 
 		var pfunc = ''
-		for(var key in pix.generatedfns){
-			var fn = pix.generatedfns[key]
-			pfunc = '\n'+fn.generatedcode + '\n' + pfunc
+		for(var key in pix.genFunctions){
+			var fn = pix.genFunctions[key]
+			pfunc = '\n'+fn.code + '\n' + pfunc
 		}
 		var pixel = phead
 		pixel += pfunc
 		pixel += '\nvoid main(){\n'
 		pixel += ppre
 
-		if(pix.generatedfns.this_DOT_pixel_T.return.type === types.vec4){
+		if(pix.genFunctions.this_DOT_pixel_T.return.type === types.vec4){
 			pixel +=  '\tgl_FragColor = ' + pix.main
 		}
 		else{
@@ -434,7 +434,7 @@ module.exports = require('class').extend(function Shader(proto){
 		// first do the normal attributes
 		var geometryProps = info.geometryProps
 		
-		var attrbase = painter.nameid('ATTR_0')
+		var attrbase = painter.nameId('ATTR_0')
 		// do the props
 		var attroffset = Math.ceil(info.propslots / 4)
 		code += indent+'	_todo.instances('+(attrbase)+','+attroffset+',_props)\n'
@@ -465,7 +465,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var typename = uniform.type._name
 			// ok so uniforms... where do we get them
 			// we can get them from overload or the class prototype
-			code += indent+'	_todo.'+typename+'('+painter.nameid(key)+','+source+')\n'
+			code += indent+'	_todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 			//code += indent+'console.log("'+key+'",'+source+')\n'
 		}
 		// lets draw it
