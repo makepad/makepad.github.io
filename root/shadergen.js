@@ -11,9 +11,9 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		var gen = new this()
 
 		// the attributes found
-		gen.attributes = {}
-		// the props found
-		gen.props = {}
+		gen.geometryProps = {}
+		// the instance properties
+		gen.instanceProps = {}
 
 		// all samplers
 		gen.samplers = {}
@@ -99,7 +99,7 @@ module.exports = require('class').extend(function ShaderGen(proto){
 	}
 
 	proto.walk = function(node, parent){
-		//node.parent = parent
+		node.parent = parent
 		node.infer = undefined
 		var typefn = this[node.type]
 		if(!typefn) throw this.SyntaxErr(node, 'Type not found ' + node.type)
@@ -204,222 +204,10 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		4:types.vec4
 	}
 
-	proto.mapObjectProperty = function(node, name, value, prefix){
-		// we are mapping an object property...
+	proto.mapThisProperty = function(node, name, value){
 
-		// its a function
-		if(typeof value === 'function'){
-			node.infer = {
-				kind: 'function',
-				name: prefix + name,
-				prefix: prefix,
-				callee: value
-			}
-			return name
 		}
 
-		if(prefix === 'this_DOT_'){
-
-			var props = this.root._props
-			var config = props[name]
-			if(config !== undefined && config.value !== undefined){
-				var value = config.value
-				var proptype = types.typeFromValue(value)
-				var ret = prefix + name
-
-				this.props[ret] = {
-					type:proptype,
-					name:name,
-					config:config
-				}
-
-				node.infer = {
-					kind:'value',
-					lvalue:true,
-					type:proptype
-				}
-
-				return ret
-			}
-			var sampler = this.root._samplers && this.root._samplers[name]
-
-			if(sampler){ // return sampler
-	
-				var ret = prefix + name
-				this.samplers[ret] = {
-					name:ret,
-					sampler:sampler
-				}
-				node.infer = {
-					kind:'value',
-					name:ret,
-					sampler:sampler,
-					type:sampler.type
-				}
-				return ret
-			}
-
-			if(value === undefined){ // something undefined
-				if(this.root._outputs[name]){ // output variable
-					var ret = prefix + name
-					// its already defined
-					var prev = this.root._outputs[ret]
-					if(prev){
-						node.infer = {
-							kind: 'value',
-							lvalue:true,
-							type: prev
-						}
-					}
-					else{
-						node.infer = {
-							kind: 'outundef',
-							lvalue:true,
-							name: name
-						}
-					}
-					return ret
-				}
-				else{ // make it a varying
-					var ret = prefix + name
-					// its already defined
-					var prev = this.varyout[ret] || this.varyin && this.varyin[ret]
-
-					if(prev){
-						this.varyout[ret] = prev
-						node.infer = {
-							kind: 'value',
-							lvalue:true,
-							type: prev.type
-						}
-					}
-					else{
-						node.infer = {
-							kind: 'varyundef',
-							lvalue:true,
-							name: name
-						}
-					}
-					// lets check if node.infer holds property
-					return ret
-				}
-			}
-		}
-
-		if(typeof value === 'string'){
-			var ret = prefix + name
-			this.uniforms[ret] = {
-				type:types.vec4,
-				name:name
-			}
-			node.infer = {
-				kind:'value',
-				type:types.vec4
-			}
-			return ret
-		}
-
-		if(typeof value === 'number'){
-			var ret = prefix + name
-			this.uniforms[ret] = {
-				type:types.float,
-				name:name
-			}
-			node.infer = {
-				kind:'value',
-				type:types.float
-			}
-			return ret
-		}
-
-		else if(typeof value === 'boolean'){ 
-			var ret = prefix + name
-			this.uniforms[ret] = {
-				type:types.bool,
-				name:name
-			}
-			node.infer = {
-				kind:'value',
-				type:types.bool
-			}
-			return ret
-		}
-
-		if(typeof value === 'object'){
-	
-			// its a typed uniform!
-			if(value._name){
-				var ret = prefix + name
-				this.uniforms[ret] = {
-					type:value,
-					name:name
-				}
-				node.infer = {
-					kind:'value',
-					type:value
-				}
-				return ret
-			}
-			
-			// use of unconfigured sampler
-			if(value instanceof painter.Texture){
-				var ret = prefix + name
-				this.samplers[ret] = {
-					name:ret,
-					sampler:sampler
-				}
-				var sampler = value.sampler || painter.sampler2dnearest
-				node.infer = {
-					kind:'value',
-					name:ret,
-					sampler:sampler,
-					type:sampler.type
-				}
-				var ret = prefix + name
-				return ret
-			}
-
-			// check if its a mesh attribute
-			if(value instanceof painter.Mesh){
-				proptype = value.struct
-				var ret = prefix + name
-				this.attributes[ret] = {
-					type:proptype,
-					name:name
-				}
-
-				node.infer = {
-					kind:'value',
-					type:proptype
-				}
-				return ret
-			}
-
-			// its a uniform
-			if(Array.isArray(value) || value instanceof Float32Array){
-				var ret = prefix + name
-				var type = uniformslotmap[value.length]
-				this.uniforms[ret] = {
-					type:type,
-					name:name
-				}
-				node.infer = {
-					kind:'value',
-					type:type
-				}
-				return ret
-			}
-			
-			// its a library object
-			node.infer = {
-				kind: 'object',
-				prefix: prefix + name + "_DOT_",
-				object: value
-			}
-
-			return name
-		}
-	}
 
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
@@ -623,9 +411,6 @@ module.exports = require('class').extend(function ShaderGen(proto){
 		else{
 			var objectinfer = node.object.infer
 			var propname = node.property.name
-			if(!objectinfer){
-				console.log(node)
-			}
 			if(objectinfer.kind === 'value'){
 				var type = objectinfer.type
 				var proptype = type[propname]
@@ -652,15 +437,180 @@ module.exports = require('class').extend(function ShaderGen(proto){
 				return objectstr + '.' + propname
 			}
 			else if(objectinfer.kind === 'this'){
-				var value = this.context[propname]
-				return this.mapObjectProperty(node, propname, value, objectinfer.prefix)
+
+				var value = this.root[propname]
+
+				var fullname = 'this_DOT_' + propname
+				// its a function
+				if(typeof value === 'function'){
+					node.infer = {
+						kind: 'function',
+						name: fullname,
+						callee: value
+					}
+					return fullname
+				}
+
+				var props = this.root._props
+				var config = props[propname]
+
+				if(config !== undefined ){
+					// we found a prop!
+					// check kind
+					if(config.kind === 'instance'){
+
+						var value = config.value
+
+						this.instanceProps[fullname] = {
+							type:config.type,
+							name:propname,
+							config:config
+						}
+
+						node.infer = {
+							kind:'value',
+							lvalue:true,
+							type:config.type
+						}
+
+						return fullname
+					}
+					else if(config.kind === 'uniform'){
+						this.uniforms[fullname] = {
+							type:config.type,
+							name:propname
+						}
+						node.infer = {
+							kind:'value',
+							type:config.type
+						}
+						return fullname
+					}
+					else if(config.kind === 'sampler'){
+						var sampler = config.sampler
+						this.samplers[fullname] = {
+							name:propname,
+							sampler:sampler
+						}
+						node.infer = {
+							kind:'value',
+							name:propname,
+							sampler:sampler,
+							type:sampler.type
+						}
+						return fullname
+					}
+					else if(config.kind === 'geometry'){
+						proptype = config.type
+						this.geometryProps[fullname] = {
+							type:proptype,
+							name:propname
+						}
+
+						node.infer = {
+							kind:'value',
+							type:proptype
+						}
+						return fullname
+					}
+					else if(config.kind === 'output'){
+						// its already defined
+						var type = config.type
+						if(prev){
+							node.infer = {
+								kind: 'value',
+								lvalue:true,
+								type: prev
+							}
+						}
+						else{
+							node.infer = {
+								kind: 'outundef',
+								lvalue:true,
+								name: name
+							}
+						}
+						return fullname
+					}
+				}
+
+				// use of unconfigured sampler
+				if(value instanceof painter.Texture){
+					this.samplers[fullname] = {
+						name:ret,
+						sampler:sampler
+					}
+					var sampler = value.sampler || painter.SAMPLER2DNEAREST
+					node.infer = {
+						kind:'value',
+						name:ret,
+						sampler:sampler,
+						type:sampler.type
+					}
+					return fullname
+				}
+
+				// check if its a mesh attribute
+				if(value instanceof painter.Mesh){
+
+					proptype = value.type
+					this.geometryProps[fullname] = {
+						type:proptype,
+						name:propname
+					}
+
+					node.infer = {
+						kind:'value',
+						type:proptype
+					}
+					return ret
+				}
+
+				if(value === undefined){ // something undefined
+					// its already defined
+					var prev = this.varyout[fullname] || this.varyin && this.varyin[fullname]
+
+					if(prev){
+						this.varyout[fullname] = prev
+						node.infer = {
+							kind: 'value',
+							lvalue:true,
+							type: prev.type
+						}
+					}
+					else{
+						node.infer = {
+							kind: 'varyundef',
+							lvalue:true,
+							name: propname
+						}
+					}
+					// lets check if node.infer holds property
+					return fullname
+				}
+
+				// default to instanced property
+				var type = types.typeFromValue(value)
+
+				if(type){
+					this.instanceProps[fullname] = {
+						type:type,
+						name:propname,
+						config:{type:type}
+					}
+
+					node.infer = {
+						kind:'value',
+						lvalue:true,
+						type:type
+					}
+
+					return fullname
+				}
+
 			}
-			else if(objectinfer.kind === 'object'){
-				var value = objectinfer.object[propname]
-				return this.mapObjectProperty(node, propname, value, objectinfer.prefix)
-			}
-		
-			throw this.InferErr(node, 'Cant determine type for '+objectstr+'.'+propname)
+
+			throw this.InferErr(node, 'Cant determine type for this.'+propname)
 		}
 	}
 

@@ -145,10 +145,10 @@ module.exports = require('class').extend(function View(proto){
 	proto.onflag2 = this.redraw
 
 	proto.runApp = function(){
-		this.camera = {
-			position:mat4.create(),
-			projection:mat4.create()
-		}
+
+		this.viewPosition = mat4.create()
+		this.camPosition = mat4.create()
+		this.camProjection = mat4.create()
 		
 		// dispatch mouse events
 		fingers.ondown = function(msg){
@@ -160,7 +160,7 @@ module.exports = require('class').extend(function View(proto){
 			this._time = msg.time / 1000
 			this._frame = msg.frame
 
-			mat4.ortho(this.camera.projection,0, painter.w, 0, painter.h, -100, 100)
+			mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
 
 			this.redrawView()
 

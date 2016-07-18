@@ -41,11 +41,11 @@ module.exports = require('class').extend(function Shader(proto){
 		var vtx = ShaderGen.generateGLSL(this, this.vertexEntry, null, false)
 		var pix = ShaderGen.generateGLSL(this, this.pixelEntry, vtx.varyout, false)
 
-		var inputs = {}, attrs = {}, props = {}, uniforms = {}
-		for(var key in vtx.attributes) inputs[key] = attrs[key] = vtx.attributes[key]
-		for(var key in pix.attributes) inputs[key] = attrs[key] = pix.attributes[key]
-		for(var key in vtx.props) inputs[key] = props[key] = vtx.props[key]
-		for(var key in pix.props) inputs[key] = props[key] = pix.props[key]
+		var inputs = {}, geometryProps = {}, instanceProps = {}, uniforms = {}
+		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
+		for(var key in pix.geometryProps) inputs[key] = geometryProps[key] = pix.geometryProps[key]
+		for(var key in vtx.instanceProps) inputs[key] = instanceProps[key] = vtx.instanceProps[key]
+		for(var key in pix.instanceProps) inputs[key] = instanceProps[key] = pix.instanceProps[key]
 		for(var key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
 		for(var key in pix.uniforms) uniforms[key] = pix.uniforms[key]
 
@@ -60,10 +60,10 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// calc prop size
 		var totalslots = 0
-		for(var key in props){
-			var prop = props[key]
+		for(var key in instanceProps){
+			var prop = instanceProps[key]
 			var slots = types.getSlots(prop.type)
-			if(prop.config.packing){
+			if(prop.config.pack){
 				if(prop.type._name !== 'vec4') throw new Error('Cant use packing on non vec4 type for '+key)
 				slots = 2
 			}
@@ -83,13 +83,13 @@ module.exports = require('class').extend(function Shader(proto){
 		// Unpack attributes
 		var lastslot = Math.floor(totalslots/4)
 		var propslots = 0
-		for(var key in props){
-			var prop = props[key]
+		for(var key in instanceProps){
+			var prop = instanceProps[key]
 			var slots = prop.slots
 			// lets create the unpack / mix code here
 			propslots += slots
-			var packing = prop.config.packing
-			if(packing){
+			var pack = prop.config.pack
+			if(pack){
 				if(prop.config.notween){
 					vpre += '\t' + key + ' = vec4('
 					var start = propslots - slots
@@ -99,7 +99,7 @@ module.exports = require('class').extend(function Shader(proto){
 					vpre += ',mod('+p1+',4096.0)'
 					vpre += ',floor('+p2+'/4096.0)' 
 					vpre += ',mod('+p2+',4096.0)' 
-					if(packing === 'float') vpre += ')/4095.0;\n'
+					if(pack === 'float12') vpre += ')/4095.0;\n'
 					else vpre += ');\n'
 				}
 				else{
@@ -120,7 +120,7 @@ module.exports = require('class').extend(function Shader(proto){
 					tweenrep += ',mod('+p3+',4096.0)'
 					tweenrep += ',floor('+p4+'/4096.0)'
 					tweenrep += ',mod('+p4+',4096.0)'
-					if(packing === 'float') tweenrep += '),T)/4095.0;\n'
+					if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
 					else tweenrep += '),T);\n'
 				}
 			}
@@ -161,12 +161,12 @@ module.exports = require('class').extend(function Shader(proto){
 			attrid++
 		}
 
-		for(var key in attrs){
-			var attr = attrs[key]
-			var slots = types.getSlots(attr.type)
+		for(var key in geometryProps){
+			var geom = geometryProps[key]
+			var slots = types.getSlots(geom.type)
 
 			if(slots > 4){
-				var v1 = attr.type._name + '('
+				var v1 = geom.type._name + '('
 				if(v1 === 'float(') v1 = '('
 				vpre += '\t' + key + ' = ' + v1
 				for(var i = 0; i < slots; i++){
@@ -185,7 +185,7 @@ module.exports = require('class').extend(function Shader(proto){
 			}
 			else{
 				vpre += '\t' + key + ' = ATTR_' + attrid + ';\n'
-				vhead = 'attribute '+attr.type._name+' ATTR_' + attrid + ';\n' + vhead
+				vhead = 'attribute '+geom.type._name+' ATTR_' + attrid + ';\n' + vhead
 				attrid++
 			}
 		}
@@ -206,9 +206,9 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// lets pack/unpack varyings and props and attributes used in pixelshader
 		var allvary = {}
-		for(var key in pix.attributes) allvary[key] = pix.attributes[key]
+		for(var key in pix.geometryProps) allvary[key] = pix.geometryProps[key]
 		for(var key in pix.varyout) allvary[key] = pix.varyout[key]
-		for(var key in pix.props) allvary[key] = pix.props[key]
+		for(var key in pix.instanceProps) allvary[key] = pix.instanceProps[key]
 		
 		// make varying packing and unpacking
 		var vid = 0, curslot = 0, varystr = ''
@@ -337,9 +337,9 @@ module.exports = require('class').extend(function Shader(proto){
 		pixel += ppost + '}\n'
 
 		this.compileinfo = {
-			attrs:attrs,
+			geometryProps:geometryProps,
 			uniforms:uniforms,
-			props:props,
+			instanceProps:instanceProps,
 			vertex:vertex,
 			pixel:pixel,
 			propslots:propslots
@@ -355,15 +355,15 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$OVERLOADPROPS = function(classname, macroargs, mainargs, indent){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
-		var props = this.compileinfo.props
+		var instanceProps = this.compileinfo.instanceProps
 		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
 
 		var stack = [mainargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
 
 		// lets make the vars
 		var code = indent + 'var _turtle = this.turtle'
-		for(var key in props){
-			code += ', _$' + props[key].name
+		for(var key in instanceProps){
+			code += ', _$' + instanceProps[key].name
 		}
 		code += '\n\n'
 
@@ -384,10 +384,10 @@ module.exports = require('class').extend(function Shader(proto){
 				code += indent + 'if('+p+'){\n'
 			}
 
-			for(var key in props){
-				var name = props[key].name
+			for(var key in instanceProps){
+				var name = instanceProps[key].name
 				//var slots = types.getSlots(prop.type)
-				if(props[key].config.nostyle) continue
+				if(instanceProps[key].config.noStyle) continue
 				if(i === 0){
 					code += subind+'_$'+name+ ' = '+p+'.' + prefix+ name +'\n'
 				}
@@ -399,13 +399,14 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		// store it on the turtle
 		code += '\n'
-		for(var key in props){
-			var name = props[key].name
-			if(props[key].config.nostyle) continue
+		for(var key in instanceProps){
+			var name = instanceProps[key].name
+			if(instanceProps[key].config.noStyle) continue
 			// store on turtle
 			code += indent + '_turtle._' + name +' = _$' + name + '\n'
 		}
 		return code
+
 	}
 
 	proto.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
@@ -431,7 +432,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'	\n'
 		code += indent+'	_todo.useShader(_shader)\n'
 		// first do the normal attributes
-		var attrs = info.attrs
+		var geometryProps = info.geometryProps
 		
 		var attrbase = painter.nameid('ATTR_0')
 		// do the props
@@ -439,9 +440,9 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'	_todo.instances('+(attrbase)+','+attroffset+',_props)\n'
 		var attrid = attroffset
 		// set attributes
-		for(var key in attrs){
-			var attr = attrs[key]
-			var attrange = Math.ceil(types.getSlots(attr.type) / 4)
+		for(var key in geometryProps){
+			var geom = geometryProps[key]
+			var attrange = Math.ceil(types.getSlots(geom.type) / 4)
 			var nodot = key.slice(9)
 			code += indent+'	_attrlen = _proto.'+nodot+'.length\n'
 			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+nodot+')\n'
@@ -456,23 +457,9 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in uniforms){
 			var uniform = uniforms[key]
 			// this.canvas....?
-			var nodot = key.slice(9)
+			var thisname = key.slice(9)
 
-			var segs = nodot.split("_DOT_")
-			var fullname = segs.join('.')
-			var first = segs[0]
-			// lets check special uniforms view, camera and time
-			var source
-			if(first === 'view'){
-				source = 'this.' + fullname	
-			}
-			else if(first === 'camera'){
-				source = 'this.view.root.' + fullname
-			}
-			else if(first === 'time'){
-				source = 'this.view._time'
-			}
-			else source = mainargs[0]+' && '+mainargs[0]+'.'+key+' || _proto.'+fullname
+			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| _proto.'+thisname
 			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type._name
@@ -487,10 +474,10 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$TWEENJS = function(indent, tweencode, props){
+	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var _duration = _a[_o + ' + props.this_DOT_duration.offset +']\n'
-		code += indent + 'var _tweenstart = _a[_o + ' + props.this_DOT_tweenstart.offset +']\n'
+		code += indent + 'var _duration = _a[_o + ' + instanceProps.this_DOT_duration.offset +']\n'
+		code += indent + 'var _tweenstart = _a[_o + ' + instanceProps.this_DOT_tweenstart.offset +']\n'
 		code += indent + 'if(this.view._time < _tweenstart + _duration){\n'
 		code += indent + '	var _tween = Math.min(1,Math.max(0,(this.view._time - _tweenstart)/_duration))\n'
 		code += indent + tweencode 
@@ -498,13 +485,13 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$DUMPPROPS = function(props, indent){
+	proto.$DUMPPROPS = function(instanceProps, indent){
 		var code = ''
-		for(var key in props){
-			var prop = props[key]
+		for(var key in instanceProps){
+			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
-			var notween = prop.config.notween
+			var notween = prop.config.noTween
 			if(!notween){
 				// new, old
 				for(var i = 0; i < slots; i++){
@@ -523,7 +510,7 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
 		// load the turtle
 		var info = this.compileinfo
-		var props = info.props
+		var instanceProps = info.instanceProps
 		var code = ''
 		code = indent + 'var _turtle = this.turtle\n'
 		code += indent +'var _shader = this.shaders.'+classname+'\n'
@@ -536,8 +523,8 @@ module.exports = require('class').extend(function Shader(proto){
 		var propcode = ''
 
 		// lets generate the tween
-		for(var key in info.props){
-			var prop = info.props[key]
+		for(var key in instanceProps){
+			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
 			var notween = prop.config.notween
@@ -547,8 +534,8 @@ module.exports = require('class').extend(function Shader(proto){
 				tweencode += '\n'+indent+'	//' + key + '\n'
 				propcode += '\n'+indent+'// '+key + '\n'
 
-				var packing = prop.config.packing
-				if(packing){
+				var pack = prop.config.pack
+				if(pack){
 					// we have to unpack before interpolating
 					for(var i = 0; i < slots; i++){
 						tweencode += indent + '_upn = _a[_o+'+(o + i)+'], _upo = _a[_o+'+(o + i + slots)+']\n'
@@ -587,11 +574,11 @@ module.exports = require('class').extend(function Shader(proto){
 
 			if(prop.type._name === 'vec4'){
 				// check packing
-				var packing = prop.config.packing
-				if(packing){
+				var pack = prop.config.pack
+				if(pack){
 					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
 					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
-					if(packing === 'float'){
+					if(pack === 'float12'){
 						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)|0),_a[_o+'+(o+1)+']=((_$'+prop.name+'[2] * 4095)<<12) + ((_$'+prop.name+'[3]*4095)|0)\n'
 						propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColorPacked(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
 						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[0]*4095)|0)\n'
@@ -633,7 +620,7 @@ module.exports = require('class').extend(function Shader(proto){
 				}
 			}
 		}
-		code += '\n'+this.$TWEENJS(indent, tweencode, props) +'\n'
+		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
 		code += propcode
 		//code += this.$DUMPPROPS(props, indent)+'debugger\n'
 		// lets generate the write-out
@@ -666,25 +653,21 @@ module.exports = require('class').extend(function Shader(proto){
 				this._props = this._props?Object.create(this._props):{}
 			}
 			for(var key in props){
-				var value = props[key]
-				if(typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype){
-					value = {value:value}
+				var config = props[key]
+				if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
+					config = {value:config}
 				}
-				this._props[key] = value
-				this[key] = value.value
+				this._props[key] = config
+				if(config.value !== undefined) this[key] = config.value
+				if(!config.type) config.type = types.typeFromValue(config.value)
+				if(!config.kind) config.kind = 'instance'
 			}
 		}
 	})
 
 	defineConfiguratorSetter.call(proto, 'defines')
 	defineConfiguratorSetter.call(proto, 'structs')
-	defineConfiguratorSetter.call(proto, 'samplers')
-	defineConfiguratorSetter.call(proto, 'outputs')
 	defineConfiguratorSetter.call(proto, 'requires')
-
-	proto.outputs = {
-		outcolor: types.vec4
-	}
 
 	proto.defines = {
 		'PI':'3.141592653589793',

@@ -668,13 +668,13 @@ var meshids = {}
 
 painter.Mesh = require('class').extend(function Mesh(proto){
 
-	proto.onconstruct = function(struct, initalloc){
+	proto.onconstruct = function(type, initalloc){
 		var slots = 0
-		if(typeof struct === 'number'){
-			slots = struct
-			struct = types.float
+		if(typeof type === 'number'){
+			slots = type
+			type = types.float
 		}
-		if(!struct) struct = this.struct
+		if(!type) type = this.type
 
 		if(!initalloc) alloc = this.initalloc
 
@@ -685,9 +685,9 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			meshid:meshid
 		})
 
-		this.struct = struct
-		this.arraytype = types.getArray(struct)
-		this.slots = slots || types.getSlots(struct)
+		this.type = type
+		this.arraytype = types.getArray(type)
+		this.slots = slots || types.getSlots(type)
 		this.allocated = 0
 		this.self = {
 			fn: 'updateMesh',
@@ -701,7 +701,7 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		}
 	}
 
-	proto.struct = types.vec4
+	proto.type = types.vec4
 	proto.initalloc = 1024
 
 	proto.alloc = function(newlength){
