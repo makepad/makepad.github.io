@@ -92,36 +92,36 @@ module.exports = require('class').extend(function Shader(proto){
 			if(packing){
 				if(prop.config.notween){
 					vpre += '\t' + key + ' = vec4('
-					var endf = packing === 'float'? '/4095.0':''
 					var start = propslots - slots
 					var p1 = propSlot(start)
 					var p2 = propSlot(start+1)
-					vpre += 'floor('+p1+'/4096.0)' + endf
-					vpre += ',mod('+p1+',4096.0)' + endf
-					vpre += ',floor('+p2+'/4096.0)' + endf
-					vpre += ',mod('+p2+',4096.0)' + endf
-					vpre += ');\n'
+					vpre += 'floor('+p1+'/4096.0)'
+					vpre += ',mod('+p1+',4096.0)'
+					vpre += ',floor('+p2+'/4096.0)' 
+					vpre += ',mod('+p2+',4096.0)' 
+					if(packing === 'float') vpre += ')/4095.0;\n'
+					else vpre += ');\n'
 				}
 				else{
 					propslots += slots
 					tweenrep += '\t' + key + ' = mix(vec4('
-					var endf = packing === 'float'? '/4095.0':''
 					var start1 = propslots - slots*2
 					var start2 = propslots - slots
 					var p1 = propSlot(start1)
 					var p2 = propSlot(start1+1)
 					var p3 = propSlot(start2)
 					var p4 = propSlot(start2+1)
-					tweenrep += 'floor('+p1+'/4096.0)' + endf
-					tweenrep += ',mod('+p1+',4096.0)' + endf
-					tweenrep += ',floor('+p2+'/4096.0)' + endf
-					tweenrep += ',mod('+p2+',4096.0)' + endf
+					tweenrep += 'floor('+p1+'/4096.0)' 
+					tweenrep += ',mod('+p1+',4096.0)' 
+					tweenrep += ',floor('+p2+'/4096.0)'
+					tweenrep += ',mod('+p2+',4096.0)'
 					tweenrep += '),vec4('
-					tweenrep += 'floor('+p3+'/4096.0)' + endf
-					tweenrep += ',mod('+p3+',4096.0)' + endf
-					tweenrep += ',floor('+p4+'/4096.0)' + endf
-					tweenrep += ',mod('+p4+',4096.0)' + endf
-					tweenrep += '),T);\n'
+					tweenrep += 'floor('+p3+'/4096.0)'
+					tweenrep += ',mod('+p3+',4096.0)'
+					tweenrep += ',floor('+p4+'/4096.0)'
+					tweenrep += ',mod('+p4+',4096.0)'
+					if(packing === 'float') tweenrep += '),T)/4095.0;\n'
+					else tweenrep += '),T);\n'
 				}
 			}
 			else{

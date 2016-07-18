@@ -255,6 +255,40 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+7] = divisor || 1
 	}
 
+	proto.indexes = function(nameid, mesh){
+
+		var o = (this.last = this.offset)
+		if((this.offset += 4) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		// use the mesh message for lazy serialization
+		if(mesh.dirty){
+			mesh.dirty = false
+			bus.batchMessage(mesh.self)
+		}
+
+		i32[o+0] = 7
+		i32[o+1] = 2
+		i32[o+2] = nameid
+		i32[o+3] = mesh.self.meshid
+	}
+
+	proto.sampler = function(nameid, texture, sam){
+		var o = (this.last = this.offset)
+		if((this.offset += 5) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		if(texture.dirty){
+			texture.dirty = false
+			bus.batchMessage(texture.self)
+		}
+
+		i32[o+0] = 8
+		i32[o+1] = 3
+		i32[o+2] = nameid
+		i32[o+3] = texture.self.textureid
+		i32[o+4] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
+	}
 
 	proto.int = function(nameid, x){
 		var o = (this.last = this.offset)
@@ -570,6 +604,7 @@ painter.MIN = 0x8007
 painter.MAX = 0x8008
 
 // min/magfilter values
+/*
 painter.LINEAR = 0x2601
 painter.NEAREST_MIPMAP_NEAREST = 0x2700 
 painter.LINEAR_MIPMAP_NEAREST = 0x2701
@@ -580,35 +615,7 @@ painter.LINEAR_MIPMAP_LINEAR = 0x2703
 painter.REPEAT = 0x2901
 painter.CLAMP_TO_EDGE = 0x812f
 painter.MIRRORED_REPEAT = 0x8370,
-
-// texture flags
-painter.RGB = 1 << 0
-painter.RGBA = 1 << 1
-painter.ALPHA = 1 << 3
-painter.DEPTH = 1 << 4
-painter.STENCIL = 1 << 5
-painter.LUMINANCE = 1 << 6
-painter.FLOAT = 1 << 10
-painter.HALF_FLOAT = 1 << 11
-painter.FLOAT_LINEAR = 1 << 12
-painter.HALF_FLOAT_LINEAR = 1 << 13
-
-// prefab sampler types
-painter.sampler2dnearest = {
-	type: types.sampler2D,
-	minfilter: painter.NEAREST,
-	magfilter: painter.NEAREST,
-	wraps: painter.CLAMP_TO_EDGE,
-	wrapt: painter.CLAMP_TO_EDGE
-}
-
-painter.sampler2dlinear = {
-	type: types.sampler2D,
-	minfilter: painter.LINEAR,
-	magfilter: painter.LINEAR,
-	wraps: painter.CLAMP_TO_EDGE,
-	wrapt: painter.CLAMP_TO_EDGE
-}
+*/
 
 painter.Shader = require('class').extend(function Shader(proto){
 
@@ -657,7 +664,7 @@ painter.Shader = require('class').extend(function Shader(proto){
 var meshidsalloc = 1
 var meshids = {}
 
-painter.ids = nameids
+//painter.ids = nameids
 
 painter.Mesh = require('class').extend(function Mesh(proto){
 
@@ -766,15 +773,79 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 	}
 })
 
+// min/magfilter values
+painter.LINEAR = 1
+painter.NEAREST_MIPMAP_NEAREST = 2
+painter.LINEAR_MIPMAP_NEAREST = 3
+painter.NEAREST_MIPMAP_LINEAR = 4
+painter.LINEAR_MIPMAP_LINEAR = 5
+
+// wraps/t values
+painter.REPEAT = 1
+painter.CLAMP_TO_EDGE = 2
+painter.MIRRORED_REPEAT = 3
+
+// texture flags
+painter.RGB = 1 << 0
+painter.RGBA = 1 << 1
+painter.ALPHA = 1 << 3
+painter.DEPTH = 1 << 4
+painter.STENCIL = 1 << 5
+painter.LUMINANCE = 1 << 6
+painter.FLOAT = 1 << 10
+painter.HALF_FLOAT = 1 << 11
+painter.FLOAT_LINEAR = 1 << 12
+painter.HALF_FLOAT_LINEAR = 1 << 13
+
+// prefab sampler types
+painter.SAMPLER2DNEAREST = {
+	type: types.sampler2D,
+	minfilter: painter.NEAREST,
+	magfilter: painter.NEAREST,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
+
+painter.SAMPLER2DLINEAR = {
+	type: types.sampler2D,
+	minfilter: painter.LINEAR,
+	magfilter: painter.LINEAR,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
+
+var textureidsalloc = 1
+var textureids = {}
+
 painter.Texture = require('class').extend(function Texture(proto){
 	var Texture = proto.constructor
 	
-	Texture.fromArray2D = function(type, w, h, array){
+	Texture.fromArray2D = function(type, w, h, array, yflip, premulalpha){
 
+		var obj = new Texture()
+		// add the array
+		obj.self.w = w
+		obj.self.h = h
+		obj.self.array = array
+		obj.self.yflip = yflip
+		obj.self.premulalpha = premulalpha
+		obj.dirty = true
+		return obj
 	}
 
 	proto.onconstruct = function(){
+		var textureid = textureidsalloc++
+		textureids[textureid] = this
 
+		bus.batchMessage({
+			fn:'newTexture',
+			textureid:this.textureid
+		})
+
+		this.self = {
+			fn:'updateTexture',
+			textureid:this.textureid,
+		}
 	}
 })
 

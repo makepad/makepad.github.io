@@ -3,13 +3,13 @@ var App = require('view').extend(function(proto){
 
 	proto.nested = {
 		Background: require('shaders/rectshader').extend(function(proto){
-			proto.props = {
-				random:0,
-			}
+			
+			proto.random = 0
+
 			proto.pixelstyle = function(){$
 				var m = this.mesh
 				this.borderwidth.x = 10.+5.*sin(m.x*15.*this.random)*cos(m.x*5.*this.random)
-				var meshh = this.mesh.y*this.h
+				var meshh = m.y*this.h
 				var propsh = this.borderwidth.x+1.
 				if(meshh <propsh ) this.bordercolor = mix('white','gray',meshh/propsh)
 
@@ -18,7 +18,7 @@ var App = require('view').extend(function(proto){
 	}
 
 	proto.ondraw = function(){
-		var dt = performance.now()
+		//var dt = performance.now()
 		for(var i = 0 ; i < 16000;i++){
 			this.drawBackground({
 				random:Math.random()+0.1,
@@ -36,7 +36,7 @@ var App = require('view').extend(function(proto){
 				h:40+40*Math.random()
 			})
 		}
-		console.log(performance.now()-dt)
+		//console.log(performance.now()-dt)
 	}
 })
 App().runApp()

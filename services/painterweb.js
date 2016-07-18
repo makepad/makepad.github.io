@@ -16,6 +16,8 @@ var shaderids = {}
 var nameids = {}
 var meshids = {}
 var todoids = {}
+var textureids = {}
+var frameid = 0
 
 var slotstable = {
 	'float':1,
@@ -25,6 +27,9 @@ var slotstable = {
 }
 
 var userMessage = {
+	newName: function(msg){
+		nameids[msg.name] = msg.nameid
+	},
 	newTarget: function(msg){
 		
 	},
@@ -97,11 +102,15 @@ var userMessage = {
 
 	},
 	newMesh: function(msg){
-		var buffer = gl.createBuffer()
-		meshids[msg.meshid] = buffer
+		var glbuffer = gl.createBuffer()
+		meshids[msg.meshid] = glbuffer
 	},
-	newName: function(msg){
-		nameids[msg.name] = msg.nameid
+	updateMesh: function(msg){
+		var glbuffer = meshids[msg.meshid]
+		glbuffer.array = msg.array
+		glbuffer.length = msg.length
+		gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
+		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	},
 	newTodo: function(msg){
 		todoids[msg.todoid] = {f32:undefined, i32:undefined, length:0}
@@ -112,12 +121,26 @@ var userMessage = {
 		todo.i32 = new Int32Array(msg.buffer)
 		todo.length = msg.length
 	},
-	updateMesh: function(msg){
-		var buffer = meshids[msg.meshid]
-		buffer.array = msg.array
-		buffer.length = msg.length
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
+	newTexture: function(msg){
+		textureids[msg.textureid] = {
+			w:0,
+			h:0,
+			array:0,
+			updateid:-1,
+			samplers:{}
+		}
+	},
+	updateTexture: function(msg){
+		// since we dont have sampler objects in webGL 1.0
+		// we have to lazily create duplicate textures
+		// in 'samplers'
+		var tex = textureids[msg.textureid]
+		tex.w = msg.w
+		tex.h = msg.h
+		tex.array = msg.array
+		tex.yflip = msg.yflip
+		tex.premulalpha = msg.premulalpha
+		tex.updateid = frameid
 	},
 	syncDraw: function(msg){
 		window.requestAnimationFrame(repaint)
@@ -138,7 +161,7 @@ var options = {
 	antialias: canvas.getAttribute("antialias")?true:false,
 	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
 	preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
-	preferLowPowerToHighPerformance: canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
+	preferLowPowerToHighPerformance: true//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
 }
 
 var gl = canvas.getContext('webgl', options) ||
@@ -161,7 +184,6 @@ function resize(){
 	}
 }
 
-var frameid = 0
 function repaint(time){
 	bus.postMessage({fn:'onsyncdraw', time:time, frame:frameid++})
 }
@@ -283,7 +305,24 @@ todofn[6] = function instances(i32, f32, o){
 	}
 }
 
-todofn[7] = function index(){
+todofn[7] = function indexes(){
+
+}
+
+todofn[8] = function sampler(i32, f32, o){
+	// this thing lazily creates textures and samplers
+	var tex = textureids[i32[o+2]]
+
+	// see if we need to update the texure
+
+		var gltexture = gl.createTexture()
+		gl.bindTexture(gl.TEXTURE_2D, gltexture)
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, samplerdef.UNPACK_FLIP_Y_WEBGL || false)
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, samplerdef.UNPACK_PREMULTIPLY_ALPHA_WEBGL || false)
+
+		//if(this.array){
+			this.typeFlagsToGLType(gl, this.type)
+			gl.texImage2D(gl.TEXTURE_2D, 0, this.glbuf_type, this.width, this.height, 0, this.glbuf_type, this.gldata_type, new Uint8Array(this.array))
 
 }
 

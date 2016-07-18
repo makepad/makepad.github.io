@@ -12,6 +12,10 @@ module.exports = require('shader').extend(function TweenShader(proto){
 		projection:types.mat4
 	}
 
+	proto.outputs = {
+		outcolor: types.vec4
+	}
+	
 	var abs = Math.abs
 	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){
 
