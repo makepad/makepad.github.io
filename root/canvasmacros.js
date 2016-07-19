@@ -28,8 +28,7 @@ module.exports = function(proto){
 					}
 					macroArgs = argobj
 				}
-				else macroArgs = args
-
+				else macroArgs = args.split(/\s*,\s*/)
 				var fn = mainThis[fnname]
 				if(!fn) throw new Error('CanvasMacro: '+fnname+ ' does not exist')
 				return mainThis[fnname](className, macroArgs, mainargs, indent)

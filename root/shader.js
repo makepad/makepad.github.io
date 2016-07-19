@@ -411,7 +411,7 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in this._props){
 			var config = this._props[key]
 			var propname = 'this_DOT_' + key
-			if(config.forceStyle && !styleProps[propname]){
+			if(config.styleLevel && !styleProps[propname]){
 				styleProps[propname] = {
 					name:key,
 					config:config
@@ -448,12 +448,15 @@ module.exports = require('class').extend(function Shader(proto){
 		var styleProps = this.compileInfo.styleProps
 		if(!macroargs) throw new Error('$STYLEPROPS doesnt have overload argument')
 
-		var stack = [macroargs,'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
+		var stack = [macroargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
 
 		// lets make the vars
 		var code = indent + 'var _turtle = this.turtle'
 		for(var key in styleProps){
-			code += ', _$' + styleProps[key].name
+			var prop = styleProps[key]
+			if(prop.config.noStyle) continue
+			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
+			code += ', _$' + prop.name
 		}
 		code += '\n\n'
 
@@ -492,8 +495,10 @@ module.exports = require('class').extend(function Shader(proto){
 		// store it on the turtle
 		code += '\n'
 		for(var key in styleProps){
-			var name = styleProps[key].name
-			if(styleProps[key].config.noStyle) continue
+			var prop = styleProps[key]
+			var name = prop.name
+			if(prop.config.noStyle) continue
+			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
 			// store on turtle
 			code += indent + '_turtle._' + name +' = _$' + name + '\n'
 		}
@@ -507,7 +512,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var info = this.compileInfo
 		var code = ''
 		
-		var need = macroargs || 1
+		var need = macroargs[0] || 1
 
 		code += indent+'var _todo = this.todo\n'
 		code += indent+'var _shader = this.shaders.'+classname+'\n'
@@ -572,6 +577,8 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets draw it
 		code += indent + '	_todo.drawTriangles()\n'
 		code += indent + '}\n'
+		code += indent + 'var _writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.turtleStack.len - 1:this.turtleStack.len\n'
+		code += indent + 'this.writeList.push(_props, this.turtle.propoffset = _props.self.length, _need, _writelevel)\n'
 		code += indent + 'this.turtle.propoffset = _props.self.length\n'
 		code += indent + '_props.self.length = _need\n'
 

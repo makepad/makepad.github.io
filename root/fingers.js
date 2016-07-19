@@ -1,7 +1,7 @@
 var service = require('services/fingers')
 
-var Fingers = require('class').extend(function Fingers(){
-	require('events').call(this)
+var Fingers = require('class').extend(function Fingers(proto){
+	require('events')(proto)
 })
 
 var fingers = module.exports = new Fingers()

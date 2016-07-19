@@ -1,6 +1,6 @@
-module.exports = function(){
+module.exports = function(proto){
 
-	this.on = function(key, fn, reverse){
+	proto.on = function(key, fn, reverse){
 		var onkey = 'on' + key
 		var prev = this[onkey]
 		if(prev){
@@ -30,7 +30,7 @@ module.exports = function(){
 		}
 	}
 	
-	this.off = function(key, fn){
+	proto.off = function(key, fn){
 		var onkey = 'on' + key
 		var cb = this[onkey], last
 		while(cb.name === '_onchain'){

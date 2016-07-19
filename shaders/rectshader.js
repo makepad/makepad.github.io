@@ -12,9 +12,10 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		h: NaN,
 		z: 0,
 
-		align: {forceStyle:true, value:'lefttop'},
-		margin: {forceStyle:true, value:[0,0,0,0]},
-		padding: {forceStyle:true, value:[0,0,0,0]},
+		wrap: {styleLevel:2, value:1},
+		align: {styleLevel:2, value:[0,0]},
+		padding: {styleLevel:2, value:[0,0,0,0]},
+		margin: {styleLevel:1, value:[0,0,0,0]},
 
 		color: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12' ,value:[0,0,0,1]},
@@ -23,9 +24,9 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		borderWidth: {pack:'int12', value:[0,0,0,0]},
 		borderRadius: {pack:'int12', value:[8,8,8,8]},
 
-		shadowBlur: 2.0,
+		shadowBlur: 0.0,
 		shadowSpread: 0.0,
-		shadowOffset: [2.0,2.0],
+		shadowOffset: [0.0,0.0],
 
 		mesh:{kind:'geometry', type:types.vec3},
 	}
@@ -153,13 +154,13 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 	proto.canvasMacros = {
 		draw:function(overload){
-			this.$STYLEPROPS(overload)
+			this.$STYLEPROPS(overload, 1)
 			this.$ALLOCDRAW()
 			this.walkTurtle()
 			this.$WRITEPROPS()
 		},
 		begin:function(overload){
-			this.$STYLEPROPS(overload)
+			this.$STYLEPROPS(overload, 2)
 			this.$ALLOCDRAW()
 			this.beginTurtle()
 		},

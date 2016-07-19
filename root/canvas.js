@@ -52,7 +52,8 @@ module.exports = function(proto){
 		this.turtleStack = [
 			this.turtle
 		]
-		this.turtleStackLen = 0
+		this.writeList = []
+		this.turtleStack.len = 0
 		this.shaders = {}
 		this.turtle._x = 0
 		this.turtle._y = 0
@@ -66,7 +67,7 @@ module.exports = function(proto){
 
 	proto.beginTurtle = function(){
 		// add a turtle to the stack
-		var len = ++this.turtleStackLen
+		var len = ++this.turtleStack.len
 		var outer = this.turtle
 		var turtle = this.turtle = this.turtleStack[len]
 		if(!turtle){
@@ -81,13 +82,29 @@ module.exports = function(proto){
 		this.turtle.end()
 		// pop the stack
 		var last = this.turtle
-		this.turtle = this.turtleStack[--this.turtleStackLen]
-
+		this.turtle = this.turtleStack[--this.turtleStack.len]
+		
 		return last
 	}
 
-	proto.moveRange = function(start, dx, dy){
-
+	proto.moveWritten = function(start, dx, dy){
+		var writes = this.writeList
+		var current = this.turtleStack.len
+		for(var i = start; i < writes.length; i += 4){
+			var props = writes[i]
+			var begin = writes[i+1]
+			var end = writes[i+2]
+			var level = writes[i+3]
+			if(current > level) continue
+			var slots = props.slots
+			var xoff = props.xoffset
+			var yoff = props.yoffset
+			var array = props.self.array
+			for(var j = begin; j < end; j++){
+				array[j * slots + xoff] += dx
+				array[j * slots + yoff] += dy
+ 			}
+		}
 	}
 
 	// internal API used by canvas macros
@@ -95,7 +112,9 @@ module.exports = function(proto){
 		var shaders = this.shaders
 		var info = this['_' + classname].prototype.compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
-		shader._props = new painter.Mesh(info.propSlots)
+		var props = shader._props = new painter.Mesh(info.propSlots)
+		props.xoffset = info.instanceProps.this_DOT_x.offset
+		props.yoffset = info.instanceProps.this_DOT_y.offset
 		return shader
 	}
 

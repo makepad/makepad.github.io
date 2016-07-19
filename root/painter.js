@@ -2,8 +2,8 @@ var service = require('services/painter')
 var types = require('types')
 var bus = service.bus
 
-var Painter = require('class').extend(function Painter(){
-	require('events').call(this)
+var Painter = require('class').extend(function Painter(proto){
+	require('events')(proto)
 })
 var painter = module.exports = new Painter()
 
