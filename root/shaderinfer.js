@@ -684,6 +684,9 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				for(var i = 0; i < args.length; i++){
 					var arg = args[i]
 					var param = params[i]
+					if(arg.infer.kind !== 'value'){
+						throw this.InferErr(arg, "GLSL Builtin cant use non value arg " +argstrs[i])
+					}
 					//console.log(param,arg.infer)
 					if(param.type === types.gen){
 						gentype = arg.infer.type

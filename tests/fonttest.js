@@ -1,8 +1,5 @@
 
 var App = require('view').extend(function(proto){
-	var parser = require('jsparser/jsparser')
-
-//	console.log(parser.parse('x + y * 1'))
 
 	proto.nested = {
 		//Text: require('shaders/arcfontshader').extend(function(proto){
@@ -18,8 +15,9 @@ var App = require('view').extend(function(proto){
 			this.drawText({
 				text:''+i,
 				boldness:1,
-				outline:1,
+				outlineWidth:1,
 				fontSize:25,
+				shadowOffset:[2,2],
 				color:[Math.random(),Math.random(),Math.random(),1.],
 				outlineColor:'black',
 				x:Math.random()*1000,

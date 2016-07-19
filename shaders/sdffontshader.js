@@ -10,21 +10,23 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		x:0,
 		y:0,
 
-		fontSize:14,
-		baseLine:1,
-		italic:NaN,
 		lineSpacing:1.3,
 
 		color:{pack:'float12', value:'black'},
 		outlineColor:{pack:'float12', value:'white'},
 		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
 
-		shadowBlur: 3.0,
-		shadowSpread: 0.0,
-		shadowOffset: [2.0,2.0],
+		fontSize:14,
 
-		outline:0.,
-		boldness:0.,
+		italic:0,
+		baseLine:1,
+
+		shadowBlur: 5.0,
+		shadowSpread: -2.,
+
+		outlineWidth:0.,
+		boldness:1., 
+		shadowOffset: {pack:'int12', value:[2.0,2.0]},
 
 		unicode:{noStyle:1,noTween:1,value:0},
 
@@ -59,6 +61,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 	}
 
 	proto.pixelStyle = function(){
+		//this.outlineWidth = abs(sin(this.mesh.y*10.))*3.+1.
 		//this.field += sin(this.mesh.y*10.)*3.*cos(this.mesh.x*10.)*3.
 	}
 
@@ -75,7 +78,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 				this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
 			),
 			vec2(
-				this.x + this.fontSize * this.x2,
+				this.x + this.fontSize * this.x2,// * this.italic,
 				this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
 			),
 			this.mesh.xy
@@ -83,11 +86,11 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 		// shadow
 		if(this.mesh.z < 0.5){
-			if(abs(this.shadowOffset.x)<0.001 && abs(this.shadowOffset.y)<0.001 && this.shadowBlur<2.0 && abs(this.shadowSpread) < 0.001){
+			if(abs(this.shadowOffset.x)<0.001 && abs(this.shadowOffset.y)<0.001 && this.shadowBlur<2.0){
 				return vec4(0)
 			}
 			var meshmz = this.mesh.xy *2. - 1.
-			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
+			pos.xy += this.shadowOffset.xy// + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
 		}
 
 		this.textureCoords = mix(
@@ -100,9 +103,13 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 	}
 
 	proto.drawField = function(field){$
-		if(this.outline>0.){
-			var outline = abs(field) - (this.outline)
-			var inner = field + this.outline
+		if(field > 1. + this.outlineWidth){
+			discard
+		}
+
+		if(this.outlineWidth>0.){
+			var outline = abs(field) - (this.outlineWidth)
+			var inner = field + this.outlineWidth
 			var borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline,0.,1.))
 			return mix(this.color, borderfinal, clamp(inner, 0., 1.))
 		}
@@ -111,21 +118,19 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 	}
 
 	proto.drawShadow = function(field){
-		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp((field-this.shadowBlur*0.2)/this.shadowBlur+1.,0.,1.))
+		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
+		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
 	}
 
 	proto.pixel = function(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.005) / adjust * 1.4 + 1.5
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.005) / adjust * 1.4 + 1.
 		this.field = field
 
 		this.pixelStyle()
 
 		field = this.field - this.boldness
 
-		if(field > 1. + this.outline){
-			discard
-		}
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)
 		}

@@ -61,17 +61,23 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// calc prop size
 		var totalslots = 0
+
 		for(var key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.type.slots
 			if(prop.config.pack){
-				if(prop.type.name !== 'vec4') throw new Error('Cant use packing on non vec4 type for '+key)
-				slots = 2
+				if(prop.type.name === 'vec4'){
+					slots = 2
+				}
+				else if(prop.type.name === 'vec2'){
+					slots = 1
+				}
+				else throw new Error('Cant use packing on non vec2 or vec4 type for '+key)
 			}
 			prop.offset = totalslots
 			prop.slots = slots
 			totalslots += slots
-			if(!prop.config.notween) totalslots += slots
+			if(!prop.config.noTween) totalslots += slots
 		}
 
 		function propSlot(idx){
@@ -91,42 +97,70 @@ module.exports = require('class').extend(function Shader(proto){
 			propSlots += slots
 			var pack = prop.config.pack
 			if(pack){
-				if(prop.config.notween){
-					vpre += '\t' + key + ' = vec4('
-					var start = propSlots - slots
-					var p1 = propSlot(start)
-					var p2 = propSlot(start+1)
-					vpre += 'floor('+p1+'/4096.0)'
-					vpre += ',mod('+p1+',4096.0)'
-					vpre += ',floor('+p2+'/4096.0)' 
-					vpre += ',mod('+p2+',4096.0)' 
-					if(pack === 'float12') vpre += ')/4095.0;\n'
-					else vpre += ');\n'
+				if(prop.type.name === 'vec2'){
+					if(prop.config.noTween){
+						vpre += '\t' + key + ' = vec2('
+						var start = propSlots - slots
+						var p1 = propSlot(start)
+						vpre += 'floor('+p1+'/4096.0)'
+						vpre += ',mod('+p1+',4096.0)'
+						if(pack === 'float12') vpre += ')/4095.0;\n'
+						else vpre += ');\n'
+					}
+					else{
+						propSlots += slots
+						tweenrep += '\t' + key + ' = mix(vec2('
+						var start1 = propSlots - slots*2
+						var start2 = propSlots - slots
+						var p1 = propSlot(start1)
+						var p3 = propSlot(start2)
+						tweenrep += 'floor('+p1+'/4096.0)' 
+						tweenrep += ',mod('+p1+',4096.0)' 
+						tweenrep += '),vec2('
+						tweenrep += 'floor('+p3+'/4096.0)'
+						tweenrep += ',mod('+p3+',4096.0)'
+						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
+						else tweenrep += '),T);\n'
+					}
 				}
 				else{
-					propSlots += slots
-					tweenrep += '\t' + key + ' = mix(vec4('
-					var start1 = propSlots - slots*2
-					var start2 = propSlots - slots
-					var p1 = propSlot(start1)
-					var p2 = propSlot(start1+1)
-					var p3 = propSlot(start2)
-					var p4 = propSlot(start2+1)
-					tweenrep += 'floor('+p1+'/4096.0)' 
-					tweenrep += ',mod('+p1+',4096.0)' 
-					tweenrep += ',floor('+p2+'/4096.0)'
-					tweenrep += ',mod('+p2+',4096.0)'
-					tweenrep += '),vec4('
-					tweenrep += 'floor('+p3+'/4096.0)'
-					tweenrep += ',mod('+p3+',4096.0)'
-					tweenrep += ',floor('+p4+'/4096.0)'
-					tweenrep += ',mod('+p4+',4096.0)'
-					if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
-					else tweenrep += '),T);\n'
+					if(prop.config.noTween){
+						vpre += '\t' + key + ' = vec4('
+						var start = propSlots - slots
+						var p1 = propSlot(start)
+						var p2 = propSlot(start+1)
+						vpre += 'floor('+p1+'/4096.0)'
+						vpre += ',mod('+p1+',4096.0)'
+						vpre += ',floor('+p2+'/4096.0)' 
+						vpre += ',mod('+p2+',4096.0)' 
+						if(pack === 'float12') vpre += ')/4095.0;\n'
+						else vpre += ');\n'
+					}
+					else{
+						propSlots += slots
+						tweenrep += '\t' + key + ' = mix(vec4('
+						var start1 = propSlots - slots*2
+						var start2 = propSlots - slots
+						var p1 = propSlot(start1)
+						var p2 = propSlot(start1+1)
+						var p3 = propSlot(start2)
+						var p4 = propSlot(start2+1)
+						tweenrep += 'floor('+p1+'/4096.0)' 
+						tweenrep += ',mod('+p1+',4096.0)' 
+						tweenrep += ',floor('+p2+'/4096.0)'
+						tweenrep += ',mod('+p2+',4096.0)'
+						tweenrep += '),vec4('
+						tweenrep += 'floor('+p3+'/4096.0)'
+						tweenrep += ',mod('+p3+',4096.0)'
+						tweenrep += ',floor('+p4+'/4096.0)'
+						tweenrep += ',mod('+p4+',4096.0)'
+						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
+						else tweenrep += '),T);\n'
+					}
 				}
 			}
 			else{
-				if(prop.config.notween){
+				if(prop.config.noTween){
 					var vdef = prop.type.name + '('
 					if(vdef === 'float(') vdef = '('
 					for(var i = 0, start = propSlots - slots; i < slots; i++){
@@ -668,8 +702,33 @@ module.exports = require('class').extend(function Shader(proto){
 					propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=_a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'[0]\n'
 					propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColor(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
 					propcode += indent + '}\n'
-					propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
+					propcode += indent + 'else if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
 					propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+'] = _a[_o+'+(o+1)+'] = _a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'\n'
+				}
+			}
+			else if(prop.type.name === 'vec2'){
+				// check packing
+				var pack = prop.config.pack
+				if(pack){
+					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
+					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					if(pack === 'float12'){
+						propcode += indent + '	_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)|0)\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'else _a[_o+'+o+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)|0)\n'
+					}
+					else{ // int packing
+						propcode += indent + '	_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]|0)\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')|0)\n'
+					}
+				}
+				else{
+					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
+					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					propcode += indent + '	_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1]\n'
+					propcode += indent + '}\n'
+					propcode += indent + 'else _a[_o+'+(o)+']=_a[_o+'+(o+1)+']=_$'+prop.name+'\n'
 				}
 			}
 			else{
@@ -777,7 +836,7 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	proto.props = {
-		duration: {notween:true, value:1.0},
-		tweenstart: {notween:true, nostyle:true, value:1.0}
+		duration: {noTween:true, value:1.0},
+		tweenstart: {noTween:true, noStyle:true, value:1.0}
 	}
 })

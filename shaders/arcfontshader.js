@@ -25,10 +25,9 @@ module.exports = require('./sdffontshader').extend(function ArcFontShader(proto,
 		this.pixelStyle()
 		field = this.field - this.boldness
 
-		if(field > 1. + this.outline){
-			discard
+		if(this.mesh.z < 0.5){
+			return this.drawShadow(field)
 		}
-
 		return this.drawField(field)
 	}
 
