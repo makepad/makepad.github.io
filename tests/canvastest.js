@@ -17,16 +17,16 @@ var App = require('view').extend(function(proto){
 				w:100,
 				h:100,
 				borderColor:[rnd()*.5,rnd()*.5,rnd()*.5,1],
-				padding:[16,0,1,0],
+				padding:[16,10,10,10],
 				borderWidth:[15,0,0,0],
 				color:[rnd(),rnd(),rnd(),1]
 			})
-			for(var j = 0 ;j < 10; j++){
-				this.drawBg({w:20,h:20})
+			for(var j = 0 ;j < 1; j++){
+				//this.drawBg({x:'0',y:'0',margin:[0,0,0,0],w:'50%',h:'50%'})
 			}
-				//this.beginBg({w:30,h:30,padding:[0,0,0,0],color:'red'})
+				this.beginBg({x:'0',y:'0',w:'50%',h:'50%',padding:[0,0,0,0],color:'red'})
 				//	this.drawBg({w:20,h:20})
-				//this.endBg()
+				this.endBg()
 			this.endBg()
 		}
 		//console.log(Date.now()-dt)
