@@ -14,7 +14,7 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.time = 0.0
 
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
-	proto.constant = undefined
+	proto.constantColor = undefined
 
 	proto.tween = function(){
 		if(this.duration < 0.01) return 1.
@@ -32,15 +32,15 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// ok the alpha blend modes. how do we do it.
-	proto.nocatch = false
+	proto.mapExceptions = true
 
 	proto.compileShader = function(){
 		if(!this.vertex || !this.pixel) return
 
 		var ast = parser.parse()
 		
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, this.nocatch)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, this.nocatch)
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, proto.mapExceptions)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, proto.mapExceptions)
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
@@ -63,9 +63,9 @@ module.exports = require('class').extend(function Shader(proto){
 		var totalslots = 0
 		for(var key in instanceProps){
 			var prop = instanceProps[key]
-			var slots = types.getSlots(prop.type)
+			var slots = prop.type.slots
 			if(prop.config.pack){
-				if(prop.type._name !== 'vec4') throw new Error('Cant use packing on non vec4 type for '+key)
+				if(prop.type.name !== 'vec4') throw new Error('Cant use packing on non vec4 type for '+key)
 				slots = 2
 			}
 			prop.offset = totalslots
@@ -83,17 +83,17 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// Unpack attributes
 		var lastslot = Math.floor(totalslots/4)
-		var propslots = 0
+		var propSlots = 0
 		for(var key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			// lets create the unpack / mix code here
-			propslots += slots
+			propSlots += slots
 			var pack = prop.config.pack
 			if(pack){
 				if(prop.config.notween){
 					vpre += '\t' + key + ' = vec4('
-					var start = propslots - slots
+					var start = propSlots - slots
 					var p1 = propSlot(start)
 					var p2 = propSlot(start+1)
 					vpre += 'floor('+p1+'/4096.0)'
@@ -104,10 +104,10 @@ module.exports = require('class').extend(function Shader(proto){
 					else vpre += ');\n'
 				}
 				else{
-					propslots += slots
+					propSlots += slots
 					tweenrep += '\t' + key + ' = mix(vec4('
-					var start1 = propslots - slots*2
-					var start2 = propslots - slots
+					var start1 = propSlots - slots*2
+					var start2 = propSlots - slots
 					var p1 = propSlot(start1)
 					var p2 = propSlot(start1+1)
 					var p3 = propSlot(start2)
@@ -127,9 +127,9 @@ module.exports = require('class').extend(function Shader(proto){
 			}
 			else{
 				if(prop.config.notween){
-					var vdef = prop.type._name + '('
+					var vdef = prop.type.name + '('
 					if(vdef === 'float(') vdef = '('
-					for(var i = 0, start = propslots - slots; i < slots; i++){
+					for(var i = 0, start = propSlots - slots; i < slots; i++){
 						if(i) vdef += ', '
 						vdef += propSlot(start + i)
 					}
@@ -137,11 +137,11 @@ module.exports = require('class').extend(function Shader(proto){
 					vpre += '\t' + key + ' = ' + vdef + ';\n'
 				}
 				else{
-					propslots += slots
-					var vnew = prop.type._name + '('
+					propSlots += slots
+					var vnew = prop.type.name + '('
 					if(vnew === 'float(') vnew = '('
 					var vold = vnew
-					for(var i = 0, start1 = propslots - slots*2, start2 = propslots - slots; i < slots; i++){
+					for(var i = 0, start1 = propSlots - slots*2, start2 = propSlots - slots; i < slots; i++){
 						if(i) vnew += ', ', vold += ', '
 						vnew += propSlot(start1 + i)
 						vold += propSlot(start2 + i)
@@ -164,10 +164,10 @@ module.exports = require('class').extend(function Shader(proto){
 
 		for(var key in geometryProps){
 			var geom = geometryProps[key]
-			var slots = types.getSlots(geom.type)
+			var slots = geom.type.slots
 
 			if(slots > 4){
-				var v1 = geom.type._name + '('
+				var v1 = geom.type.name + '('
 				if(v1 === 'float(') v1 = '('
 				vpre += '\t' + key + ' = ' + v1
 				for(var i = 0; i < slots; i++){
@@ -186,23 +186,48 @@ module.exports = require('class').extend(function Shader(proto){
 			}
 			else{
 				vpre += '\t' + key + ' = ATTR_' + attrid + ';\n'
-				vhead = 'attribute '+geom.type._name+' ATTR_' + attrid + ';\n' + vhead
+				vhead = 'attribute '+geom.type.name+' ATTR_' + attrid + ';\n' + vhead
 				attrid++
 			}
 		}
 		vhead = '// mesh attributes\n' + vhead
 
+		// define structs
+		for(var key in vtx.structs){
+			var struct = vtx.structs[key]
+			// lets output the struct
+			vhead += '\nstruct ' + key + '{\n'
+			var fields = struct.fields
+			for(var fieldname in fields){
+				var field = fields[fieldname]
+				vhead += '	'+field.name +' '+fieldname+';\n'
+			}
+			vhead += '};\n'
+		}
+
+		for(var key in pix.structs){
+			var struct = pix.structs[key]
+			// lets output the struct
+			phead += '\nstruct ' + key + '{\n'
+			var fields = struct.fields
+			for(var fieldname in fields){
+				var field = fields[fieldname]
+				phead += '	'+field.name +' '+fieldname+';\n'
+			}
+			phead += '};\n'
+		}
+
 		// define the input variables
 		vhead += '\n// inputs\n'
 		for(var key in inputs){
 			var input = inputs[key]
-			vhead += input.type._name + ' ' + key + ';\n'
+			vhead += input.type.name + ' ' + key + ';\n'
 		}
 
 		// define the varying targets
 		for(var key in vtx.varyOut){
 			var vary = vtx.varyOut[key]
-			vhead += vary.type._name + ' ' + key + ';\n'
+			vhead += vary.type.name + ' ' + key + ';\n'
 		}
 
 		// lets pack/unpack varying and props and attributes used in pixelshader
@@ -210,18 +235,18 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in pix.geometryProps) allvary[key] = pix.geometryProps[key]
 		for(var key in pix.varyOut) allvary[key] = pix.varyOut[key]
 		for(var key in pix.instanceProps) allvary[key] = pix.instanceProps[key]
-		
+
 		// make varying packing and unpacking
 		var vid = 0, curslot = 0, varystr = ''
 		var varyslots = 0
 		for(var key in allvary){
 			var prop = allvary[key]
 			var type = prop.type
-			var slots = types.getSlots(type)
+			var slots = type.slots
 
 			// define the variables in pixelshader
 			if(curslot === 0) phead += '// inputs\n'
-			phead += type._name + ' ' + key + ';\n'
+			phead += type.name + ' ' + key + ';\n'
 			varyslots += slots
 
 			// pack the varying
@@ -249,7 +274,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 			// unpack the varying into variable in pixelshader
 			var start = curslot - slots
-			var v1 = prop.type._name + '('
+			var v1 = prop.type.name + '('
 			if(v1 === 'float(') v1 = '('
 			ppre += '\t' + key + ' = ' + v1
 			for(var i = 0; i < slots; i++){
@@ -266,13 +291,13 @@ module.exports = require('class').extend(function Shader(proto){
 		var hasuniforms = 0
 		for(var key in vtx.uniforms){
 			if(!hasuniforms++)vhead += '\n// uniforms\n'
-			vhead += 'uniform ' + vtx.uniforms[key].type._name + ' ' + key + ';\n'
+			vhead += 'uniform ' + vtx.uniforms[key].type.name + ' ' + key + ';\n'
 		}
 
 		var hasuniforms = 0
 		for(var key in pix.uniforms){
 			if(!hasuniforms++)phead += '\n// uniforms\n'
-			phead += 'uniform ' + pix.uniforms[key].type._name + ' ' + key + ';\n'
+			phead += 'uniform ' + pix.uniforms[key].type.name + ' ' + key + ';\n'
 		}
 
 		// the sampler uniforms
@@ -281,24 +306,24 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in vtx.samplers){
 			var sampler = samplers[key] = vtx.samplers[key].sampler
 			if(!hassamplers++)vhead += '\n// samplers\n'
-			vhead += 'uniform ' + sampler.type._name + ' ' + key + ';\n'
+			vhead += 'uniform ' + sampler.type.name + ' ' + key + ';\n'
 		}
 
 		var hassamplers = 0
 		for(var key in pix.samplers){
 			var sampler = samplers[key] = pix.samplers[key].sampler
 			if(!hassamplers++)phead += '\n// samplers\n'
-			phead += 'uniform ' + sampler.type._name + ' ' + key + ';\n'
+			phead += 'uniform ' + sampler.type.name + ' ' + key + ';\n'
 		}
 
 		// define output variables in pixel shader
 		phead += '\n// outputs\n'
 		for(var key in pix.outputs){
 			var output = pix.outputs[key]
-			phead += output._name + ' ' + key + ';\n'
+			phead += output.name + ' ' + key + ';\n'
 		}
 
-		// alright lets put together the shaders
+		// how do we order these dependencies so they happen top down
 		var vfunc = ''
 		for(var key in vtx.genFunctions){
 			var fn = vtx.genFunctions[key]
@@ -364,7 +389,7 @@ module.exports = require('class').extend(function Shader(proto){
 			return
 		}
 
-		this.compileinfo = {
+		this.compileInfo = {
 			instanceProps:instanceProps,
 			geometryProps:geometryProps,
 			styleProps:styleProps,
@@ -372,9 +397,9 @@ module.exports = require('class').extend(function Shader(proto){
 			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
-			propslots:propslots
+			propSlots:propSlots
 		}
-		this._samplers = samplers
+
 		if(this.dump) console.log(vertex,pixel)
 	}
 
@@ -386,7 +411,7 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$STYLEPROPS = function(classname, macroargs, mainargs, indent){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
-		var styleProps = this.compileinfo.styleProps
+		var styleProps = this.compileInfo.styleProps
 		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
 
 		var stack = [mainargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
@@ -445,11 +470,11 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
 		// lets start a propsbuffer 
-		var info = this.compileinfo
+		var info = this.compileInfo
 		var code = ''
 		
 		var need = macroargs || 1
-
+		console.log(need)
 		code += indent+'var _todo = this.todo\n'
 		code += indent+'var _shader = this.shaders.'+classname+'\n'
 		code += indent+'if(!_shader) _shader = this._allocShader("'+classname+'")\n'
@@ -468,13 +493,13 @@ module.exports = require('class').extend(function Shader(proto){
 		
 		var attrbase = painter.nameId('ATTR_0')
 		// do the props
-		var attroffset = Math.ceil(info.propslots / 4)
+		var attroffset = Math.ceil(info.propSlots / 4)
 		code += indent+'	_todo.instances('+(attrbase)+','+attroffset+',_props)\n'
 		var attrid = attroffset
 		// set attributes
 		for(var key in geometryProps){
 			var geom = geometryProps[key]
-			var attrange = Math.ceil(types.getSlots(geom.type) / 4)
+			var attrange = Math.ceil(geom.type.slots / 4)
 			var nodot = key.slice(9)
 			code += indent+'	_attrlen = _proto.'+nodot+'.length\n'
 			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+nodot+')\n'
@@ -482,7 +507,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		
 		// lets set the blendmode
-		code += '	_todo.blending(_proto.blending, _proto.constant)\n'
+		code += '	_todo.blending(_proto.blending, _proto.constantColor)\n'
 
 		// set uniforms
 		var uniforms = info.uniforms
@@ -493,7 +518,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| _proto.'+thisname
 			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
-			var typename = uniform.type._name
+			var typename = uniform.type.name
 			// ok so uniforms... where do we get them
 			// we can get them from overload or the class prototype
 			code += indent+'	_todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
@@ -508,7 +533,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || _proto.'+thisname
 
-			code += indent +'	_todo.sampler('+painter.nameId(key)+','+source+',_proto._samplers.'+key+')\n'
+			code += indent +'	_todo.sampler('+painter.nameId(key)+','+source+',_proto.compileInfo.samplers.'+key+')\n'
 		}
 		// lets draw it
 		code += indent + '	_todo.drawTriangles()\n'
@@ -529,6 +554,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$DUMPPROPS = function(instanceProps, indent){
 		var code = ''
+
 		for(var key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
@@ -551,14 +577,14 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
 		// load the turtle
-		var info = this.compileinfo
+		var info = this.compileInfo
 		var instanceProps = info.instanceProps
 		var code = ''
 		code = indent + 'var _turtle = this.turtle\n'
 		code += indent +'var _shader = this.shaders.'+classname+'\n'
 		code += indent +'var _props = _shader._props\n'
 		code += indent +'var _a = _props.self.array\n'
-		code += indent +'var _o = _props.self.length * ' + info.propslots +'\n'
+		code += indent +'var _o = _props.self.length * ' + info.propSlots +'\n'
 		code += indent + '_props.self.length++\n'
 
 		var tweencode = '	var _f = _tween, _1mf = _tween, _upn, _upo\n'
@@ -569,7 +595,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
-			var notween = prop.config.notween
+			var notween = prop.config.noTween
 			// generate the code to tween.
 			if(!notween){
 				// new, old
@@ -614,7 +640,7 @@ module.exports = require('class').extend(function Shader(proto){
 				else propsource = macroargs[prop.name]
 			}
 
-			if(prop.type._name === 'vec4'){
+			if(prop.type.name === 'vec4'){
 				// check packing
 				var pack = prop.config.pack
 				if(pack){
@@ -668,23 +694,6 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets generate the write-out
 		return code
 	}
-	
-	function defineConfiguratorSetter(name){
-		var _name = '_' + name
-		Object.defineProperty(this, name, {
-			get:function(){
-				throw new Error(name+' is a configurator, please only assign objects: this.'+name+' = {...}')
-			},
-			set:function(props){
-				if(!this.hasOwnProperty(_name)){
-					this[_name] = this[_name]? Object.create(this[_name]): {}
-				}
-				for(var key in props){
-					this[_name][key] = props[key]
-				}
-			}
-		})
-	}
 
 	Object.defineProperty(proto, 'props', {
 		get:function(){
@@ -707,9 +716,55 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 	})
 
-	defineConfiguratorSetter.call(proto, 'defines')
-	defineConfiguratorSetter.call(proto, 'structs')
-	defineConfiguratorSetter.call(proto, 'requires')
+	Object.defineProperty(proto, 'defines', {
+		get:function(){
+			throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+		},
+		set:function(defines){
+			if(!this.hasOwnProperty('_defines')){
+				this._defines = this._defines? Object.create(this._defines): {}
+			}
+			for(var key in defines){
+				this._defines[key] = defines[key]
+			}
+		}
+	})
+
+	Object.defineProperty(proto, 'requires', {
+		get:function(){
+			throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+		},
+		set:function(requires){
+			if(!this.hasOwnProperty('_requires')){
+				this._requires = this._requires? Object.create(this._requires): {}
+			}
+			for(var key in requires){
+				this._requires[key] = requires[key]
+			}
+		}
+	})
+
+	Object.defineProperty(proto, 'structs', {
+		get:function(){
+			throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
+		},
+		set:function(structs){
+			if(!this.hasOwnProperty('_structs')){
+				this._structs = this._structs?Object.create(this._structs):{}
+			}
+			for(var key in structs){
+				var struct = structs[key]
+				// auto name the struct based on the key
+				if(!struct.name){
+					var newstruct = Object.create(struct)
+					newstruct.constructor = struct.constructor
+					newstruct.name = key
+					struct = newstruct
+				}
+				this._structs[key] = struct
+			}
+		}
+	})
 
 	proto.defines = {
 		'PI':'3.141592653589793',

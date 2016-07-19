@@ -26,6 +26,8 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		gen.varyOut = {}
 		// varyIng inputs
 		gen.varyIn = varyIn
+		// structs used
+		gen.structs = {}
 
 		// outputs used
 		gen.outputs = {}
@@ -36,6 +38,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		// the function object info of the current function
 		var source = fn.toString()
 		gen.curFunction = {
+			deps:{},
 			inout:{},
 			scope:{},
 			callee:fn,
@@ -124,8 +127,10 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var ret = ''
 		for(var i = 0; i < array.length; i++){
 			var line = this.walk(array[i], parent)
-			if(line.length) ret += this.indent + line + ';'
-			if(ret.charCodeAt(ret.length - 1) !== 10) ret += '\n'
+			if(line.length){
+				ret += this.indent + line + ';'
+				if(ret.charCodeAt(ret.length - 1) !== 10) ret += '\n'
+			}
 		}
 		return ret
 	}
@@ -327,7 +332,8 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				kind: 'type',
 				type: structtype
 			}
-			return this.ctxprefix + name
+			this.structs[name] = structtype
+			return name
 		}
 
 		// struct on root
@@ -337,6 +343,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				kind: 'type',
 				type: structtype
 			}
+			this.structs[name] = structtype
 			return name
 		}
 
@@ -405,12 +412,12 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			var propname = node.property.name
 			if(objectinfer.kind === 'value'){
 				var type = objectinfer.type
-				var proptype = type[propname]
+				var proptype = type.fields[propname]
 				if(!proptype){ // do more complicated bits
 					// check swizzling or aliases
 					var proplen = propname.length
 					if(proplen < 1 || proplen > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
-					var typename = type._name
+					var typename = type.name
 
 					proptype = types[proplen === 1? swizone[typename]: (swiztype[typename] + proplen)]
 
@@ -626,6 +633,14 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		}
 	}
 
+	function recursiveDependencyUpdate(genfn, dep, key){
+		delete genfn[key]
+		genfn[key] = dep
+		for(var key in dep.deps){
+			recursiveDependencyUpdate(genfn, dep.deps[key], key)
+		}
+	}
+
 	//CallExpression:{callee:1, arguments:2},
 	proto.CallExpression = function(node){
 		var calleestr = this.walk(node.callee, node)
@@ -683,7 +698,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					type: glslfn.return === types.gen? gentype: glslfn.return
 				}
 
-				return fnname + '(' + argstrs.join() + ')'
+				return fnname + '(' + argstrs.join(', ') + ')'
 			}
 			// expand function macro
 			var source = calleeinfer.callee.toString()
@@ -704,7 +719,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				var arg = args[i]
 				var arginfer = arg.infer
 				if(arginfer.kind === 'value'){
-					fnname += '_' +arginfer.type._name
+					fnname += '_' +arginfer.type.name
 					realargs.push(argstrs[i])
 				}
 				else if(arginfer.kind === 'function'){ // what do we do?...
@@ -716,6 +731,11 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			var prevfunction = this.genFunctions[fnname]
 
 			if(prevfunction){
+				// store dependency
+				this.curFunction.deps[fnname] = prevfunction
+				// push all our recursive dependencies to the top
+				recursiveDependencyUpdate(this.genFunctions, prevfunction, fnname)
+
 				var params = prevfunction.ast.body[0].params
 				for(var i = 0; i < args.length; i++){
 					// write the args on the scope
@@ -732,12 +752,12 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					kind: 'value',
 					type: prevfunction.return.type
 				}
-				return fnname + '(' + realargs.join() + ')'
+				return fnname + '(' + realargs.join(', ') + ')'
 			}
-			
 			var subfunction = this.genFunctions[fnname] = {
 				scope:{},
 				inout:{},
+				deps:{},
 				source:source,
 				callee:calleeinfer.callee,
 				name:calleeinfer.name,
@@ -747,6 +767,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					type:types.void
 				}
 			}
+			this.curFunction.deps[fnname] = subfunction
 
 			var sub = Object.create(this)
 
@@ -807,14 +828,14 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 						}
 					}
 
-					paramdef += arginfer.type._name + ' ' + name
+					paramdef += arginfer.type.name + ' ' + name
 				}
 				else if(arginfer.kind === 'function'){
 
 				}
 			}
 
-			var code = subfunction.return.type._name 
+			var code = subfunction.return.type.name 
 			code += ' ' + fnname + '(' + paramdef + ')' + body
 			subfunction.code = code
 
@@ -835,7 +856,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var ret = 'return ' 
 		var infer
 		if(node.argument !== null){
-			this.walk(node.argument, node)
+			ret += this.walk(node.argument, node)
 			infer = node.argument.infer
 		}
 		else{
@@ -849,11 +870,11 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			throw this.InferErr(node, 'Cant return a non value type '+infer.kind)
 		}
 		if(this.curFunction.return && this.curFunction.return.type !== types.void && this.curFunction.return.type !== infer.type){
-			throw this.InferErr(node, 'Cant return more than one type '+this.curFunction.return.type._name+'->'+infer.type._name)
+			throw this.InferErr(node, 'Cant return more than one type '+this.curFunction.return.type.name+'->'+infer.type.name)
 		}
 		node.infer = infer
 		this.curFunction.return = node.infer
-		return 'return '+ this.walk(node.argument)
+		return ret
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
@@ -879,7 +900,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			var decl = decls[i]
 			var str = this.walk(decl, node)
 			if(decl.infer.kind === 'value'){
-				ret += decl.infer.type._name + ' ' + str
+				ret += decl.infer.type.name + ' ' + str
 			}
 		}
 		return ret
@@ -918,25 +939,65 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 	proto.LogicalExpression = function(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
 		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
-		node.infer = {
-			kind:'value',
-			type:types.bool
-		}
+		node.infer = node.right.infer
 		return ret
+	}
+
+	var tableBinaryExpression = {
+		float:{float:types.float, vec2:types.vec2, vec3:types.vec3, vec4:types.vec4},
+		int:{int:types.int, ivec2:types.ivec2, ivec3:types.ivec3, ivec4:types.ivec4},
+		vec2:{float:types.vec2, vec2:types.vec2, mat2:types.vec2},
+		vec3:{float:types.vec3, vec3:types.vec3, mat3:types.vec3},
+		vec4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+		ivec2:{int:types.ivec2, ivec2:types.ivec2},
+		ivec3:{int:types.ivec3, ivec3:types.ivec3},
+		ivec4:{int:types.ivec4, ivec4:types.ivec4},
+		mat2:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+		mat3:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+		mat4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+	}
+
+	var groupBinaryExpression = {
+		'+':1,'-':1,'*':1,'/':1,
+		'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
+		'===':3,'!==':3,
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
 	proto.BinaryExpression = function(node){
-		//!TODO check node.left.infer and node.right.infer for compatibility
-		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
+		var leftstr = this.walk(node.left, node)
+		var rightstr = this.walk(node.right, node)
 		var leftinfer = node.left.infer
 		var rightinfer = node.right.infer
-		//!TODO fix this
-		node.infer = {
-			kind:'value',
-			type:leftinfer.type
+
+		if(leftinfer.kind !== 'value' || rightinfer.kind !== 'value'){
+			throw this.InferErr(node, 'Not a value type '+ret)
 		}
-		return ret
+		var group = groupBinaryExpression[node.operator]
+		if(group === 1){
+			var lt = tableBinaryExpression[leftinfer.type.name]
+			if(!lt) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name)
+
+			var type = lt[rightinfer.type.name] 
+			if(!type) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+' and '+rightinfer.type.name)
+
+			node.infer = {
+				type:type,
+				kind:'value'
+			}
+			return leftstr + ' ' + node.operator + ' ' +rightstr
+		}
+		if(group === 2){
+			if(leftinfer.type !== rightinfer.type){
+				throw this.InferErr(node, 'Cant compare '+leftinfer.type.name+' with '+rightinfer.type.name)
+			}
+			node.infer = {
+				type:types.bool,
+				kind:'value'
+			}
+			return leftstr + ' ' + node.operator + ' ' +rightstr
+		}
+		throw this.InferErr(node, 'Please implement === !== ')
 	}
 
 	//AssignmentExpression: {left:1, right:1},
@@ -944,14 +1005,14 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var leftstr = this.walk(node.left, node)
 		var rightstr =  this.walk(node.right, node)
 
-		var ret = leftstr + node.operator + rightstr
+		var ret = leftstr + ' '+ node.operator +' '+  rightstr
 		var leftinfer = node.left.infer
 		var rightinfer = node.right.infer
 
 		if(leftinfer.kind === 'varyundef'){
 			// create a varyIng
 			var existvary = this.varyOut[leftstr]
-			if(existvary && existvary !== rightinfer.type) throw this.InferErr(node, 'Varying changed type '+existvary._name + ' -> '+ rightinfer.type._name)
+			if(existvary && existvary !== rightinfer.type) throw this.InferErr(node, 'Varying changed type '+existvary.name + ' -> '+ rightinfer.type.name)
 			this.varyOut[leftstr] = {
 				type:rightinfer.type
 			}
@@ -961,7 +1022,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		if(leftinfer.kind === 'outundef'){
 			// create a varyIng
 			var existout = this.outputs[leftstr]
-			if(existout && existout !== rightinfer.type) throw this.InferErr(node, 'Output changed type '+existout._name + ' -> '+ rightinfer.type._name)
+			if(existout && existout !== rightinfer.type) throw this.InferErr(node, 'Output changed type '+existout.name + ' -> '+ rightinfer.type.name)
 			this.outputs[leftstr] =  rightinfer.type
 			return ret
 		}
@@ -994,7 +1055,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
 	proto.ConditionalExpression = function(node){
 		//!TODO check types
-		var ret = this.walk(node.test, node) + '?' + this.walk(node.consequent, node) + ':' + this.walk(node.alternate, node)
+		var ret = this.walk(node.test, node) + '? ' + this.walk(node.consequent, node) + ': ' + this.walk(node.alternate, node)
 		// check types
 		if(node.consequent.infer.type !== node.alternate.infer.type){
 			throw this.InferErr(node, 'Conditional expression returning more than one type '+ret)

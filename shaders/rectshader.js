@@ -68,9 +68,8 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		this.borderRadius = min(max(this.borderRadius,vec4(adjust)),vec4(min(this.w,this.h)*0.5))
 
 		// compute the normal rect positions
-		var meshmz = this.mesh.xy *2. - 1.
 		if(this.mesh.z < 0.5){
-			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread) * meshmz//+ vec2(this.shadowBlur*0.25) * meshmz
+			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
 		}
 
 		var br = this.borderRadius * 2. 

@@ -1,125 +1,177 @@
 var types = exports
 
+function getArray(fields){
+	for(var key in fields){
+		var type = fields[key]
+		if(type.array) return type.array
+	}
+}
+
+function getSlots(fields){
+	var total = 0
+	for(var key in fields){
+		var type = fields[key]
+		total += type.slots
+	}
+	return total || 1
+}
+
+function Type(config){
+	var type = this
+	if(!(type instanceof Type)){
+		type = Object.create(Type.prototype)
+		type.constructor = Type
+	}
+	for(var key in config){
+		type[key] = config[key]
+	}
+	return type
+}
+
+function Struct(fields, name){
+	var struct = this
+	if(!(struct instanceof Struct)){
+		struct = Object.create(Type.prototype)
+		struct.constructor = Struct
+	}
+	struct.fields = fields
+	struct.name = name
+	// lets precompute the slots and array
+	struct.array = getArray(fields)
+	struct.slots = getSlots(fields)
+	return struct
+}
+
+Struct.prototype = Object.create(Struct.prototype)
+Struct.prototype.constructor = Type
+
+types.Type = Type
+types.Struct = Struct
+
 // generic types
-types.void = {
-	_name:'void'
-}
+types.void = Type({
+	name:'void'
+})
 
-types.bool = {
-	_name:'bool',
-	_slots:1
-}
+types.bool = Type({
+	name:'bool',
+	array:Int32Array,
+	slots:1
+})
 
-types.bvec2 = {
-	_name:'bvec2',
-	_slots:2,
-	_array:Int32Array,
+types.int = Type({
+	name:'int',
+	slots:1,
+	array:Int32Array
+})
+
+types.vec1 = 
+types.float = Type({
+	name:'float',
+	slots:1,
+	array:Float32Array
+})
+
+types.sampler2D = Type({
+	name:'sampler2D',
+	sampler:true
+})
+
+types.samplerCube = Type({
+	name:'samplerCube',
+	sampler:true
+})
+
+types.gen = Type({
+	name:'gen'
+})
+
+types.genorfloat = Type({
+	name:'genorfloat'
+})
+
+types.bvec = Type({
+	name:'bvec'
+})
+
+types.vec = Type({
+	name:'vec'
+})
+
+types.genopt = Type({
+	name:'gen',
+	optional:true
+})
+
+types.floatopt = Type({
+	name:'float',
+	optional:true,
+	slots:1,
+	array:Float32Array
+})
+
+types.bvec2 = Struct({
 	x:types.bool,
-	y:types.bool
-}
+	y:types.bool,
+}, 'bvec2')
 
-types.bvec3 = {
-	_name:'bvec3',
-	_slots:3,
-	_array:Int32Array,
+types.bvec3 = Struct({
 	x:types.bool,
 	y:types.bool,
 	z:types.bool
-}
+},'bvec3')
 
-types.bvec4 = {
-	_name:'bvec4',
-	_slots:4,
-	_array:Int32Array,
+types.bvec4 = Struct({
 	x:types.bool,
 	y:types.bool,
 	z:types.bool,
 	w:types.bool
-}
+}, 'bvec4')
 
-types.int = {
-	_name:'int',
-	_slots:1,
-	_array:Int32Array,
-	_cast:parseInt
-}
-
-types.ivec2 = {
-	_name:'ivec2',
-	_slots:2,
-	_array:Int32Array,
+types.ivec2 = Struct({
 	x:types.int,
 	y:types.int
-}
+}, 'ivec2')
 
-types.ivec3 = {
-	_name:'ivec3',
-	_slots:3,
-	_array:Int32Array,
+types.ivec3 = Struct({
 	x:types.int,
 	y:types.int,
 	z:types.int
-}
+}, 'ivec3')
 
-types.ivec4 = {
-	_name:'ivec4',
-	_slots:4,
-	_array:Int32Array,
+types.ivec4 = Struct({
 	x:types.int,
 	y:types.int,
 	z:types.int,
 	w:types.int
-}
+}, 'ivec4')
 
-types.vec1 = 
-types.float = {
-	_name:'float',
-	_slots:1,
-	_array:Float32Array,
-	_cast:parseFloat
-}
-
-types.vec2 = {
-	_name:'vec2',
-	_slots:2,
-	_array:Float32Array,
+types.vec2 = Struct({
 	x:types.float,
 	y:types.float
-}
+}, 'vec2')
 
-types.vec3 = {
-	_name:'vec3',
-	_slots:3,
-	_array:Float32Array,
+types.vec3 = Struct({
 	x:types.float,
 	y:types.float,
 	z:types.float
-}
+}, 'vec3')
 
-types.vec4 = {
-	_name:'vec4',
-	_slots:4,
-	_array:Float32Array,
+types.vec4 = Struct({
 	x:types.float,
 	y:types.float,
 	z:types.float,
 	w:types.float
-}
+}, 'vec4')
 
-types.mat2 = {
-	_name:'mat2',
-	_slots:4,
-	_array:Float32Array,
+types.mat2 = Struct({
 	a:types.float,
 	b:types.float,
 	c:types.float,
 	d:types.float,	
-}
+}, 'mat2')
 
-types.mat3 = {
-	_name:'mat3',
-	_slots:9,
-	_array:Float32Array,
+types.mat3 = Struct({
 	a:types.float,
 	b:types.float,
 	c:types.float,
@@ -131,12 +183,9 @@ types.mat3 = {
 	g:types.float,
 	h:types.float,	
 	i:types.float,
-}
+}, 'mat3')
 
-types.mat4 = {
-	_name:'mat4',
-	_slots:16,
-	_array:Float32Array,
+types.mat4 = Struct({
 	a:types.float,
 	b:types.float,
 	c:types.float,
@@ -156,71 +205,7 @@ types.mat4 = {
 	n:types.float,
 	o:types.float,
 	p:types.float
-}
-
-types.sampler2D = {
-	_name:'sampler2D',
-	_sampler:true
-}
-
-types.samplerCube = {
-	_name:'samplerCube',
-	_sampler:true
-}
-
-
-types.gen = {
-	_name:'gen',
-	_isa:function(type){
-		return true
-	}
-}
-
-types.genorfloat = {
-	_name:'genorfloat',
-	_isa:function(type){
-		return true
-	}
-}
-
-types.bvec = {
-	_name:'bvec',
-	_isa:function(type){
-		return type && type._name && (type._name.indexOf('bvec') === 0|| type._name === 'bool')
-	}
-}
-
-types.vec = {
-	_name:'vec',
-	_isa:function(type){
-		return type && type._name && (type._name.indexOf('vec') === 0 || type._name === 'float')
-	}
-}
-
-types.genopt = Object.create(types.gen)
-types._optional = true
-
-types.floatopt = Object.create(types.float)
-types._optional = true
-
-types.getArray = function getArray(struct){
-	if(struct._array) return struct._array
-	for(var key in struct){
-		if(key.charCodeAt(0) === 95) continue
-		var sub = getArray(struct[key])
-		if(sub) return sub
-	}
-}
-
-types.getSlots = function getSlots(struct){
-	if(struct._slots) return struct._slots
-	var total = 0
-	for(var key in struct){
-		if(key.charCodeAt(0) === 95) continue
-		total += getSlots(struct[key])
-	}
-	return total || 1
-}
+}, 'mat4')
 
 // value to type conversion, used for attribute mapping
 types.typeFromValue = function(value){

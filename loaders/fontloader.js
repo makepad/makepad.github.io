@@ -4,7 +4,7 @@ module.exports = function(font){
 	var f32 = new Float32Array(font)
 	var u8 = new Uint8Array(font)
 
-	var map = {glyphs:{}}
+	var map = {}
 
 	if(u32[0] === 0x02F01175){ // sdf format
 		map.type = 'sdf'
@@ -32,7 +32,7 @@ module.exports = function(font){
 			glyph.h = glyph.y2 - glyph.y1
 			glyphs[unicode] = glyph
 		}
-		map.texarray = font.slice(o*4)
+		map.textureArray = font.slice(o*4)
 	}
 	else if(u32[0] === 0x01F01175){ // sdf format
 		map.type = 'arc'
@@ -65,6 +65,7 @@ module.exports = function(font){
 		}
 		map.textureArray = font.slice(o*4)
 	}
+	else throw new Error('Font type not recognised')
 
 	map.glyphs[32] = { // space
 		x1: 0,
@@ -101,5 +102,4 @@ module.exports = function(font){
 		advance: 2,
 	}
 	return map
-	throw new Error('Font type not recognised')
 }

@@ -160,7 +160,7 @@ pp.parseExprOp = function(left, leftStartPos, minPrec, noIn) {
 			var op = this.value
 			this.next()
 			var startPos = this.start
-			var right = this.parseExprOp(this.parseMaybeUnary(null, false), prec, noIn)
+			var right = this.parseExprOp(this.parseMaybeUnary(null, false), leftStartPos, prec, noIn)
 			var node = this.buildBinary(leftStartPos, left, right, op, logical)
 			return this.parseExprOp(node, leftStartPos, minPrec, noIn)
 		}

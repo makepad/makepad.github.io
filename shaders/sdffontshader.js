@@ -10,13 +10,19 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		x:0,
 		y:0,
 
-		fontSize:50,
+		fontSize:14,
 		baseLine:1,
 		italic:NaN,
 		lineSpacing:1.3,
 
 		color:{pack:'float12', value:'black'},
 		outlineColor:{pack:'float12', value:'white'},
+		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
+
+		shadowBlur: 3.0,
+		shadowSpread: 0.0,
+		shadowOffset: [2.0,2.0],
+
 		outline:0.,
 		boldness:0.,
 
@@ -37,11 +43,16 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		ty2:{noStyle:1,noTween:1,value:0},
 	}
 
-	proto.mesh = painter.Mesh(types.vec2).pushQuad(
-		0, 0,
-		0, 1,
-		1, 0,
-		1, 1
+	proto.mesh = painter.Mesh(types.vec3).pushQuad(
+		0, 0, 0,
+		0, 1, 0,
+		1, 0, 0,
+		1, 1, 0
+	).pushQuad(
+		0,0, 1,
+		1,0, 1,
+		0, 1, 1,
+		1, 1, 1
 	)
 
 	proto.vertexStyle = function(){
@@ -70,6 +81,15 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 			this.mesh.xy
 		)
 
+		// shadow
+		if(this.mesh.z < 0.5){
+			if(abs(this.shadowOffset.x)<0.001 && abs(this.shadowOffset.y)<0.001 && this.shadowBlur<2.0 && abs(this.shadowSpread) < 0.001){
+				return vec4(0)
+			}
+			var meshmz = this.mesh.xy *2. - 1.
+			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
+		}
+
 		this.textureCoords = mix(
 			vec2(this.tx1, this.ty1), 
 			vec2(this.tx2, this.ty2), 
@@ -79,19 +99,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		return vec4(pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	proto.pixel = function(){$
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.005) / adjust * 1.4
-		this.field = field
-
-		this.pixelStyle()
-
-		field = this.field
-
-		if(field > 1. + this.outline){
-			discard
-		}
-
+	proto.drawField = function(field){$
 		if(this.outline>0.){
 			var outline = abs(field) - (this.outline)
 			var inner = field + this.outline
@@ -100,6 +108,28 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		}
 
 		return vec4(this.color.rgb, smoothstep(.75,-.75, field))
+	}
+
+	proto.drawShadow = function(field){
+		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp((field-this.shadowBlur*0.2)/this.shadowBlur+1.,0.,1.))
+	}
+
+	proto.pixel = function(){$
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.005) / adjust * 1.4 + 1.5
+		this.field = field
+
+		this.pixelStyle()
+
+		field = this.field - this.boldness
+
+		if(field > 1. + this.outline){
+			discard
+		}
+		if(this.mesh.z < 0.5){
+			return this.drawShadow(field)
+		}
+		return this.drawField(field)
 	}
 
 	proto.canvasMacros = {
@@ -121,8 +151,8 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 			var off = 0
 
 			turtle._h = fontSize * lineSpacing
-			turtle._x = 10
-			turtle._y = 0
+			//turtle._x = 10
+			//turtle._y = 0
 
 			while(off < len){
 				var width = 0

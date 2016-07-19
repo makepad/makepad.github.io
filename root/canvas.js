@@ -60,9 +60,9 @@ module.exports = function(proto){
 	// internal API used by canvas macros
 	proto._allocShader = function(classname){
 		var shaders = this.shaders
-		var info = this['_' + classname].prototype.compileinfo
+		var info = this['_' + classname].prototype.compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
-		shader._props = new painter.Mesh(info.propslots)
+		shader._props = new painter.Mesh(info.propSlots)
 		return shader
 	}
 

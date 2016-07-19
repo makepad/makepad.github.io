@@ -662,7 +662,8 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			slots = type
 			type = types.float
 		}
-		if(!type) type = this.type
+
+		if(!type) debugger
 
 		if(!initalloc) alloc = this.initalloc
 
@@ -674,8 +675,9 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		})
 
 		this.type = type
-		this.arraytype = types.getArray(type)
-		this.slots = slots || types.getSlots(type)
+		this.arraytype = type.array
+		this.slots = slots || type.slots
+
 		this.allocated = 0
 		this.self = {
 			fn: 'updateMesh',
