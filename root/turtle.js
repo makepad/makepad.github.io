@@ -30,13 +30,13 @@ module.exports = require('class').extend(function Turtle(proto){
 
 		if(typeof _w === 'string'){
 			this.width = outer.width
-			this.width = this.evalw(_w)
+			this.width = this.evalw(_w) - padding[1] - padding[3]
 		}
 		else this.width = _w - padding[1] - padding[3]
 
 		if(typeof _h === 'string'){
 			this.height = outer.height
-			this.height = this.evalh(_h)
+			this.height = this.evalh(_h) - padding[0] - padding[2]
 		}
 		else this.height = _h - padding[0] - padding[2]
 
@@ -56,7 +56,7 @@ module.exports = require('class').extend(function Turtle(proto){
 
 		this.writeStart = this.canvas.writeList && this.canvas.writeList.length || 0
 	}	
-
+	var zeromargin = [0,0,0,0]
 	proto.walk = function(oldturtle){
 
 		var _w = this._w
@@ -77,7 +77,8 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 
 		// check if we wrap around
-		if(this._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
+		var outer = this.outer
+		if(outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
 			var dx = this.sx - this.wx 
 			var dy = this.mh
 			this.wx = this.sx
@@ -92,9 +93,9 @@ module.exports = require('class').extend(function Turtle(proto){
 		if(isNaN(this._x) || isNaN(this._y)){
 			this._x = this.wx + margin[3]
 			this._y = this.wy + margin[0]
-			this.wx += this._w + margin[3] + margin[1]
+			this.wx += this._w +margin[3] + margin[1]
 			// compute new max height
-			var nh = this._h + margin[0] + margin[2]
+			var nh = this._h +margin[0] + margin[2]
 			if(nh > this.mh) this.mh = nh
 			// compute x bounds
 			if(this.wx > this.x2) this.x2 = this.wx

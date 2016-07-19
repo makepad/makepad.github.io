@@ -80,15 +80,18 @@ var userMessage = {
 
 		// look up attribute ids
 		var attrlocs = {}
+		var maxindex = 0
 		for(var name in attrs){
 			var nameid = nameIds[name]
 			var index = gl.getAttribLocation(shader, name)
+			if(index > maxindex) maxindex = index
 			attrlocs[nameid] = {
 				index: index,
 				slots: slotsTable[attrs[name]]
 			}
 		}
 		shader.attrlocs = attrlocs
+		shader.maxindex = maxindex
 
 		var unilocs = {}
 		for(var name in uniforms){
@@ -228,6 +231,24 @@ todofn[1] = function clear(i32, f32, o){
 todofn[2] = function useShader(i32, f32, o){
 	var shaderid = i32[o+2]
 	var shader = shaderIds[shaderid]
+	// check last maxindex
+
+	var prevmax = -1
+	if(currentprogram){
+		prevmax = currentprogram.maxindex
+	}
+
+	if(prevmax > shader.maxindex){
+		for(var i = shader.maxindex+1; i <= prevmax; i++){
+			gl.disableVertexAttribArray(i)
+		}
+	}
+	else if(prevmax < shader.maxindex){
+		for(var i = shader.maxindex; i > prevmax; i--){
+			gl.enableVertexAttribArray(i)
+		}
+	}
+
 	currentprogram = shader
 	currentunilocs = shader.unilocs
 	shader.instanced = false
@@ -245,7 +266,7 @@ todofn[3] = function attribute(i32, f32, o){
 	var mesh = meshids[meshid]
 	currentprogram.attrlength = mesh.length
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-	gl.enableVertexAttribArray(loc.index)
+	//gl.enableVertexAttribArray(loc.index)
 	gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset)
 }
 
@@ -258,11 +279,14 @@ todofn[4] = function attributes(i32, f32, o){
 	var slotoff = 0
 	var mesh = meshids[meshid]
 	currentprogram.attrlength = mesh.length
+
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+
 	for(var i = 0; i < range; i++){
 		var loc = currentprogram.attrlocs[startnameid+i]
-		gl.enableVertexAttribArray(loc.index)
+		//gl.enableVertexAttribArray(loc.index)
 		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
+		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 		slotoff += loc.slots * 4
 	}
 }
@@ -279,7 +303,7 @@ todofn[5] = function instance(i32, f32, o){
 	currentprogram.instlength = mesh.length
 	currentprogram.instanced = true
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-	gl.enableVertexAttribArray(index)
+	//gl.enableVertexAttribArray(index)
 	gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride, offset)
 	ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 }
@@ -300,7 +324,7 @@ todofn[6] = function instances(i32, f32, o){
 	for(var i = 0; i < range; i++){
 		var loc = currentprogram.attrlocs[startnameid+i]
 		var index = loc.index
-		gl.enableVertexAttribArray(index)
+		//gl.enableVertexAttribArray(index)
 		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
 		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 		slotoff += loc.slots * 4

@@ -578,9 +578,10 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + '	_todo.drawTriangles()\n'
 		code += indent + '}\n'
 		code += indent + 'var _writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.turtleStack.len - 1:this.turtleStack.len\n'
-		code += indent + 'this.writeList.push(_props, this.turtle.propoffset = _props.self.length, _need, _writelevel)\n'
+		code += indent + 'this.writeList.push(_props, _props.self.length, _need, _writelevel)\n'
 		code += indent + 'this.turtle.propoffset = _props.self.length\n'
 		code += indent + '_props.self.length = _need\n'
+		//console.log(code)
 
 		return code
 	}
@@ -681,7 +682,7 @@ module.exports = require('class').extend(function Shader(proto){
 				if(prop.name === 'tweenstart'){
 					propsource = 'this.view._time'
 				}
-				else propsource = macroargs[prop.name]
+				else propsource = macroargs[0][prop.name]
 			}
 
 			if(prop.type.name === 'vec4'){

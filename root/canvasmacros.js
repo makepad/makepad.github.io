@@ -26,7 +26,7 @@ module.exports = function(proto){
 					while((res = argRx.exec(args)) !== null) {
 						argobj[res[1]] = res[2]
 					}
-					macroArgs = argobj
+					macroArgs = [argobj]
 				}
 				else macroArgs = args.split(/\s*,\s*/)
 				var fn = mainThis[fnname]

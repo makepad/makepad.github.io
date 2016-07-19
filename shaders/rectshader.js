@@ -156,7 +156,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		draw:function(overload){
 			this.$STYLEPROPS(overload, 1)
 			this.$ALLOCDRAW()
-			this.walkTurtle()
+			this.turtle.walk()
 			this.$WRITEPROPS()
 		},
 		begin:function(overload){
@@ -166,7 +166,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		},
 		end:function(){
 			var ot = this.endTurtle()
-			this.walkTurtle(ot)
+			this.turtle.walk(ot)
 			this.$WRITEPROPS()
 		}
 	}

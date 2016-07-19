@@ -7,33 +7,34 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 	// special
 	proto.props = {
 		visible:{noTween:1, value:1.},
-		x:0,
-		y:0,
+		x:NaN,
+		y:NaN,
 
-		lineSpacing:1.3,
+		lineSpacing:{styleLevel:1, value:1.3},
 
 		color:{pack:'float12', value:'black'},
 		outlineColor:{pack:'float12', value:'white'},
 		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
 
-		fontSize:14,
+		fontSize:12,
 
 		italic:0.,
 		baseLine:1,
 
-		shadowBlur: 5.0,
+		shadowBlur: 1.0,
 		shadowSpread: -1.,
 
 		outlineWidth:0.,
-		boldness:1., 
-		shadowOffset: {pack:'int12', value:[2.0,2.0]},
+		boldness:0, 
+		shadowOffset: {pack:'int12', value:[0.,0.]},
 
 		unicode:{noStyle:1,noTween:1,value:0},
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
-		lineBreak:{forceStyle:1, value:'word'},
-		text:{forceStyle:1, value:''},
+		wrapping:{styleLevel:1, value:'word'},
+		margin:{styleLevel:1, value:[0,0,0,0]},
+		text:{styleLevel:1, value:''},
 
 		x1:{noStyle:1,noTween:1,value:0},
 		y1:{noStyle:1,noTween:1,value:0},
@@ -56,7 +57,6 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		0, 1, 1,
 		1, 1, 1
 	)
-	proto.dump =1 
 
 	proto.vertexStyle = function(){
 	}
@@ -127,7 +127,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 	proto.pixel = function(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.005) / adjust * 1.4 + 1.
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.006) / adjust * 1.4 
 		this.field = field
 
 		this.pixelStyle()
@@ -152,7 +152,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 			// lets fetch the font
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
-			var lineBreak = turtle._lineBreak
+			var wrapping = turtle._wrapping
 			var fontSize = turtle._fontSize
 			var lineSpacing = turtle._lineSpacing
 			var baseLine = turtle._baseLine
@@ -161,18 +161,17 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 			turtle._h = fontSize * lineSpacing
 			//turtle._x = 10
 			//turtle._y = 0
-
 			while(off < len){
 				var width = 0
 				var start = off
-				if(!lineBreak){
+				if(!wrapping){
 					for(var b = off; b < len; b++){
 						var unicode = txt.charCodeAt(b)
 						width += glyphs[unicode].advance * fontSize
 					}
 					off = len
 				}
-				else if(lineBreak === 'char'){
+				else if(wrapping === 'char'){
 					width += glyphs[txt.charCodeAt(off)].advance * fontSize
 					off++
 				}
@@ -181,6 +180,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 						var unicode = txt.charCodeAt(b)
 						width += glyphs[unicode].advance * fontSize
 						if(b > off && (unicode === 32||unicode===9)){
+							b++
 							break
 						}
 					}
@@ -188,7 +188,11 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 				}
 				if(width){
 					turtle._w = width
-					this.walkTurtle()
+					turtle._x = NaN
+					turtle._y = NaN
+					turtle.walk()
+					//console.log('breakin',turtle.wx, txt.slice(start,b))
+
 					for(var i = start; i < off; i++){
 						var unicode = txt.charCodeAt(i)
 						//if(unicode !== 32 && unicode !== 9 && unicode !== 10){

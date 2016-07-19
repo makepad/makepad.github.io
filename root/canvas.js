@@ -61,10 +61,6 @@ module.exports = function(proto){
 		this.turtle._padding = this._padding
 	}
 
-	proto.walkTurtle = function(){
-		this.turtle.walk()
-	}
-
 	proto.beginTurtle = function(){
 		// add a turtle to the stack
 		var len = ++this.turtleStack.len
