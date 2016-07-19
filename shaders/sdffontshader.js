@@ -145,6 +145,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 			var turtle = this.turtle
 			this.$STYLEPROPS(overload)
 
+			var abspos = !isNaN(turtle._x) && !isNaN(turtle._y)
 			var txt = turtle._text
 			var len = txt.length
 
@@ -188,8 +189,11 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 				}
 				if(width){
 					turtle._w = width
-					turtle._x = NaN
-					turtle._y = NaN
+					if(!abspos){
+						turtle._x = NaN
+						turtle._y = NaN
+					}
+					else abspos = false
 					turtle.walk()
 					//console.log('breakin',turtle.wx, txt.slice(start,b))
 
