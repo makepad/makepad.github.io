@@ -38,14 +38,9 @@ module.exports = require('class').extend(function View(proto){
 	proto._onconstruct = function(args){
 		// lets process the args and construct things
 		// lets create a todo
-		this.todo = new painter.Todo()
-		this.turtlestack = [
-			new this.Turtle()
-		]
-		this.turtle = this.turtlestack[0]
+		this.initCanvas()
 		this.view = this
 		this.position = mat4.create()
-		this.shaders = {}
 	}
 
 	proto._ondestroy = function(){
@@ -124,6 +119,9 @@ module.exports = require('class').extend(function View(proto){
 		todo.clearColor(0.8,1,1,1)
 
 		// begin a new turtle
+		this.turtle._margin = this._margin
+		this.turtle._padding = this._padding
+		
 		var turtle = this.beginTurtle()
 
 		this.onflag = 2

@@ -411,7 +411,7 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in this._props){
 			var config = this._props[key]
 			var propname = 'this_DOT_' + key
-			if(config.doStyle && !styleProps[propname]){
+			if(config.forceStyle && !styleProps[propname]){
 				styleProps[propname] = {
 					name:key,
 					config:config
@@ -446,9 +446,9 @@ module.exports = require('class').extend(function Shader(proto){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
 		var styleProps = this.compileInfo.styleProps
-		if(!mainargs || !mainargs[0]) throw new Error('$OVERLOADPROPS doesnt have a main argument')
+		if(!macroargs) throw new Error('$STYLEPROPS doesnt have overload argument')
 
-		var stack = [mainargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
+		var stack = [macroargs,'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
 
 		// lets make the vars
 		var code = indent + 'var _turtle = this.turtle'
@@ -508,7 +508,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		
 		var need = macroargs || 1
-		console.log(need)
+
 		code += indent+'var _todo = this.todo\n'
 		code += indent+'var _shader = this.shaders.'+classname+'\n'
 		code += indent+'if(!_shader) _shader = this._allocShader("'+classname+'")\n'
@@ -572,6 +572,9 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets draw it
 		code += indent + '	_todo.drawTriangles()\n'
 		code += indent + '}\n'
+		code += indent + 'this.turtle.propoffset = _props.self.length\n'
+		code += indent + '_props.self.length = _need\n'
+
 		return code
 	}
 
@@ -618,8 +621,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var _shader = this.shaders.'+classname+'\n'
 		code += indent +'var _props = _shader._props\n'
 		code += indent +'var _a = _props.self.array\n'
-		code += indent +'var _o = _props.self.length * ' + info.propSlots +'\n'
-		code += indent + '_props.self.length++\n'
+		code += indent +'var _o = _turtle.propoffset++ * ' + info.propSlots +'\n'
+		//code += indent + '_props.self.length++\n'
 
 		var tweencode = '	var _f = _tween, _1mf = _tween, _upn, _upo\n'
 		var propcode = ''
@@ -644,8 +647,8 @@ module.exports = require('class').extend(function Shader(proto){
 						tweencode += indent + '_a[_o+'+(o +i)+'] = ' +
 							'((_f * Math.floor(_upo/4096) +' +
 							'_1mf * Math.floor(_upn/4096)) << 12) + ' + 
-							'((_f * Math.mod(_upo,4096) +' +
-							'_1mf * Math.mod(_upn,4096))|0)\n'
+							'((_f * (_upo%4096) +' +
+							'_1mf * (_upn%4096))|0)\n'
 
 						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
 							'_a[_o+'+(o +i)+']\n'

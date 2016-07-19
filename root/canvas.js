@@ -46,15 +46,48 @@ module.exports = function(proto){
 		if(this.oncomposed) this.oncomposed()
 	}
 
+	proto.initCanvas = function(){
+		this.todo = new painter.Todo()
+		this.turtle = new this.Turtle(this)
+		this.turtleStack = [
+			this.turtle
+		]
+		this.turtleStackLen = 0
+		this.shaders = {}
+		this.turtle._x = 0
+		this.turtle._y = 0
+		this.turtle._margin = this._margin
+		this.turtle._padding = this._padding
+	}
+
 	proto.walkTurtle = function(){
+		this.turtle.walk()
 	}
 
-	// begin a turtle
 	proto.beginTurtle = function(){
+		// add a turtle to the stack
+		var len = ++this.turtleStackLen
+		var outer = this.turtle
+		var turtle = this.turtle = this.turtleStack[len]
+		if(!turtle){
+			turtle = this.turtle = this.turtleStack[len] = new this.Turtle(this)
+		}
+		turtle.begin(outer)
+		return turtle
 	}
 
-	// end a turtle
 	proto.endTurtle = function(){
+		// call end on a turtle and pop it off the stack
+		this.turtle.end()
+		// pop the stack
+		var last = this.turtle
+		this.turtle = this.turtleStack[--this.turtleStackLen]
+
+		return last
+	}
+
+	proto.moveRange = function(start, dx, dy){
+
 	}
 
 	// internal API used by canvas macros

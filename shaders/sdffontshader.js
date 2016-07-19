@@ -18,11 +18,11 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 		fontSize:14,
 
-		italic:0,
+		italic:0.,
 		baseLine:1,
 
 		shadowBlur: 5.0,
-		shadowSpread: -2.,
+		shadowSpread: -1.,
 
 		outlineWidth:0.,
 		boldness:1., 
@@ -32,8 +32,8 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
-		lineBreak:{doStyle:1, value:'word'},
-		text:{doStyle:1, value:''},
+		lineBreak:{forceStyle:1, value:'word'},
+		text:{forceStyle:1, value:''},
 
 		x1:{noStyle:1,noTween:1,value:0},
 		y1:{noStyle:1,noTween:1,value:0},
@@ -56,6 +56,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		0, 1, 1,
 		1, 1, 1
 	)
+	proto.dump =1 
 
 	proto.vertexStyle = function(){
 	}
@@ -78,11 +79,13 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 				this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
 			),
 			vec2(
-				this.x + this.fontSize * this.x2,// * this.italic,
+				this.x + this.fontSize * this.x2 ,
 				this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
 			),
 			this.mesh.xy
 		)
+		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
+
 
 		// shadow
 		if(this.mesh.z < 0.5){
@@ -140,7 +143,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 	proto.canvasMacros = {
 		draw:function(overload){
 			var turtle = this.turtle
-			this.$STYLEPROPS(len)
+			this.$STYLEPROPS(overload)
 
 			var txt = turtle._text
 			var len = txt.length

@@ -26,6 +26,8 @@ module.exports = function(proto){
 		var onkey = 'on' + key
 		var _onkey = '_on' + key
 
+		this[_key] = initvalue
+
 		Object.defineProperty(this, key, {
 			configurable:true,
 			get:function(){
