@@ -1,7 +1,7 @@
 
 var App = require('view').extend(function(proto){
 
-	proto.nested = {
+	proto.tools = {
 		Bg: require('shaders/rectshader').extend(function(proto){
 		}),
 		Text: require('shaders/sdffontshader').extend(function(proto){
@@ -13,12 +13,11 @@ var App = require('view').extend(function(proto){
 		var rnd = Math.random
 		// lets go make a turtle
 		//var dt = Date.now()		
-		for(var i = 0 ; i < 500; i++){
+		for(var i = 0 ; i < 100; i++){
 			this.beginBg({
 				x:(i%15)*100,
 				y:Math.floor(i/15)*150,
 				w:100,
-				//h:100,
 				borderColor:[rnd()*.5,rnd()*.5,rnd()*.5,1],
 				padding:[20,5,5,5],
 				borderWidth:[20,0,0,0],
@@ -37,7 +36,7 @@ var App = require('view').extend(function(proto){
 					color:'orange'
 				})
 					
-				this.drawBg({w:30,h:30})
+					this.drawBg({w:30,h:30})
 				//this.drawText({text:'Hi'})
 
 				this.endBg()

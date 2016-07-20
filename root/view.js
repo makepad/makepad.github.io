@@ -21,24 +21,18 @@ module.exports = require('class').extend(function View(proto){
 		h:NaN,
 		d:NaN,
 		time:0,
-		frame:0,
+		frameId:0,
 		surface:false,
 		margin:[0,0,0,0],
 		padding:[0,0,0,0],
-		align:'lefttop',
-		walk:'lrtbwrap'		
+		align:[0,0],
+		wrap:true		
 	}
-
-	//this.onfingerdown
-	//this.onfingerup
-	//this.onfingermove
-	//this.onfingerhover
-	//this.onfingerwheel
 
 	proto._onconstruct = function(args){
 		// lets process the args and construct things
 		// lets create a todo
-		this.initCanvas()
+		this.$initCanvas()
 		this.view = this
 		this.position = mat4.create()
 	}
@@ -49,7 +43,7 @@ module.exports = require('class').extend(function View(proto){
 		this.todo = undefined
 	}
 
-	proto.composeTree = function(oldChildren){
+	proto.$composeTree = function(oldChildren){
 		// it calls compose recursively
 		if(this.oncompose){
 			this.onflag = 1
@@ -73,7 +67,6 @@ module.exports = require('class').extend(function View(proto){
 		for(var i = 0; i < children.length; i++){
 			var child = children[i]
 			child.parent = this
-			child.camera = this.root.camera
 			child.root = this.root
 			var oldchild = oldChildren && oldChildren[i]
 			child.composeTree(oldchild && oldchild.children)
@@ -84,7 +77,6 @@ module.exports = require('class').extend(function View(proto){
 			oldchild.destroyed = true
 			if(oldchild.ondestroy) oldchild.ondestroy()
 			if(oldchild._ondestroy) oldchild._ondestroy()
-
 		}
 
 		if(this.oncomposed) this.oncomposed()
@@ -99,7 +91,7 @@ module.exports = require('class').extend(function View(proto){
 	proto.relayout = function(){
 	}
 
-	proto.redrawChildren = function(){
+	proto.$redrawChildren = function(){
 		var todo = this.todo
 		var children = this.children
 		for(var i = 0; i < children.length; i++){
@@ -109,9 +101,9 @@ module.exports = require('class').extend(function View(proto){
 		}
 	}
 
-	proto.redrawView = function(){
+	proto.$redrawView = function(){
 		this._time = this.root._time
-		this._frame = this.root._frame
+		this._frameId = this.root._frameId
 
 		// begin a new todo stack
 		var todo = this.todo
@@ -121,7 +113,8 @@ module.exports = require('class').extend(function View(proto){
 		// begin a new turtle
 		this.turtle._margin = this._margin
 		this.turtle._padding = this._padding
-		
+		this.turtle._w = painter.w
+		this.turtle._wrap = this._wrap
 		var turtle = this.beginTurtle()
 
 		this.onflag = 2
@@ -135,8 +128,8 @@ module.exports = require('class').extend(function View(proto){
 	}
 
 	proto.ondraw = function(){
-		this.redrawBackground()
-		this.redrawChildren()
+		this.$redrawBackground()
+		this.$redrawChildren()
 	}
 	
 	proto.onflag1 = this.recompose
@@ -156,11 +149,11 @@ module.exports = require('class').extend(function View(proto){
 		painter.onsync = function(msg){
 			// we can submit a todo now
 			this._time = msg.time / 1000
-			this._frame = msg.frame
+			this._frameId = msg.frameId
 
 			mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
 
-			this.redrawView()
+			this.$redrawView()
 
 			// send todotree to main thread
 			this.todo.runTodo()
@@ -170,15 +163,9 @@ module.exports = require('class').extend(function View(proto){
 		this.root = this
 
 		// compose the tree
-		this.composeTree()
+		this.$composeTree()
 
 		// then lets draw it
 		painter.sync()
-	}
-
-	proto.onnestedassign = function(key, cls){
-		if(cls.prototype.compileCanvasMacros){
-			cls.prototype.compileCanvasMacros(key, this)
-		}
 	}
 })

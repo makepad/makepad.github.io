@@ -184,7 +184,7 @@ function resize(){
 }
 
 function repaint(time){
-	bus.postMessage({fn:'onsync', time:time, frame:frameId++})
+	bus.postMessage({fn:'onsync', time:time, frameId:frameId++})
 }
 
 window.addEventListener('resize', resize)

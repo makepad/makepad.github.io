@@ -140,7 +140,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		return this.drawField(field)
 	}
 
-	proto.canvasMacros = {
+	proto.toolMacros = {
 		draw:function(overload){
 			var turtle = this.turtle
 			this.$STYLEPROPS(overload)

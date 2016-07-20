@@ -1,7 +1,7 @@
 
 var App = require('view').extend(function(proto){
 
-	proto.nested = {
+	proto.tools = {
 		//Text: require('shaders/arcfontshader').extend(function(proto){
 		//	proto.font = require('fonts/ubuntu_regular_256.arcfont')
 		//})
@@ -11,7 +11,7 @@ var App = require('view').extend(function(proto){
 	}
 
 	proto.ondraw = function(){
-		for(var i = 0 ; i< 5000;i++){
+		for(var i = 0 ; i< 8000;i++){
 			this.drawText({
 				text:''+i,
 				boldness:1,
@@ -20,7 +20,7 @@ var App = require('view').extend(function(proto){
 				shadowOffset:[2,2],
 				color:[Math.random(),Math.random(),Math.random(),1.],
 				outlineColor:'black',
-				x:Math.random()*1000,
+				x:Math.random()*1500,
 				y:Math.random()*1000
 			})
 		}

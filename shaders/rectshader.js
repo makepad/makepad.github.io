@@ -23,11 +23,11 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 		borderWidth: {pack:'int12', value:[0,0,0,0]},
 		borderRadius: {pack:'int12', value:[8,8,8,8]},
-
+		
 		shadowBlur: 0.0,
 		shadowSpread: 0.0,
-		shadowOffset: [0.0,0.0],
-
+		shadowOffset: {pack:'int12', value:[0.0,0.0]},
+		
 		mesh:{kind:'geometry', type:types.vec3},
 	}
 
@@ -152,7 +152,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		}
 	}
 
-	proto.canvasMacros = {
+	proto.toolMacros = {
 		draw:function(overload){
 			this.$STYLEPROPS(overload, 1)
 			this.$ALLOCDRAW()

@@ -12,18 +12,18 @@ module.exports = require('class').extend(function Turtle(proto){
 			margin = this.margin = outer._margin
 		}
 		else{
-			margin = this.margin = this.cachemargin || (this.cachemargin = [0,0,0,0])
+			margin = this.margin = this.$margin || (this.$margin = [0,0,0,0])
 			margin[0] = margin[1] = margin[2] = margin[3] = outer._margin
 		}
 		if(typeof outer._padding === 'object'){
 			padding = this.padding = outer._padding
 		}
 		else{
-			padding = this.padding = this.cachepadding || (this.cachepadding = [0,0,0,0])
+			padding = this.padding = this.$padding || (this.$padding = [0,0,0,0])
 			padding[0] = padding[1] = padding[2] = padding[3] = outer._padding
 		}
 
-		this.align = outer._align || (this.cachealign || (this.cachealign=[0,0]))
+		this.align = outer._align || (this.$align || (this.$align=[0,0]))
 
 		// read the x
 		var _x = outer._x, _y = outer._y, _w = outer._w, _h = outer._h
@@ -54,7 +54,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		this.sx = this.wx = this.ix + padding[3] + margin[3]
 		this.sy = this.wy = this.iy + padding[0] + margin[0]
 
-		this.writeStart = this.canvas.writeList && this.canvas.writeList.length || 0
+		this.$writeStart = this.canvas.$writeList && this.canvas.$writeList.length || 0
 	}	
 	var zeromargin = [0,0,0,0]
 	proto.walk = function(oldturtle){
@@ -72,13 +72,12 @@ module.exports = require('class').extend(function Turtle(proto){
 		// process the margin argument type
 		var margin = this._margin
 		if(typeof margin !== 'object'){
-			margin = this.cachemargin2 || (this.cachemargin2 = [0,0,0,0])
+			margin = this.$margin2 || (this.$margin2 = [0,0,0,0])
 			margin[0] = margin[1] = margin[2] = margin[3] = this._margin
 		}
 
 		// check if we wrap around
-		var outer = this.outer
-		if(outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
+		if(this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
 			var dx = this.sx - this.wx 
 			var dy = this.mh
 			this.wx = this.sx
@@ -86,7 +85,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			this.mh = 0
 			// move the body of the wrapped thing
 			if(oldturtle){
-				this.canvas.moveWritten(oldturtle.writeStart, dx, dy)
+				this.canvas.$moveWritten(oldturtle.$writeStart, dx, dy)
 			}
 		}
 		// walk it
@@ -124,7 +123,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			var dy = isNaN(this.height)? 0: (this.height - (this.y2 - this.sy)) * this.align[1]
 			if(isNaN(dx) || dx === Infinity) dx = 0
 			if(isNaN(dy) || dy === Infinity) dy = 0
-			if(dx !== 0 || dy !== 0) this.canvas.moveWritten(this.writeStart, dx, dy)		
+			if(dx !== 0 || dy !== 0) this.canvas.$moveWritten(this.writeStart, dx, dy)		
 		}
 	}
 

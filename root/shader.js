@@ -1,6 +1,5 @@
 module.exports = require('class').extend(function Shader(proto){
 
-	require('./canvasmacros')(proto)
 	var painter = require('painter')
 	var types = require('types')
 	var parser = require('jsparser/jsparser')
@@ -32,15 +31,15 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// ok the alpha blend modes. how do we do it.
-	proto.mapExceptions = true
+	proto.$mapExceptions = true
 
-	proto.compileShader = function(){
+	proto.$compileShader = function(){
 		if(!this.vertex || !this.pixel) return
 
 		var ast = parser.parse()
 		
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, proto.mapExceptions)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, proto.mapExceptions)
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, proto.$mapExceptions)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, proto.$mapExceptions)
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
@@ -423,7 +422,7 @@ module.exports = require('class').extend(function Shader(proto){
 			return
 		}
 
-		this.compileInfo = {
+		this.$compileInfo = {
 			instanceProps:instanceProps,
 			geometryProps:geometryProps,
 			styleProps:styleProps,
@@ -439,32 +438,37 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.onextendclass = function(){
 		// call shader compiler
-		this.compileShader()
+		this.$compileShader()
 	}
 
 	proto.$STYLEPROPS = function(classname, macroargs, mainargs, indent){
 		// first generate property overload stack
 		// then write them on the turtles' propbag
-		var styleProps = this.compileInfo.styleProps
+		var styleProps = this.$compileInfo.styleProps
 		if(!macroargs) throw new Error('$STYLEPROPS doesnt have overload argument')
 
-		var stack = [macroargs[0],'', 'this._state2','', 'this._state','', 'this._' + classname+'.prototype','']
+		var stack = [
+			macroargs[0], 
+			'this.$stampArgs && this.$stampArgs.'+classname, 
+			'this.$outerState && this.$outerState.'+classname, 
+			'this._state && this._state.'+classname, 
+			'this._'+classname+'.prototype'
+		]
 
 		// lets make the vars
-		var code = indent + 'var _turtle = this.turtle'
+		var code = indent + 'var $turtle = this.turtle'
 		for(var key in styleProps){
 			var prop = styleProps[key]
 			if(prop.config.noStyle) continue
 			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
-			code += ', _$' + prop.name
+			code += ', _' + prop.name
 		}
 		code += '\n\n'
 
 		// generate the property overload stack
-		for(var i = 0; i < stack.length; i+=2){
+		for(var i = 0; i < stack.length; i++){
 			var object = stack[i]
-			var prefix = stack[i+1]
-			var p = '_p'+i
+			var p = '$p'+i
 			var subind = indent
 
 			if(object.indexOf('.') !== -1){
@@ -482,10 +486,10 @@ module.exports = require('class').extend(function Shader(proto){
 				//var slots = types.getSlots(prop.type)
 				if(styleProps[key].config.noStyle) continue
 				if(i === 0){
-					code += subind+'_$'+name+ ' = '+p+'.' + prefix+ name +'\n'
+					code += subind+'_'+name+ ' = '+p+'.' + name +'\n'
 				}
 				else{
-					code += subind+'if(_$'+name+' === undefined) _$'+name+ ' = '+p+'.' + prefix+ name +'\n'
+					code += subind+'if(_'+name+' === undefined) _'+name+ ' = '+p+'.' + name +'\n'
 				}
 			}
 
@@ -500,7 +504,7 @@ module.exports = require('class').extend(function Shader(proto){
 			if(prop.config.noStyle) continue
 			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
 			// store on turtle
-			code += indent + '_turtle._' + name +' = _$' + name + '\n'
+			code += indent + '$turtle._' + name +' = _' + name + '\n'
 		}
 		return code
 	}
@@ -509,44 +513,44 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
 		// lets start a propsbuffer 
-		var info = this.compileInfo
+		var info = this.$compileInfo
 		var code = ''
 		
 		var need = macroargs[0] || 1
 
-		code += indent+'var _todo = this.todo\n'
-		code += indent+'var _shader = this.shaders.'+classname+'\n'
-		code += indent+'if(!_shader) _shader = this._allocShader("'+classname+'")\n'
-		code += indent+'var _props = _shader._props\n'
-		code += indent+'var _need = _props.self.length + '+need+'\n'
-		code += indent+'if(_need >= _props.allocated) _props.alloc(_need)\n'
-		code += indent+'if(_props._frame !== this._frame){\n'
-		code += indent+'	var _proto = this._' + classname +'.prototype\n'
-		code += indent+'	_props._frame = this._frame\n'
-		code += indent+'	_props.self.length = 0\n'
-		code += indent+'	_props.dirty = true\n'
+		code += indent+'var $todo = this.todo\n'
+		code += indent+'var $shader = this.$shaders.'+classname+'\n'
+		code += indent+'if(!$shader) $shader = this.$allocShader("'+classname+'")\n'
+		code += indent+'var $props = $shader.$props\n'
+		code += indent+'var $need = $props.self.length + '+need+'\n'
+		code += indent+'if($need >= $props.allocated) $props.alloc($need)\n'
+		code += indent+'if($props.$frameId !== this._frameId){\n'
+		code += indent+'	var $proto = this._' + classname +'.prototype\n'
+		code += indent+'	$props.$frameId = this._frameId\n'
+		code += indent+'	$props.self.length = 0\n'
+		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
-		code += indent+'	_todo.useShader(_shader)\n'
+		code += indent+'	$todo.useShader($shader)\n'
 		// first do the normal attributes
 		var geometryProps = info.geometryProps
 		
 		var attrbase = painter.nameId('ATTR_0')
 		// do the props
 		var attroffset = Math.ceil(info.propSlots / 4)
-		code += indent+'	_todo.instances('+(attrbase)+','+attroffset+',_props)\n'
+		code += indent+'	$todo.instances('+(attrbase)+','+attroffset+',$props)\n'
 		var attrid = attroffset
 		// set attributes
 		for(var key in geometryProps){
 			var geom = geometryProps[key]
 			var attrange = Math.ceil(geom.type.slots / 4)
 			var nodot = key.slice(9)
-			code += indent+'	_attrlen = _proto.'+nodot+'.length\n'
-			code += indent+'	_todo.attributes('+(attrbase+attrid)+','+attrange+',_proto.'+nodot+')\n'
+			//code += indent+'	$attrlen = $proto.'+nodot+'.length\n'
+			code += indent+'	$todo.attributes('+(attrbase+attrid)+','+attrange+',$proto.'+nodot+')\n'
 			attrid += attrange
 		}
 		
 		// lets set the blendmode
-		code += '	_todo.blending(_proto.blending, _proto.constantColor)\n'
+		code += '	$todo.blending($proto.blending, $proto.constantColor)\n'
 
 		// set uniforms
 		var uniforms = info.uniforms
@@ -554,13 +558,13 @@ module.exports = require('class').extend(function Shader(proto){
 			var uniform = uniforms[key]
 			// this.canvas....?
 			var thisname = key.slice(9)
-			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| _proto.'+thisname
+			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| $proto.'+thisname
 			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type.name
 			// ok so uniforms... where do we get them
 			// we can get them from overload or the class prototype
-			code += indent+'	_todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
+			code += indent+'	$todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 			//code += indent+'console.log("'+key+'",'+source+')\n'
 		}
 
@@ -570,17 +574,17 @@ module.exports = require('class').extend(function Shader(proto){
 			var sampler = samplers[key]
 
 			var thisname = key.slice(9)
-			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || _proto.'+thisname
+			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $proto.'+thisname
 
-			code += indent +'	_todo.sampler('+painter.nameId(key)+','+source+',_proto.compileInfo.samplers.'+key+')\n'
+			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
 		}
 		// lets draw it
-		code += indent + '	_todo.drawTriangles()\n'
+		code += indent + '	$todo.drawTriangles()\n'
 		code += indent + '}\n'
-		code += indent + 'var _writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.turtleStack.len - 1:this.turtleStack.len\n'
-		code += indent + 'this.writeList.push(_props, _props.self.length, _need, _writelevel)\n'
-		code += indent + 'this.turtle.propoffset = _props.self.length\n'
-		code += indent + '_props.self.length = _need\n'
+		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.$turtleStack.len - 1:this.$turtleStack.len\n'
+		code += indent + 'this.$writeList.push($props, $props.self.length, $need, $writelevel)\n'
+		code += indent + 'this.turtle.$propoffset = $props.self.length\n'
+		code += indent + '$props.self.length = $need\n'
 		//console.log(code)
 
 		return code
@@ -588,10 +592,10 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var _duration = _a[_o + ' + instanceProps.this_DOT_duration.offset +']\n'
-		code += indent + 'var _tweenstart = _a[_o + ' + instanceProps.this_DOT_tweenstart.offset +']\n'
-		code += indent + 'if(this.view._time < _tweenstart + _duration){\n'
-		code += indent + '	var _tween = Math.min(1,Math.max(0,(this.view._time - _tweenstart)/_duration))\n'
+		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+		code += indent + 'var $tweenstart = $a[$o + ' + instanceProps.this_DOT_tweenstart.offset +']\n'
+		code += indent + 'if(this.view._time < $tweenstart + $duration){\n'
+		code += indent + '	var $tween = Math.min(1,Math.max(0,(this.view._time - $tweenstart)/$duration))\n'
 		code += indent + tweencode 
 		code += indent + '}'
 		return code
@@ -608,12 +612,12 @@ module.exports = require('class').extend(function Shader(proto){
 			if(!notween){
 				// new, old
 				for(var i = 0; i < slots; i++){
-					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+_a[_o+'+(o+i+slots)+']+"->"+_a[_o+'+(o+i)+'])\n'
+					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i+slots)+']+"->"+$a[$o+'+(o+i)+'])\n'
 				}
 			}
 			else{
 				for(var i = 0; i < slots; i++){
-					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+_a[_o+'+(o+i)+'])\n'
+					code += indent + 'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i)+'])\n'
 				}
 			}
 		}
@@ -622,17 +626,17 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
 		// load the turtle
-		var info = this.compileInfo
+		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 		var code = ''
-		code = indent + 'var _turtle = this.turtle\n'
-		code += indent +'var _shader = this.shaders.'+classname+'\n'
-		code += indent +'var _props = _shader._props\n'
-		code += indent +'var _a = _props.self.array\n'
-		code += indent +'var _o = _turtle.propoffset++ * ' + info.propSlots +'\n'
+		code = indent + 'var $turtle = this.turtle\n'
+		code += indent +'var $shader = this.$shaders.'+classname+'\n'
+		code += indent +'var $props = $shader.$props\n'
+		code += indent +'var $a = $props.self.array\n'
+		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 		//code += indent + '_props.self.length++\n'
 
-		var tweencode = '	var _f = _tween, _1mf = _tween, _upn, _upo\n'
+		var tweencode = '	var $f = $tween, $1mf = $tween, $upn, $upo\n'
 		var propcode = ''
 
 		// lets generate the tween
@@ -651,31 +655,31 @@ module.exports = require('class').extend(function Shader(proto){
 				if(pack){
 					// we have to unpack before interpolating
 					for(var i = 0; i < slots; i++){
-						tweencode += indent + '_upn = _a[_o+'+(o + i)+'], _upo = _a[_o+'+(o + i + slots)+']\n'
-						tweencode += indent + '_a[_o+'+(o +i)+'] = ' +
-							'((_f * Math.floor(_upo/4096) +' +
-							'_1mf * Math.floor(_upn/4096)) << 12) + ' + 
-							'((_f * (_upo%4096) +' +
-							'_1mf * (_upn%4096))|0)\n'
+						tweencode += indent + '_upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
+						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
+							'(($f * Math.floor(_upo/4096) +' +
+							'$1mf * Math.floor(_upn/4096)) << 12) + ' + 
+							'(($f * (_upo%4096) +' +
+							'$1mf * (_upn%4096))|0)\n'
 
-						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
-							'_a[_o+'+(o +i)+']\n'
+						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
+							'$a[$o+'+(o +i)+']\n'
 					}
 				}
 				else{
 					for(var i = 0; i < slots; i++){
-						tweencode += indent + '	_a[_o+'+(o +i)+'] = ' +
-							'_f * _a[_o+'+(o + i + slots)+'] + ' +
-							'_1mf * _a[_o+'+(o +i)+']\n'
-						propcode += indent + '_a[_o+'+(o + i + slots)+'] = ' +
-							'_a[_o+'+(o +i)+']\n'
+						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
+							'$f * $a[$o+'+(o + i + slots)+'] + ' +
+							'$1mf * $a[$o+'+(o +i)+']\n'
+						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
+							'$a[$o+'+(o +i)+']\n'
 					}
 				}
 			}
 			// assign properties
 			// check if we are a vec4 and typeof string
 
-			var propsource = '_turtle._' + prop.name
+			var propsource = '$turtle._' + prop.name
 			
 			if(prop.config.noStyle){ // its an arg here
 				// tweenstart?
@@ -689,32 +693,32 @@ module.exports = require('class').extend(function Shader(proto){
 				// check packing
 				var pack = prop.config.pack
 				if(pack){
-					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
+					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
 					if(pack === 'float12'){
-						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)|0),_a[_o+'+(o+1)+']=((_$'+prop.name+'[2] * 4095)<<12) + ((_$'+prop.name+'[3]*4095)|0)\n'
-						propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColorPacked(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
-						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[0]*4095)|0)\n'
+						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0),$a[$o+'+(o+1)+']=((_'+prop.name+'[2] * 4095)<<12) + ((_'+prop.name+'[3]*4095)|0)\n'
+						propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColorPacked(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
+						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[0]*4095)|0)\n'
 						propcode += indent + '}\n'
-						propcode += indent + 'if(typeof _$'+prop.name+' === "string")this._parseColorPacked(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
-						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)|0)\n'
+						propcode += indent + 'if(typeof _'+prop.name+' === "string")this.$parseColorPacked(_'+prop.name+',1.0,$a,$o+'+o+')\n'
+						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
 					}
 					else{ // int packing
-						propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]|0),_a[_o+'+(o+1)+']=(_$'+prop.name+'[2]<<12) + (_$'+prop.name+'[3]|0)\n'
-						propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+'[0])<<12) + ((_$'+prop.name+'[0])|0)\n'
+						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
+						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0])<<12) + ((_'+prop.name+'[0])|0)\n'
 						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=_a[_o+'+(o+1)+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')|0)\n'
+						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
 					}
 				}
 				else{
 					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
-					propcode += indent + '	if(_$'+prop.name+'.length === 4)_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1],_a[_o+'+(o+2)+']=_$'+prop.name+'[2],_a[_o+'+(o+3)+']=_$'+prop.name+'[3]\n'
-					propcode += indent + '	else if(_$'+prop.name+'.length === 1)_a[_o+'+o+']=_a[_o+'+(o+1)+']=_a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'[0]\n'
-					propcode += indent + '	else if(_$'+prop.name+'.length === 2)this._parseColor(_$'+prop.name+'[0], _$'+prop.name+'[1],_a,_o+'+o+')\n'
+					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+					propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
+					propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=$a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'[0]\n'
+					propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColor(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
 					propcode += indent + '}\n'
-					propcode += indent + 'else if(typeof _$'+prop.name+' === "string")this._parseColor(_$'+prop.name+',1.0,_a,_o+'+o+')\n'
-					propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+'] = _a[_o+'+(o+1)+'] = _a[_o+'+(o+2)+']=_a[_o+'+(o+3)+']=_$'+prop.name+'\n'
+					propcode += indent + 'else if(typeof _'+prop.name+' === "string")this.$parseColor(_'+prop.name+',1.0,$a,$o+'+o+')\n'
+					propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+'] = $a[$o+'+(o+1)+'] = $a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'\n'
 				}
 			}
 			else if(prop.type.name === 'vec2'){
@@ -722,37 +726,37 @@ module.exports = require('class').extend(function Shader(proto){
 				var pack = prop.config.pack
 				if(pack){
 					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
+					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
 					if(pack === 'float12'){
-						propcode += indent + '	_a[_o+'+(o)+']=((_$'+prop.name+'[0]*4095)<<12) + ((_$'+prop.name+'[1]*4095)|0)\n'
+						propcode += indent + '	$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
 						propcode += indent + '}\n'
-						propcode += indent + 'else _a[_o+'+o+']=((_$'+prop.name+'*4095)<<12) + ((_$'+prop.name+'*4095)|0)\n'
+						propcode += indent + 'else $a[$o+'+o+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
 					}
 					else{ // int packing
-						propcode += indent + '	_a[_o+'+(o)+']=(_$'+prop.name+'[0]<<12) + (_$'+prop.name+'[1]|0)\n'
+						propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
 						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _$'+prop.name+' === "number")_a[_o+'+o+']=((_$'+prop.name+')<<12) + ((_$'+prop.name+')|0)\n'
+						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
 					}
 				}
 				else{
 					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _$'+prop.name+' === "object"){\n'
-					propcode += indent + '	_a[_o+'+(o)+']=_$'+prop.name+'[0],_a[_o+'+(o+1)+']=_$'+prop.name+'[1]\n'
+					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+					propcode += indent + '	$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
 					propcode += indent + '}\n'
-					propcode += indent + 'else _a[_o+'+(o)+']=_a[_o+'+(o+1)+']=_$'+prop.name+'\n'
+					propcode += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+prop.name+'\n'
 				}
 			}
 			else{
 				if(slots === 1){
-					propcode += indent + '_a[_o+'+o+'] = '+propsource+'\n'
+					propcode += indent + '$a[$o+'+o+'] = '+propsource+'\n'
 				}
 				else{
-					propcode += indent + 'var _$' + prop.name + ' = '+propsource+'\n'
-					propcode += indent + 'if(_$'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
+					propcode += indent + 'var _' + prop.name + ' = '+propsource+'\n'
+					propcode += indent + 'if(_'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
 					propcode += indent + 'else '
 					for(var i = 0; i < slots; i++){
 						if(i) propcode += ','
-						propcode += '_a[_o+'+(o+i)+']=_$'+prop.name+'['+i+']\n'
+						propcode += '$a[$o+'+(o+i)+']=_'+prop.name+'['+i+']\n'
 					}
 					propcode += '\n'
 				}
@@ -833,6 +837,16 @@ module.exports = require('class').extend(function Shader(proto){
 				}
 				this._structs[key] = struct
 			}
+		}
+	})
+
+	Object.defineProperty(proto, 'toolMacros', {
+		get:function(){
+			return this._toolMacros
+		},
+		set:function(macros){
+			if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
+			for(var key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
 
