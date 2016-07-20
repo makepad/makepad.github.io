@@ -42,7 +42,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + 'var $stamp = this.$stamps[$pickid]\n'
 		code += indent + 'if(!$stamp){\n'
 		code += indent + '	$stamp = this.$stamps[$pickid] = Object.create(this._'+classname+'.prototype)\n'
-		code += indent + '	if($stamp.onconstruct)$stamp.onconstruct()\n'
+		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
 		code += indent + '	$stamp.view = this.view\n'
 		code += indent + '	$stamp.$turtleStack = this.$turtleStack\n'
 		code += indent + '	$stamp.$writeList = this.$writeList\n'
@@ -92,7 +92,7 @@ module.exports = require('class').extend(function Stamp(proto){
 
 	proto.$DRAWSTAMP = function(classname, macroargs, mainargs, indent){
 		var code = ''
-		code += indent + '$stamp.ondraw()\n'
+		code += indent + '$stamp.onDraw()\n'
 		return code
 	}
 

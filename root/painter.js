@@ -13,7 +13,7 @@ painter.w = args.w
 painter.h = args.h
 painter.pixelratio = args.pixelratio
 
-bus.onmessage = function(msg){
+bus.onMessage = function(msg){
 	if(msg.fn === 'atResize'){
 		painter.w = msg.w
 		painter.h = msg.h
@@ -39,7 +39,7 @@ function newName(name){
 	bus.postMessage({
 		fn:'newName',
 		name: name,
-		id: nameId
+		nameId: nameId
 	})
 	return nameId
 }
@@ -57,7 +57,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 	proto.initalloc = 256
 
-	proto.onconstruct = function(initalloc, painter){
+	proto.onConstruct = function(initalloc, painter){
 
 		var todoId = todoIdsAlloc++
 
@@ -82,6 +82,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 	proto.beginTodo = function(){
 		this.ended = false
 		this.offset = 0
+		this.deps = {}
 		this.last = -1
 	}
 
@@ -90,77 +91,11 @@ painter.Todo = require('class').extend(function Todo(proto){
 		// sync our todo
 		bus.batchMessage({
 			fn:'updateTodo',
+			deps:this.deps,
 			todoId:this.todoId,
 			buffer:this.f32.buffer,
 			length:this.offset
 		})
-	}
-
-	proto.clearColor = function(red, green, blue, alpha){ // id:0
-		// patch previous
-		if(this.last >= 0 && this.i32[this.last] === 1){
-			var o = this.last
-			var i32 = this.i32, f32 = this.f32
-			i32[o+2] |= 1
-			f32[o+3] = red
-			f32[o+4] = green
-			f32[o+5] = blue
-			f32[o+6] = alpha
-			return
-		}
-		if(this.offset == 0)
-
-		var o = (this.last = this.offset) 
-		if((this.offset += 9) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-
-		i32[o+0] = 1 // id
-		i32[o+1] = 7 // args
-		i32[o+2] = 1
-		f32[o+3] = red
-		f32[o+4] = green
-		f32[o+5] = blue
-		f32[o+6] = alpha
-	}
-
-	proto.clearDepth = function(depth){ // id:0
-		// patch previous
-		if(this.last >= 0 && this.array[this.last] === 1){
-			var o = this.last
-			var i32 = this.i32, f32 = this.f32
-			i32[o+2] |= 2
-			f32[o+7] = depth
-			return
-		}
-
-		var o = (this.last = this.offset) 
-		if((this.offset += 9) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-
-		i32[o+0] = 1 // id
-		i32[o+1] = 7 // args
-		i32[o+2] = 2
-		f32[o+7] = depth
-	}
-
-	proto.clearStencil = function(stencil){
-		// patch previous
-		if(this.last >= 0 && this.array[this.last] === 1){
-			var o = this.last 
-			var i32 = this.i32
-			i32[o+2] |= 4
-			i32[o+8] = stencil
-			return
-		}
-
-		var o = (this.last = this.offset) + 2
-		if((this.offset += 9) > this.allocated) this.resize()
-		var i32 = this.i32
-
-		i32[o+0] = 1 // id
-		i32[o+1] = 7 // args
-		i32[o+2] = 4
-		i32[o+8] = stencil
 	}
 
 	proto.useShader = function(shader){
@@ -170,27 +105,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		i32[o+0] = 2
 		i32[o+1] = 1
-		i32[o+2] = shader.id
-	}
-
-	proto.attribute = function(nameId, mesh, offset, stride){
-
-		var o = (this.last = this.offset)
-		if((this.offset += 6) > this.allocated) this.resize()
-		var i32 = this.i32
-
-		// use the mesh message for lazy serialization
-		if(mesh.dirty){
-			mesh.dirty = false
-			bus.batchMessage(mesh.self)
-		}
-
-		i32[o+0] = 3
-		i32[o+1] = 4
-		i32[o+2] = nameId
-		i32[o+3] = mesh.self.id
-		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
-		i32[o+5] = offset || 0
+		i32[o+2] = shader.shaderId
 	}
 
 	proto.attributes = function(startnameid, range, mesh, offset, stride){
@@ -203,35 +118,13 @@ painter.Todo = require('class').extend(function Todo(proto){
 			mesh.dirty = false
 			bus.batchMessage(mesh.self)
 		}
-		i32[o+0] = 4
+		i32[o+0] = 3
 		i32[o+1] = 5
 		i32[o+2] = startnameid
 		i32[o+3] = range
-		i32[o+4] = mesh.self.id
+		i32[o+4] = mesh.self.meshId
 		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+6] = offset
-	}
-
-
-	proto.instance = function(nameId, mesh, divisor, offset, stride){
-
-		var o = (this.last = this.offset)
-		if((this.offset += 7) > this.allocated) this.resize()
-		var i32 = this.i32
-
-		// use the mesh message for lazy serialization
-		if(mesh.dirty){
-			mesh.dirty = false
-			bus.batchMessage(mesh.self)
-		}
-
-		i32[o+0] = 5
-		i32[o+1] = 5
-		i32[o+2] = nameId
-		i32[o+3] = mesh.self.id
-		i32[o+4] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
-		i32[o+5] = offset || 0
-		i32[o+6] = divisor || 1
 	}
 
 	proto.instances = function(startnameid, range, mesh, divisor, offset, stride){
@@ -246,11 +139,11 @@ painter.Todo = require('class').extend(function Todo(proto){
 			bus.batchMessage(mesh.self)
 		}
 
-		i32[o+0] = 6
+		i32[o+0] = 4
 		i32[o+1] = 6
 		i32[o+2] = startnameid
 		i32[o+3] = range
-		i32[o+4] = mesh.self.id
+		i32[o+4] = mesh.self.meshId
 		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
 		i32[o+6] = offset
 		i32[o+7] = divisor || 1
@@ -271,12 +164,12 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+0] = 7
 		i32[o+1] = 2
 		i32[o+2] = nameId
-		i32[o+3] = mesh.self.id
+		i32[o+3] = mesh.self.meshId
 	}
 
 	proto.sampler = function(nameId, texture, sam){
 		var o = (this.last = this.offset)
-		if((this.offset += 5) > this.allocated) this.resize()
+		if((this.offset += 6) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		if(texture.dirty){
@@ -284,11 +177,20 @@ painter.Todo = require('class').extend(function Todo(proto){
 			bus.batchMessage(texture.self)
 		}
 
+		// lets check if texture is a Framebuffer
+		var isfb = 0
+		if(texture.isFramebuffer){
+			// make a dep-ref on our todo root
+			this.root.deps[texture.self.texId] = true
+			isfb = 1
+		}
+
 		i32[o+0] = 8
-		i32[o+1] = 3
+		i32[o+1] = 4
 		i32[o+2] = nameId
-		i32[o+3] = texture.self.id
-		i32[o+4] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
+		i32[o+3] = isfb
+		i32[o+4] = texture.self.texId
+		i32[o+5] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
 	}
 
 	proto.int = function(nameId, x){
@@ -536,6 +438,72 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+4] = instances || -1
 	}
 
+	proto.clearColor = function(red, green, blue, alpha){ // id:0
+		// patch previous
+		if(this.last >= 0 && this.i32[this.last] === 40){
+			var o = this.last
+			var i32 = this.i32, f32 = this.f32
+			i32[o+2] |= 1
+			f32[o+3] = red
+			f32[o+4] = green
+			f32[o+5] = blue
+			f32[o+6] = alpha
+			return
+		}
+		if(this.offset == 0)
+
+		var o = (this.last = this.offset) 
+		if((this.offset += 9) > this.allocated) this.resize()
+		var i32 = this.i32, f32 = this.f32
+
+		i32[o+0] = 40 // id
+		i32[o+1] = 7 // args
+		i32[o+2] = 1
+		f32[o+3] = red
+		f32[o+4] = green
+		f32[o+5] = blue
+		f32[o+6] = alpha
+	}
+
+	proto.clearDepth = function(depth){ // id:0
+		// patch previous
+		if(this.last >= 0 && this.array[this.last] === 40){
+			var o = this.last
+			var i32 = this.i32, f32 = this.f32
+			i32[o+2] |= 2
+			f32[o+7] = depth
+			return
+		}
+
+		var o = (this.last = this.offset) 
+		if((this.offset += 9) > this.allocated) this.resize()
+		var i32 = this.i32, f32 = this.f32
+
+		i32[o+0] = 40 // id
+		i32[o+1] = 7 // args
+		i32[o+2] = 2
+		f32[o+7] = depth
+	}
+
+	proto.clearStencil = function(stencil){
+		// patch previous
+		if(this.last >= 0 && this.array[this.last] === 40){
+			var o = this.last 
+			var i32 = this.i32
+			i32[o+2] |= 4
+			i32[o+8] = stencil
+			return
+		}
+
+		var o = (this.last = this.offset) + 2
+		if((this.offset += 9) > this.allocated) this.resize()
+		var i32 = this.i32
+
+		i32[o+0] = 40 // id
+		i32[o+1] = 7 // args
+		i32[o+2] = 4
+		i32[o+8] = stencil
+	}
 	// array is src, fn, dest, alphasrc, alphafn, alphadest
 	proto.blending = function(array, color){
 
@@ -544,7 +512,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		var i32 = this.i32
 		var f32 = this.f32
-		i32[o+0] = 40
+		i32[o+0] = 41
 		i32[o+1] = 10
 		i32[o+2] = array[0]
 		i32[o+3] = array[1]
@@ -568,16 +536,17 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+0] = 50
 		i32[o+1] = 1
 		i32[o+2] = todo.todoId
+		todo.root = this.root
 	}
-
+/*
 	proto.runTodo = function(){
 		if(!this.ended) this.endTodo()
 		// the commandset and overload uniform sets
 		bus.batchMessage({
 			fn: 'runTodo',
-			id:this.todoId
+			todoId:this.todoId
 		})
-	}
+	}*/
 })
 
 var shaderIds = {}
@@ -621,10 +590,10 @@ painter.Shader = require('class').extend(function Shader(proto){
 			"}\n"
 	}
 
-	proto.onconstruct = function(code){
+	proto.onConstruct = function(code){
 		if(!code) code = this.code
 
-		var id = shaderIdsAlloc++
+		var shaderId = shaderIdsAlloc++
 
 		var refs = {}
 
@@ -639,13 +608,13 @@ painter.Shader = require('class').extend(function Shader(proto){
 				vertex:code.vertex,
 				pixel:code.pixel
 			},
-			id:id
+			shaderId:shaderId
 		})
 
-		this.id = id
+		this.shaderId = shaderId
 		this.code = code
 
-		shaderIds[id] = this
+		shaderIds[shaderId] = this
 	}
 })
 
@@ -656,7 +625,7 @@ var meshIds = {}
 
 painter.Mesh = require('class').extend(function Mesh(proto){
 
-	proto.onconstruct = function(type, initalloc){
+	proto.onConstruct = function(type, initalloc){
 		var slots = 0
 		if(typeof type === 'number'){
 			slots = type
@@ -667,11 +636,11 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 
 		if(!initalloc) alloc = this.initalloc
 
-		var id = meshIdsAlloc++
+		var meshId = meshIdsAlloc++
 
 		bus.postMessage({
 			fn:'newMesh',
-			id:id
+			meshId:meshId
 		})
 
 		this.type = type
@@ -681,7 +650,7 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		this.allocated = 0
 		this.self = {
 			fn: 'updateMesh',
-			id: id,
+			meshId: meshId,
 			array: undefined,
 			length: 0
 		}
@@ -776,7 +745,7 @@ painter.REPEAT = 10
 painter.CLAMP_TO_EDGE = 11
 painter.MIRRORED_REPEAT = 12
 
-// texture flags
+// texture buffer type flags
 painter.RGB = 1 << 0
 painter.ALPHA = 1 << 1
 painter.RGBA = painter.RGB|painter.ALPHA
@@ -784,14 +753,17 @@ painter.DEPTH = 1 << 2
 painter.STENCIL = 1 << 3
 painter.LUMINANCE = 1 << 4
 
-painter.UNSIGNED_BYTE = 1<<10
-painter.FLOAT = 1 << 11
-painter.HALF_FLOAT = 1<<12
-painter.FLOAT_LINEAR = 1 << 13
-painter.HALF_FLOAT_LINEAR = 1 << 14
+// data type flags
+painter.UNSIGNED_BYTE = 1<<8
+painter.FLOAT = 1 << 9
+painter.HALF_FLOAT = 1<<10
+painter.FLOAT_LINEAR = 1 << 11
+painter.HALF_FLOAT_LINEAR = 1 << 12
 
+// other flags
 painter.FLIP_Y = 1<<16
 painter.PREMULTIPLY_ALPHA = 1<<17
+painter.CUBEMAP = 1<<19
 
 // prefab sampler types
 painter.SAMPLER2DNEAREST = {
@@ -816,35 +788,67 @@ var textureIds = {}
 painter.Texture = require('class').extend(function Texture(proto){
 	var Texture = proto.constructor
 	
-	Texture.fromArray2D = function(flags, w, h, array, yflip, premulalpha){
-
-		var obj = new Texture()
-		// add the array
-		obj.self.w = w
-		obj.self.h = h
-		obj.self.flags = flags
-		obj.self.array = array
-		obj.self.yflip = yflip
-		obj.self.premulalpha = premulalpha
-		obj.dirty = true
-		return obj
-	}
-
-	proto.onconstruct = function(){
-		var id = textureIdsAlloc++
-		textureIds[id] = this
-
-		bus.batchMessage({
-			fn:'newTexture',
-			id:id
-		})
+	proto.onConstruct = function(flags, w, h, array){
+		var texId = textureIdsAlloc++
+		textureIds[texId] = this
 
 		this.self = {
-			fn:'updateTexture',
-			id:id,
+			fn:'newTexture',
+			flags:flags,
+			w:w,
+			h:h,
+			array:array,
+			texId:texId
 		}
+
+		bus.batchMessage(this.self)
 	}
 })
+
+var framebufferIdsAlloc = 1
+var framebufferIds = {}
+
+painter.Framebuffer = require('class').extend(function Framebuffer(proto){
+
+	proto.onConstruct = function(attachments){
+		var fbId = framebufferIdsAlloc ++
+		framebufferIds[fbId] = this
+
+		var attach 
+
+		for(var key in attachments){
+			if(!attach) attach = {}
+			texture = attachments[key]
+			attach[key] = texture.self.texId
+		}
+
+		this.self = {
+			fn:'newFramebuffer',
+			fbId:fbId,
+			attach:attach
+		}
+
+		bus.batchMessage(this.self)
+	}
+	
+	proto.isFramebuffer = true
+	
+	// attach a todo to the framebuffer
+	// the main framebuffer is the first 
+	proto.attachTodo = function(todo){
+		bus.batchMessage({
+			fn:'attachFramebufferTodo',
+			fbId:this.self.fbId,
+			todoId:todo.todoId
+		})
+	}
+})
+// create the main framebuffer
+painter.mainFramebuffer = new painter.Framebuffer()
+
+// allocate 2 nameIds for
+painter.nameId('painterPickPass')
+painter.nameId('painterPickMat4')
 
 function parseShaderUniforms(code, obj){
 	obj = obj || {}

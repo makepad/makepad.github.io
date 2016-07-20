@@ -13,7 +13,8 @@ var App = require('view').extend(function(proto){
 		Bg:require('shaders/rectshader')
 	}
 	var rnd = Math.random
-	proto.ondraw = function(){
+
+	proto.onDraw = function(){
 		//this.drawBg({w:100,h:100})
 		for(var i = 0; i < 500; i++)
 		this.drawButton({

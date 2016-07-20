@@ -56,7 +56,7 @@
 			var subworkers = []
 			var kernelbusses = {
 				parseerror:{
-					onmessage:function(msg){
+					onMessage:function(msg){
 						var script = document.createElement('script')
 						script.type = 'text/javascript'
 						script.src = msg.url
@@ -108,7 +108,7 @@
 
 		var userbusses = {
 			initworker:{
-				onmessage:function(msg){
+				onMessage:function(msg){
 					var resources = msg.resources
 					worker.workerid =  msg.workerid
 					initUserCode(
@@ -156,7 +156,7 @@
 				else worker.batchmessages.length = 0
 			}
 		}
-		return function onmessage(e){
+		return function onMessage(e){
 			var msg = e.data
 			if(msg.$ === 'debug'){
 				console.log(msg.msg)
@@ -165,12 +165,12 @@
 				for(var i = 0, msgs = msg.msgs; i < msgs.length; i++){
 					msg = msgs[i]
 					var bus = busses[msg.$]
-					if(bus && bus.onmessage) bus.onmessage(msg)
+					if(bus && bus.onMessage) bus.onMessage(msg)
 				}
 			}
 			else{
 				var bus = busses[msg.$]
-				if(bus && bus.onmessage) bus.onmessage(msg)
+				if(bus && bus.onMessage) bus.onMessage(msg)
 			}
 			worker.postEntry()
 		}
@@ -322,11 +322,11 @@
 
 			var exports = module.exports
 			//!TODO lock this down to services
-			if(exports.onrequire){
+			if(exports.onRequire){
 				function resolve(path){
 					return buildURL(rooturl, moduleurl, path)
 				}
-				return exports.onrequire(args, resolve, moduleurl)
+				return exports.onRequire(args, resolve, moduleurl)
 			}
 			return exports
 		}

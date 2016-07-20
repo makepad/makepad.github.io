@@ -20,26 +20,35 @@ module.exports = require('class').extend(function Shader(proto){
 		return clamp((time - this.tweenstart) / this.duration, 0.0, 1.0)
 	}
 
-	proto.vertexEntry = function(){
+	proto.vertexMain = function(){
 		var T = this.tween()
 		$CALCULATETWEEN
-		return this.vertex()
+		gl_Position = this.vertex()
 	}
 
-	proto.pixelEntry = function(){
-		this.pixel()
+	proto.pixelMain = function(){
+		if(painterPickPass != 0){
+			gl_FragColor = vec4(1,0,1,1)
+		}
+		else{
+			gl_FragColor = this.pixel()
+		}
 	}
 
 	// ok the alpha blend modes. how do we do it.
 	proto.$mapExceptions = true
+
+	proto.$uniformHeader = "\n// painter uniforms\nuniform int painterPickPass;\nuniform mat4 painterPickMat4;\n"
+	proto.$pixelHeader = "precision highp float;\nprecision highp int;\n"
+	proto.$vertexHeader = "precision highp float;\nprecision highp int;\n"
 
 	proto.$compileShader = function(){
 		if(!this.vertex || !this.pixel) return
 
 		var ast = parser.parse()
 		
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexEntry, null, proto.$mapExceptions)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelEntry, vtx.varyOut, proto.$mapExceptions)
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, proto.$mapExceptions)
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
@@ -50,8 +59,8 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in pix.uniforms) uniforms[key] = pix.uniforms[key]
 
 		// the shaders
-		var vhead = '', vpre = '', vpost = ''
-		var phead = '', ppre = '', ppost = ''
+		var vhead = proto.$vertexHeader, vpre = '', vpost = ''
+		var phead = proto.$pixelHeader, ppre = '', ppost = ''
 
 		// Unpack and tween props
 		vhead += '// prop attributes\n'
@@ -321,11 +330,15 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		if(curslot) vpost += ');\n'
 
+		vhead += this.$uniformHeader
+
 		var hasuniforms = 0
 		for(var key in vtx.uniforms){
 			if(!hasuniforms++)vhead += '\n// uniforms\n'
 			vhead += 'uniform ' + vtx.uniforms[key].type.name + ' ' + key + ';\n'
 		}
+
+		phead += this.$uniformHeader
 
 		var hasuniforms = 0
 		for(var key in pix.uniforms){
@@ -376,12 +389,9 @@ module.exports = require('class').extend(function Shader(proto){
 
 		var vertex = vhead 
 		vertex += vfunc
-		vertex += '\nvec4 _main(){\n'
-		vertex += vtx.main.replace("\t$CALCULATETWEEN",tweenrep)
-		vertex += '}\n'
 		vertex += '\nvoid main(){\n'
 		vertex += vpre
-		vertex += '\tgl_Position = _main();\n'
+		vertex += vtx.main.replace("\t$CALCULATETWEEN",tweenrep)
 		vertex += vpost
 		vertex += '}\n'
 
@@ -394,15 +404,7 @@ module.exports = require('class').extend(function Shader(proto){
 		pixel += pfunc
 		pixel += '\nvoid main(){\n'
 		pixel += ppre
-
-		if(pix.genFunctions.this_DOT_pixel_T.return.type === types.vec4){
-			pixel +=  '\tgl_FragColor = ' + pix.main
-		}
-		else{
-			pixel += pix.main
-			pixel += '\tgl_FragColor = this_DOT_outcolor;\n' 
-		}
-
+		pixel += pix.main
 		//!TODO: do MRT stuff
 		pixel += ppost + '}\n'
 

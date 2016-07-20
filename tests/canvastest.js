@@ -9,7 +9,7 @@ var App = require('view').extend(function(proto){
 		})
 	}
 
-	proto.ondraw = function(){
+	proto.onDraw = function(){
 		var rnd = Math.random
 		// lets go make a turtle
 		//var dt = Date.now()		

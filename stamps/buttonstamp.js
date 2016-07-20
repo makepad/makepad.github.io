@@ -14,7 +14,11 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 		})
 	}
 
-	proto.ondraw = function(){
+	proto.onFingerDown = function(){
+		
+	}
+
+	proto.onDraw = function(){
 		this.beginBg(this)
 		this.drawText({
 			text:this.text

@@ -1196,6 +1196,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 	proto.glslvariables = {
 		gl_Position:types.vec4,
+		gl_FragColor:types.vec4,
 		gl_FragCoord:types.vec4,
 		gl_PointCoord:types.vec2,
 		gl_PointSize:types.float,
@@ -1211,7 +1212,9 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		gl_MaxTextureImageUnits:types.int,
 		gl_MaxFragmentUniformVectors:types.int,
 		gl_MaxDrawBuffers:types.int,
-		discard:types.void
+		discard:types.void,
+		painterPickPass:types.int,
+		painterPickMat4:types.mat4
 	}
 
 	proto.glsltypes = {

@@ -15,6 +15,6 @@ fingers.setCursor = function(cursor){
 
 var bus = service.bus
 
-bus.onmessage = function(msg){
+bus.onMessage = function(msg){
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }

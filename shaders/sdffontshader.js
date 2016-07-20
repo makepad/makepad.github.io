@@ -227,7 +227,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		if(this.font && !this.font.fontmap){
 			var map = this.font.fontmap = fontloader(this.font)
 			// make the texture.
-			this.fontSampler = painter.Texture.fromArray2D(painter.LUMINANCE, map.texw, map.texh, map.textureArray)
+			this.fontSampler = new painter.Texture(painter.LUMINANCE, map.texw, map.texh, map.textureArray)
 		}
 		base.onextendclass.apply(this, arguments)
 	}

@@ -1,6 +1,6 @@
 module.exports = require('class').extend(function Turtle(proto){
 
-	proto.onconstruct = function(canvas){
+	proto.onConstruct = function(canvas){
 		this.canvas = canvas
 	}
 

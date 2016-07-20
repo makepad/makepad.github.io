@@ -1,7 +1,7 @@
 
 var App = require('view').extend(function(proto){
 
-	proto.nested = {
+	proto.tools = {
 		Background: require('shaders/rectshader').extend(function(proto){
 			
 			proto.random = 0
@@ -17,7 +17,7 @@ var App = require('view').extend(function(proto){
 		})
 	}
 
-	proto.ondraw = function(){
+	proto.onDraw = function(){
 		//var dt = performance.now()
 		for(var i = 0 ; i < 16000;i++){
 			this.drawBackground({

@@ -10,11 +10,11 @@ function extend(body){
 			cthis = Object.create(Class.prototype)
 			cthis.constructor = Class
 		}
-		if(cthis._onconstruct){
-			cthis._onconstruct.apply(cthis, arguments)
+		if(cthis._onConstruct){
+			cthis._onConstruct.apply(cthis, arguments)
 		}
-		if(cthis.onconstruct){
-			cthis.onconstruct.apply(cthis, arguments)
+		if(cthis.onConstruct){
+			cthis.onConstruct.apply(cthis, arguments)
 		}
 		var outer = Class.outer
 		if(outer !== undefined){

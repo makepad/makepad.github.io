@@ -23,15 +23,15 @@ module.exports = function(proto){
 
 		// lets define a property
 		var _key = '_' + key
-		var onkey = 'on' + key
-		var _onkey = '_on' + key
+		var onkey = 'on' + key.charAt(0).toUpperCase() + key.slice(1)
+		var _onkey = '_on' + key.charAt(0).toUpperCase() + key.slice(1)
 
 		this[_key] = initvalue
 
 		Object.defineProperty(this, key, {
 			configurable:true,
 			get:function(){
-				if(this.onflag) this[_onkey] |= this.onflag
+				if(this.onFlag) this[_onkey] |= this.onFlag
 				return this[_key]
 			},
 			set:function(value){
@@ -41,7 +41,7 @@ module.exports = function(proto){
 				if(flags){
 					var id = 1
 					while(flags){
-						if(flags&1) this['onflag'+id]({key:key, old:old, value:value})
+						if(flags&1) this['onFlag'+id]({key:key, old:old, value:value})
 						id = id<<1, flags = flags>>1
 					}
 				}

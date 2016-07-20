@@ -29,7 +29,7 @@ module.exports = require('class').extend(function View(proto){
 		wrap:true		
 	}
 
-	proto._onconstruct = function(args){
+	proto._onConstruct = function(args){
 		// lets process the args and construct things
 		// lets create a todo
 		this.$initCanvas()
@@ -37,7 +37,7 @@ module.exports = require('class').extend(function View(proto){
 		this.position = mat4.create()
 	}
 
-	proto._ondestroy = function(){
+	proto._onDestroy = function(){
 		// destroy the todo
 		this.todo.destroyTodo()
 		this.todo = undefined
@@ -108,18 +108,19 @@ module.exports = require('class').extend(function View(proto){
 		// begin a new todo stack
 		var todo = this.todo
 		todo.beginTodo()
-		todo.clearColor(0.8,1,1,1)
+		todo.clearColor(0.2,0.2,0.2,1)
 
 		// begin a new turtle
 		this.turtle._margin = this._margin
 		this.turtle._padding = this._padding
 		this.turtle._w = painter.w
 		this.turtle._wrap = this._wrap
+
 		var turtle = this.beginTurtle()
 
-		this.onflag = 2
-		this.ondraw()
-		this.onflag = 0
+		this.onFlag = 2
+		this.onDraw()
+		this.onFlag = 0
 
 		// keep redrawing:
 		// if(this._ontime&2 || this._onframe&2)
@@ -127,13 +128,23 @@ module.exports = require('class').extend(function View(proto){
 		todo.endTodo()
 	}
 
-	proto.ondraw = function(){
+	proto.onDraw = function(){
 		this.$redrawBackground()
 		this.$redrawChildren()
 	}
 	
-	proto.onflag1 = this.recompose
-	proto.onflag2 = this.redraw
+	proto.onFlag1 = this.recompose
+	proto.onFlag2 = this.redraw
+
+	proto.$redrawApp = function(time, frameId){
+		// we can submit a todo now
+		this._time = time
+		this._frameId = frameId
+
+		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
+
+		this.$redrawView()
+	}
 
 	proto.runApp = function(){
 
@@ -142,30 +153,20 @@ module.exports = require('class').extend(function View(proto){
 		this.camProjection = mat4.create()
 		
 		// dispatch mouse events
-		fingers.ondown = function(msg){
-			
+		fingers.onDown = function(msg){
+			console.log(msg)
 		}
 
-		painter.onsync = function(msg){
-			// we can submit a todo now
-			this._time = msg.time / 1000
-			this._frameId = msg.frameId
-
-			mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
-
-			this.$redrawView()
-
-			// send todotree to main thread
-			this.todo.runTodo()
-
-		}.bind(this)
-
+		// lets do our first redraw
 		this.root = this
 
 		// compose the tree
 		this.$composeTree()
 
-		// then lets draw it
-		painter.sync()
+		// lets attach our todo to the main framebuffer
+		painter.mainFramebuffer.attachTodo(this.todo)
+
+		// first draw
+		this.$redrawApp(0,0)
 	}
 })

@@ -5,21 +5,21 @@ var workeridalloc = 0
 var workerids = {}
 var requires = {}
 
-bus.onmessage = function(msg){
+bus.onMessage = function(msg){
 	if(msg.fn === 'worker'){
 		for(var key in requires){
-			requires[key].onmessage(msg.msg)
+			requires[key].onMessage(msg.msg)
 		}
 	}
 	else if(msg.fn === 'owner'){
-		workerids[msg.workerid].onmessage(msg.msg)
+		workerids[msg.workerid].onMessage(msg.msg)
 	}
 }
 
-exports.onrequire = function(args, resolve, moduleurl){
+exports.onRequire = function(args, resolve, moduleurl){
 
 	var Worker = require('class').extend(function Worker(proto){
-		proto.onconstruct = function(onrun){
+		proto.onConstruct = function(onrun){
 
 			if(!onrun) onrun = this.onrun
 
@@ -57,11 +57,11 @@ exports.onrequire = function(args, resolve, moduleurl){
 
 		proto.onrun = function(){}
 		
-		proto.onmessage = function(msg){}
+		proto.onMessage = function(msg){}
 
 		var construct = proto.constructor
 
-		construct.onmessage = function(msg){}
+		construct.onMessage = function(msg){}
 		construct.postMessage = function(msg){
 			bus.postMessage({
 				fn:'owner',

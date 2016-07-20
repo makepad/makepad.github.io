@@ -21,6 +21,8 @@ var fingers = require("fingers")
 
 var shader = new painter.Shader({
 	pixel:
+		"uniform int PAINTER_PICKPASS;\n"+
+		"uniform mat4 PAINTER_PICKMAT;\n"+
 		"uniform vec2 prop;\n"+
 		"void main(){\n"+
 		"	gl_FragColor = vec4(0., prop.x, 0., 1.);\n"+
@@ -38,7 +40,10 @@ mesh.push(-.5, -.5, 0., .5, .5, -.5)
 var todo = new painter.Todo()
 todo.clearColor(0.1, 0.5, 0., 1.)
 todo.useShader(shader)
-todo.attribute(painter.nameId('mesh'), mesh)
+todo.attributes(painter.nameId('mesh'), 1, mesh)
 todo.vec2(painter.nameId('prop'), [0.9, 0])
 todo.drawTriangles()
-todo.runTodo()
+todo.endTodo()
+// attach it to the main framebuffer
+painter.mainFramebuffer.attachTodo(todo)
+

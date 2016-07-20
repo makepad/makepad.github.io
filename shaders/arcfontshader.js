@@ -325,7 +325,7 @@ module.exports = require('./sdffontshader').extend(function ArcFontShader(proto,
 			// make the texture.
 			this.fontTexGeom = [map.texw, map.texh]
 			this.fontItemGeom = [map.itemw, map.itemh]
-			this.fontSampler = painter.Texture.fromArray2D(painter.RGBA, map.texw, map.texh, map.textureArray)
+			this.fontSampler = new painter.Texture(painter.RGBA, map.texw, map.texh, map.textureArray)
 		}
 		Object.getPrototypeOf(base).onextendclass.apply(this, arguments)
 	}
