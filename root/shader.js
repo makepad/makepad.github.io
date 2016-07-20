@@ -23,15 +23,23 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.vertexMain = function(){
 		var T = this.tween()
 		$CALCULATETWEEN
-		gl_Position = this.vertex()
+		var position = this.vertex()
+		if(painterPickPass != 0){
+			gl_Position = position * painterPickMat4
+		}
+		else{
+			gl_Position = position
+		}
 	}
 
 	proto.pixelMain = function(){
+		var color = this.pixel()
 		if(painterPickPass != 0){
-			gl_FragColor = vec4(1,0,1,1)
+			if(color.a < this.pickAlpha) discard
+			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,1)
 		}
 		else{
-			gl_FragColor = this.pixel()
+			gl_FragColor = color
 		}
 	}
 
@@ -682,13 +690,16 @@ module.exports = require('class').extend(function Shader(proto){
 			// check if we are a vec4 and typeof string
 
 			var propsource = '$turtle._' + prop.name
-			
+
 			if(prop.config.noStyle){ // its an arg here
 				// tweenstart?
 				if(prop.name === 'tweenstart'){
 					propsource = 'this.view._time'
 				}
-				else propsource = macroargs[0][prop.name]
+				else{
+					var marg = macroargs[0][prop.name]
+					if(marg) propsource = marg
+				}
 			}
 
 			if(prop.type.name === 'vec4'){
@@ -863,6 +874,9 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	proto.props = {
+		pickAlpha: {kind:'uniform', value:0.5},
+		pickIdHi: {kind:'uniform', value:0.},
+		pickIdLo: {noTween:true, noStyle:true, value:0.},
 		duration: {noTween:true, value:1.0},
 		tweenstart: {noTween:true, noStyle:true, value:1.0}
 	}

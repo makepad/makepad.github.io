@@ -16,7 +16,7 @@ var App = require('view').extend(function(proto){
 
 	proto.onDraw = function(){
 		//this.drawBg({w:100,h:100})
-		for(var i = 0; i < 500; i++)
+		for(var i = 0; i < 10; i++)
 		this.drawButton({
 			Bg:{
 				color:[rnd(),rnd(),rnd(),1]

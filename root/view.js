@@ -115,7 +115,7 @@ module.exports = require('class').extend(function View(proto){
 		this.turtle._padding = this._padding
 		this.turtle._w = painter.w
 		this.turtle._wrap = this._wrap
-
+		this.$pickid = 1
 		var turtle = this.beginTurtle()
 
 		this.onFlag = 2
@@ -154,7 +154,11 @@ module.exports = require('class').extend(function View(proto){
 		
 		// dispatch mouse events
 		fingers.onDown = function(msg){
-			console.log(msg)
+			//console.log(msg)
+		}
+		// dispatch mouse events
+		fingers.onHover = function(msg){
+			console.log(msg.pick)
 		}
 
 		// lets do our first redraw

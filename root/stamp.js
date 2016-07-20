@@ -50,6 +50,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + '	$stamp.turtle = this.turtle\n'
 		code += indent + '	$stamp.todo = this.todo\n'
 		code += indent + '}\n'
+		code += indent + '$stamp.turtle._pickIdLo = $pickid\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
 		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
 		code += indent + '$stamp._frameId = this._frameId\n'

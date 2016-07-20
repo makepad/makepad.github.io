@@ -20,29 +20,30 @@ var gl = canvas.getContext('webgl', options) ||
          canvas.getContext('webgl-experimental', options) ||
          canvas.getContext('experimental-webgl', options)
 
+var canvasWidth = 0
+var canvasHeight = 0
+
 function resize(){
 	var pixelratio = window.devicePixelRatio
-	var w = canvas.offsetWidth
-	var h = canvas.offsetHeight
+	var w = canvasWidth = canvas.offsetWidth
+	var h = canvasHeight = canvas.offsetHeight
 	var sw = canvas.width = w * pixelratio
-	var sh = canvas.height = h * pixelratio
+	var sh =  canvas.height = h * pixelratio
 	canvas.style.width = w + 'px'
 	canvas.style.height = h + 'px'
 
 	gl.viewport(0,0,sw,sh)
-
 	if(args.pixelratio){
 		bus.postMessage({fn:'onResize', pixelratio:pixelratio, w:w, h:h})
 	}
+	args.pixelratio = window.devicePixelRatio
+	args.w = canvas.offsetWidth
+	args.h = canvas.offsetHeight
 }
 
 window.addEventListener('resize', resize)
 resize()
 // set the right width / height
-
-args.pixelratio = window.devicePixelRatio
-args.w = canvas.offsetWidth
-args.h = canvas.offsetHeight
 
 function runTodo(todo){
 	var f32 = todo.f32
@@ -60,11 +61,16 @@ function runTodo(todo){
 var repaintPending = false
 function repaint(time){
 	repaintPending = false
-	var todo = mainFramebuffer.todo
 	// lets set some globals
 	globalLen = 0
 	intGlobal(nameIds.painterPickPass, 0)
-	runTodo(todo)
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+	gl.viewport(0,0,args.w*args.pixelratio,args.h*args.pixelratio)
+	//mat4Global(nameIds.painterPickMat4, mat4)
+	
+	pickPass = false
+	runTodo(mainFramebuffer.todo)
+	//runTodo(mainFramebuffer.todo)
 	// post a sync to the worker for time and frameId
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
 }
@@ -81,12 +87,62 @@ bus.onMessage = function(msg){
 }
 
 // internal picking API
+var pickBuf = new Uint8Array(4)
+var pickMat = [
+	1,0,0,0,
+	0,1,0,0,
+	0,0,1,0,
+	0,0,0,1
+]
+
+var pickPass = false
+var pickFb = gl.createFramebuffer()
+var pickTex = gl.createTexture()
+var pickZbuf = gl.createRenderbuffer()
+gl.bindTexture(gl.TEXTURE_2D, pickTex)
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb)
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pickTex, 0)
+gl.bindRenderbuffer(gl.RENDERBUFFER, pickZbuf)
+gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, 1, 1)
+gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, pickZbuf)
+gl.bindRenderbuffer(gl.RENDERBUFFER, null)
+
+var pickDebug = false
+
 exports.pick = function(x, y){
 
-	// lets render the thing as pickIDs
+	if(!mainFramebuffer){
+		return {hi:0,lo:0}
+	}
+
+	globalLen = 0
+
+	var w = args.w / 2
+	var h = args.h / 2
+
+	var facx = pickDebug?1:w
+	var facy = pickDebug?1:h
+
+	pickMat[0] = facx
+	pickMat[5] = facy
+	pickMat[3] = -(x/w)*facx + (facx-1.)
+	pickMat[7] = (y/h)*facy - (facy-1.)
+
+	mat4Global(nameIds.painterPickMat4, pickMat)
+	intGlobal(nameIds.painterPickPass, 1)
+
+	if(!pickDebug){
+		gl.viewport(0,0,1,1)
+		gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb)
+	}
+
+	pickPass = true
+	runTodo(mainFramebuffer.todo)
+	gl.readPixels(0, 0, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, pickBuf)
 	return {
-		high:0,
-		low:0
+		hi:pickBuf[0],
+		lo:(pickBuf[1]<<8)|pickBuf[2]
 	}
 }
 
@@ -176,7 +232,7 @@ function intGlobal(nameId, x){
 function mat4Global(nameId, m){
 	var i32 = globalI32//[nameid*10]
 	var f32 = globalF32//[nameid*10]
-	var o = nameid * 20
+	var o = nameId * 20
 	i32[o+0] = 15
 	i32[o+1] = 17
 	i32[o+2] = nameId
@@ -240,6 +296,35 @@ userfn.attachFramebufferTodo = function(msg){
 	if(framebuffer === mainFramebuffer){
 		requestRepaint()
 	}
+}
+
+todofn[40] = function clear(i32, f32, o){
+	var mask = i32[o+2]
+	var clr = 0
+	if(mask&1){
+		if(!pickPass){
+			gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
+		} else {
+			gl.clearColor(0,0,0,0)
+		}
+		clr |= gl.COLOR_BUFFER_BIT
+	}
+	if(mask&2){
+		gl.clearDepth(f32[o+7])
+		clr |= gl.DEPTH_BUFFER_BIT
+	}
+	if(mask&4){
+		gl.clearStencil(i32[o+8])
+		clr |= gl.STENCIL_BUFFER_BIT
+	}
+	gl.clear(clr)
+}
+
+todofn[41] = function blending(i32, f32, o){
+	gl.enable(gl.BLEND)
+	gl.blendEquationSeparate(i32[o+3], i32[o+6])
+	gl.blendFuncSeparate(i32[o+2],i32[o+4],i32[o+5],i32[o+7])
+	gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
 }
 
 //
@@ -676,37 +761,6 @@ todofn[35] = function drawTriangleFan(i32, f32, o){
 
 //
 //
-// Framebuffers
-//
-//
-
-todofn[40] = function clear(i32, f32, o){
-	var mask = i32[o+2]
-	var clr = 0
-	if(mask&1){
-		gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
-		clr |= gl.COLOR_BUFFER_BIT
-	}
-	if(mask&2){
-		gl.clearDepth(f32[o+7])
-		clr |= gl.DEPTH_BUFFER_BIT
-	}
-	if(mask&4){
-		gl.clearStencil(i32[o+8])
-		clr |= gl.STENCIL_BUFFER_BIT
-	}
-	gl.clear(clr)
-}
-
-todofn[41] = function blending(i32, f32, o){
-	gl.enable(gl.BLEND)
-	gl.blendEquationSeparate(i32[o+3], i32[o+6])
-	gl.blendFuncSeparate(i32[o+2],i32[o+4],i32[o+5],i32[o+7])
-	gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
-}
-
-//
-//
 // Misc
 //
 //
@@ -732,7 +786,6 @@ userfn.newTodo = function(msg){
 
 userfn.updateTodo = function(msg){
 	var todo = todoIds[msg.todoId]
-	console.log(todo)
 	todo.f32 = new Float32Array(msg.buffer)
 	todo.i32 = new Int32Array(msg.buffer)
 	todo.length = msg.length

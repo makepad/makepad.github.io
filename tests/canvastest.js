@@ -11,8 +11,7 @@ var App = require('view').extend(function(proto){
 
 	proto.onDraw = function(){
 		var rnd = Math.random
-		// lets go make a turtle
-		//var dt = Date.now()		
+
 		for(var i = 0 ; i < 100; i++){
 			this.beginBg({
 				x:(i%15)*100,

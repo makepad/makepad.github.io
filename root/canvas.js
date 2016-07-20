@@ -72,6 +72,7 @@ module.exports = function(proto){
 		if(!turtle){
 			turtle = this.turtle = this.$turtleStack[len] = new this.Turtle(this)
 		}
+		turtle._pickIdLo = outer._pickIdLo
 		turtle.begin(outer)
 		return turtle
 	}
