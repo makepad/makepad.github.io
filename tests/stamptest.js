@@ -17,7 +17,7 @@ var App = require('view').extend(function(proto){
 
 	proto.onDraw = function(){
 		//this.drawBg({w:100*Math.sin(this.time),h:100})
-		var dt = performance.now()
+		//var dt = performance.now()
 		for(var i = 0; i < 1000; i++){
 			this.drawButton({
 				Bg:{
