@@ -109,7 +109,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		var newobj = tgtobj[tgtkey] = tgtobj[tgtkey]?Object.create(tgtobj[tgtkey]):{}
 		for(var key in copyobj){
 			var value = copyobj[key]
-			if(typeof value === 'object'){
+			if(typeof value === 'object' && !Array.isArray(value)){
 				deepOverlay(newobj, key, value)
 			}
 			else newobj[key] = value

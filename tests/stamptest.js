@@ -3,9 +3,6 @@ var App = require('view').extend(function(proto){
 	proto.tools = {
 		Button:require('stamps/buttonstamp').extend({
 			margin:2,
-			Bg:{
-				borderWidth:1,
-			},
 			Text:{
 				fontSize:15
 			}
