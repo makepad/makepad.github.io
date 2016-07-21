@@ -70,9 +70,9 @@ function runTodo(todo){
 }
 
 var repaintPending = false
-var repainted = false
+//var repainted = false
 
-var compMat = [
+var lagCompMat = [
 	1,0,0,0,
 	0,1,0,0,
 	0,0,1,0,
@@ -87,14 +87,12 @@ function repaint(time){
 	intGlobal(nameIds.painterPickPass, 0)
 
 	var todo = mainFramebuffer.todo
-
-	// compensation matrix for lag 
-	compMat[0] = todo.w / args.w 
-	compMat[5] = todo.h / args.h
-	compMat[3] = -(args.w - todo.w) / args.w
-	compMat[7] = (args.h - todo.h) / args.h
-
-	mat4Global(nameIds.painterPickMat4, compMat)
+	// compensation matrix for viewport size lag main thread vs user thread
+	lagCompMat[0] = todo.w / args.w 
+	lagCompMat[5] = todo.h / args.h
+	lagCompMat[3] = -(args.w - todo.w) / args.w
+	lagCompMat[7] = (args.h - todo.h) / args.h
+	mat4Global(nameIds.painterPickMat4, lagCompMat)
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 	gl.viewport(0,0,args.w*args.pixelratio,args.h*args.pixelratio)
@@ -104,7 +102,7 @@ function repaint(time){
 	//runTodo(mainFramebuffer.todo)
 	// post a sync to the worker for time and frameId
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
-	repainted = true
+	//repainted = true
 }
 
 function requestRepaint(){
@@ -144,11 +142,11 @@ gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 var pickDebug = false
 
 exports.pick = function(x, y){
-	if(!repainted) return null
-	repainted = false
+	//if(!repainted) return null
+	//repainted = false
 
 	if(!mainFramebuffer){
-		return null
+		return {hi:0,lo:0,pid:0}
 	}
 
 	// create picking matrix

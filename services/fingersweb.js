@@ -84,7 +84,7 @@ function fingerMove(fingers){
 		p.dy = p.y - p.sx
 		p.fn = 'onFingerMove'
 		p.digit = op.digit
-
+		p.pick = op.pick
 		bus.postMessage(p)
 	}
 }
@@ -131,7 +131,7 @@ function fingerUp(fingers){
 		p.dy = p.y - p.sx
 		p.fn = 'onFingerUp'
 		p.finger = op.finger
-
+		p.pick = op.pick
 		// remove the old from the finger set
 		fingermap[op.digit] = undefined
 

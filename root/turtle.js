@@ -1,7 +1,7 @@
 module.exports = require('class').extend(function Turtle(proto){
 
-	proto.onConstruct = function(canvas){
-		this.canvas = canvas
+	proto.onConstruct = function(view){
+		this.view = view
 	}
 
 	proto.begin = function(outer){
@@ -54,7 +54,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		this.sx = this.wx = this.ix + padding[3] + margin[3]
 		this.sy = this.wy = this.iy + padding[0] + margin[0]
 
-		this.$writeStart = this.canvas.$writeList && this.canvas.$writeList.length || 0
+		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
 	}	
 	var zeromargin = [0,0,0,0]
 	proto.walk = function(oldturtle){
@@ -85,7 +85,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			this.mh = 0
 			// move the body of the wrapped thing
 			if(oldturtle){
-				this.canvas.$moveWritten(oldturtle.$writeStart, dx, dy)
+				this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
 			}
 		}
 		// walk it
@@ -123,7 +123,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			var dy = isNaN(this.height)? 0: (this.height - (this.y2 - this.sy)) * this.align[1]
 			if(isNaN(dx) || dx === Infinity) dx = 0
 			if(isNaN(dy) || dy === Infinity) dy = 0
-			if(dx !== 0 || dy !== 0) this.canvas.$moveWritten(this.writeStart, dx, dy)		
+			if(dx !== 0 || dy !== 0) this.view.$moveWritten(this.writeStart, dx, dy)		
 		}
 	}
 
@@ -139,7 +139,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			else code = 'this.turtle.sx + '+rep
 			cache = xcache[str] = new Function('return '+code)
 		} 
-		return cache.call(this.canvas)
+		return cache.call(this.view)
 	}
 
 	var ycache = {}
@@ -152,7 +152,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			else code = 'this.turtle.sy + '+rep
 			cache = ycache[str] = new Function('return '+code)
 		} 
-		return cache.call(this.canvas)
+		return cache.call(this.view)
 	}
 
 	var wcache = {}
@@ -162,7 +162,7 @@ module.exports = require('class').extend(function Turtle(proto){
 			var code = str.replace(/\%/g, '*0.01*this.turtle.width')
 			cache = wcache[str] = new Function('return '+code)
 		} 
-		return cache.call(this.canvas)
+		return cache.call(this.view)
 	}
 
 	var hcache = {}
@@ -172,6 +172,6 @@ module.exports = require('class').extend(function Turtle(proto){
 			var code = str.replace(/\%/g, '*0.01*this.turtle.height')
 			cache = hcache[str] = new Function('return '+code)
 		} 
-		return cache.call(this.canvas)
+		return cache.call(this.view)
 	}
 })

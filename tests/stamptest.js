@@ -17,13 +17,16 @@ var App = require('view').extend(function(proto){
 
 	proto.onDraw = function(){
 		//this.drawBg({w:100*Math.sin(this.time),h:100})
-		for(var i = 0; i < 200; i++)
-		this.drawButton({
-			Bg:{
-				color:[rnd(),rnd(),rnd(),1]
-			},
-			text:"Almost button "+i
-		})
+		var dt = performance.now()
+		for(var i = 0; i < 1000; i++){
+			this.drawButton({
+				Bg:{
+					//color:[Math.sin(i),Math.cos(i),i%10/10,1.],//[rnd(),rnd(),rnd(),1]
+				},
+				text:""+i
+			})
+		}
+		//console.log(performance.now()-dt)
 	}
 })
 App().runApp()

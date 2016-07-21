@@ -46,31 +46,14 @@ module.exports = function(proto){
 		if(this.oncomposed) this.oncomposed()
 	}
 
-	proto.$initCanvas = function(){
-		this.todo = new painter.Todo()
-		this.turtle = new this.Turtle(this)
-		this.$turtleStack = [
-			this.turtle
-		]
-		this.$writeList = []
-		this.$turtleStack.len = 0
-		this.$shaders = {}
-		this.$stampShaders = {}
-		this.$stamps = {}
-		this.$pickid = 0
-		this.turtle._x = 0
-		this.turtle._y = 0
-		this.turtle._margin = this._margin
-		this.turtle._padding = this._padding
-	}
-
 	proto.beginTurtle = function(){
+		var view = this.view
 		// add a turtle to the stack
-		var len = ++this.$turtleStack.len
+		var len = ++view.$turtleStack.len
 		var outer = this.turtle
-		var turtle = this.turtle = this.$turtleStack[len]
+		var turtle = this.turtle = view.$turtleStack[len]
 		if(!turtle){
-			turtle = this.turtle = this.$turtleStack[len] = new this.Turtle(this)
+			turtle = this.turtle = view.$turtleStack[len] = new view.Turtle(view)
 		}
 		turtle._pickIdLo = outer._pickIdLo
 		turtle.begin(outer)
@@ -79,17 +62,19 @@ module.exports = function(proto){
 
 	proto.endTurtle = function(){
 		// call end on a turtle and pop it off the stack
+		var view = this.view
 		this.turtle.end()
 		// pop the stack
 		var last = this.turtle
-		this.turtle = this.$turtleStack[--this.$turtleStack.len]
+		this.turtle = view.$turtleStack[--view.$turtleStack.len]
 		
 		return last
 	}
 
 	proto.$moveWritten = function(start, dx, dy){
-		var writes = this.$writeList
-		var current = this.$turtleStack.len
+		var view = this.view
+		var writes = view.$writeList
+		var current = view.$turtleStack.len
 		for(var i = start; i < writes.length; i += 4){
 			var props = writes[i]
 			var begin = writes[i+1]

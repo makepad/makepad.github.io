@@ -528,13 +528,14 @@ module.exports = require('class').extend(function Shader(proto){
 		
 		var need = macroargs[0] || 1
 
-		code += indent+'var $todo = this.todo\n'
+		code += indent+'var $view = this.view\n'
+		code += indent+'var $todo = $view.todo\n'
 		code += indent+'var $shader = this.$shaders.'+classname+'\n'
 		code += indent+'if(!$shader) $shader = this.$allocShader("'+classname+'")\n'
 		code += indent+'var $props = $shader.$props\n'
-		code += indent+'if($props.$frameId !== this._frameId){\n'
+		code += indent+'if($props.$frameId !== $view._frameId){\n'
 		code += indent+'	var $proto = this._' + classname +'.prototype\n'
-		code += indent+'	$props.$frameId = this._frameId\n'
+		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.self.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
@@ -566,7 +567,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var uniform = uniforms[key]
 			// this.canvas....?
 			var thisname = key.slice(9)
-			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || this.view.'+ thisname +'|| $proto.'+thisname
+			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			//console.log(key, source, mainargs)
 			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type.name
@@ -591,8 +592,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + '}\n'
 		code += indent + 'var $need = $props.self.length + '+need+'\n'
 		code += indent + 'if($need >= $props.allocated) $props.alloc($need)\n'
-		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.$turtleStack.len - 1:this.$turtleStack.len\n'
-		code += indent + 'this.$writeList.push($props, $props.self.length, $need, $writelevel)\n'
+		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
+		code += indent + '$view.$writeList.push($props, $props.self.length, $need, $writelevel)\n'
 		code += indent + 'this.turtle.$propoffset = $props.self.length\n'
 		code += indent + '$props.self.length = $need\n'
 		//console.log(code)
@@ -604,8 +605,8 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
 		code += indent + 'var $tweenstart = $a[$o + ' + instanceProps.this_DOT_tweenstart.offset +']\n'
-		code += indent + 'if(this.view._time < $tweenstart + $duration){\n'
-		code += indent + '	var $tween = Math.min(1,Math.max(0,(this.view._time - $tweenstart)/$duration))\n'
+		code += indent + 'if($view._time < $tweenstart + $duration){\n'
+		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenstart)/$duration))\n'
 		code += indent + tweencode 
 		code += indent + '}'
 		return code
@@ -639,7 +640,8 @@ module.exports = require('class').extend(function Shader(proto){
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 		var code = ''
-		code = indent + 'var $turtle = this.turtle\n'
+		code += indent + 'var $turtle = this.turtle\n'
+		code += indent + 'var $view = this.view\n'
 		code += indent +'var $shader = this.$shaders.'+classname+'\n'
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.self.array\n'
@@ -694,7 +696,7 @@ module.exports = require('class').extend(function Shader(proto){
 			if(prop.config.noStyle){ // its an arg here
 				// tweenstart?
 				if(prop.name === 'tweenstart'){
-					propsource = 'this.view._time'
+					propsource = '$view._time'
 				}
 				else{
 					var marg = macroargs[0][prop.name]

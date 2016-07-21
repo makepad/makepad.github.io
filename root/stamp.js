@@ -37,23 +37,21 @@ module.exports = require('class').extend(function Stamp(proto){
 		// create / lookup stamp
 
 		var code = ''
+		code += indent + 'var $view = this.view\n\n'
+		code += indent + 'var $stampId = $view.$stampId++\n'
+		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
-		code += indent + 'var $pickid = this.$pickid++\n'
-		code += indent + 'var $stamp = this.$stamps[$pickid]\n'
 		code += indent + 'if(!$stamp){\n'
-		code += indent + '	$stamp = this.$stamps[$pickid] = Object.create(this._'+classname+'.prototype)\n'
-		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
-		code += indent + '	$stamp.view = this.view\n'
-		code += indent + '	$stamp.$turtleStack = this.$turtleStack\n'
-		code += indent + '	$stamp.$writeList = this.$writeList\n'
-		code += indent + '	$stamp.$shaders = this.$stampShaders.'+classname+' || (this.$stampShaders.'+classname+' = {})\n'
+		code += indent + '	$stamp = $view.$stamps[$stampId] = Object.create(this._'+classname+'.prototype)\n'
+		code += indent + '	$stamp.view = $view\n'
 		code += indent + '	$stamp.turtle = this.turtle\n'
-		code += indent + '	$stamp.todo = this.todo\n'
+		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
+		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
+		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
 		code += indent + '}\n'
-		code += indent + '$stamp.turtle._pickIdLo = $pickid\n'
+		code += indent + '$stamp.turtle._pickIdLo = $stampId\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
 		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
-		code += indent + '$stamp._frameId = this._frameId\n'
 
 		var stack = [
 			macroargs[0],
@@ -97,7 +95,6 @@ module.exports = require('class').extend(function Stamp(proto){
 		return code
 	}
 
-
 	Object.defineProperty(proto, 'toolMacros', { 
 		get:function(){
 			return this._toolMacros
@@ -108,4 +105,36 @@ module.exports = require('class').extend(function Stamp(proto){
 		}
 	})
 
+	function deepOverlay(tgtobj, tgtkey, copyobj){
+		var newobj = tgtobj[tgtkey] = tgtobj[tgtkey]?Object.create(tgtobj[tgtkey]):{}
+		for(var key in copyobj){
+			var value = copyobj[key]
+			if(typeof value === 'object'){
+				deepOverlay(newobj, key, value)
+			}
+			else newobj[key] = value
+		}
+	}
+
+	Object.defineProperty(proto, 'states', { 
+		get:function(){
+			return this._states
+		},
+		set:function(states){
+			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(this._states):{}
+			for(var key in states){
+				deepOverlay(this._states, key, states[key])
+			}
+		}
+	})
+
+	Object.defineProperty(proto, 'state', { 
+		get:function(){
+			return this._state
+		},
+		set:function(state){
+			this._state = state
+			this.view.redraw()	
+		}
+	})
 })

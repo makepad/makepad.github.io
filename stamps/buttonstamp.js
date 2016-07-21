@@ -7,16 +7,30 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.tools = {
 		Bg: require('shaders/rectshader').extend({
-			color:'red'
+			color:'gray'
 		}),
 		Text: require('shaders/sdffontshader').extend({
 			font:require('fonts/ubuntu_monospace_256.sdffont')
 		})
 	}
 
-	proto.onFingerDown = function(){
-		
+	proto.states = {
+		normal:{
+			Bg:{color:'red'}
+		},
+		hover:{
+			Bg:{color:'blue'}
+		}
 	}
+
+	proto.onFingerOver = function(){
+		this.state = this.states.hover
+	}
+
+	proto.onFingerOut = function(){
+		this.state = this.states.normal
+	}
+
 
 	proto.onDraw = function(){
 		this.beginBg(this)
