@@ -105,8 +105,8 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 				return this.color
 			}
 		}
+		var adjust = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 
-		//var aaedge = min(length(vec2(length(dFdx(p)), length(dFdy(p)))) * SQRT12, 1.0)
 		var br = this.borderRadius
 		var hwh = vec2(.5*this.w, .5*this.h)
 		var ph = abs(p-hwh)
@@ -126,7 +126,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 		if(this.mesh.z < 0.5){
 			var shborder = border / this.shadowBlur
-			return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), pow(clamp(shborder*2.+1., 0., 1.),1.2))
+			return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), pow(clamp(shborder+1., 0., 1.),1.2))
 		}
 		else{ // inner field
 			// inner radius
@@ -146,9 +146,9 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 			var borderfinal = vec4()
 			// remove the error in the border
 			if(abs(border - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
-			else borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(border*2.+1.,0.,1.))
+			else borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(border*adjust+1.,0.,1.))
 
-			return mix(this.color, borderfinal, clamp(fill * 2. + 1., 0., 1.))
+			return mix(this.color, borderfinal, clamp(fill * adjust + 1., 0., 1.))
 		}
 	}
 
