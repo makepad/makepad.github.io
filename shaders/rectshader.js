@@ -68,6 +68,18 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 
 		this.borderRadius = min(max(this.borderRadius,vec4(adjust)),vec4(min(this.w,this.h)*0.5))
 
+		// if we use the same border radii and the same borders, we can take the fast path
+		if((abs(this.borderRadius.x-this.borderRadius.y) + 
+			abs(this.borderRadius.z-this.borderRadius.w) + 
+			abs(this.borderRadius.x-this.borderRadius.z) +
+			abs(this.borderWidth.x-this.borderWidth.y) + 
+			abs(this.borderWidth.z-this.borderWidth.w) + 
+			abs(this.borderWidth.x-this.borderWidth.z)) < 0.001){
+			this.fastPath = 1.
+		}
+		else this.fastPath = 0.
+
+
 		// compute the normal rect positions
 		if(this.mesh.z < 0.5){
 			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
@@ -111,18 +123,27 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		var hwh = vec2(.5*this.w, .5*this.h)
 		var ph = abs(p-hwh)
 		// the border fields
-		var btl = length(max(ph - (hwh - br.xx), 0.)) - br.x
-		var btr = length(max(ph - (hwh - br.yy), 0.)) - br.y
-		var bbr = length(max(ph - (hwh - br.zz), 0.)) - br.z
-		var bbl = length(max(ph - (hwh - br.ww), 0.)) - br.w 
-		var mx = clamp((this.mesh.x - .5)*1000., 0., 1.)
-		var my = clamp((this.mesh.y - .5)*1000., 0., 1.)
 
-		// border field (same as shadow)
-		var border = mix(
-			mix(btl, btr, mx), 
-			mix(bbl, bbr, mx),my
-		) 
+		var border = float()
+		var mx = float()
+		var my = float()
+
+		if(this.fastPath>0.5){
+			border = length(max(ph - (hwh - br.xx), 0.)) - br.x
+		}
+		else{
+			var btl = length(max(ph - (hwh - br.xx), 0.)) - br.x
+			var btr = length(max(ph - (hwh - br.yy), 0.)) - br.y
+			var bbr = length(max(ph - (hwh - br.zz), 0.)) - br.z
+			var bbl = length(max(ph - (hwh - br.ww), 0.)) - br.w 
+			mx = clamp((this.mesh.x - .5)*1000., 0., 1.)
+			my = clamp((this.mesh.y - .5)*1000., 0., 1.)
+			// border field (same as shadow)
+			border = mix(
+				mix(btl, btr, mx), 
+				mix(bbl, bbr, mx),my
+			) 
+		}
 
 		if(this.mesh.z < 0.5){
 			var shborder = border / this.shadowBlur
@@ -130,19 +151,26 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 		}
 		else{ // inner field
 			// inner radius
-			var ir = vec4(
-				max(br.x - max(this.borderWidth.x, this.borderWidth.w), 1.),
-				max(br.y - max(this.borderWidth.y, this.borderWidth.x), 1.),
-				max(br.z - max(this.borderWidth.y, this.borderWidth.z), 1.),
-				max(br.w - max(this.borderWidth.w, this.borderWidth.z), 1.))
-			// inner field displaced by inner radius and borderWidths
-			var ftl = length(max(ph - (hwh - ir.xx) + this.borderWidth.wx, 0.)) - ir.x
-			var ftr = length(max(ph - (hwh - ir.yy) + this.borderWidth.yx, 0.)) - ir.y
-			var fbr = length(max(ph - (hwh - ir.zz) + this.borderWidth.yz, 0.)) - ir.z
-			var fbl = length(max(ph - (hwh - ir.ww) + this.borderWidth.wz, 0.)) - ir.w
-			// mix the fields
-			var fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
-			
+			var fill = float()
+			if(this.fastPath > 0.5){
+				var irx = max(br.x - max(this.borderWidth.x, this.borderWidth.w), 1.)
+				fill = length(max(ph - (hwh - vec2(irx)) + this.borderWidth.wx, 0.)) - irx
+			}
+			else{
+				var ir = vec4(
+					max(br.x - max(this.borderWidth.x, this.borderWidth.w), 1.),
+					max(br.y - max(this.borderWidth.y, this.borderWidth.x), 1.),
+					max(br.z - max(this.borderWidth.y, this.borderWidth.z), 1.),
+					max(br.w - max(this.borderWidth.w, this.borderWidth.z), 1.))
+				// inner field displaced by inner radius and borderWidths
+				var ftl = length(max(ph - (hwh - ir.xx) + this.borderWidth.wx, 0.)) - ir.x
+				var ftr = length(max(ph - (hwh - ir.yy) + this.borderWidth.yx, 0.)) - ir.y
+				var fbr = length(max(ph - (hwh - ir.zz) + this.borderWidth.yz, 0.)) - ir.z
+				var fbl = length(max(ph - (hwh - ir.ww) + this.borderWidth.wz, 0.)) - ir.w
+				// mix the fields
+				fill = mix(mix(ftl, ftr, mx), mix(fbl, fbr, mx),my)
+			}
+				
 			var borderfinal = vec4()
 			// remove the error in the border
 			if(abs(border - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
