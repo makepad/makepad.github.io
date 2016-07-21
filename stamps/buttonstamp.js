@@ -22,7 +22,7 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 			Bg:{color:'red',duration:0.3}
 		},
 		hover:{
-			Bg:{color:'blue',borderColor:'yellow',borderWidth:[5,0,5,0],padding:40,duration:0.3},
+			Bg:{color:'blue',borderColor:'yellow',borderRadius:40,borderWidth:[5,0,5,0],padding:40,duration:0.3},
 			Text:{duration:0.3}
 		}
 	}
