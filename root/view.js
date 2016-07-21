@@ -167,6 +167,10 @@ module.exports = require('class').extend(function View(proto){
 		// begin a new todo stack
 		var todo = this.todo
 
+		// store time info on todo
+		todo.self.timeStart = this._time
+		todo.self.timeMax = 0
+
 		todo.clearTodo()
 		todo.clearColor(0.2, 0.2, 0.2, 1)
 

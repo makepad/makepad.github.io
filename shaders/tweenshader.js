@@ -46,7 +46,7 @@ module.exports = require('shader').extend(function TweenShader(proto){
 			this.ease.y, 
 			this.ease.z, 
 			this.ease.w, 
-			clamp((this.time - this.tweenstart) / this.duration, 0.0, 1.0)
+			clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
 		)
 	}
 

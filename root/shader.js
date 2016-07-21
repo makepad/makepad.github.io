@@ -10,14 +10,12 @@ module.exports = require('class').extend(function Shader(proto){
 	// allocate the nameids for attribute ranges
 	for(var i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
-	proto.time = 0.0
-
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 
 	proto.tween = function(){
 		if(this.duration < 0.01) return 1.
-		return clamp((time - this.tweenstart) / this.duration, 0.0, 1.0)
+		return clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
 	}
 
 	proto.vertexMain = function(){$
@@ -126,8 +124,8 @@ module.exports = require('class').extend(function Shader(proto){
 					else{
 						propSlots += slots
 						tweenrep += '\t' + key + ' = mix(vec2('
-						var start1 = propSlots - slots*2
-						var start2 = propSlots - slots
+						var start1 = propSlots - slots
+						var start2 = propSlots - slots*2
 						var p1 = propSlot(start1)
 						var p3 = propSlot(start2)
 						tweenrep += 'floor('+p1+'/4096.0)' 
@@ -155,8 +153,8 @@ module.exports = require('class').extend(function Shader(proto){
 					else{
 						propSlots += slots
 						tweenrep += '\t' + key + ' = mix(vec4('
-						var start1 = propSlots - slots*2
-						var start2 = propSlots - slots
+						var start1 = propSlots - slots
+						var start2 = propSlots - slots*2
 						var p1 = propSlot(start1)
 						var p2 = propSlot(start1+1)
 						var p3 = propSlot(start2)
@@ -191,7 +189,7 @@ module.exports = require('class').extend(function Shader(proto){
 					var vnew = prop.type.name + '('
 					if(vnew === 'float(') vnew = '('
 					var vold = vnew
-					for(var i = 0, start1 = propSlots - slots*2, start2 = propSlots - slots; i < slots; i++){
+					for(var i = 0, start1 = propSlots - slots, start2 = propSlots - slots*2; i < slots; i++){
 						if(i) vnew += ', ', vold += ', '
 						vnew += propSlot(start1 + i)
 						vold += propSlot(start2 + i)
@@ -604,7 +602,7 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
 		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-		code += indent + 'var $tweenstart = $a[$o + ' + instanceProps.this_DOT_tweenstart.offset +']\n'
+		code += indent + 'var $tweenstart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
 		code += indent + 'if($view._time < $tweenstart + $duration){\n'
 		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenstart)/$duration))\n'
 		code += indent + tweencode 
@@ -646,9 +644,12 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.self.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+		code += indent +'var $timeMax = $view._time + $turtle._duration\n'
 		//code += indent + '_props.self.length++\n'
-
-		var tweencode = '	var $f = $tween, $1mf = $tween, $upn, $upo\n'
+		
+		// lets store our max time on our todo
+		code += indent + 'if($timeMax > $view.todo.self.timeMax) $view.todo.self.timeMax = $timeMax\n'
+		var tweencode = '	var $f = $tween, $1mf = 1.-$tween, $upn, $upo\n'
 		var propcode = ''
 
 		// lets generate the tween
@@ -669,10 +670,10 @@ module.exports = require('class').extend(function Shader(proto){
 					for(var i = 0; i < slots; i++){
 						tweencode += indent + '_upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
 						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
-							'(($f * Math.floor(_upo/4096) +' +
-							'$1mf * Math.floor(_upn/4096)) << 12) + ' + 
-							'(($f * (_upo%4096) +' +
-							'$1mf * (_upn%4096))|0)\n'
+							'(($1mf * Math.floor(_upo/4096) +' +
+							'$f * Math.floor(_upn/4096)) << 12) + ' + 
+							'(($1mf * (_upo%4096) +' +
+							'$f * (_upn%4096))|0)\n'
 
 						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
 							'$a[$o+'+(o +i)+']\n'
@@ -681,8 +682,8 @@ module.exports = require('class').extend(function Shader(proto){
 				else{
 					for(var i = 0; i < slots; i++){
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
-							'$f * $a[$o+'+(o + i + slots)+'] + ' +
-							'$1mf * $a[$o+'+(o +i)+']\n'
+							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
+							'$f * $a[$o+'+(o +i)+']\n'
 						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
 							'$a[$o+'+(o +i)+']\n'
 					}
@@ -695,7 +696,8 @@ module.exports = require('class').extend(function Shader(proto){
 
 			if(prop.config.noStyle){ // its an arg here
 				// tweenstart?
-				if(prop.name === 'tweenstart'){
+				//console.log(prop.name)
+				if(prop.name === 'tweenStart'){
 					propsource = '$view._time'
 				}
 				else{
@@ -876,10 +878,11 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	proto.props = {
+		time:{kind:'uniform', value: 1.0},
 		pickAlpha: {kind:'uniform', value:0.5},
 		pickIdHi: {kind:'uniform', value:0.},
 		pickIdLo: {noTween:true, noStyle:true, value:0.},
-		duration: {noTween:true, value:1.0},
-		tweenstart: {noTween:true, noStyle:true, value:1.0}
+		duration: {noTween:true, value:0.},
+		tweenStart: {noTween:true, noStyle:true, value:1.0}
 	}
 })

@@ -55,6 +55,12 @@ resize()
 // set the right width / height
 
 function runTodo(todo){
+
+	var deltaT = todo.timeStamp - todo.timeStart
+	var localTime = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000 - deltaT
+
+	floatGlobal(nameIds.this_DOT_time, localTime)
+
 	var f32 = todo.f32
 	var i32 = todo.i32
 	var len = todo.length
@@ -67,6 +73,8 @@ function runTodo(todo){
 		last = fnid
 		fn(i32, f32, o)
 	}
+
+	if(todo.timeMax > localTime) return true
 }
 
 var repaintPending = false
@@ -83,7 +91,7 @@ function repaint(time){
 	repaintPending = false
 	if(!mainFramebuffer) return
 	// lets set some globals
-	globalLen = 0
+	globalsLen = 0
 	intGlobal(nameIds.painterPickPass, 0)
 
 	var todo = mainFramebuffer.todo
@@ -97,8 +105,10 @@ function repaint(time){
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 	gl.viewport(0,0,args.w*args.pixelratio,args.h*args.pixelratio)
 	pickPass = false
+	
+	// lets check our maxDuration
+	if(runTodo(todo)) requestRepaint()
 
-	runTodo(todo)
 	//runTodo(mainFramebuffer.todo)
 	// post a sync to the worker for time and frameId
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
@@ -161,7 +171,7 @@ exports.pick = function(x, y){
 	pickMat[7] = (y/h)*facy - (facy-1.)
 
 	// set up global uniforms
-	globalLen = 0
+	globalsLen = 0
 	mat4Global(nameIds.painterPickMat4, pickMat)
 	intGlobal(nameIds.painterPickPass, 1)
 
@@ -241,8 +251,8 @@ function parseShaderAttributes(code, obj){
 //
 //
 
-var globalF32 = new Float32Array(1000)
-var globalI32 = new Int32Array(1000)
+var globalF32 = new Float32Array(2000)
+var globalI32 = new Int32Array(2000)
 var globals = Array(1000)
 var globalsLen = 0
 
@@ -257,6 +267,23 @@ function intGlobal(nameId, x){
 	var i = globalsLen
 	globals[i] = nameId
 	globals[i+1] = 10
+	globals[i+2] = i32
+	globals[i+3] = f32
+	globals[i+4] = o
+	globalsLen += 5
+}
+
+function floatGlobal(nameId, x){
+	var i32 = globalI32//[nameid*10]
+	var f32 = globalF32//[nameid*10]
+	var o = nameId * 20
+	i32[o+0] = 11
+	i32[o+1] = 2
+	i32[o+2] = nameId
+	f32[o+3] = x
+	var i = globalsLen
+	globals[i] = nameId
+	globals[i+1] = 11
 	globals[i+2] = i32
 	globals[i+3] = f32
 	globals[i+4] = o
@@ -756,7 +783,9 @@ todofn[30] = function drawArrays(i32, f32, o){
 	// set the global uniforms
 	var type = drawTypes[i32[o+2]]
 	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		if(currentUniLocs[globals[i]] !== undefined){
+			todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
+		}
 	}
 	if(currentShader.instanced){
 		var from = i32[o+3]
@@ -797,6 +826,11 @@ userfn.updateTodo = function(msg){
 	todo.length = msg.length
 	todo.w = msg.w
 	todo.h = msg.h
+
+	todo.timeStart = msg.timeStart
+	todo.timeMax = msg.timeMax
+	todo.timeStamp = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000
+
 	// we are updating a todo.. but..
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todo === todo){
