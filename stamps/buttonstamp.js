@@ -22,8 +22,8 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 			Bg:{color:'red',duration:0.3}
 		},
 		hover:{
-			Bg:{color:'blue',padding:20,duration:0.3},
-			Text:{padding:30,duration:0.3}
+			Bg:{color:'blue',borderWidth:5,padding:40,duration:0.3},
+			Text:{duration:0.3}
 		}
 	}
 

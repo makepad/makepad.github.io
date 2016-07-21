@@ -56,8 +56,8 @@ resize()
 
 function runTodo(todo){
 
-	var deltaT = todo.timeStamp - todo.timeStart
-	var localTime = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000 - deltaT
+	//var deltaT = todo.timeStamp - todo.timeStart
+	var localTime = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000// - deltaT
 
 	floatGlobal(nameIds.this_DOT_time, localTime)
 

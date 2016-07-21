@@ -14,7 +14,7 @@ var App = require('view').extend(function(proto){
 	}
 
 	var rnd = Math.random
-
+	proto.wrap = false
 	proto.onDraw = function(){
 		//this.drawBg({w:100*Math.sin(this.time),h:100})
 		//var dt = performance.now()
@@ -25,6 +25,7 @@ var App = require('view').extend(function(proto){
 				},
 				text:""+i
 			})
+			if(i && !(i%40)) this.turtle.newline()
 		}
 		//console.log(performance.now()-dt)
 	}
