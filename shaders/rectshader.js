@@ -81,7 +81,7 @@ module.exports = require('./tweenshader').extend(function RectShader(proto){
 	proto.pixel = function(){$
 		//var dt = vary.roundcornermax
 		var p = this.mesh.xy * vec2(this.w, this.h)
-
+		//return 'red'
 		this.pixelStyle()
 		
 		// NOT ENOUGH VARYINGS ON IOS. otherwise this goes in the vertex shader

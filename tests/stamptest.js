@@ -12,11 +12,12 @@ var App = require('view').extend(function(proto){
 		}),
 		Bg:require('shaders/rectshader')
 	}
+
 	var rnd = Math.random
 
 	proto.onDraw = function(){
-		//this.drawBg({w:100,h:100})
-		for(var i = 0; i < 10; i++)
+		//this.drawBg({w:100*Math.sin(this.time),h:100})
+		for(var i = 0; i < 200; i++)
 		this.drawButton({
 			Bg:{
 				color:[rnd(),rnd(),rnd(),1]

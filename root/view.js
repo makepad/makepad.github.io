@@ -45,9 +45,9 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.$composeTree = function(oldChildren){
 		// it calls compose recursively
-		if(this.oncompose){
+		if(this.onCompose){
 			this.onflag = 1
-			this.children = this.oncompose()
+			this.children = this.onCompose()
 			this.onflag = 0
 		}
 
@@ -60,8 +60,8 @@ module.exports = require('class').extend(function View(proto){
 
 		if(!this.initialized){
 			this.initialized = true
-			if(this._oninit) this._oninit()
-			if(this.oninit) this.oninit()
+			if(this._onInit) this._onInit()
+			if(this.onInit) this.onInit()
 		}
 
 		for(var i = 0; i < children.length; i++){
@@ -75,11 +75,11 @@ module.exports = require('class').extend(function View(proto){
 		if(oldChildren) for(;i < oldChildren.length; i++){
 			var oldchild = oldChildren[i]
 			oldchild.destroyed = true
-			if(oldchild.ondestroy) oldchild.ondestroy()
-			if(oldchild._ondestroy) oldchild._ondestroy()
+			if(oldchild.onDestroy) oldchild.onDestroy()
+			if(oldchild._onDestroy) oldchild._onDestroy()
 		}
 
-		if(this.oncomposed) this.oncomposed()
+		if(this.onComposed) this.onComposed()
 	}
 
 	proto.recompose = function(){
@@ -101,31 +101,35 @@ module.exports = require('class').extend(function View(proto){
 		}
 	}
 
+	var zeroMargin = [0,0,0,0]
 	proto.$redrawView = function(){
 		this._time = this.root._time
 		this._frameId = this.root._frameId
 
 		// begin a new todo stack
 		var todo = this.todo
-		todo.beginTodo()
-		todo.clearColor(0.2,0.2,0.2,1)
 
-		// begin a new turtle
-		this.turtle._margin = this._margin
-		this.turtle._padding = this._padding
-		this.turtle._w = painter.w
-		this.turtle._wrap = this._wrap
+		todo.clearTodo()
+		todo.clearColor(0.2, 0.2, 0.2, 1)
+
+		// begin a new turtle with the views' layout settings
+		var turtle = this.turtle
+		turtle._margin = zeroMargin
+		turtle._padding = this._padding
+		turtle._align = this._align
+		turtle._wrap = this._wrap
+		turtle._w = painter.w
+		turtle._h = painter.h
+
 		this.$pickid = 1
-		var turtle = this.beginTurtle()
+
+		this.beginTurtle()
 
 		this.onFlag = 2
 		this.onDraw()
 		this.onFlag = 0
 
-		// keep redrawing:
-		// if(this._ontime&2 || this._onframe&2)
 		this.endTurtle()
-		todo.endTodo()
 	}
 
 	proto.onDraw = function(){
@@ -136,13 +140,12 @@ module.exports = require('class').extend(function View(proto){
 	proto.onFlag1 = this.recompose
 	proto.onFlag2 = this.redraw
 
-	proto.$redrawApp = function(time, frameId){
+	proto.$redrawApp = function(){
 		// we can submit a todo now
-		this._time = time
-		this._frameId = frameId
+		this._time = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000
+		this._frameId++
 
 		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
-
 		this.$redrawView()
 	}
 
@@ -152,14 +155,22 @@ module.exports = require('class').extend(function View(proto){
 		this.camPosition = mat4.create()
 		this.camProjection = mat4.create()
 		
+		this._frameId = 0
+
 		// dispatch mouse events
-		fingers.onDown = function(msg){
-			//console.log(msg)
+		fingers.onFingerDown = function(msg){
+
 		}
+
 		// dispatch mouse events
-		fingers.onHover = function(msg){
-			console.log(msg.pick)
-		}
+		fingers.onFingerHover = function(msg){
+			//console.log(msg.pick)
+			this.$redrawApp()
+		}.bind(this)
+
+		painter.onResize = function(){
+			this.$redrawApp()
+		}.bind(this)
 
 		// lets do our first redraw
 		this.root = this
@@ -168,7 +179,7 @@ module.exports = require('class').extend(function View(proto){
 		this.$composeTree()
 
 		// lets attach our todo to the main framebuffer
-		painter.mainFramebuffer.attachTodo(this.todo)
+		painter.mainFramebuffer.assignTodo(this.todo)
 
 		// first draw
 		this.$redrawApp(0,0)

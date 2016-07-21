@@ -36,7 +36,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var color = this.pixel()
 		if(painterPickPass != 0){
 			if(color.a < this.pickAlpha) discard
-			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,1)
+			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,float(painterPickPass)/255.)
 		}
 		else{
 			gl_FragColor = color
@@ -47,8 +47,8 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$mapExceptions = true
 
 	proto.$uniformHeader = "\n// painter uniforms\nuniform int painterPickPass;\nuniform mat4 painterPickMat4;\n"
-	proto.$pixelHeader = "precision highp float;\nprecision highp int;\n"
-	proto.$vertexHeader = "precision highp float;\nprecision highp int;\n"
+	proto.$pixelHeader = ""
+	proto.$vertexHeader = ""
 
 	proto.$compileShader = function(){
 		if(!this.vertex || !this.pixel) return
@@ -532,8 +532,6 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'var $shader = this.$shaders.'+classname+'\n'
 		code += indent+'if(!$shader) $shader = this.$allocShader("'+classname+'")\n'
 		code += indent+'var $props = $shader.$props\n'
-		code += indent+'var $need = $props.self.length + '+need+'\n'
-		code += indent+'if($need >= $props.allocated) $props.alloc($need)\n'
 		code += indent+'if($props.$frameId !== this._frameId){\n'
 		code += indent+'	var $proto = this._' + classname +'.prototype\n'
 		code += indent+'	$props.$frameId = this._frameId\n'
@@ -589,8 +587,10 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
 		}
 		// lets draw it
-		code += indent + '	$todo.drawTriangles()\n'
+		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent + '}\n'
+		code += indent + 'var $need = $props.self.length + '+need+'\n'
+		code += indent + 'if($need >= $props.allocated) $props.alloc($need)\n'
 		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?this.$turtleStack.len - 1:this.$turtleStack.len\n'
 		code += indent + 'this.$writeList.push($props, $props.self.length, $need, $writelevel)\n'
 		code += indent + 'this.turtle.$propoffset = $props.self.length\n'

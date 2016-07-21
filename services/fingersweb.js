@@ -55,7 +55,7 @@ function fingerDown(fingers){
 		storeNewFinger(p)
 
 		// set the ID
-		p.fn = 'onDown'
+		p.fn = 'onFingerDown'
 		// store startx for delta
 		p.pick = pick
 		p.sx = p.x
@@ -82,7 +82,7 @@ function fingerMove(fingers){
 		p.sy = op.sy
 		p.dx = p.x - p.sx
 		p.dy = p.y - p.sx
-		p.fn = 'onMove'
+		p.fn = 'onFingerMove'
 		p.digit = op.digit
 
 		bus.postMessage(p)
@@ -96,7 +96,7 @@ function fingerHover(fingers){
 		var pick = services.painter.pick(p.x, p.y)
 
 		p.pick = pick
-		p.fn = 'onHover'
+		p.fn = 'onFingerHover'
 		bus.postMessage(p)
 	}
 }
@@ -107,7 +107,7 @@ function fingerWheel(fingers){
 
 		var pick = services.painter.pick(p.x, p.y)
 		p.pick = pick
-		p.fn = 'onWheel'
+		p.fn = 'onFingerWheel'
 		bus.postMessage(p)
 	}
 }
@@ -129,7 +129,7 @@ function fingerUp(fingers){
 		p.sy = op.sy
 		p.dx = p.x - p.sx
 		p.dy = p.y - p.sx
-		p.fn = 'onUp'
+		p.fn = 'onFingerUp'
 		p.finger = op.finger
 
 		// remove the old from the finger set
@@ -139,7 +139,7 @@ function fingerUp(fingers){
 
 		// check if dt < tapspeed
 		if(p.time - op.time < TAP_TIME && Math.sqrt(p.dx*p.dx+p.dy*p.dy) < TAP_DIST){
-			p.fn = 'onTap'
+			p.fn = 'onFingerTap'
 			bus.postMessage(p)
 		}
 

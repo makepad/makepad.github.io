@@ -26,9 +26,9 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 
 		outlineWidth:0.,
 		boldness:0, 
-		shadowOffset: {pack:'int12', value:[0.,0.]},
+		shadowOffset: {pack:'int12', value:[0., 0.]},
 
-		unicode:{noStyle:1,noTween:1,value:0},
+		unicode:{noStyle:1, noTween:1, value:0},
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
@@ -36,14 +36,14 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		margin:{styleLevel:1, value:[0,0,0,0]},
 		text:{styleLevel:1, value:''},
 
-		x1:{noStyle:1,noTween:1,value:0},
-		y1:{noStyle:1,noTween:1,value:0},
-		x2:{noStyle:1,noTween:1,value:0},
-		y2:{noStyle:1,noTween:1,value:0},
-		tx1:{noStyle:1,noTween:1,value:0},
-		ty1:{noStyle:1,noTween:1,value:0},
-		tx2:{noStyle:1,noTween:1,value:0},
-		ty2:{noStyle:1,noTween:1,value:0},
+		x1:{noStyle:1, noTween:1, value:0},
+		y1:{noStyle:1, noTween:1, value:0},
+		x2:{noStyle:1, noTween:1, value:0},
+		y2:{noStyle:1, noTween:1, value:0},
+		tx1:{noStyle:1, noTween:1, value:0},
+		ty1:{noStyle:1, noTween:1, value:0},
+		tx2:{noStyle:1, noTween:1, value:0},
+		ty2:{noStyle:1, noTween:1, value:0}
 	}
 
 	proto.mesh = painter.Mesh(types.vec3).pushQuad(
@@ -58,10 +58,10 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		1, 1, 1
 	)
 
-	proto.vertexStyle = function(){
+	proto.vertexStyle = function(){$
 	}
 
-	proto.pixelStyle = function(){
+	proto.pixelStyle = function(){$
 		//this.outlineWidth = abs(sin(this.mesh.y*10.))*3.+1.
 		//this.field += sin(this.mesh.y*10.)*3.*cos(this.mesh.x*10.)*3.
 	}
@@ -72,7 +72,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		if(this.visible < 0.5){
 			return vec4(0.)
 		}
-
+		
 		var pos = mix(
 			vec2(
 				this.x + this.fontSize * this.x1,
@@ -84,8 +84,8 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 			),
 			this.mesh.xy
 		)
-		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
 
+		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
 
 		// shadow
 		if(this.mesh.z < 0.5){
@@ -227,7 +227,7 @@ module.exports = require('./tweenshader').extend(function SdfFontShader(proto, b
 		if(this.font && !this.font.fontmap){
 			var map = this.font.fontmap = fontloader(this.font)
 			// make the texture.
-			this.fontSampler = new painter.Texture(painter.LUMINANCE, map.texw, map.texh, map.textureArray)
+			this.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, map.texw, map.texh, map.textureArray)
 		}
 		base.onextendclass.apply(this, arguments)
 	}

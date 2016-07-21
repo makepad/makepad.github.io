@@ -19,20 +19,20 @@ var App = require('view').extend(function(proto){
 
 	proto.onDraw = function(){
 		//var dt = performance.now()
-		for(var i = 0 ; i < 16000;i++){
+		for(var i = 0 ; i < 2000;i++){
 			this.drawBackground({
 				random:Math.random()+0.1,
 				color:[Math.random(),Math.random(),Math.random(),1],
 				borderRadius:[10,1000,1000,10+Math.random()*10], // LT RT RB LB
-				shadowSpread:0,
+				shadowSpread:1,
 				shadowBlur:10,
 				shadowoffset:[4,4],
 				borderColor:'black',
 				borderWidth:[10,1,1,1],
 				x:1700*Math.random(),
 				y:1700*Math.random(),
-				w:40+40*Math.random(),
-				h:40+40*Math.random()
+				w:30+30*Math.random(),
+				h:30+30*Math.random()
 			})
 		}
 		//console.log(performance.now()-dt)

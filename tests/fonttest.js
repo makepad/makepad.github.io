@@ -11,7 +11,7 @@ var App = require('view').extend(function(proto){
 	}
 
 	proto.onDraw = function(){
-		for(var i = 0 ; i< 8000;i++){
+		for(var i = 0 ; i< 4000;i++){
 			this.drawText({
 				text:''+i,
 				boldness:1,

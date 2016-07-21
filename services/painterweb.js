@@ -13,32 +13,41 @@ var options = {
 	antialias: canvas.getAttribute("antialias")?true:false,
 	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
 	preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
-	preferLowPowerToHighPerformance: true//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
+	preferLowPowerToHighPerformance: false//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
 }
 
 var gl = canvas.getContext('webgl', options) ||
          canvas.getContext('webgl-experimental', options) ||
          canvas.getContext('experimental-webgl', options)
 
-var canvasWidth = 0
-var canvasHeight = 0
-
 function resize(){
 	var pixelratio = window.devicePixelRatio
-	var w = canvasWidth = canvas.offsetWidth
-	var h = canvasHeight = canvas.offsetHeight
+	var w, h
+	// if a canvas is fullscreen we should size it to fullscreen
+	if(canvas.getAttribute("fullpage")){
+		w = document.body.offsetWidth
+		h = document.body.offsetHeight
+	}
+	else{
+		w = canvas.offsetWidth
+		h = canvas.offsetHeight
+	}
+
 	var sw = canvas.width = w * pixelratio
-	var sh =  canvas.height = h * pixelratio
+	var sh = canvas.height = h * pixelratio
 	canvas.style.width = w + 'px'
 	canvas.style.height = h + 'px'
 
 	gl.viewport(0,0,sw,sh)
+
 	if(args.pixelratio){
 		bus.postMessage({fn:'onResize', pixelratio:pixelratio, w:w, h:h})
 	}
 	args.pixelratio = window.devicePixelRatio
 	args.w = canvas.offsetWidth
 	args.h = canvas.offsetHeight
+
+	requestRepaint()
 }
 
 window.addEventListener('resize', resize)
@@ -49,30 +58,33 @@ function runTodo(todo){
 	var f32 = todo.f32
 	var i32 = todo.i32
 	var len = todo.length
+	var last = 0
 	for(var o = 0; o < len; o += argc + 2){
 		var fnid = i32[o]
 		var argc = i32[o + 1]
 		var fn = todofn[fnid]
-		if(!fn) console.error('cant find '+fnid)
+		if(!fn) console.error('cant find '+fnid+ ' last was ' + last)
+		last = fnid
 		fn(i32, f32, o)
 	}
 }
 
 var repaintPending = false
+var repainted = false
 function repaint(time){
 	repaintPending = false
+	if(!mainFramebuffer) return
 	// lets set some globals
 	globalLen = 0
 	intGlobal(nameIds.painterPickPass, 0)
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 	gl.viewport(0,0,args.w*args.pixelratio,args.h*args.pixelratio)
-	//mat4Global(nameIds.painterPickMat4, mat4)
-	
 	pickPass = false
 	runTodo(mainFramebuffer.todo)
 	//runTodo(mainFramebuffer.todo)
 	// post a sync to the worker for time and frameId
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
+	repainted = true
 }
 
 function requestRepaint(){
@@ -95,6 +107,7 @@ var pickMat = [
 	0,0,0,1
 ]
 
+// Make a picking rendertarget
 var pickPass = false
 var pickFb = gl.createFramebuffer()
 var pickTex = gl.createTexture()
@@ -111,16 +124,16 @@ gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 var pickDebug = false
 
 exports.pick = function(x, y){
+	if(!repainted) return null
+	repainted = false
 
 	if(!mainFramebuffer){
-		return {hi:0,lo:0}
+		return null
 	}
 
-	globalLen = 0
-
+	// create picking matrix
 	var w = args.w / 2
 	var h = args.h / 2
-
 	var facx = pickDebug?1:w
 	var facy = pickDebug?1:h
 
@@ -129,6 +142,8 @@ exports.pick = function(x, y){
 	pickMat[3] = -(x/w)*facx + (facx-1.)
 	pickMat[7] = (y/h)*facy - (facy-1.)
 
+	// set up global uniforms
+	globalLen = 0
 	mat4Global(nameIds.painterPickMat4, pickMat)
 	intGlobal(nameIds.painterPickPass, 1)
 
@@ -142,7 +157,8 @@ exports.pick = function(x, y){
 	gl.readPixels(0, 0, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, pickBuf)
 	return {
 		hi:pickBuf[0],
-		lo:(pickBuf[1]<<8)|pickBuf[2]
+		lo:(pickBuf[1]<<8)|pickBuf[2],
+		pid:pickBuf[3]
 	}
 }
 
@@ -269,6 +285,9 @@ function mat4Global(nameId, m){
 
 userfn.newFramebuffer = function(msg){
 	if(!msg.attach){ // main framebuffer
+		if(mainFramebuffer){
+			throw new Error('Dont create a mainframebuffer more than once')
+		}
 		mainFramebuffer = framebufferIds[msg.fbId] = {
 			todo:undefined
 		}
@@ -287,7 +306,7 @@ userfn.newFramebuffer = function(msg){
 	}
 }
 
-userfn.attachFramebufferTodo = function(msg){
+userfn.assignTodoToFramebuffer = function(msg){
 	// we are attaching a todo to a framebuffer.
 	var framebuffer = framebufferIds[msg.fbId]
 	framebuffer.todo = todoIds[msg.todoId]
@@ -320,10 +339,37 @@ todofn[40] = function clear(i32, f32, o){
 	gl.clear(clr)
 }
 
+var blendFn = [
+	0x0, //painter.ZERO = 0
+	0x1, //painter.ONE = 1
+	0x300,//painter.SRC_COLOR = 2
+	0x301,//painter.ONE_MINUS_SRC_COLOR = 3
+	0x302,//painter.SRC_ALPHA = 4
+	0x303,//painter.ONE_MINUS_SRC_ALPHA = 5
+	0x304,//painter.DST_ALPHA = 6
+	0x305,//painter.ONE_MINUS_DST_ALPHA = 7
+	0x306,//painter.DST_COLOR = 8
+	0x307,//painter.ONE_MINUS_DST_COLOR = 9
+	0x308,//painter.SRC_ALPHA_SATURATE = 10
+	0x8001,//painter.CONSTANT_COLOR = 11
+	0x8002,//painter.ONE_MINUS_CONSTANT_COLOR = 12
+]
+var blendEq = [
+	0x800a,//painter.FUNC_SUBTRACT = 0
+	0x800b,//painter.FUNC_REVERSE_SUBTRACT = 1
+	0x8006,//painter.FUNC_ADD = 2
+	0x8007,//painter.MIN = 3
+	0x8008//painter.MAX = 4
+]
+
 todofn[41] = function blending(i32, f32, o){
+	if(pickPass){
+		gl.disable(gl.BLEND)
+		return
+	}
 	gl.enable(gl.BLEND)
-	gl.blendEquationSeparate(i32[o+3], i32[o+6])
-	gl.blendFuncSeparate(i32[o+2],i32[o+4],i32[o+5],i32[o+7])
+	gl.blendEquationSeparate(blendEq[i32[o+3]], blendEq[i32[o+6]])
+	gl.blendFuncSeparate(blendFn[i32[o+2]],blendFn[i32[o+4]],blendFn[i32[o+5]],blendFn[i32[o+7]])
 	gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
 }
 
@@ -333,14 +379,26 @@ todofn[41] = function blending(i32, f32, o){
 //
 //
 
+var shaderCache = {}
+
 userfn.newShader = function(msg){
 	var pixelcode = msg.code.pixel
 	var vertexcode = msg.code.vertex
 	var shaderid = msg.shaderId
+	var cacheid = pixelcode + vertexcode
+	var shader = shaderCache[cacheid]
+
+	if(shader){
+		shader.refCount++
+		shaderIds[shaderid] = shader
+		return
+	}
 
 	pixelcode =  "#extension GL_OES_standard_derivatives : enable\n"+
+				 "precision highp float;\nprecision highp int;\n"+
 	             pixelcode
-	vertexcode = vertexcode
+	vertexcode = "precision highp float;\nprecision highp int;\n"+
+				 vertexcode
 
 	// compile vertexshader
 	var vertexshader = gl.createShader(gl.VERTEX_SHADER)
@@ -358,7 +416,7 @@ userfn.newShader = function(msg){
 		return console.error(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
 	}
 
-	var shader = gl.createProgram()
+	shader = gl.createProgram()
 	gl.attachShader(shader, vertexshader)
 	gl.attachShader(shader, pixelshader)
 	gl.linkProgram(shader)
@@ -391,6 +449,7 @@ userfn.newShader = function(msg){
 	}
 	shader.attrlocs = attrlocs
 	shader.maxindex = maxindex
+	shader.refCount = 1
 
 	var uniLocs = {}
 	for(var name in uniforms){
@@ -400,8 +459,7 @@ userfn.newShader = function(msg){
 	}
 	shader.uniLocs = uniLocs
 	// store it
-	shaderIds[shaderid] = shader
-
+	shaderIds[shaderid] = shaderCache[cacheid] = shader
 }
 
 todofn[2] = function useShader(i32, f32, o){
@@ -451,7 +509,6 @@ userfn.updateMesh = function(msg){
 	gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
 	gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 }
-
 
 todofn[3] = function attributes(i32, f32, o){
 	var startnameid = i32[o+2]
@@ -506,93 +563,66 @@ todofn[5] = function indexes(){
 //
 
 // texture flags
-var painter = {}
+var textureBufTypes = [
+	gl.RGBA,
+	gl.RGB,
+	gl.ALPHA,
+	gl.LUMINANCE,
+	gl.LUMINANCE_ALPHA
+]
 
-// texture buffer type flags
-painter.RGB = 1 << 0
-painter.ALPHA = 1 << 1
-painter.RGBA = painter.RGB|painter.ALPHA
-painter.DEPTH = 1 << 2
-painter.STENCIL = 1 << 3
-painter.LUMINANCE = 1 << 4
-
-// data type flags
-painter.UNSIGNED_BYTE = 1<<8
-painter.FLOAT = 1 << 9
-painter.HALF_FLOAT = 1<<10
-painter.FLOAT_LINEAR = 1 << 11
-painter.HALF_FLOAT_LINEAR = 1 << 12
+var textureDataTypes = [
+	gl.UNSIGNED_BYTE,
+	gl.FLOAT,
+	OES_texture_float && gl.FLOAT,
+	OES_texture_half_float.HALF_FLOAT_OES,
+	OES_texture_float_linear.FLOAT_LINEAR_OES,
+	OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
+]
 
 // other flags
-painter.FLIP_Y = 1<<16
-painter.PREMULTIPLY_ALPHA = 1<<17
-painter.CUBEMAP = 1<<18
-painter.LINEAR = 1<<19 // little cheat flag for framebuffer textures
+var textureFlags = {}
+textureFlags.FLIP_Y = 1<<0
+textureFlags.PREMULTIPLY_ALPHA = 1<<1
+textureFlags.CUBEMAP = 1<<2
+textureFlags.SAMPLELINEAR = 1<<3 // little cheat flag for framebuffer textures
 
 userfn.newTexture = function(msg){
 	var tex = textureIds[msg.texId]
 	if(!tex){
 		tex = textureIds[msg.texId] = {samplers:{}}
+		tex.bufType = msg.bufType
+		tex.dataType = msg.dataType
 		tex.flags = msg.flags
 	}
 	tex.w = msg.w
 	tex.h = msg.h
 	tex.array = msg.array
 	tex.updateId = frameId
-	var flags = tex.flags 
-}
-
-function bufTypeFromFlags(flags){
-	if(flags & painter.RGBA === painter.RGBA){
-		return gl.RGBA
-	}
-	if(flags & painter.ALPHA){
-		if(flags & painter.LUMINANCE) return gl.LUMINANCE_ALPHA
-		return gl.ALPHA
-	}
-	if(flags & painter.LUMINANCE) return gl.LUMINANCE
-	if(flags & painter.RGB){
-		return gl.RGB
-	}
-}
-
-function dataTypeFromFlags(flags){
-	if(flags & painter.FLOAT){
-		return OES_texture_float && gl.FLOAT
-	}
-	if(flags & painter.HALF_FLOAT){
-		return OES_texture_half_float.HALF_FLOAT_OES
-	}
-	if(flags &painter.FLOAT_LINEAR){
-		return OES_texture_float_linear.FLOAT_LINEAR_OES
-	}
-	if(flags & painter.HALF_FLOAT_LINEAR){
-		return OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
-	}
-	return gl.UNSIGNED_BYTE
 }
 
 // sampler props
-var samplerProps = {
-	1: gl.NEAREST,
-	2: gl.LINEAR,
-	3: gl.NEAREST_MIPMAP_NEAREST,
-	4: gl.LINEAR_MIPMAP_NEAREST,
-	5: gl.NEAREST_MIPMAP_LINEAR,
-	6: gl.LINEAR_MIPMAP_LINEAR,
-	10: gl.REPEAT,
-	11: gl.CLAMP_TO_EDGE,
-	12: gl.MIRRORED_REPEAT
-}
+var samplerFilter = [
+	gl.NEAREST,
+	gl.LINEAR,
+	gl.NEAREST_MIPMAP_NEAREST,
+	gl.LINEAR_MIPMAP_NEAREST,
+	gl.NEAREST_MIPMAP_LINEAR,
+	gl.LINEAR_MIPMAP_LINEAR
+]
+
+var samplerWrap = [
+	gl.REPEAT,
+	gl.CLAMP_TO_EDGE,
+	gl.MIRRORED_REPEAT
+]
 
 todofn[8] = function sampler(i32, f32, o){
 	// this thing lazily creates textures and samplers
 	var nameid = i32[o+2]
-	var isfb = i32[o+3]
+	var tex = textureIds[i32[o+3]]
+	var samplerType = i32[o+4]
 
-	var tex = textureIds[i32[o+4]]
-
-	var samplerType = i32[o+5]
 	var sam = tex.samplers[samplerType] || (tex.samplers[samplerType] = {})
 
 	var texid = currentShader.samplers++
@@ -604,23 +634,21 @@ todofn[8] = function sampler(i32, f32, o){
 		gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
 
 		// lets set the flipy/premul
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, tex.flags & painter.FLIP_Y?gl.TRUE:gl.FALSE)
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, tex.flags & painter.PREMULTIPLY_ALPHA?gl.TRUE:gl.FALSE)
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, tex.flags & textureFlags.FLIP_Y?gl.TRUE:gl.FALSE)
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, tex.flags & textureFlags.PREMULTIPLY_ALPHA?gl.TRUE:gl.FALSE)
 
 		// lets figure out the flags
-		var bufType = bufTypeFromFlags(tex.flags)
-		var dataType = dataTypeFromFlags(tex.flags)
+		var bufType = textureBufTypes[tex.bufType]
+		var dataType = textureDataTypes[tex.dataType]
 		// upload array
 		gl.texImage2D(gl.TEXTURE_2D, 0, bufType, tex.w, tex.h, 0, bufType, dataType, new Uint8Array(tex.array))
 
-		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, samplerProps[(samplerType>>0)&0xf])
-		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, samplerProps[(samplerType>>4)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, samplerFilter[(samplerType>>0)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, samplerFilter[(samplerType>>4)&0xf])
 
-		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, samplerProps[(samplerType>>8)&0xf])
-		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, samplerProps[(samplerType>>12)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, samplerWrap[(samplerType>>8)&0xf])
+		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, samplerWrap[(samplerType>>12)&0xf])
 	}
-	
-	// bind texture sampler slot?
 }
 
 //
@@ -670,6 +698,12 @@ todofn[15] = function mat4(i32, f32, o){
 	gl.uniformMatrix4fv(currentUniLocs[i32[o+2]], 0, tmtx)
 }
 
+//
+//
+// Globals
+//
+//
+
 todofn[20] = 
 todofn[21] = 
 todofn[22] = 
@@ -691,88 +725,42 @@ todofn[25] = function globalValue(i32, f32, o){
 //
 //
 
+var drawTypes = [
+	gl.TRIANGLES,
+	gl.TRIANGLE_STRIP,
+	gl.TRIANGLE_FAN,
+	gl.LINES,
+	gl.LINE_STRIP,
+	gl.LINE_LOOP
+]
 
-todofn[30] = function drawTriangles(i32, f32, o){
+todofn[30] = function drawArrays(i32, f32, o){
 	// set the global uniforms
+	var type = drawTypes[i32[o+2]]
 	for(var i = 0; i < globalsLen; i+=5){
 		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 	}
 	if(currentShader.instanced){
-		var start = i32[o+2]
-		var end =  i32[o+3]
-		var inst = i32[o+4]
-		if(start < 0){
-			start = 0
-			end = currentShader.attrlength
+		var from = i32[o+3]
+		var to =  i32[o+4]
+		var inst = i32[o+5]
+		if(from < 0){
+			from = 0
+			to = currentShader.attrlength
 			inst = currentShader.instlength
 		}
-		ANGLE_instanced_arrays.drawArraysInstancedANGLE(gl.TRIANGLES, start, end, inst)
+		ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, from, to, inst)
 	}
 	else{
-		var start = i32[o+2]
-		var end =  i32[o+3]
-		if(start < 0){
-			start = 0
-			end = currentShader.attrlength
+		var from = i32[o+3]
+		var to =  i32[o+4]
+		if(from < 0){
+			from = 0
+			to = currentShader.attrlength
 		}
-		gl.drawArrays(gl.TRIANGLES, start, end)
+		gl.drawArrays(type, from, to)
 	}
 }
-
-todofn[31] = function drawLines(i32, f32, o){
-	// set the global uniforms
-	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
-	}
-	gl.drawArrays(gl.LINES, i32[o+2], i32[o+3])
-}
-
-todofn[32] = function drawLineLoop(i32, f32, o){
-	// set the global uniforms
-	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
-	}
-	gl.drawArrays(gl.LINE_LOOP, i32[o+2], i32[o+3])
-}
-
-todofn[33] = function drawLineStrip(i32, f32, o){
-	// set the global uniforms
-	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
-	}
-	gl.drawArrays(gl.LINE_STRIP, i32[o+2], i32[o+3])
-}
-
-todofn[34] = function drawTriangleStrip(i32, f32, o){
-	// set the global uniforms
-	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
-	}
-	gl.drawArrays(gl.TRIANGLE_STRIP, i32[o+2], i32[o+3])
-}
-
-todofn[35] = function drawTriangleFan(i32, f32, o){
-	// set the global uniforms
-	for(var i = 0; i < globalsLen; i+=5){
-		if(currentUniLocs[globals[i]] !== undefined) todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
-	}
-	gl.drawArrays(gl.TRIANGLE_FAN, i32[o+2], i32[o+3])
-}
-
-//
-//
-// Misc
-//
-//
-
-userfn.newName = function(msg){
-	nameIds[msg.name] = msg.nameId
-}
-
-userfn.newTarget = function(msg){
-	
-}
-
 
 //
 //
@@ -789,8 +777,24 @@ userfn.updateTodo = function(msg){
 	todo.f32 = new Float32Array(msg.buffer)
 	todo.i32 = new Int32Array(msg.buffer)
 	todo.length = msg.length
+	// we are updating a todo.. but..
+	// what if we are the todo of the mainFrame
+	if(mainFramebuffer && mainFramebuffer.todo === todo){
+		requestRepaint()
+	}
 }
 
 todofn[50] = function addTodo(i32, f32, o){
 }
+
+//
+//
+// Misc
+//
+//
+
+userfn.newName = function(msg){
+	nameIds[msg.name] = msg.nameId
+}
+
 
