@@ -8,7 +8,6 @@ function extend(body){
 		var cthis = this
 		if(!(cthis instanceof Class)){
 			cthis = Object.create(Class.prototype)
-			cthis.constructor = Class
 		}
 		if(cthis._onConstruct){
 			cthis._onConstruct.apply(cthis, arguments)

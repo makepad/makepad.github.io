@@ -1,5 +1,13 @@
 var types = exports
 
+function getPrimary(fields){
+	for(var key in fields){
+		var type = fields[key]
+		if(type.constructor === Type) return type
+		type = getPrimary(type.fields)
+		if(type) return type
+	}
+}
 function getArray(fields){
 	for(var key in fields){
 		var type = fields[key]
@@ -30,20 +38,22 @@ function Type(config){
 
 function Struct(fields, name){
 	var struct = this
+
 	if(!(struct instanceof Struct)){
-		struct = Object.create(Type.prototype)
-		struct.constructor = Struct
+		struct = Object.create(Struct.prototype)
 	}
 	struct.fields = fields
 	struct.name = name
 	// lets precompute the slots and array
 	struct.array = getArray(fields)
+	struct.primary = getPrimary(fields)
 	struct.slots = getSlots(fields)
+	// lets find the first field that has a type
 	return struct
 }
 
-Struct.prototype = Object.create(Struct.prototype)
-Struct.prototype.constructor = Type
+Struct.prototype = Object.create(Type.prototype)
+Struct.prototype.constructor = Struct
 
 types.Type = Type
 types.Struct = Struct

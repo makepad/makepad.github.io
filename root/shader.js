@@ -20,11 +20,11 @@ module.exports = require('class').extend(function Shader(proto){
 		return clamp((time - this.tweenstart) / this.duration, 0.0, 1.0)
 	}
 
-	proto.vertexMain = function(){
+	proto.vertexMain = function(){$
 		var T = this.tween()
 		$CALCULATETWEEN
 		var position = this.vertex()
-		if(painterPickPass != 0){
+		if(painterPickMat4[0][0] != 1. || painterPickMat4[1][1] != 1.){
 			gl_Position = position * painterPickMat4
 		}
 		else{
@@ -32,7 +32,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 	}
 
-	proto.pixelMain = function(){
+	proto.pixelMain = function(){$
 		var color = this.pixel()
 		if(painterPickPass != 0){
 			if(color.a < this.pickAlpha) discard
@@ -709,7 +709,7 @@ module.exports = require('class').extend(function Shader(proto){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
 					if(pack === 'float12'){
-						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0),$a[$o+'+(o+1)+']=((_'+prop.name+'[2] * 4095)<<12) + ((_'+prop.name+'[3]*4095)|0)\n'
+						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
 						propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColorPacked(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
 						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[0]*4095)|0)\n'
 						propcode += indent + '}\n'

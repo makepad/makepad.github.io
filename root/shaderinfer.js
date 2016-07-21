@@ -402,10 +402,33 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var objectstr = this.walk(node.object, node)
 
 		if(node.computed){
-			if(node.object.infer.kind !== 'value'){
+			var objinfer = node.object.infer
+			if(objinfer.kind !== 'value'){
 				throw new this.InferErr(node, 'cannot use index[] on non value type')
 			}
-			return console.error('implement node.computed')
+			var objtype = objinfer.type
+			if(objtype.slots <= 1){
+				throw new this.InferErr(node, 'cannot use index[] on item with size 1')
+			}
+			var argstr = this.walk(node.property, node)
+
+			var primtype = objtype.primary
+	
+			if(objtype.name === 'mat4'){
+				primtype = types.vec4
+			}
+			else if(objtype.name === 'mat3'){
+				primtype = types.vec3
+			}
+			else if(objtype.name === 'mat2'){
+				primtype = types.vec2
+			}
+
+			node.infer = {
+				kind:'value',
+				type:primtype
+			}
+			return objectstr + '[' + argstr + ']'
 		}
 		else{
 			var objectinfer = node.object.infer

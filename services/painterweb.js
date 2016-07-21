@@ -71,16 +71,36 @@ function runTodo(todo){
 
 var repaintPending = false
 var repainted = false
+
+var compMat = [
+	1,0,0,0,
+	0,1,0,0,
+	0,0,1,0,
+	0,0,0,1
+]
+
 function repaint(time){
 	repaintPending = false
 	if(!mainFramebuffer) return
 	// lets set some globals
 	globalLen = 0
 	intGlobal(nameIds.painterPickPass, 0)
+
+	var todo = mainFramebuffer.todo
+
+	// compensation matrix for lag 
+	compMat[0] = todo.w / args.w 
+	compMat[5] = todo.h / args.h
+	compMat[3] = -(args.w - todo.w) / args.w
+	compMat[7] = (args.h - todo.h) / args.h
+
+	mat4Global(nameIds.painterPickMat4, compMat)
+
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 	gl.viewport(0,0,args.w*args.pixelratio,args.h*args.pixelratio)
 	pickPass = false
-	runTodo(mainFramebuffer.todo)
+
+	runTodo(todo)
 	//runTodo(mainFramebuffer.todo)
 	// post a sync to the worker for time and frameId
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
@@ -777,6 +797,8 @@ userfn.updateTodo = function(msg){
 	todo.f32 = new Float32Array(msg.buffer)
 	todo.i32 = new Int32Array(msg.buffer)
 	todo.length = msg.length
+	todo.w = msg.w
+	todo.h = msg.h
 	// we are updating a todo.. but..
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todo === todo){

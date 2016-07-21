@@ -98,6 +98,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 		this.self.length = 0
 		this.deps = {}
 		this.last = -1
+		this.self.w = painter.w
+		this.self.h = painter.h
 		bus.batchMessage(this.self)
 	}
 
