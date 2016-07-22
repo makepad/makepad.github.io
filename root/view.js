@@ -204,7 +204,7 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.$redrawApp = function(){
 		// we can submit a todo now
-		this._time = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000
+		this._time = (Date.now() - painter.timeBoot) / 1000
 		this._frameId++
 
 		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)

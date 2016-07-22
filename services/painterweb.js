@@ -49,7 +49,7 @@ function resize(){
 
 	requestRepaint()
 }
-
+args.timeBoot = Date.now()
 window.addEventListener('resize', resize)
 resize()
 // set the right width / height
@@ -57,8 +57,8 @@ resize()
 function runTodo(todo){
 
 	//var deltaT = todo.timeStamp - todo.timeStart
-	var localTime = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000// - deltaT
-
+	var localTime = (Date.now() - args.timeBoot) / 1000// - deltaT
+	//console.log(localTime, todo.timeStamp, todo.timeStart)
 	floatGlobal(nameIds.this_DOT_time, localTime)
 
 	var f32 = todo.f32
@@ -829,7 +829,7 @@ userfn.updateTodo = function(msg){
 
 	todo.timeStart = msg.timeStart
 	todo.timeMax = msg.timeMax
-	todo.timeStamp = (typeof performance !== 'undefined'?performance.now():Date.now()) / 1000
+	todo.timeStamp = (Date.now() - args.timeBoot) / 1000
 
 	// we are updating a todo.. but..
 	// what if we are the todo of the mainFrame

@@ -12,6 +12,7 @@ var args = service.args
 painter.w = args.w
 painter.h = args.h
 painter.pixelratio = args.pixelratio
+painter.timeBoot = args.timeBoot
 
 bus.onMessage = function(msg){
 	if(msg.fn === 'onResize'){
