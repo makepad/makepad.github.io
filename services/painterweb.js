@@ -74,7 +74,7 @@ function runTodo(todo){
 		fn(i32, f32, o)
 	}
 
-	if(todo.timeMax > localTime) return true
+	if(todo.animLoop || todo.timeMax > localTime) return true
 }
 
 var repaintPending = false
@@ -830,7 +830,7 @@ userfn.updateTodo = function(msg){
 	todo.timeStart = msg.timeStart
 	todo.timeMax = msg.timeMax
 	todo.timeStamp = (Date.now() - args.timeBoot) / 1000
-
+	todo.animLoop = msg.animLoop
 	// we are updating a todo.. but..
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todo === todo){

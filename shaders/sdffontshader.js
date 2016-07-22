@@ -1,4 +1,4 @@
-module.exports = require('./tweenshader').extend(function SdfFontShader(proto, base){
+module.exports = require('shader').extend(function SdfFontShader(proto, base){
 
 	var types = require('types')
 	var painter = require('painter')

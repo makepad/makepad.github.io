@@ -114,7 +114,6 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		}			
 	}
 
-
 	proto.walk = function(node, parent){
 		node.parent = parent
 		node.infer = undefined
@@ -435,6 +434,9 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			var propname = node.property.name
 			if(objectinfer.kind === 'value'){
 				var type = objectinfer.type
+				if(!type.fields){
+					throw this.InferErr(node, 'Object not a struct '+objectstr+'.'+propname)
+				}
 				var proptype = type.fields[propname]
 				if(!proptype){ // do more complicated bits
 					// check swizzling or aliases
@@ -499,9 +501,15 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 						return fullname
 					}
 					else if(config.kind === 'uniform'){
-						this.uniforms[fullname] = {
-							type:config.type,
-							name:propname
+						if(this.uniforms[fullname]){
+							this.uniforms[fullname].refcount++
+						}
+						else{
+							this.uniforms[fullname] = {
+								type:config.type,
+								name:propname,
+								refcount:1
+							}
 						}
 						node.infer = {
 							kind:'value',

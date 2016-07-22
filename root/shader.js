@@ -12,10 +12,16 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
-
+	
 	proto.tween = function(){
 		if(this.duration < 0.01) return 1.
-		return clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
+		return this.tweenBezier(
+			this.ease.x, 
+			this.ease.y, 
+			this.ease.z, 
+			this.ease.w, 
+			clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
+		)
 	}
 
 	proto.vertexMain = function(){$
@@ -55,6 +61,8 @@ module.exports = require('class').extend(function Shader(proto){
 		
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, proto.$mapExceptions)
+
+		if(vtx.exception || pix.exception) return
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
 		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
@@ -450,6 +458,7 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	proto.$STYLEPROPS = function(classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
 		// first generate property overload stack
 		// then write them on the turtles' propbag
 		var styleProps = this.$compileInfo.styleProps
@@ -518,6 +527,7 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	proto.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
 		// lets start a propsbuffer 
@@ -563,6 +573,9 @@ module.exports = require('class').extend(function Shader(proto){
 		var uniforms = info.uniforms
 		for(var key in uniforms){
 			var uniform = uniforms[key]
+			if(key === 'this_DOT_time' && uniform.refcount > 1){
+				code += indent +'	$todo.self.animLoop = true\n'
+			}
 			// this.canvas....?
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
@@ -633,7 +646,28 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
+	proto.$PREVPROPS = function(classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
+		var code = ''
+		var info = this.$compileInfo
+		code += indent +'var $props =  this.$shaders.'+classname+'.$props\n'
+		code += indent +'var $a = $props.self.array\n'
+		code += indent +'var $o = (this.turtle.$propoffset - 1) * ' + info.propSlots +'\n'
+		var instanceProps = info.instanceProps
+		var argobj = macroargs[0]
+		for(var key in argobj){
+			var prop = instanceProps['this_DOT_'+key]
+			// lets write prop
+			if(prop.config.pack) throw new Error('Please implement PREVPROP packing support '+key)
+			if(prop.config.type.slots>1) throw new Error('Please implement PREVPROP vector support '+key)
+
+			code += indent + '$a[$o+'+prop.offset+'] = ' +argobj[key] +'\n'
+		}
+		return code
+	}
+
 	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
 		// load the turtle
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
@@ -866,6 +900,44 @@ module.exports = require('class').extend(function Shader(proto){
 			for(var key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
+	
+	var abs = Math.abs
+	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){
+
+		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
+
+		var epsilon = 1.0/200.0 * t
+		var cx = 3.0 * cp0
+		var bx = 3.0 * (cp2 - cp0) - cx
+		var ax = 1.0 - cx - bx
+		var cy = 3.0 * cp1
+		var by = 3.0 * (cp3 - cp1) - cy
+		var ay = 1.0 - cy - by
+		var u = t
+	
+		for(var i = 0; i < 6; i++){
+			var x = ((ax * u + bx) * u + cx) * u - t
+			if(abs(x) < epsilon) return ((ay * u + by) * u + cy) * u
+			var d = (3.0 * ax * u + 2.0 * bx) * u + cx
+			if(abs(d) < 1e-6) break
+			u = u - x / d
+		}
+
+		if(t > 1.) return (ay + by) + cy
+		if(t < 0.) return 0.0
+		
+		var l = 0, w = 0.0, v = 1.0
+		u = t
+		for(var i = 0; i < 8; i++){
+			var x = ((ax * u + bx) * u + cx) * u
+			if(abs(x - t) < epsilon) return ((ay * u + by) * u + cy) * u
+			if(t > x) w = u
+			else v = u
+			u = (v - w) *.5 + w
+		}
+
+		return ((ay * u + by) * u + cy) * u
+	}
 
 	proto.defines = {
 		'PI':'3.141592653589793',
@@ -874,15 +946,21 @@ module.exports = require('class').extend(function Shader(proto){
 		'LN10':'2.302585092994046',
 		'LOG2E':'1.4426950408889634',
 		'LOG10E':'0.4342944819032518',
-		'SQRT12':'0.70710678118654757',
+		'SQRT1_2':'0.70710678118654757',
 	}
 
+	// default shader properties
 	proto.props = {
 		time:{kind:'uniform', value: 1.0},
 		pickAlpha: {kind:'uniform', value:0.5},
 		pickIdHi: {kind:'uniform', value:0.},
 		pickIdLo: {noTween:true, noStyle:true, value:0.},
+		ease: {noTween:true, value:[0,0,1.0,1.0]},
 		duration: {noTween:true, value:0.},
-		tweenStart: {noTween:true, noStyle:true, value:1.0}
+		tweenStart: {noTween:true, noStyle:true, value:1.0},
+		// for ease of use define them here
+		viewPosition:{kind:'uniform', type:types.mat4},
+		camPosition:{kind:'uniform', type:types.mat4},
+		camProjection:{kind:'uniform', type:types.mat4}
 	}
 })

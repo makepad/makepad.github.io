@@ -23,6 +23,7 @@
 		'(function(){\n'+
 //		'var Blob = self.Blob\n'+
 //		'var URL = self.URL\n'+
+		mathLib.toString()+'\n'+
 		parseFileName.toString()+'\n'+
 		buildURL.toString()+'\n'+
 		createOnMessage.toString()+'\n'+
@@ -131,6 +132,7 @@
 		self.onmessage = createOnMessage(userbusses, worker, false)
 		
 		if(!self.fakeworker){
+			mathLib(self)
 			timerWorker(self, worker)
 			cleanWorker(self)
 		}
@@ -232,7 +234,9 @@
 
 			// name the constructors of the classes
 			try{
-				factory = new Function("require", "exports", "module", code.response+'\n//# sourceURL='+code.resourceurl+'\n')
+				var source = code.response+'\n//# sourceURL='+code.resourceurl+'\n'
+				// lets auto pass Math.* into the module?
+				factory = new Function("require", "exports", "module", source)
 			} 
 			catch(e){
 				return worker.postMessage({$:'parseerror', url:code.resourceurl})
@@ -333,6 +337,14 @@
 
 		require.log = function(msg){
 			worker.postMessage({$:'debug', msg:msg})
+		}
+
+		var perf
+		require.perf = function(id){
+			var t = typeof performance !== 'undefined'?performance.now():Date.now()
+			if(!perf) perf = {}
+			if(perf[id]) worker.postMessage({$:'debug', msg:'Perf: '+(t-perf[id])}), perf[id] = undefined
+			else perf[id] = t
 		}
 
 		return require
@@ -525,6 +537,50 @@
 		}
 
 		return prom
+	}
+
+	// very short math mapping GLSL<>JS without support for vectors
+	function mathLib(g){
+		g.E = Math.E
+		g.LN10 = Math.LN10
+		g.LN2 = Math.LN2
+		g.LOG10E = Math.LOG10E
+		g.LOG10 = Math.LOG10
+		g.PI = Math.PI
+		g.SQRT2 = Math.SQRT2
+		g.SQRT1_2 = Math.SQRT1_2
+
+		g.random = Math.random
+		g.radians = function(v){ return v * 0.017453292519943295}
+		g.degrees = function(v){ return v / 0.017453292519943295}
+		g.sin = Math.sin
+		g.cos = Math.cos
+		g.tan = Math.tan
+		g.asin = Math.asin
+		g.acos = Math.acos
+		g.atan = Math.atan
+		g.pow = Math.pow
+		g.exp = Math.exp
+		g.log = Math.log
+		g.exp2 = function(v){return Math.pow(2, v)}
+		g.log2 = Math.log2
+		g.sqrt = Math.sqrt
+		g.inversesqrt = function(v){return 1/Math.sqrt(v)}
+		g.abs = Math.abs
+		g.sign = Math.sign
+		g.floor = Math.floor
+		g.ceil = Math.ceil
+		g.fract = function(v){return v-Math.trunc(v)}
+		g.mod = function(v, w){return v%w}
+		g.min = Math.min
+		g.max = Math.max
+		g.clamp = function(v, min, max){return Math.min(Math.max(v,min),max)}
+		g.step = function(edge, v){ return v < edge? 0: 1}
+		g.smoothstep = function(e0, e1, v){
+			var e2 = e1 - e0
+			var t = Math.max(Math.min(v - e0 / e2, 1),0)
+			return t * t * (3 - 2 * t)
+		}
 	}
 
 	function watchFileChange(){

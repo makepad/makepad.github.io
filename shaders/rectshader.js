@@ -1,4 +1,4 @@
-module.exports = require('./tweenshader').extend(function RectShader(proto){
+module.exports = require('shader').extend(function RectShader(proto){
 
 	var types = require('types')
 	var painter = require('painter')

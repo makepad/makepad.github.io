@@ -1,4 +1,4 @@
-module.exports = require('./sdffontshader').extend(function ArcFontShader(proto, base){
+module.exports = require('shader').extend(function ArcFontShader(proto, base){
 
 	var types = require('types')
 	var painter = require('painter')
