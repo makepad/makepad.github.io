@@ -7,7 +7,7 @@ var todofn = Array(100)
 var userfn = {}
 
 var options = {
-	alpha: canvas.getAttribute("noalpha")?false:true,
+	alpha: canvas.getAttribute("alpha")?true:false,
 	depth: canvas.getAttribute("nodepth")?false:true,
 	stencil: canvas.getAttribute("nostencil")?false:true,
 	antialias: canvas.getAttribute("antialias")?true:false,
