@@ -27,13 +27,23 @@ module.exports = require('class').extend(function Stamp(proto){
 		y:NaN,
 		w:NaN,
 		h:NaN,
-		margin:undefined,
-		padding:undefined,
-		align:undefined,
-		wrap:true		
+		margin:undefined
 	}
 
-	proto.$STYLESTAMP = function(classname, macroargs, mainargs, indent){
+	function styleStampCode(indent, inobj, props, noif){
+		var code = ''
+		for(var key in props){
+			if(noif){
+				code += indent + '_'+key+' = ' + inobj +'.' + key + '\n'
+			}
+			else{
+				code += indent + 'if(_'+key+' === undefined) _'+key+' = ' + inobj +'.' + key + '\n'
+			}
+		}
+		return code
+	}
+
+	proto.$STYLESTAMP = function(target, classname, macroargs, mainargs, indent){
 		// create / lookup stamp
 
 		var code = ''
@@ -48,6 +58,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
 		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
 		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
+		code += indent + '	if($stamp._states)$stamp._state = $stamp._states.default\n'
 		code += indent + '}\n'
 		code += indent + '$stamp.turtle._pickIdLo = $stampId\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
@@ -69,19 +80,20 @@ module.exports = require('class').extend(function Stamp(proto){
 		}
 		code += '\n'
 
-		for(var i = 0; i < stack.length ; i++){
-			var object = stack[i]
-			var p = '$p' + i
-			if(object.indexOf('.') !== -1){
-				code += indent +'var '+p+' = '+ object +'\n'
-			}
-			else p = object
-			code += indent + 'if('+p+'){\n'
-			for(var key in props){
-				code += indent + '	if(_'+key+' === undefined) _'+key+' = ' + p +'.' + key + '\n'
-			}
-			code += indent + '}\n'
-		}
+		code += indent +'if('+macroargs[0]+'){\n'
+		code += styleStampCode(indent+'	', macroargs[0], props, true)
+		code += indent +'}\n'
+
+		code += indent +'var $p0=this._state && this._state.'+classname+'\n'
+		code += indent +'if($p0){\n'
+		code += styleStampCode(indent+'	', '$p0', props)
+		code += indent +'}\n'
+
+		code += indent +'var $p1=$stamp._state\n'
+		code +=	indent +'if($p1){\n'
+		code += styleStampCode(indent+'	', '$p1', props)
+		code += indent +'}\n'
+
 		for(var key in props){
 			code += indent + 'if(_'+key+' !== undefined) $stamp.'+key+' = _'+key+'\n'
 		}
@@ -89,7 +101,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		return code
 	}
 
-	proto.$DRAWSTAMP = function(classname, macroargs, mainargs, indent){
+	proto.$DRAWSTAMP = function(target, classname, macroargs, mainargs, indent){
 		var code = ''
 		code += indent + '$stamp.onDraw()\n'
 		return code

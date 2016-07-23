@@ -48,7 +48,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 		0, 1, 1,
 		1, 1, 1
 	)
-	//proto.dump = 1
+
 	proto.vertexStyle = function(){}
 	proto.pixelStyle = function(){}
 
@@ -127,8 +127,6 @@ module.exports = require('shader').extend(function RectShader(proto){
 		else borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline*adjust + 1.,0.,1.))
 		return mix(this.color, borderfinal, clamp(fill * adjust + 1., 0., 1.))
 	}
-
-	proto.dump = 1
 
 	proto.toolMacros = {
 		draw:function(overload){

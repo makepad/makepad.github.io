@@ -75,6 +75,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		// lets get this to the right file/line
 		// first of all we need to grab the current function
 		var state = error.state
+		if(!state) throw error
 		var curfn = state.curFunction
 		try{
 			curfn.callee()
@@ -880,7 +881,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 			return fnname + '(' + realargs.join() + ')'
 		}
-		else throw this.SyntaxErr(node,"Not a callable type: "+calleeinfer.name+" "+calleeinfer.kind)
+		else throw this.SyntaxErr(node,"Not a callable type: "+calleestr+'('+argstrs.join()+')'+calleeinfer.name+" "+calleeinfer.kind)
 		// ok so now lets type specialize and call our function
 		// ie generate it
 	}

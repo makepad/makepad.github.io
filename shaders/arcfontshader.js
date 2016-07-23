@@ -9,7 +9,6 @@ module.exports = require('shader').extend(function ArcFontShader(proto, base){
 		fontItemGeom:{kind:'uniform', type:types.vec2},
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
 	}
-	proto.dump = 1
 
 	proto.pixel = function(){$
 

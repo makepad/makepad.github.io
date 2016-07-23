@@ -3,9 +3,8 @@ var App = require('view').extend(function(proto){
 
 	proto.tools = {
 		Background: require('shaders/rectshader').extend(function(proto){
-			
 			proto.random = 0
-			//proto.dump = 1
+
 			proto.pixelStyle = function(){$
 				var m = this.mesh
 				this.borderWidth.x = 10.+5.*sin(m.x*15.*this.random)*cos(m.x*5.*this.random)

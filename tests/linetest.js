@@ -4,11 +4,11 @@ var App = require('view').extend(function(proto){
 		Line:require('shaders/lineshader').extend(function(proto){
 
 			proto.liney = function(pt){$
-				return cos(pt*0.1)*400.+400.
+				return cos(pt*0.01)*400.+400.
 			}
 			
 			proto.linex = function(pt){$
-				return sin(pt*0.190+this.time)*400.+400.
+				return sin(pt*0.04+this.time)*400.+400.
 			}
 
 			proto.vertexStyle = function(){$
@@ -28,10 +28,9 @@ var App = require('view').extend(function(proto){
 		})
 	}
 
-	proto.wrap = false
 	proto.onDraw = function(){
 		//this.drawBg({w:100*Math.sin(this.time),h:100})
-		require.perf()
+		//require.perf()
 		for(var j = 0; j < 1; j++){
 			//var px = random()*500, py = random()*500
 			//var pz = random()
@@ -48,7 +47,7 @@ var App = require('view').extend(function(proto){
 				})
 			}
 		}
-		require.perf()
+		//require.perf()
 	}
 })
 App().runApp()

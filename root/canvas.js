@@ -127,6 +127,7 @@ module.exports = function(proto){
 	proto.$compileToolMacros = function(className, sourceClass){
 		var sourceProto = sourceClass.prototype
 		var macros = sourceProto._toolMacros
+		var target = this
 		for(var macroName in macros){
 			var code = macros[macroName].toString().replace(comment1Rx,'').replace(comment2Rx,'')
 			// lets parse our args
@@ -146,7 +147,7 @@ module.exports = function(proto){
 				else macroArgs = args.split(/\s*,\s*/)
 				var fn = sourceProto[fnname]
 				if(!fn) throw new Error('CanvasMacro: '+fnname+ ' does not exist')
-				return sourceProto[fnname](className, macroArgs, mainargs, indent)
+				return sourceProto[fnname](target, className, macroArgs, mainargs, indent)
 			})
 			code = code.replace(nameRx,className)
 
@@ -156,7 +157,7 @@ module.exports = function(proto){
 			})
 
 			// create the function on target
-			this[methodName] = new Function('return ' + code)()
+			target[methodName] = new Function('return ' + code)()
 		}
 	}
 

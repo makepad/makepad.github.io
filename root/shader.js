@@ -13,19 +13,19 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
-	proto.tween = function(){
-		if(this.duration < 0.01) return 1.
+	proto.tweenTime = function(){
+		if(this.tween < 0.01) return 1.
 		return this.tweenBezier(
 			this.ease.x, 
 			this.ease.y, 
 			this.ease.z, 
 			this.ease.w, 
-			clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
+			clamp((this.time - this.tweenStart) / this.tween, 0.0, 1.0)
 		)
 	}
 
 	proto.vertexMain = function(){$
-		var T = this.tween()
+		var T = this.tweenTime()
 		$CALCULATETWEEN
 		var position = this.vertex()
 		if(painterPickMat4[0][0] != 1. || painterPickMat4[1][1] != 1.){
@@ -457,20 +457,47 @@ module.exports = require('class').extend(function Shader(proto){
 		this.$compileShader()
 	}
 
-	proto.$STYLEPROPS = function(classname, macroargs, mainargs, indent){
+	function stylePropCode(indent, inobj, styleProps, noif){
+		var code = ''
+		for(var key in styleProps){
+			var name = styleProps[key].name
+			if(styleProps[key].config.noStyle) continue
+			if(!noif){
+				code += indent+'if(_'+name+' === undefined) _'+name+ ' = '+inobj+'.' + name +'\n'
+			}
+			else{
+				code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
+			}
+		}
+		return code
+	}
+
+	function styleStampRootCode(indent, inobj, props, styleProps){
+		var code = ''
+		for(var key in styleProps){
+			var name = styleProps[key].name
+			if(styleProps[key].config.noStyle) continue
+			if(name in props){
+				code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
+			}
+		}
+		return code
+	}
+
+	function styleTweenCode(indent, inobj){
+		var code = ''
+		code += indent+'if(_tween === undefined) _tween = '+inobj+'.tween\n'
+		code += indent+'if(_delay === undefined) _delay = '+inobj+'.delay\n'
+		code += indent+'if(_ease === undefined) _ease = '+inobj+'.ease\n'
+		return code
+	}
+
+	proto.$STYLEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// first generate property overload stack
 		// then write them on the turtles' propbag
 		var styleProps = this.$compileInfo.styleProps
 		if(!macroargs) throw new Error('$STYLEPROPS doesnt have overload argument')
-
-		var stack = [
-			macroargs[0], 
-			'this.$stampArgs && this.$stampArgs.'+classname, 
-			'this.$outerState && this.$outerState.'+classname, 
-			'this._state && this._state.'+classname, 
-			'this._'+classname+'.prototype'
-		]
 
 		// lets make the vars
 		var code = indent + 'var $turtle = this.turtle'
@@ -482,37 +509,50 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		code += '\n\n'
 
-		// generate the property overload stack
-		for(var i = 0; i < stack.length; i++){
-			var object = stack[i]
-			var p = '$p'+i
-			var subind = indent
+		code += 'if(' + macroargs[0] + ' === this){\n'
+		code += styleStampRootCode('	', macroargs[0], target._props, styleProps)
+		code += '}\n'
+		code += 'else if(' + macroargs[0] + '){\n'
+		code += stylePropCode('	', macroargs[0], styleProps, true)
+		code += '}\n'
 
-			if(object.indexOf('.') !== -1){
-				code += indent + 'var ' + p+' = '+ object + '\n'
-			}
-			else p = object
-			
-			if(p !== 'this'){
-				subind += '\t'
-				code += indent + 'if('+p+'){\n'
-			}
+		code += 'var $p0 = this.$stampArgs && this.$stampArgs.'+classname+'\n'
+		code += 'if($p0){\n'
+		code += stylePropCode('	', '$p0', styleProps)
+		code += '}\n'
 
-			for(var key in styleProps){
-				var name = styleProps[key].name
-				//var slots = types.getSlots(prop.type)
-				if(styleProps[key].config.noStyle) continue
-				if(i === 0){
-					code += subind+'_'+name+ ' = '+p+'.' + name +'\n'
-				}
-				else{
-					code += subind+'if(_'+name+' === undefined) _'+name+ ' = '+p+'.' + name +'\n'
-				}
-			}
+		code += 'var $p1 = this.$outerState && this.$outerState.'+classname+'\n'
+		code += 'if($p1){\n'
+		code += stylePropCode('	', '$p1', styleProps)
+		code += '}\n'
 
-			if(subind !== indent) code += indent + '}\n'
+		code += 'var $p2 = this._state && this._state.'+classname+'\n'
+		code += 'if($p2){\n'
+		code += stylePropCode('	', '$p2', styleProps)
+		code += '}\n'
 
-		}
+		code += 'var $p3 = this.$stampArgs\n'
+		code += 'if($p3){\n'
+		code += styleTweenCode('	', '$p3')
+		code += '}\n'
+
+		code += 'var $p4 = this.$outerState\n'
+		code += 'if($p4){\n'
+		code += styleTweenCode('	', '$p4')
+		code += '}\n'
+
+		code += 'var $p5 = this._state\n'
+		code += 'if($p5){\n'
+		code += styleTweenCode('	', '$p5')
+		code += '}\n'
+
+		code += styleTweenCode('', 'this')
+
+		// last one is the class
+		code += 'var $p9 = this._'+classname+'.prototype\n'
+		code += stylePropCode('', '$p9', styleProps)
+
+		//console.log(code)
 		// store it on the turtle
 		code += '\n'
 		for(var key in styleProps){
@@ -526,7 +566,7 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$ALLOCDRAW = function(classname, macroargs, mainargs, indent){
+	proto.$ALLOCDRAW = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
@@ -614,10 +654,10 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-		code += indent + 'var $tweenstart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($view._time < $tweenstart + $duration){\n'
-		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenstart)/$duration))\n'
+		code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+		code += indent + 'if($view._time < $tweenStart + $tween){\n'
+		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenStart)/$tween))\n'
 		code += indent + tweencode 
 		code += indent + '}'
 		return code
@@ -646,7 +686,7 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$PREVPROPS = function(classname, macroargs, mainargs, indent){
+	proto.$PREVPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -666,7 +706,7 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$WRITEPROPS = function(classname, macroargs, mainargs, indent){
+	proto.$WRITEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// load the turtle
 		var info = this.$compileInfo
@@ -678,7 +718,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.self.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
-		code += indent +'var $timeMax = $view._time + $turtle._duration\n'
+		code += indent +'var $timeMax = $view._time + $turtle._tween\n'
 		//code += indent + '_props.self.length++\n'
 		
 		// lets store our max time on our todo
@@ -956,7 +996,8 @@ module.exports = require('class').extend(function Shader(proto){
 		pickIdHi: {kind:'uniform', value:0.},
 		pickIdLo: {noTween:true, noStyle:true, value:0.},
 		ease: {noTween:true, value:[0,0,1.0,1.0]},
-		duration: {noTween:true, value:0.},
+		tween: {noTween:true, value:0.},
+		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 		// for ease of use define them here
 		viewPosition:{kind:'uniform', type:types.mat4},
