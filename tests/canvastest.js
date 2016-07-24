@@ -1,5 +1,5 @@
 
-var App = require('view').extend(function(proto){
+var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		Bg: require('shaders/rectshader').extend(function(proto){
@@ -46,5 +46,4 @@ var App = require('view').extend(function(proto){
 		//console.log(Date.now()-dt)
 
 	}
-})
-App().runApp()
+})()

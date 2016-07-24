@@ -14,7 +14,7 @@ bus.onmessage = function(msg){
 	userMessage[msg.fn](msg)
 }
 
-var TAP_TIME = 150
+var TAP_TIME = 200
 var TAP_DIST = 5
 
 var fingermap = {}
@@ -59,7 +59,7 @@ function fingerDown(fingers){
 		// store startx for delta
 		p.pick = pick
 		p.sx = p.x
-		p.sx = p.y
+		p.sy = p.y
 		p.dx = 0
 		p.dy = 0
 		// post the message
@@ -81,7 +81,7 @@ function fingerMove(fingers){
 		p.sx = op.sx
 		p.sy = op.sy
 		p.dx = p.x - p.sx
-		p.dy = p.y - p.sx
+		p.dy = p.y - p.sy
 		p.fn = 'onFingerMove'
 		p.digit = op.digit
 		p.pick = op.pick
@@ -120,6 +120,7 @@ function fingerUp(fingers){
 		var p = fingers[i]
 
 		var op = nearestFinger(p.x, p.y)
+
 		// copy over the startx/y
 		if(!op){
 			console.log('End finger without matching finger', p)
@@ -128,7 +129,7 @@ function fingerUp(fingers){
 		p.sx = op.sx
 		p.sy = op.sy
 		p.dx = p.x - p.sx
-		p.dy = p.y - p.sx
+		p.dy = p.y - p.sy
 		p.fn = 'onFingerUp'
 		p.finger = op.finger
 		p.pick = op.pick

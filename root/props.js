@@ -40,7 +40,9 @@ module.exports = function(proto){
 				if(flags){
 					var id = 1
 					while(flags){
-						if(flags&1) this['onFlag'+id]({key:key, old:old, value:value})
+						if(flags&1){
+							this['onFlag'+id]({key:key, old:old, value:value})
+						}
 						id = id<<1, flags = flags>>1
 					}
 				}

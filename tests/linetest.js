@@ -1,4 +1,4 @@
-var App = require('view').extend(function(proto){
+var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		Line:require('shaders/lineshader').extend(function(proto){
@@ -49,5 +49,4 @@ var App = require('view').extend(function(proto){
 		}
 		//require.perf()
 	}
-})
-App().runApp()
+})()

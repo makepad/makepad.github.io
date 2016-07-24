@@ -92,7 +92,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		if(isNaN(this._x) || isNaN(this._y)){
 			this._x = this.wx + margin[3]
 			this._y = this.wy + margin[0]
-			this.wx += this._w +margin[3] + margin[1]
+			this.wx += (isNaN(this._w)?0:this._w) +margin[3] + margin[1]
 			// compute new max height
 			var nh = this._h +margin[0] + margin[2]
 			if(nh > this.mh) this.mh = nh
@@ -114,8 +114,8 @@ module.exports = require('class').extend(function Turtle(proto){
 		var padding = this.padding
 		var outer = this.outer
 
-		outer._w = (isNaN(this.width)?(this.x2 - this.sx):this.width) + padding[3] + padding[1]
-		outer._h = (isNaN(this.height)?(this.y2 - this.sy):this.height) + padding[0] + padding[2]
+		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
+		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
 
 		// align
 		if(this.align[0] !== 0 || this.align[1] !== 0){

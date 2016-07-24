@@ -1,12 +1,22 @@
-var Div = require('view').extend("Div",{
+var styles = {
+	CSize:{
+		name:'CSize',
+		Rect:{
+			padding:20
+		},
+		Text:{
+			fontSize:20
+		},
+		margin:30
+	}
+}
+
+var Div = require('canvas').extend(styles.Div,{
 	props:{
 		bgColor:[1,0,0,1]
 	},
-	tools:{
-		Bg:require('shaders/rectshader')
-	},
 	onDraw:function(){
-		this.drawBg({
+		this.drawRect({
 			w:this.$w,
 			h:this.$h,
 			color:this.bgColor
@@ -14,43 +24,41 @@ var Div = require('view').extend("Div",{
 	}
 })
 
-var App = require('view').extend("App",{
+var CSize = require('canvas').extend(styles.CSize,{
 	props:{
-		wrap:true
+		bgColor:[1,0,0,1]
 	},
-	tools:{
-		Button:require('stamps/buttonstamp').extend({
-			margin:2,
-			Text:{
-				fontSize:15
-			}
-		}),
-		Bg:require('shaders/rectshader')
-	},
+	onDraw:function(){
+		this.beginRect()
+		this.drawText({
+			color:'white',
+			text:this.text
+		})
+		this.endRect()
+	}
+})
+
+var App = require('app').extend({
 	onCompose:function(){
 		return [
+			CSize({
+				text:'Full view textnode'
+			}),
 			Div({
-				name:'1',
-				w:100,
+				//w:100,
 				h:100,
-				bgColor:'red'}
-			),
-			Div({
-				name:'2',
-				w:100,
-				h:100,
-				bgColor:'blue'
-			},
+				bgColor:'blue'},
 				Div({
-					name:'3',
-					x:'10',
-					y:'10',
-					w:'50%',
+					margin:[10,10,0,10],
+					w:50,
 					h:40,
-					bgColor:'orange'
+					bgColor:'orange',
+					onFingerTap:function(){
+						this.w = 150
+						this.bgColor = 'red'
+					}
 				})
 			)
 		]
 	}
-})
-App().runApp()
+})()

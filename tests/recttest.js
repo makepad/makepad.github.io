@@ -1,5 +1,5 @@
 
-var App = require('view').extend(function(proto){
+var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		Background: require('shaders/rectshader').extend(function(proto){

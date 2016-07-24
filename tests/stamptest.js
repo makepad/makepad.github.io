@@ -1,4 +1,4 @@
-var App = require('view').extend(function(proto){
+var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		Button:require('stamps/buttonstamp').extend({
@@ -22,5 +22,4 @@ var App = require('view').extend(function(proto){
 		}
 		//require.perf()
 	}
-})
-App().runApp()
+})()

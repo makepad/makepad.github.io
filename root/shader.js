@@ -508,7 +508,6 @@ module.exports = require('class').extend(function Shader(proto){
 			code += ', _' + prop.name
 		}
 		code += '\n\n'
-
 		code += 'if(' + macroargs[0] + ' === this){\n'
 		code += styleStampRootCode('	', macroargs[0], target._props, styleProps)
 		code += '}\n'

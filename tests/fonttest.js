@@ -1,5 +1,5 @@
 
-var App = require('view').extend(function(proto){
+var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		//Text: require('shaders/arcfontshader').extend(function(proto){
@@ -25,5 +25,4 @@ var App = require('view').extend(function(proto){
 			})
 		}
 	}
-})
-App().runApp()
+})()
