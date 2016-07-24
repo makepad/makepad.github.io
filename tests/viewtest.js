@@ -1,0 +1,56 @@
+var Div = require('view').extend("Div",{
+	props:{
+		bgColor:[1,0,0,1]
+	},
+	tools:{
+		Bg:require('shaders/rectshader')
+	},
+	onDraw:function(){
+		this.drawBg({
+			w:this.$w,
+			h:this.$h,
+			color:this.bgColor
+		})
+	}
+})
+
+var App = require('view').extend("App",{
+	props:{
+		wrap:true
+	},
+	tools:{
+		Button:require('stamps/buttonstamp').extend({
+			margin:2,
+			Text:{
+				fontSize:15
+			}
+		}),
+		Bg:require('shaders/rectshader')
+	},
+	onCompose:function(){
+		return [
+			Div({
+				name:'1',
+				w:100,
+				h:100,
+				bgColor:'red'}
+			),
+			Div({
+				name:'2',
+				w:100,
+				h:100,
+				bgColor:'blue'
+			},
+				Div({
+					name:'3',
+					x:'10',
+					y:'10',
+					w:'50%',
+					h:40,
+					bgColor:'orange'
+				})
+			)
+		]
+	}
+})
+App().runApp()

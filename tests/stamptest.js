@@ -18,7 +18,7 @@ var App = require('view').extend(function(proto){
 			this.drawButton({
 				text:""+i
 			})
-			if(i && !(i%40)) this.turtle.newline()
+			if(i && !(i%40)) this.turtle.lineBreak()
 		}
 		//require.perf()
 	}
