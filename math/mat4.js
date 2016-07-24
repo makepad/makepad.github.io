@@ -1216,6 +1216,32 @@ mat4.SIMD.rotateZ = function (out, a, rad) {
  mat4.rotateZ = glMatrix.USE_SIMD ? mat4.SIMD.rotateZ : mat4.scalar.rotateZ;
 
 /**
+ * Generates a matrix thats translated, scaled, rotated and translated in that order
+ * Useful for 2D UI. You can make one with matrix muls as well but this is much faster
+ */
+mat4.fromTSRT = function(out, t1x, t1y, t1z, scx, scy, scz, rx, ry, rz, t2x, t2y, t2z){
+    var cx = Math.cos(rx), cy = Math.cos(ry), cz = Math.cos(rz)
+    var sx = Math.sin(rx), sy = Math.sin(ry), sz = Math.sin(rz)
+    out[0] = scx*(cy * cz + sx * sy * sz)
+    out[1] = scy*(-sz*cy+cz*sx*sy)
+    out[2] = scz*(sy*cx)
+    out[3] = t2x + (out[0]*t1x + out[1]*t1y + out[2]*t1z)
+    out[4] = scx*(sz * cx)
+    out[5] = scy*(cx*cz)
+    out[6] = scz*(-sx)
+    out[7] = t2y + (out[4]*t1x + out[5]*t1y + out[6]*t1z)
+    out[8] = scx*(-sy * cz + cy * sx * sz)
+    out[9] = scy*(sy*sz+cy*sx*cz)
+    out[10] = scz*(cx * cy)
+    out[11] = t2z + (out[8]*t1x + out[9]*t1y + out[10]*t1z)
+    out[13] = 0
+    out[13] = 0
+    out[14] = 0
+    out[15] = 1
+}
+
+
+/**
  * Creates a matrix from a vector translation
  * This is equivalent to (but much faster than):
  *

@@ -55,7 +55,7 @@ resize()
 // set the right width / height
 
 function runTodo(todo){
-
+	if(!todo) return false
 	//var deltaT = todo.timeStamp - todo.timeStart
 	var localTime = (Date.now() - args.timeBoot) / 1000// - deltaT
 	//console.log(localTime, todo.timeStamp, todo.timeStart)
@@ -838,7 +838,9 @@ userfn.updateTodo = function(msg){
 	}
 }
 
-todofn[50] = function addTodo(i32, f32, o){
+todofn[1] = function addChildTodo(i32, f32, o){
+	var todo = todoIds[i32[o+2]]
+	runTodo(todo)
 }
 
 //

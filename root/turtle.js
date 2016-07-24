@@ -56,7 +56,7 @@ module.exports = require('class').extend(function Turtle(proto){
 
 		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
 	}	
-	var zeromargin = [0,0,0,0]
+
 	proto.walk = function(oldturtle){
 
 		var _w = this._w
@@ -77,7 +77,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 
 		// check if we wrap around
-		if(this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
+		if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
 			var dx = this.sx - this.wx 
 			var dy = this.mh
 			this.wx = this.sx
@@ -104,7 +104,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 	}
 
-	proto.newline = function(){
+	proto.lineBreak = function(){
 		this.wx = this.sx
 		this.wy += this.mh
 		this.mh = 0

@@ -613,19 +613,14 @@ module.exports = require('class').extend(function Shader(proto){
 		var uniforms = info.uniforms
 		for(var key in uniforms){
 			var uniform = uniforms[key]
+			if(uniform.config.asGlobal) continue
 			if(key === 'this_DOT_time' && uniform.refcount > 1){
 				code += indent +'	$todo.self.animLoop = true\n'
 			}
-			// this.canvas....?
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
-			//console.log(key, source, mainargs)
-			// lets look at the type and generate the right uniform setter
 			var typename = uniform.type.name
-			// ok so uniforms... where do we get them
-			// we can get them from overload or the class prototype
 			code += indent+'	$todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
-			//code += indent+'console.log("'+key+'",'+source+')\n'
 		}
 
 		// do the samplers
@@ -986,7 +981,7 @@ module.exports = require('class').extend(function Shader(proto){
 		'LN10':'2.302585092994046',
 		'LOG2E':'1.4426950408889634',
 		'LOG10E':'0.4342944819032518',
-		'SQRT1_2':'0.70710678118654757',
+		'SQRT1_2':'0.70710678118654757'
 	}
 
 	// default shader properties
@@ -1000,8 +995,8 @@ module.exports = require('class').extend(function Shader(proto){
 		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 		// for ease of use define them here
-		viewPosition:{kind:'uniform', type:types.mat4},
-		camPosition:{kind:'uniform', type:types.mat4},
-		camProjection:{kind:'uniform', type:types.mat4}
+		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
+		camPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
+		camProjection:{kind:'uniform', asGlobal:true, type:types.mat4}
 	}
 })

@@ -5,12 +5,14 @@ var fingers = require('fingers')
 var mat4 = require('math/mat4')
 
 module.exports = require('class').extend(function View(proto){
-	// load mixins
+
 	require('props')(proto)
 	require('events')(proto)
 	require('canvas')(proto)
 	
 	proto.Turtle = require('turtle')
+	
+	var View = proto.constructor
 
 	// lets define some props
 	proto.props = {
@@ -20,6 +22,11 @@ module.exports = require('class').extend(function View(proto){
 		w:NaN,
 		h:NaN,
 		d:NaN,
+		cenX:0.5,
+		cenY:0.5,
+		scaleX:1,
+		scaleY:1,
+		rotate:0,
 		time:0,
 		frameId:0,
 		surface:false,
@@ -31,15 +38,13 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.viewId = 0
 
-	proto.$forwardCanvas = function(stamp){
-
-	}
-
-	proto._onConstruct = function(args){
+	proto._onConstruct = function(){
 		// lets process the args and construct things
 		// lets create a todo
 		this.todo = new painter.Todo()
 		this.turtle = new this.Turtle(this)
+		// our matrix
+		this.viewPosition = mat4.create()
 
 		// stuff needed for the drawing
 		this.$turtleStack = [
@@ -62,7 +67,19 @@ module.exports = require('class').extend(function View(proto){
 		this.turtle._padding = this._padding
 
 		this.view = this
-		this.position = mat4.create()
+
+		this.children = this.initChildren = []
+		for(i = 0; i < arguments.length; i++){
+			var value = arguments[i]
+			if(typeof value === 'object' && value.constructor === Object){
+				for(var key in value){
+					this[key] = value[key]
+				}
+			}
+			else if(value instanceof View){
+				this.initChildren.push(value)
+			}
+		}
 	}
 
 	proto._onDestroy = function(){
@@ -80,8 +97,7 @@ module.exports = require('class').extend(function View(proto){
 		}
 
 		if(!Array.isArray(this.children)){
-			if(!this.children) this.children = []
-			else this.children = [this.children]
+			this.children = this.children?[this.children]:[]
 		}
 
 		var children = this.children
@@ -97,7 +113,7 @@ module.exports = require('class').extend(function View(proto){
 			child.parent = this
 			child.root = this.root
 			var oldchild = oldChildren && oldChildren[i]
-			child.composeTree(oldchild && oldchild.children)
+			child.$composeTree(oldchild && oldchild.children)
 		}
 
 		if(oldChildren) for(;i < oldChildren.length; i++){
@@ -126,7 +142,7 @@ module.exports = require('class').extend(function View(proto){
 				var index = iter.$childIndex + 1 // make next index
 				iter = iter.parent // hop to parent
 				if(!iter) break // cant walk up anymore
-				next = parent.children[index] // grab next node
+				next = iter.children[index] // grab next node
 				if(next) next.$childIndex = index // store the index
 				//else we hopped up to parent
 			}
@@ -135,44 +151,63 @@ module.exports = require('class').extend(function View(proto){
 	}
 
 	proto.recompose = function(){
+
 	}
 
+	// how do we incrementally redraw?
 	proto.redraw = function(){
+		this.$drawClean = false
 		if(!this.root.redrawTimer){
 			this.root.redrawTimer = setTimeout(function(){
-				this.root.redrawTimer = undefined
+				this.redrawTimer = undefined
 				this.$redrawApp()
 			}.bind(this.root),0)
 		}
 	}
 
-	proto.relayout = function(){
-	}
+	proto.onFlag1 = this.recompose
+	proto.onFlag2 = this.redraw
 
-	proto.$redrawChildren = function(){
+	proto.onDrawChildren = function(){
 		var todo = this.todo
 		var children = this.children
 		for(var i = 0; i < children.length; i++){
 			child = children[i]
-			todo.addTodo(child.todo)
-			child.redrawCanvas()
+			todo.addChildTodo(child.todo)
+			child.$redrawView()
 		}
 	}
 
 	var zeroMargin = [0,0,0,0]
-	proto.$redrawView = function(){
+	proto.$redrawView = function(){		
 		this._time = this.root._time
 		this._frameId = this.root._frameId
 		this.$writeList.length = 0
+
+		// update the matrix?
+		if(!this.$matrixClean){
+			this.$matrixClean = true
+			var hw = this.$w * this.cenX
+			var hh = this.$h * this.cenY
+			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.scaleX, this.scaleY, 1., 0, 0, this.rotate, hw + this.$x, hh+this.$y, 0)
+		}
+
 		// begin a new todo stack
 		var todo = this.todo
+		todo.clearTodo()
+		
+		// lets set some globals
+		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+
+		if(this.root == this){
+			todo.mat4Global(painter.nameId('this_DOT_camPosition'), this.root.camPosition)
+			todo.mat4Global(painter.nameId('this_DOT_camProjection'), this.root.camProjection)
+			todo.clearColor(0.2, 0.2, 0.2, 1)
+		}
 
 		// store time info on todo
 		todo.self.timeStart = this._time
 		todo.self.timeMax = 0
-
-		todo.clearTodo()
-		todo.clearColor(0.2, 0.2, 0.2, 1)
 
 		// begin a new turtle with the views' layout settings
 		var turtle = this.turtle
@@ -180,40 +215,148 @@ module.exports = require('class').extend(function View(proto){
 		turtle._padding = this._padding
 		turtle._align = this._align
 		turtle._wrap = this._wrap
-		turtle._w = painter.w
-		turtle._h = painter.h
+		turtle._w = this.$w
+		turtle._h = this.$h
 
 		this.$stampId = 1
 
 		this.beginTurtle()
 
-		this.onFlag = 2
-		this.onDraw()
-		this.onFlag = 0
+		if(this.onDraw){
+			this.onFlag = 2
+			this.onDraw()
+			this.onFlag = 0
+		}
+
+		this.onDrawChildren()
 
 		this.endTurtle()
 	}
-
-	proto.onDraw = function(){
-		this.$redrawBackground()
-		this.$redrawChildren()
-	}
 	
-	proto.onFlag1 = this.recompose
-	proto.onFlag2 = this.redraw
-
 	proto.$redrawApp = function(){
 		// we can submit a todo now
 		this._time = (Date.now() - painter.timeBoot) / 1000
 		this._frameId++
 
 		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
+
+		var todo = this.todo
+
+		if(this.$layoutClean){
+			this.$relayoutView()
+		}
+
 		this.$redrawView()
+	}
+	
+	// relayout needs to happen on all of it
+	proto.$relayoutApp = function(){
+
+		var iter = this
+		var layout = this.$turtleLayout
+
+		// reset the write list
+		layout.$writeList.length = 0
+		layout.$turtleStack.len = 0
+		layout.view = layout
+
+		iter._x = 0
+		iter._y = 0
+		iter._w = painter.w
+		iter._h = painter.h
+
+		while(iter){
+			var turtle = layout.turtle
+
+			// copy the props from the iterator node to the turtle
+			turtle._x = iter._x
+			turtle._y = iter._y
+			turtle._w = iter._w
+			turtle._h = iter._h
+			turtle._margin = iter._margin
+			turtle._padding = iter._padding
+			turtle._align = iter._align
+			turtle._wrap = iter._wrap
+
+			var level = layout.$turtleStack.len - (
+				typeof turtle._x === "number" && !isNaN(turtle._x) || typeof turtle._x === "string" || 
+				typeof turtle._y === "number" && !isNaN(turtle._y) || typeof turtle._y === "string"
+			)?-1:0
+
+			layout.$writeList.push(iter, level)
+
+			layout.beginTurtle()
+			turtle = layout.turtle
+
+			turtle.view_iter = iter
+
+			// depth first recursion free walk
+			var next = iter.children[0]
+			if(next) next.$childIndex = 0
+			else while(!next){ // skip to parent next
+				var view = turtle.view_iter
+				
+				var ot = layout.endTurtle()
+
+				//if(!layout.turtle.outer)debugger
+				layout.turtle.walk(ot)
+
+				turtle = layout.turtle
+				
+				// copy the layout from the turtle to the view
+				view.$x = turtle._x
+				view.$y = turtle._y
+				view.$w = turtle._w
+				view.$h = turtle._h
+				//console.log(view.name, view.$w)
+				// treewalk
+				var index = iter.$childIndex + 1 // make next index
+				iter = iter.parent // hop to parent
+				if(!iter) break // cant walk up anymore
+				next = iter.children[index] // grab next node
+				if(next) next.$childIndex = index // store the index
+			}
+			iter = next
+		}
 	}
 
 	proto.runApp = function(){
 		var views = this.$views = []
-		this.viewPosition = mat4.create()
+		
+		// our layout object used for running turtles on the view tree
+		var layout = this.$turtleLayout = {
+			$writeList: [],
+			Turtle:this.Turtle,
+			beginTurtle:function(){
+				var len = ++this.$turtleStack.len
+				var outer = this.turtle
+				var turtle = this.turtle = (this.$turtleStack[len] || (this.$turtleStack[len] = new this.Turtle(this)))
+				turtle.begin(outer)
+				return turtle
+			},
+			endTurtle:function(){
+				this.turtle.end()
+				var last = this.turtle
+				this.turtle = this.$turtleStack[--this.$turtleStack.len]
+				return last
+			},
+			$moveWritten:function(start, dx, dy){
+				var writes = this.$writeList
+				var current = this.$turtleStack.len
+				for(var i = start; i < writes.length; i += 2){
+					var node = writes[i]
+					var level = writes[i+1]
+					if(current > level) continue
+					node.$x += dx
+					node.$y += dy
+				}
+			}
+		}
+		layout.turtle = new this.Turtle(layout)
+		layout.$turtleStack = [layout.turtle]
+		layout.$writeList = []
+		layout.view = layout
+
 		this.camPosition = mat4.create()
 		this.camProjection = mat4.create()
 		
@@ -278,6 +421,8 @@ module.exports = require('class').extend(function View(proto){
 
 		// lets attach our todo to the main framebuffer
 		painter.mainFramebuffer.assignTodo(this.todo)
+
+		this.$relayoutApp()
 
 		// first draw
 		this.$redrawApp(0,0)

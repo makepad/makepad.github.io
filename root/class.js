@@ -1,6 +1,11 @@
 // lets create a constructor
 var frozen = Object.freeze({})
-function extend(body){
+function extend(body, body2){
+	var bodyname
+	if(typeof body === 'string'){
+		bodyname = body
+		body = body2		
+	}
 
 	var proto = Object.create(this.prototype)
 
@@ -27,7 +32,10 @@ function extend(body){
 	if(true){
 		var path = Error().stack.split('\n')[3]
 		var clsname
-		if(body && body.name){
+		if(bodyname){
+			clsname = bodyname
+		}
+		else if(body && body.name){
 			clsname = body.name
 		}
 		else if(path.indexOf('/') !== -1){
@@ -49,7 +57,12 @@ function extend(body){
 
 	if(body){
 		if(typeof body === 'function'){
-			body.call(frozen, proto, this.prototype)
+			var check = {}
+			body.call(check, proto, this.prototype)
+			var keys = Object.keys(check)
+			if(keys.length){
+				throw new Error('Dont assign things to this in class body, use proto as first arg: this.'+keys.join(', '))
+			}
 		}
 		else if(typeof body === 'object'){
 			for(var key in body){

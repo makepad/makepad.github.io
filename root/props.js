@@ -1,5 +1,4 @@
 module.exports = function(proto){
-	var types = require('types')
 	// special names for property with name: key
 	// this.key  <- getter setter for the key
 	// this._key  <- the storage for a key
@@ -9,7 +8,7 @@ module.exports = function(proto){
 	// define props
 	function defineProp(key, value){
 		// default
-		if(typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype){
+		if(typeof value !== 'object' || value.constructor !== Object){
 			value = {value:value}
 		}
 		var initvalue = value.value

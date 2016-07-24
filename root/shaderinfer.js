@@ -227,11 +227,6 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		4:types.vec4
 	}
 
-	proto.mapThisProperty = function(node, name, value){
-
-		}
-
-
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
 		var name = node.name
@@ -508,6 +503,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 						else{
 							this.uniforms[fullname] = {
 								type:config.type,
+								config:config,
 								name:propname,
 								refcount:1
 							}

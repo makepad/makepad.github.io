@@ -111,15 +111,15 @@ painter.Todo = require('class').extend(function Todo(proto){
 	proto.addChildTodo = function(todo){ // id: 20
 		var o = (this.last = this.self.length)
 		if((this.self.length += 3) > this.allocated) this.resize()
-		var a = this.i32
+		var i32 = this.i32
 
-		i32[o+0] = 50
+		i32[o+0] = 1
 		i32[o+1] = 1
-		i32[o+2] = todo.todoId
+		i32[o+2] = todo.self.todoId
 
 		todo.root = this.root
 		todo.self.parentId = this.todoId
-		todo.self.rootId = this.root.fbId
+		todo.self.rootId = this.root.todoId
 	}
 
 	proto.useShader = function(shader){
@@ -185,12 +185,11 @@ painter.Todo = require('class').extend(function Todo(proto){
 			bus.batchMessage(mesh.self)
 		}
 
-		i32[o+0] = 7
+		i32[o+0] = 5
 		i32[o+1] = 2
 		i32[o+2] = nameId
 		i32[o+3] = mesh.self.meshId
 	}
-
 
 	// min/magfilter values
 	painter.NEAREST = 0
@@ -336,7 +335,6 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+3] = x
 	}
 
-
 	proto.floatGlobal = function(nameId, x){ // id:3
 		var o = (this.last = this.self.length)
 		if((this.self.length += 4) > this.allocated) this.resize()
@@ -386,11 +384,10 @@ painter.Todo = require('class').extend(function Todo(proto){
 		f32[o+6] = v[3]
 	}
 
-	proto.globalMat4 = function(nameId, m){
+	proto.mat4Global = function(nameId, m){
 		var o = (this.last = this.self.length)
 		if((this.self.length += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
-
 		i32[o+0] = 25
 		i32[o+1] = 17
 		i32[o+2] = nameId
@@ -444,7 +441,6 @@ painter.Todo = require('class').extend(function Todo(proto){
 			f32[o+6] = alpha
 			return
 		}
-		if(this.self.length == 0)
 
 		var o = (this.last = this.self.length) 
 		if((this.self.length += 9) > this.allocated) this.resize()
@@ -489,7 +485,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 			return
 		}
 
-		var o = (this.last = this.self.length) + 2
+		var o = (this.last = this.self.length)
 		if((this.self.length += 9) > this.allocated) this.resize()
 		var i32 = this.i32
 
@@ -787,7 +783,7 @@ painter.Framebuffer = require('class').extend(function Framebuffer(proto){
 		}
 
 		this.fbId = fbId
-		this.attach = attach
+		this.attachments = attach
 
 		bus.batchMessage({
 			fn:'newFramebuffer',
