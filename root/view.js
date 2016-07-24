@@ -42,29 +42,18 @@ module.exports = require('class').extend(function View(proto){
 		// lets process the args and construct things
 		// lets create a todo
 		this.todo = new painter.Todo()
-		this.turtle = new this.Turtle(this)
-		// our matrix
-		this.viewPosition = mat4.create()
 
-		// stuff needed for the drawing
-		this.$turtleStack = [
-			this.turtle
-		]
-		// the buffer writelist for nested turtle layout
+		this.turtle = new this.Turtle(this)
+		this.$turtleStack = [this.turtle]
 		this.$writeList = []
 
-		// the turtlestack. Its turtles all the way down
-		this.$turtleStack.len = 0
+		// our matrix
+		this.viewPosition = mat4.create()
 
 		// shader tree and stamp array
 		this.$shaders = {}
 		this.$stampId = 0
 		this.$stamps = [0]
-
-		this.turtle._x = 0
-		this.turtle._y = 0
-		this.turtle._margin = this._margin
-		this.turtle._padding = this._padding
 
 		this.view = this
 
@@ -153,11 +142,14 @@ module.exports = require('class').extend(function View(proto){
 		todo.self.timeMax = 0
 
 		// begin a new turtle with the views' layout settings
+		this.$turtleStack.len = 0
 		var turtle = this.turtle
 		turtle._margin = zeroMargin
 		turtle._padding = this._padding
 		turtle._align = this._align
 		turtle._wrap = this._wrap
+		turtle._x = 0
+		turtle._y = 0		
 		turtle._w = this.$w
 		turtle._h = this.$h
 
@@ -174,6 +166,7 @@ module.exports = require('class').extend(function View(proto){
 		this.onDrawChildren()
 
 		this.endTurtle()
+		// store the draw width and height
 		this.$wDraw = turtle._w
 		this.$hDraw = turtle._h
 	}

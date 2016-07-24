@@ -1,6 +1,6 @@
 module.exports = require('class').extend(function Stamp(proto){
 	//var types = require('types')
-	require('canvas')(proto)
+	require('tools')(proto)
 	
 	Object.defineProperty(proto, 'props', {
 		get:function(){
