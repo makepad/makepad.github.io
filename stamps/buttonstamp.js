@@ -30,7 +30,7 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 		this.state = this.states.hover
 	}
 
-	proto.onFingerOut = function(){
+	proto.onFingerUp = function(){
 		this.state = this.states.default
 	}
 

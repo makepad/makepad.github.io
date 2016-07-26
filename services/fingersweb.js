@@ -52,7 +52,7 @@ function fingerDown(fingers){
 
 		storeNewFinger(p)
 
-		services.painter.pick(0, p.x, p.y).then(function(pick){
+		services.painter.pick(p.digit, p.x, p.y).then(function(p, pick){
 			// set the ID
 			p.fn = 'onFingerDown'
 			// store startx for delta
@@ -70,7 +70,7 @@ function fingerDown(fingers){
 					bus.postMessage(q)
 				}
 			}
-		}, function(){})
+		}.bind(null, p), function(){})
 	}
 }
 
@@ -104,11 +104,11 @@ function fingerHover(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		services.painter.pick(0, p.x, p.y).then(function(pick){
+		services.painter.pick(0, p.x, p.y).then(function(p, pick){
 			p.pick = pick
 			p.fn = 'onFingerHover'
 			bus.postMessage(p)
-		}, function(){})
+		}.bind(null, p), function(){})
 	}
 }
 
@@ -116,11 +116,11 @@ function fingerWheel(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		services.painter.pick(0, p.x, p.y).then(function(pick){
+		services.painter.pick(0, p.x, p.y).then(function(p, pick){
 			p.pick = pick
 			p.fn = 'onFingerWheel'
 			bus.postMessage(p)
-		}, function(){})
+		}.bind(null, p), function(){})
 	}
 }
 
