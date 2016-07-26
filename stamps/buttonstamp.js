@@ -26,7 +26,7 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 		}
 	}
 
-	proto.onFingerOver = function(){
+	proto.onFingerDown = function(){
 		this.state = this.states.hover
 	}
 

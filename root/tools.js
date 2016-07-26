@@ -22,7 +22,7 @@ module.exports = function(proto){
 
 	Object.defineProperty(proto, 'tools', {
 		get:function(){
-			return this._tools
+			throw new Error('Please only assign to tools, use _tools if you need to access the data')
 		},
 		set:function(tools){
 			if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
@@ -76,7 +76,7 @@ module.exports = function(proto){
 			var slots = props.slots
 			var xoff = props.xoffset
 			var yoff = props.yoffset
-			var array = props.self.array
+			var array = props.array
 			for(var j = begin; j < end; j++){
 				array[j * slots + xoff] += dx
 				array[j * slots + yoff] += dy
@@ -116,9 +116,13 @@ module.exports = function(proto){
 	var nameRx = new RegExp(/NAME/g)
 	var fnnameRx = new RegExp(/^function\s*\(/)
 
+	var fnCache = {}
+	// can we reasonably cache these?
 	proto.$compileToolMacros = function(className, sourceClass){
 		var sourceProto = sourceClass.prototype
 		var macros = sourceProto._toolMacros
+
+
 		var target = this
 		for(var macroName in macros){
 			var code = macros[macroName].toString().replace(comment1Rx,'').replace(comment2Rx,'')
@@ -149,7 +153,7 @@ module.exports = function(proto){
 			})
 
 			// create the function on target
-			target[methodName] = new Function('return ' + code)()
+			target[methodName] = fnCache[code] || (fnCache[code] = new Function('return ' + code)())
 		}
 	}
 

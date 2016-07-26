@@ -36,5 +36,4 @@ var App = require('app').extend(function(proto){
 		}
 		//console.log(performance.now()-dt)
 	}
-})
-App().runApp()
+})()

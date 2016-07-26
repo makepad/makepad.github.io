@@ -38,7 +38,7 @@
 	var workerbloburl = URL.createObjectURL(new Blob([webworkersrc], {type: "text/javascript"}))
 
 	function runWorker(mainurl, canvas, owner, functionsource, workerid){
-        		// a forward reference for the owner
+		// a forward reference for the owner
 		var workerhandle = {
 			workerid:workerid,
 			queue:[]
@@ -72,10 +72,12 @@
 
 			worker.postMessage({
 				$:'initworker', 
-				workerid: workerid,
-				rooturl: rooturl, 
-				resources: resources,
-				userargs: userargs
+				msg:{
+					workerid: workerid,
+					rooturl: rooturl, 
+					resources: resources,
+					userargs: userargs
+				}
 			})
 
 			// our owner worker has already sent messages whilst the worker was initializing, send them
@@ -130,11 +132,14 @@
 		var factories = {}
 
 		self.onmessage = createOnMessage(userbusses, worker, false)
-		
+
 		if(!self.fakeworker){
 			mathLib(self)
 			timerWorker(self, worker)
 			cleanWorker(self)
+		}
+		else{
+			mathLib(window)
 		}
 	}
 
@@ -147,10 +152,18 @@
 				}
 				worker.postfunctions.length = 0
 			}
-			if(worker.batchmessages.length){
+			var batchmessages = worker.batchmessages
+			if(batchmessages.length){
+				for(var i = 0; i <batchmessages.length; i++){
+					var msg = batchmessages[i]
+					var body = msg.msg
+					if(typeof body === 'object' && body.constructor !== Object){
+						batchmessages[i].msg = body.toMessage()
+					}
+				}
 				worker.postMessage({
 					$:'batch',
-					msgs:worker.batchmessages
+					msgs:batchmessages
 				})
 				if(worker.fakeworker){
 					worker.batchmessages = []
@@ -167,12 +180,12 @@
 				for(var i = 0, msgs = msg.msgs; i < msgs.length; i++){
 					msg = msgs[i]
 					var bus = busses[msg.$]
-					if(bus && bus.onMessage) bus.onMessage(msg)
+					if(bus && bus.onMessage) bus.onMessage(msg.msg)
 				}
 			}
 			else{
 				var bus = busses[msg.$]
-				if(bus && bus.onMessage) bus.onMessage(msg)
+				if(bus && bus.onMessage) bus.onMessage(msg.msg)
 			}
 			worker.postEntry()
 		}
@@ -190,14 +203,10 @@
 
 			var kernelservicebus = {
 				batchMessage:function(servicename, msg){
-					msg.$ = servicename
-					if(msg.$ !== servicename) return
-					worker.batchmessages.push(msg)
+					worker.batchmessages.push({$:servicename,msg:msg})
 				}.bind(kernelservice, servicename),
 				postMessage:function(servicename, msg){
-					msg.$ = servicename
-					if(msg.$ !== servicename) return
-					worker.postMessage(msg)
+					worker.postMessage({$:servicename, msg:msg})
 				}.bind(kernelservice, servicename)
 			}
 			var myuserargs = userargs[servicename] = {}
@@ -294,14 +303,10 @@
 					workerid:worker.workerid,
 					bus:{
 						batchMessage:function(servicename, msg){
-							msg.$ = servicename
-							if(msg.$ !== servicename) return
-							worker.batchmessages.push(msg)
+							worker.batchmessages.push({$:servicename,msg:msg})
 						}.bind(null, servicename),
 						postMessage:function(servicename, msg){
-							msg.$ = servicename
-							if(msg.$ !== servicename) return
-							worker.postMessage(msg)
+							worker.postMessage({$:servicename,msg:msg})
 						}.bind(null, servicename),
 					}
 				}

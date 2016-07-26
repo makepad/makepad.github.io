@@ -50,20 +50,27 @@ function fingerDown(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		var pick = services.painter.pick(p.x, p.y)
-
 		storeNewFinger(p)
 
-		// set the ID
-		p.fn = 'onFingerDown'
-		// store startx for delta
-		p.pick = pick
-		p.sx = p.x
-		p.sy = p.y
-		p.dx = 0
-		p.dy = 0
-		// post the message
-		bus.postMessage(p)
+		services.painter.pick(0, p.x, p.y).then(function(pick){
+			// set the ID
+			p.fn = 'onFingerDown'
+			// store startx for delta
+			p.pick = pick
+			p.sx = p.x
+			p.sy = p.y
+			p.dx = 0
+			p.dy = 0
+			// post the message
+			bus.postMessage(p)
+			if(p.queue){
+				for(var i = 0; i < p.queue.length; i++){
+					var q = p.queue[i]
+					q.pick = pick
+					bus.postMessage(q)
+				}
+			}
+		}, function(){})
 	}
 }
 
@@ -85,19 +92,23 @@ function fingerMove(fingers){
 		p.fn = 'onFingerMove'
 		p.digit = op.digit
 		p.pick = op.pick
-		bus.postMessage(p)
+		if(!op.pick){
+			var queue = op.queue || (op.queue = [])
+			queue.push(p)
+		}
+		else bus.postMessage(p)
 	}
 }
-
+var dx = 0, dy =0 
 function fingerHover(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		var pick = services.painter.pick(p.x, p.y)
-
-		p.pick = pick
-		p.fn = 'onFingerHover'
-		bus.postMessage(p)
+		services.painter.pick(0, p.x, p.y).then(function(pick){
+			p.pick = pick
+			p.fn = 'onFingerHover'
+			bus.postMessage(p)
+		}, function(){})
 	}
 }
 
@@ -105,10 +116,11 @@ function fingerWheel(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		var pick = services.painter.pick(p.x, p.y)
-		p.pick = pick
-		p.fn = 'onFingerWheel'
-		bus.postMessage(p)
+		services.painter.pick(0, p.x, p.y).then(function(pick){
+			p.pick = pick
+			p.fn = 'onFingerWheel'
+			bus.postMessage(p)
+		}, function(){})
 	}
 }
 
@@ -136,14 +148,15 @@ function fingerUp(fingers){
 		// remove the old from the finger set
 		fingermap[op.digit] = undefined
 
-		bus.postMessage(p)
+		p.isTap = p.time - op.time < TAP_TIME && Math.sqrt(p.dx*p.dx+p.dy*p.dy) < TAP_DIST
 
-		// check if dt < tapspeed
-		if(p.time - op.time < TAP_TIME && Math.sqrt(p.dx*p.dx+p.dy*p.dy) < TAP_DIST){
-			p.fn = 'onFingerTap'
+		if(!op.pick){
+			var queue = op.queue || (op.queue = [])
+			queue.push(p)
+		}
+		else{
 			bus.postMessage(p)
 		}
-
 	}
 }
 
@@ -210,6 +223,8 @@ function touchmove(e){
 }
 
 function touchend(e){
+	if(exports.onTouchEndHook) exports.onTouchEndHook()
+
 	e.preventDefault()
 	fingerUp(touchFinger(e))
 }
@@ -239,7 +254,7 @@ canvas.addEventListener('contextmenu',function(e){
 })
 canvas.addEventListener('touchstart', touchstart)
 canvas.addEventListener('touchmove',touchmove)
-canvas.addEventListener('touchend', touchend)
+canvas.addEventListener('touchend', touchend, false)
 canvas.addEventListener('touchcancel', touchend)
 canvas.addEventListener('touchleave', touchend)
 canvas.addEventListener('wheel', wheel)

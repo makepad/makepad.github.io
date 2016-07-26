@@ -20,6 +20,20 @@ var App = require('app').extend(function(proto){
 			})
 			if(i && !(i%40)) this.turtle.lineBreak()
 		}
+		/*
+		this.drawBg({
+			x:0,
+			y:0,
+			w:529,
+			h:590,
+		})
+		this.drawBg({
+			x:0,
+			y:0,
+			w:265,
+			h:295,
+		})*/
+
 		//require.perf()
 	}
 })()

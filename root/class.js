@@ -76,3 +76,17 @@ function extend(body){
 }
 
 module.exports = extend.call(Object)
+Object.defineProperty(module.exports.prototype,'mixin',{
+	set:function(v){
+		if(Array.isArray(v)){
+			for(var i = 0; i < v.length; i++){
+				var fn = v[i]
+				fn(this)
+			}
+		}
+		else v(this)
+	}, 
+	get:function(){
+		throw new Error('mixin is a setter only')
+	}
+})

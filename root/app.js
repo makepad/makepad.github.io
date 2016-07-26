@@ -93,10 +93,6 @@ module.exports = require('view').extend(function View(proto, base){
 			fingerMessage('onFingerWheel', msg.pick.hi, msg.pick.lo, msg)
 		}
 
-		fingers.onFingerTap = function(msg){
-			fingerMessage('onFingerTap', msg.pick.hi, msg.pick.lo, msg)
-		}
-
 		painter.onResize = function(){
 			this.$redrawApp()
 		}.bind(this)
@@ -272,8 +268,8 @@ module.exports = require('view').extend(function View(proto, base){
 				turtle = layout.turtle
 				
 				// copy the layout from the turtle to the view
-				view.$x = turtle._x
-				view.$y = turtle._y
+				view.$$x = turtle._x 
+				view.$$y = turtle._y 
 				view.$w = turtle._w
 				view.$h = turtle._h
 
@@ -284,6 +280,26 @@ module.exports = require('view').extend(function View(proto, base){
 				}
 				//console.log(view.name, view.$w)
 				// treewalk
+				var index = iter.$childIndex + 1 // make next index
+				iter = iter.parent // hop to parent
+				if(!iter) break // cant walk up anymore
+				next = iter.children[index] // grab next node
+				if(next) next.$childIndex = index // store the index
+			}
+			iter = next
+		}
+
+		var iter = this
+		iter.$x = 0
+		iter.$y = 0
+		while(iter){
+			if(iter.parent){
+				iter.$x = iter.$$x - iter.parent.$$x
+				iter.$y = iter.$$y - iter.parent.$$y
+			}			
+			var next = iter.children[0]
+			if(next) next.$childIndex = 0
+			else while(!next){ // skip to parent next
 				var index = iter.$childIndex + 1 // make next index
 				iter = iter.parent // hop to parent
 				if(!iter) break // cant walk up anymore

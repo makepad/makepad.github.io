@@ -40,11 +40,20 @@ module.exports = require('class').extend(function Shader(proto){
 		var color = this.pixel()
 		if(painterPickPass != 0){
 			if(color.a < this.pickAlpha) discard
+			//gl_FragColor = 'blue'
 			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,float(painterPickPass)/255.)
 		}
 		else{
 			gl_FragColor = color
 		}
+	}
+
+	proto.onextendclass = function(){
+		// call shader compiler
+		//if(!this.$shaderClean){
+		//	this.$shaderClean = true
+			this.$compileShader()
+		//}
 	}
 
 	// ok the alpha blend modes. how do we do it.
@@ -56,8 +65,6 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$compileShader = function(){
 		if(!this.vertex || !this.pixel) return
-
-		var ast = parser.parse()
 		
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, proto.$mapExceptions)
@@ -452,10 +459,6 @@ module.exports = require('class').extend(function Shader(proto){
 		if(this.dump) console.log(vertex,pixel)
 	}
 
-	proto.onextendclass = function(){
-		// call shader compiler
-		this.$compileShader()
-	}
 
 	function stylePropCode(indent, inobj, styleProps, noif){
 		var code = ''
@@ -583,7 +586,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'if($props.$frameId !== $view._frameId){\n'
 		code += indent+'	var $proto = this._' + classname +'.prototype\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
-		code += indent+'	$props.self.length = 0\n'
+		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
 		code += indent+'	$todo.useShader($shader)\n'
@@ -614,12 +617,12 @@ module.exports = require('class').extend(function Shader(proto){
 			var uniform = uniforms[key]
 			if(uniform.config.asGlobal) continue
 			if(key === 'this_DOT_time' && uniform.refcount > 1){
-				code += indent +'	$todo.self.animLoop = true\n'
+				code += indent +'	$todo.animLoop = true\n'
 			}
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
-			code += indent+'	$todo.'+typename+'('+painter.nameId(key)+','+source+')\n'
+			code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+','+source+')\n'
 		}
 
 		// do the samplers
@@ -635,12 +638,12 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets draw it
 		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent + '}\n'
-		code += indent + 'var $need = $props.self.length + '+need+'\n'
+		code += indent + 'var $need = $props.length + '+need+'\n'
 		code += indent + 'if($need >= $props.allocated) $props.alloc($need)\n'
 		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
-		code += indent + '$view.$writeList.push($props, $props.self.length, $need, $writelevel)\n'
-		code += indent + 'this.turtle.$propoffset = $props.self.length\n'
-		code += indent + '$props.self.length = $need\n'
+		code += indent + '$view.$writeList.push($props, $props.length, $need, $writelevel)\n'
+		code += indent + 'this.turtle.$propoffset = $props.length\n'
+		code += indent + '$props.length = $need\n'
 		//console.log(code)
 
 		return code
@@ -685,7 +688,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		var info = this.$compileInfo
 		code += indent +'var $props =  this.$shaders.'+classname+'.$props\n'
-		code += indent +'var $a = $props.self.array\n'
+		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = (this.turtle.$propoffset - 1) * ' + info.propSlots +'\n'
 		var instanceProps = info.instanceProps
 		var argobj = macroargs[0]
@@ -710,13 +713,13 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + 'var $view = this.view\n'
 		code += indent +'var $shader = this.$shaders.'+classname+'\n'
 		code += indent +'var $props = $shader.$props\n'
-		code += indent +'var $a = $props.self.array\n'
+		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 		code += indent +'var $timeMax = $view._time + $turtle._tween\n'
-		//code += indent + '_props.self.length++\n'
+		//code += indent + '_props.length++\n'
 		
 		// lets store our max time on our todo
-		code += indent + 'if($timeMax > $view.todo.self.timeMax) $view.todo.self.timeMax = $timeMax\n'
+		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 		var tweencode = '	var $f = $tween, $1mf = 1.-$tween, $upn, $upo\n'
 		var propcode = ''
 

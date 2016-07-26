@@ -5,9 +5,19 @@ var styles = {
 			padding:20
 		},
 		Text:{
+			//outlineWidth:10,
+			//outlineColor:'black',
 			fontSize:20
 		},
 		margin:30
+	},
+	MyDiv:{
+		//margin:[10,10,0,10],
+		//x:0,
+		//y:0,
+		w:50,
+		h:40,
+		bgColor:'orange'
 	}
 }
 
@@ -23,6 +33,9 @@ var Div = require('canvas').extend(styles.Div,{
 		})
 	}
 })
+
+// create a couple of styled classes
+var MyDiv = Div.extend(styles.MyDiv)
 
 var CSize = require('canvas').extend(styles.CSize,{
 	props:{
@@ -45,14 +58,11 @@ var App = require('app').extend({
 				text:'Full view textnode'
 			}),
 			Div({
-				//w:100,
-				h:100,
-				bgColor:'blue'},
-				Div({
-					margin:[10,10,0,10],
-					w:50,
-					h:40,
-					bgColor:'orange',
+				surface:true,
+				w:200,
+				h:200,
+				bgColor:'purple'},
+				MyDiv({
 					onFingerTap:function(){
 						this.w = 150
 						this.bgColor = 'red'
