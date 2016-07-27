@@ -44,6 +44,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.states = {
 		default:{
 			ScrollBar:{
+				tween:0.4,
 				bgColor:'#444',
 				handleColor:'#888'
 			}
@@ -69,12 +70,17 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		var mousepos = event.y / this.$h
 		// lets compute the relative mousepos to the nob
 		this.relativePos = mousepos - this.handlePos
+
 		// do page jumping
 		if(this.relativePos < 0 || this.relativePos > this.handleSize){
-			this.handlePos = clamp(this.handlePos + sign(this.relativePos)*this.handleSize,0,1.-this.handleSize)
-			this.relativePos = mousepos - this.handlePos
+			this.relativePos = this.handleSize*0.5
+
+			//this.handlePos = clamp(this.handlePos + sign(this.relativePos)*this.handleSize,0,1.-this.handleSize)
+			//this.relativePos = mousepos - this.handlePos
 			this.handleMoved = true
+			this.handlePos =  clamp(mousepos - this.relativePos,0,1.-this.handleSize)
 		}
+
 		this.state = this.states.hover
 	}
 

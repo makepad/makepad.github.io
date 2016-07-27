@@ -35,14 +35,14 @@ var Scrollbars = require('canvas').extend({
 	},
 	onDraw:function(){
 		this.beginRect(this.viewGeom)
-		for(var i = 0; i < 1500; i++)
+		for(var i = 0; i < 2500; i++)
 		this.drawScrollBar({
 			id:i,
 			margin:1,
-			initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.1),
-			handleSize:0.1,
-			w:16,
-			h:150//'100%',
+			initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.2),
+			handleSize:0.2,
+			w:8,
+			h:50//'100%',
 		})
 		this.endRect()
 	}
