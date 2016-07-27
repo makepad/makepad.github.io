@@ -90,8 +90,8 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 		// walk it
 		if(isNaN(this._x) || isNaN(this._y)){
-			this._x = this.wx + margin[3]
-			this._y = this.wy + margin[0]
+			if(isNaN(this._x)) this._x = this.wx + margin[3]
+			if(isNaN(this._y)) this._y = this.wy + margin[0]
 			this.wx += (isNaN(this._w)?0:this._w) +margin[3] + margin[1]
 			// compute new max height
 			var nh = this._h +margin[0] + margin[2]
@@ -138,8 +138,9 @@ module.exports = require('class').extend(function Turtle(proto){
 			if(str.indexOf('$') !== -1) code = 'this.turtle.sx + this.turtle.width-this.turtle._w - '+rep
 			else code = 'this.turtle.sx + '+rep
 			cache = xcache[str] = new Function('return '+code)
-		} 
-		return cache.call(this.view)
+		}
+		var ret = cache.call(this.view)
+		return ret
 	}
 
 	var ycache = {}
@@ -159,7 +160,7 @@ module.exports = require('class').extend(function Turtle(proto){
 	proto.evalw = function(str){
 		var cache = wcache[str]
 		if(!cache){
-			var code = str.replace(/\%/g, '*0.01*this.turtle.width')
+			var code = str.replace(/\%/g, '*0.01*this.turtle.width - this.turtle.margin[1] - this.turtle.margin[3]')
 			cache = wcache[str] = new Function('return '+code)
 		} 
 		return cache.call(this.view)
@@ -169,7 +170,7 @@ module.exports = require('class').extend(function Turtle(proto){
 	proto.evalh = function(str){
 		var cache = hcache[str]
 		if(!cache){
-			var code = str.replace(/\%/g, '*0.01*this.turtle.height')
+			var code = str.replace(/\%/g, '*0.01*this.turtle.height - this.turtle.margin[0] - this.turtle.margin[2]')
 			cache = hcache[str] = new Function('return '+code)
 		} 
 		return cache.call(this.view)

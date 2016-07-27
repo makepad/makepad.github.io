@@ -82,6 +82,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 	proto.toMessage = function(){
 		return {
 			fn:'updateTodo',
+			name:this.name,
 			deps:this.deps,
 			todoId:this.todoId,
 			buffer:this.f32.buffer,
@@ -609,6 +610,7 @@ painter.Shader = require('class').extend(function Shader(proto){
 				vertex:code.vertex,
 				pixel:code.pixel
 			},
+			name:code.name,
 			shaderId:shaderId
 		})
 
@@ -813,7 +815,7 @@ var framebufferIds = {}
 
 painter.Framebuffer = require('class').extend(function Framebuffer(proto){
 
-	proto.onConstruct = function(attachments){
+	proto.onConstruct = function(w, h, attachments){
 		var fbId = framebufferIdsAlloc ++
 		framebufferIds[fbId] = this
 
@@ -834,7 +836,19 @@ painter.Framebuffer = require('class').extend(function Framebuffer(proto){
 		bus.batchMessage({
 			fn:'newFramebuffer',
 			fbId: fbId,
-			attach: attach
+			attach: attach,
+			w:w,
+			h:h
+		})
+	}
+
+	proto.resize = function(w, h){
+		bus.batchMessage({
+			fn:'newFramebuffer',
+			fbId: this.fbId,
+			attach: this.attachments,
+			w:w,
+			h:h
 		})
 	}
 

@@ -43,7 +43,6 @@ module.exports = require('class').extend(function View(proto){
 		// lets process the args and construct things
 		// lets create a todo
 		this.todo = new painter.Todo()
-
 		this.turtle = new this.Turtle(this)
 		this.$turtleStack = [this.turtle]
 		this.$writeList = []
@@ -71,6 +70,8 @@ module.exports = require('class').extend(function View(proto){
 				children.push(value)
 			}
 		}
+
+		this.todo.name = this.name || this.constructor.name
 	}
 
 	proto._onDestroy = function(){
@@ -79,28 +80,6 @@ module.exports = require('class').extend(function View(proto){
 		this.todo = undefined
 	}
 
-	proto.recompose = function(){
-	}
-
-	// how do we incrementally redraw?
-	proto.redraw = function(){
-		this.$drawClean = false
-		if(!this.app.redrawTimer){
-			this.app.redrawTimer = setTimeout(function(){
-				this.redrawTimer = undefined
-				this.$redrawApp()
-			}.bind(this.app),0)
-		}
-	}
-
-	proto.relayout = function(){
-		this.app.$layoutClean = false
-		this.redraw()
-	}
-
-	proto.onFlag1 = proto.recompose
-	proto.onFlag2 = proto.redraw
-	proto.onFlag4 = proto.relayout
 
 	proto.onDrawChildren = function(){
 		var todo = this.todo
@@ -117,25 +96,29 @@ module.exports = require('class').extend(function View(proto){
 		if(h === undefined) h = this.$h
 		if(isNaN(w)) w = 1
 		if(isNaN(h)) h = 1
+
+		var sw = w * pixelRatio
+		var sh = h * pixelRatio
+
 		// and the todo is forked out
 		var pass = this.$renderPasses[name] 
 
 		if(!pass){ // initialize the buffers for the pass
 			pass = this.$renderPasses[name] = {}
-			var sw = w * pixelRatio
-			var sh = h * pixelRatio
-			pass.color0 = new painter.Texture(painter.RGBA, colorType || painter.UNSIGNED_BYTE, 0, sw, sh)
-			if(hasPick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, sw, sh)
-			if(hasZBuf) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, sw, sh)
-			pass.framebuffer = new painter.Framebuffer({
+			pass.color0 = new painter.Texture(painter.RGBA, colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
+			if(hasPick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
+			if(hasZBuf) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, 0, 0)
+			pass.framebuffer = new painter.Framebuffer(sw, sh, {
 				color0:pass.color0,
 				pick:pass.pick,
-				depth:pass.depth
+				depth:pass.depth,
 			})
 			pass.todo = new painter.Todo()
+			pass.todo.name = 'surface-' + (this.name || this.constructor.name)
 			pass.projection = mat4.create()
 			pass.w = w
 			pass.h = h
+
 			mat4.ortho(pass.projection,0, pass.w, pass.h, 0, -100, 100)
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodo(pass.todo)
@@ -150,12 +133,10 @@ module.exports = require('class').extend(function View(proto){
 
 		// see if we need to resize buffers
 		if(pass.w !== w || pass.h !== h){
-			if(pass.color0) pass.color0.resize(w, h)
-			if(pass.pick) pass.pick.resize(w, h)
-			if(pass.depth) pass.depth.resize(w, h)
+			pass.framebuffer.resize(sw, sh)
 			pass.w = w
 			pass.h = h
-			mat4.ortho(pass.projection,0, pass.w, 0, pass.h, -100, 100)
+			mat4.ortho(pass.projection,0, pass.w, pass.h, 0, -100, 100)
 		}
 
 		return pass
@@ -179,9 +160,9 @@ module.exports = require('class').extend(function View(proto){
 			this.$matrixClean = true
 			var hw = this.$w * this.xCenter
 			var hh = this.$h * this.yCenter
-			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, this.rotate, hw + this.$x, hh+this.$y, 0)
-			if(this.parent){
-				//mat4.multiply(this.viewPosition, this.parent.viewPosition, this.viewPosition)
+			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
+			if(this.parent && !this.parent.surface){
+				mat4.multiply(this.viewPosition, this.viewPosition, this.parent.viewPosition)
 			}
 		}
 		
@@ -235,12 +216,11 @@ module.exports = require('class').extend(function View(proto){
 			this.onFlag = 0
 		}
 
-		//if(!this.surface){
 		this.onDrawChildren()
-		//}
 
 		this.endTurtle()
-		// store the draw width and height
+
+		// store the draw width and height for layout if needed
 		this.$wDraw = turtle._w
 		this.$hDraw = turtle._h
 
@@ -259,8 +239,163 @@ module.exports = require('class').extend(function View(proto){
 		}
 	}
 
+	// relayout the viewtree
+	proto.$relayoutViews = function(){
+
+		var iter = this
+		var layout = this.$turtleLayout
+
+		// reset the write list
+		layout.$writeList.length = 0
+		layout.$turtleStack.len = 0
+		layout.view = layout
+
+		iter._x = 0
+		iter._y = 0
+		iter._w = painter.w
+		iter._h = painter.h
+
+		while(iter){
+			var turtle = layout.turtle
+
+			iter.$matrixClean = false
+
+			// copy the props from the iterator node to the turtle
+			turtle._x = iter._x
+			turtle._y = iter._y
+			if(iter.$drawDependentLayout){
+				iter.$drawDependentLayout = false
+				turtle._w = iter.$wDraw
+				turtle._h = iter.$hDraw
+			}
+			else{
+				turtle._w = iter._w
+				turtle._h = iter._h
+			}
+			turtle._margin = iter._margin
+			turtle._padding = iter._padding
+			turtle._align = iter._align
+			turtle._wrap = iter._wrap
+
+			var level = layout.$turtleStack.len - (
+				typeof turtle._x === "number" && !isNaN(turtle._x) || typeof turtle._x === "string" || 
+				typeof turtle._y === "number" && !isNaN(turtle._y) || typeof turtle._y === "string"
+			)?-1:0
+
+			layout.$writeList.push(iter, level)
+
+			layout.beginTurtle()
+			turtle = layout.turtle
+
+			turtle.view_iter = iter
+
+			// depth first recursion free walk
+			var next = iter.children[0]
+			if(next) next.$childIndex = 0
+			else while(!next){ // skip to parent next
+				var view = turtle.view_iter
+				
+				var ot = layout.endTurtle()
+
+				//if(!layout.turtle.outer)debugger
+				layout.turtle.walk(ot)
+
+				turtle = layout.turtle
+				
+				// copy the layout from the turtle to the view
+				view.$xAbs = turtle._x 
+				view.$yAbs = turtle._y 
+				view.$w = turtle._w
+				view.$h = turtle._h
+
+				// we need an extra layout cycle after redraw
+				if(isNaN(view.$w) || isNaN(view.$h)){
+					iter.$drawDependentLayout = true
+					this.$drawDependentLayout = true
+				}
+				//console.log(view.name, view.$w)
+				// treewalk
+				var index = iter.$childIndex + 1 // make next index
+				iter = iter.parent // hop to parent
+				if(!iter) break // cant walk up anymore
+				next = iter.children[index] // grab next node
+				if(next) next.$childIndex = index // store the index
+			}
+			iter = next
+		}
+
+		// compute relative positions
+		var iter = this
+		iter.$x = 0
+		iter.$y = 0
+		while(iter){
+			if(iter.parent){
+				iter.$x = iter.$xAbs - iter.parent.$xAbs
+				iter.$y = iter.$yAbs - iter.parent.$yAbs
+			}			
+			var next = iter.children[0]
+			if(next) next.$childIndex = 0
+			else while(!next){ // skip to parent next
+				var index = iter.$childIndex + 1 // make next index
+				iter = iter.parent // hop to parent
+				if(!iter) break // cant walk up anymore
+				next = iter.children[index] // grab next node
+				if(next) next.$childIndex = index // store the index
+			}
+			iter = next
+		}
+	}
+
+	proto.$redrawViews = function(){
+		// we can submit a todo now
+		this._time = (Date.now() - painter.timeBoot) / 1000
+		this._frameId++
+
+		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
+
+		var todo = this.todo
+
+		if(!this.$layoutClean){
+			this.$layoutClean = false
+			this.$relayoutViews()
+		}
+
+		this.$redrawView()
+
+		// needs another draw cycle because some sizes depended on their draw
+		if(this.$drawDependentLayout){
+			this._frameId++
+			this.$drawDependentLayout = false
+			this.$relayoutViews()
+			this.$redrawView()			
+		}
+	}
+
+	proto.recompose = function(){
+	}
+
+	// how do we incrementally redraw?
+	proto.redraw = function(){
+		this.$drawClean = false
+		if(!this.app.redrawTimer){
+			this.app.redrawTimer = setTimeout(function(){
+				this.redrawTimer = undefined
+				this.$redrawViews()
+			}.bind(this.app),0)
+		}
+	}
+
+	proto.relayout = function(){
+		this.app.$layoutClean = false
+		this.redraw()
+	}
+
+	proto.onFlag1 = proto.recompose
+	proto.onFlag2 = proto.redraw
+	proto.onFlag4 = proto.relayout
+
 	proto.tools = {
-		Surface:require('shader').extend(function(proto){
+		Surface:require('shader').extend(function Surface(proto){
 			proto.props = {
 				x: NaN,
 				y: NaN,
@@ -272,16 +407,20 @@ module.exports = require('class').extend(function View(proto){
 				pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
 			}
 
-			proto.mesh = painter.Mesh(types.vec2).pushQuad(0,0,1,0,0,1,1,1)
+			proto.mesh = painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1)
 
 			proto.vertex = function(){$
-				var pos = vec2(this.mesh.x*this.w, this.mesh.y*this.h) + vec2(this.x, this.y)
+				var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
 				return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 			}
 
-			proto.pixel = function(){
-				return texture2D(this.colorSampler, this.mesh.xy)
-				//return 'red'
+			proto.pixelMain = function(){$
+				if(painterPickPass != 0){
+					gl_FragColor = texture2D(this.pickSampler, this.mesh.xy)
+				}
+				else{
+					gl_FragColor = texture2D(this.colorSampler, this.mesh.xy)
+				}
 			}
 
 			proto.toolMacros = {

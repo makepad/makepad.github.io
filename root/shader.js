@@ -40,7 +40,6 @@ module.exports = require('class').extend(function Shader(proto){
 		var color = this.pixel()
 		if(painterPickPass != 0){
 			if(color.a < this.pickAlpha) discard
-			//gl_FragColor = 'blue'
 			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,float(painterPickPass)/255.)
 		}
 		else{
@@ -64,8 +63,6 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$vertexHeader = ""
 
 	proto.$compileShader = function(){
-		if(!this.vertex || !this.pixel) return
-		
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, proto.$mapExceptions)
 
@@ -446,6 +443,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 
 		this.$compileInfo = {
+			name:this.name || this.constructor.name,
 			instanceProps:instanceProps,
 			geometryProps:geometryProps,
 			styleProps:styleProps,

@@ -15,7 +15,7 @@ var styles = {
 		//margin:[10,10,0,10],
 		//x:0,
 		//y:0,
-		w:50,
+		w:150,
 		h:40,
 		bgColor:'orange'
 	}
@@ -58,16 +58,27 @@ var App = require('app').extend({
 				text:'Full view textnode'
 			}),
 			Div({
+				name:'MyDiv',
 				surface:true,
-				w:200,
-				h:200,
+				y:100,
+				rotate:45,
+				//w:200,
+				//h:200,
 				bgColor:'purple'},
 				MyDiv({
-					onFingerTap:function(){
-						this.w = 150
-						this.bgColor = 'red'
-					}
-				})
+					margin:10,
+					//w:100,
+					onFingerDown:function(){
+						this.w = 40
+						this.margin = 40
+						this.bgColor = 'blue'
+					}},
+					Div({
+						x:'0',
+						w:10,
+						h:10
+					})
+				)
 			)
 		]
 	}

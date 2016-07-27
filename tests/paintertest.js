@@ -40,7 +40,7 @@ todo.clearTodo()
 todo.clearColor(0.1, 0.5, 0., 1.)
 todo.useShader(shader)
 todo.attributes(painter.nameId('mesh'), 1, mesh)
-todo.vec2(painter.nameId('prop'), [0.9, 0])
+todo.vec2Uniform(painter.nameId('prop'), [0.9, 0])
 todo.drawArrays(painter.TRIANGLES)
 // attach it to the main framebuffer
 painter.mainFramebuffer.assignTodo(todo)

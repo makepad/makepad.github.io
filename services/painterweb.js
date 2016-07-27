@@ -53,12 +53,12 @@ args.timeBoot = Date.now()
 window.addEventListener('resize', resize)
 resize()
 
+var renderTime = 0
+
 function runTodo(todo){
+	//console.log("Running todo "+todo.name)
 	if(!todo) return false
 	//var deltaT = todo.timeStamp - todo.timeStart
-	var localTime = (Date.now() - args.timeBoot) / 1000// - deltaT
-	//console.log(localTime, todo.timeStamp, todo.timeStart)
-	floatGlobal(nameIds.this_DOT_time, localTime)
 
 	var f32 = todo.f32
 	var i32 = todo.i32
@@ -72,8 +72,7 @@ function runTodo(todo){
 		last = fnid
 		fn(i32, f32, o)
 	}
-
-	if(todo.animLoop || todo.timeMax > localTime) return true
+	if(todo.animLoop || todo.timeMax > renderTime) return true
 }
 
 
@@ -120,6 +119,28 @@ exports.pick = function pick(digit, x, y){
 	return pick.promise
 }
 
+function renderPickDep(framebuffer){
+	var todo = framebuffer.todo
+	//console.log('RENDER PICKDEP')
+	for(var deps = todo.deps, i = 0; i < deps.length; i++){
+		renderPickDep(framebufferIds[deps[i]])
+	}
+
+	// lets set some globals
+	globalsLen = 0
+	pickPass = true
+	floatGlobal(nameIds.this_DOT_time, renderTime)
+	intGlobal(nameIds.painterPickPass, 1)
+	mat4Global(nameIds.painterPickMat4, identityMat)
+	// alright lets bind the pick framebuffer
+	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glpfb)
+	var pick = framebuffer.attach.pick
+	gl.viewport(0, 0, pick.w, pick.h)
+	// and draw it
+	pickPass = true
+	runTodo(todo)
+}
+
 function renderPickWindow(digit, x, y, force){
 
 	// find a pick window
@@ -147,6 +168,14 @@ function renderPickWindow(digit, x, y, force){
 	pickMat[3] = -((x*args.pixelRatio - pickw)/w)*facx + (facx-1.)// + 0.5 * facx
 	pickMat[7] = ((y*args.pixelRatio - pickh)/h)*facy - (facy-1.)// - 0.5 * facy
 
+	var todo = mainFramebuffer.todo
+
+	if(force){ // render deps before framebuffer
+		for(var deps = todo.deps, i = 0; i < deps.length; i++){
+			renderPickDep(framebufferIds[deps[i]])
+		}
+	}
+
 	gl.bindFramebuffer(gl.FRAMEBUFFER, pick.framebuffer)
 	gl.viewport(0, 0, pickw, pickh)//pickw*args.pixelratio, pickh*args.pixelratio)//args.w*args.pixelratio, args.h*args.pixelratio)//pickw, pickh)
 
@@ -158,16 +187,26 @@ function renderPickWindow(digit, x, y, force){
 
 	if(!force){
 		gl.readPixels(0.5*pickw+px,0.5*pickh-py, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, pick.buf)
+
+		// render deps after framebuffer pick
+		for(var deps = todo.deps, i = 0; i < deps.length; i++){
+			renderPickDep(framebufferIds[deps[i]])
+		}
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, pick.framebuffer)
+		gl.viewport(0, 0, pickw, pickh)//pickw*args.pixelratio, pickh*args.pixelratio)//args.w*args.pixelratio, args.h*args.pixelratio)//pickw, pickh)		
 	}
 
-	pickPass = true
-	// render it again
 
 	// set up global uniforms
 	globalsLen = 0
+	floatGlobal(nameIds.this_DOT_time, renderTime)
 	mat4Global(nameIds.painterPickMat4, pickMat)
 	intGlobal(nameIds.painterPickPass, 1)
-	runTodo(mainFramebuffer.todo)
+	pickPass = true
+	//console.log('RENDER PICKMAIN')
+
+	runTodo(todo)
 
 	// force a sync readpixel, could also choose to delay a frame?
 	if(force){
@@ -200,19 +239,16 @@ var identityMat = [
 ]
 
 function renderColor(framebuffer){
-
 	var todo = framebuffer.todo
 
-	var deps = todo.deps
-	for(var i = 0; i < deps.length; i++){
-		var fb = deps[i]
-		renderColor(fb)
+	for(var deps = todo.deps, i = 0; i < deps.length; i++){
+		renderColor(framebufferIds[deps[i]])
 	}
 
 	// lets set some globals
 	globalsLen = 0
+	floatGlobal(nameIds.this_DOT_time, renderTime)
 	intGlobal(nameIds.painterPickPass, 0)
-
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
 		lagCompMat[0] = todo.w / args.w 
@@ -239,6 +275,8 @@ function renderColor(framebuffer){
 
 var repaintPending = false
 function repaint(time){
+	renderTime = (Date.now() - args.timeBoot) / 1000
+
 	repaintPending = false
 
 	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
@@ -599,21 +637,21 @@ userfn.newShader = function(msg){
 
 	// look up attribute ids
 	var attrlocs = {}
-	var maxindex = 0
+	var maxAttrIndex = 0
 	for(var name in attrs){
 		var nameid = nameIds[name]
 		var index = gl.getAttribLocation(shader, name)
 
-		if(index > maxindex) maxindex = index
+		if(index > maxAttrIndex) maxAttrIndex = index
 		attrlocs[nameid] = {
 			index: index,
 			slots: slotsTable[attrs[name]]
 		}
 	}
 	shader.attrlocs = attrlocs
-	shader.maxindex = maxindex
+	shader.maxAttrIndex = maxAttrIndex
 	shader.refCount = 1
-
+	shader.name = msg.name
 	var uniLocs = {}
 	for(var name in uniforms){
 		var nameid = nameIds[name]
@@ -631,24 +669,26 @@ todofn[2] = function useShader(i32, f32, o){
 	var shader = shaderIds[shaderid]
 	// check last maxindex
 
-	var prevmax = -1
+	var prevAttrMax = -1
 	if(currentShader){
-		prevmax = currentShader.maxindex
+		prevAttrMax = currentShader.maxAttrIndex
+		//shader.prevMaxTexIndex = currentShader.maxTexIndex || 0
 	}
 
-	if(prevmax > shader.maxindex){
-		for(var i = shader.maxindex+1; i <= prevmax; i++){
+	if(prevAttrMax > shader.maxAttrIndex){
+		for(var i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
 			gl.disableVertexAttribArray(i)
 		}
 	}
-	else if(prevmax < shader.maxindex){
-		for(var i = shader.maxindex; i > prevmax; i--){
+	else if(prevAttrMax < shader.maxAttrIndex){
+		for(var i = shader.maxAttrIndex; i > prevAttrMax; i--){
 			gl.enableVertexAttribArray(i)
 		}
 	}
 
 	currentShader = shader
 	currentUniLocs = shader.uniLocs
+	//shader.maxTexIndex = -1
 	shader.instanced = false
 	shader.indexed = false
 	shader.samplers = 0
@@ -755,6 +795,22 @@ textureFlags.SAMPLELINEAR = 1<<3 // little cheat flag for framebuffer textures
 //
 
 userfn.newFramebuffer = function(msg){
+	var prev = framebufferIds[msg.fbId]
+
+	// delete previous if its there
+	
+	if(prev){
+		for(var key in prev.attach){
+			var sam = prev.attach[key].samplers
+			for(var samkey in sam){
+				var gltex = sam[samkey].gltex
+				if(gltex) gl.deleteTexture(sam[samkey].gltex)
+			}
+		}
+		gl.deleteFramebuffer(prev.glfb)
+		if(prev.glpfb) gl.deleteFramebuffer(prev.glpfb)
+	}
+	
 	if(!msg.attach){ // main framebuffer
 		if(mainFramebuffer){
 			throw new Error('Dont create a mainframebuffer more than once')
@@ -772,28 +828,31 @@ userfn.newFramebuffer = function(msg){
 		// we might need to create this texture
 		var defsam = (tex.flags&textureFlags.SAMPLELINEAR)?'4352':'4352'
 		var samplers = tex.samplers
-		if(!samplers[defsam]) samplers[defsam] = {}
+		samplers[defsam] = {}
 		// check if we have the texture/sampler
-		if(!samplers[defsam].gltex){
-			// lets make a rendertarget texture (or buffer)
-			var gltex = gl.createTexture()
-			samplers[defsam].gltex = gltex
+	
+		// lets make a rendertarget texture (or buffer)
+		var gltex = gl.createTexture()
+		samplers[defsam].gltex = gltex
 
-			gl.bindTexture(gl.TEXTURE_2D, gltex)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-			
-			var bufType = textureBufTypes[tex.bufType]
-			var dataType = textureDataTypes[tex.dataType]
+		gl.bindTexture(gl.TEXTURE_2D, gltex)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		
+		var bufType = textureBufTypes[tex.bufType]
+		var dataType = textureDataTypes[tex.dataType]
 
-			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, tex.w, tex.w, 0, bufType, dataType, null)
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
-		}
+		gl.texImage2D(gl.TEXTURE_2D, 0, bufType, msg.w, msg.h, 0, bufType, dataType, null)
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
+
+		tex.w = msg.w
+		tex.h = msg.h
 		attach[key] = tex
 	}
 	// and create framebuffer and attach all of the textures
+
 	var glfb = gl.createFramebuffer()
 	gl.bindFramebuffer(gl.FRAMEBUFFER, glfb)
 	if(attach.color0){
@@ -805,20 +864,33 @@ userfn.newFramebuffer = function(msg){
 		var depth = attach.depth.samplers['4352'].gltex
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0)
 	}
+	
+	// make a pick framebuffer
+	if(attach.pick){
+		var glpfb = gl.createFramebuffer()
+		gl.bindFramebuffer(gl.FRAMEBUFFER, glpfb)
+		var pick = attach.pick.samplers['4352'].gltex
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pick, 0)
+		if(attach.depth){
+			var depth = attach.depth.samplers['4352'].gltex
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0)
+		}		
+	}
 
 	// store it
 	framebufferIds[msg.fbId] = {
+		glpfb:glpfb,
 		glfb:glfb,
-		todo:undefined,
+		todo: prev && prev.todo || undefined,
 		attach:attach
 	}
 }
+
 
 userfn.assignTodoToFramebuffer = function(msg){
 	// we are attaching a todo to a framebuffer.
 	var framebuffer = framebufferIds[msg.fbId]
 	framebuffer.todo = todoIds[msg.todoId]
-
 	// if we attached to the main framebuffer, repaint
 	if(framebuffer === mainFramebuffer){
 		requestRepaint()
@@ -874,6 +946,7 @@ todofn[8] = function sampler(i32, f32, o){
 	// its a data texture
 	// otherwise it should exist already
 	if(sam.updateId !== tex.updateId && tex.array){
+		sam.updateId = tex.updateId
 		if(sam.gltex) gl.deleteTexture(sam.gltex)
 
 		sam.gltex = gl.createTexture()
@@ -900,8 +973,10 @@ todofn[8] = function sampler(i32, f32, o){
 	}
 
 	// bind it
+	currentShader.maxTexIndex = texid
 	gl.activeTexture(gl.TEXTURE0 + texid)
 	gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
+	gl.uniform1i(currentUniLocs[i32[o+2]], texid)
 }
 
 //
@@ -988,6 +1063,8 @@ var drawTypes = [
 ]
 
 todofn[30] = function drawArrays(i32, f32, o){
+	//console.log('DRAW ARRAYS', currentShader.name)
+
 	// set the global uniforms
 	var type = drawTypes[i32[o+2]]
 	for(var i = 0; i < globalsLen; i+=5){
@@ -995,6 +1072,14 @@ todofn[30] = function drawArrays(i32, f32, o){
 			todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 		}
 	}
+	// lets unbind previously used textures
+	//if(currentShader.maxTexIndex < currentShader.prevMaxTexIndex){
+	//	for(var i = currentShader.maxTexIndex + 1; i <= currentShader.prevMaxTexIndex; i++){
+	//		gl.activeTexture(gl.TEXTURE0 + i)
+	//		gl.bindTexture(gl.TEXTURE_2D, null)
+	//	}
+	//}
+
 	if(currentShader.instanced){
 		var from = i32[o+3]
 		var to =  i32[o+4]
@@ -1035,9 +1120,8 @@ userfn.updateTodo = function(msg){
 	var deps = msg.deps
 	if(!todo.deps) todo.deps = []
 	todo.deps.length = 0
-
 	for(var key in deps){
-		todo.deps.push(framebufferIds[key])
+		todo.deps.push(key)
 	}
 
 	todo.length = msg.length
@@ -1048,6 +1132,8 @@ userfn.updateTodo = function(msg){
 	todo.timeMax = msg.timeMax
 	todo.timeStamp = (Date.now() - args.timeBoot) / 1000
 	todo.animLoop = msg.animLoop
+
+	todo.name = msg.name
 	// we are updating a todo.. but..
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todo === todo){
