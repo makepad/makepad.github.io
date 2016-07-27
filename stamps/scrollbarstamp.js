@@ -5,6 +5,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		id:0,
 		handlePos:0.,
 		handleSize:0.25,
+		fingerDown:0.,
 		initPos:0.
 	}
 
@@ -16,6 +17,14 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 			borderRadius:4,
 			handlePos:0.25,
 			handleSize:0.25,
+			fingerDown:0.,
+			vertexPost:function(){
+				if(this.fingerDown>0.5){
+					var localFinger = vec4(this.fingerPos.xy,0,1.) * this.viewInverse
+					localFinger.xy -= vec2(this.x, this.y)
+					this.handlePos = clamp(localFinger.y / this.h - 0.5*this.handleSize, 0., 1. - this.handleSize)
+				}
+			},
 			pixelStyle:function(){},
 			pixel:function(){
 				this.pixelStyle()
@@ -70,7 +79,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		var mousepos = event.y / this.$h
 		// lets compute the relative mousepos to the nob
 		this.relativePos = mousepos - this.handlePos
-
+		this.fingerDown = 1
 		// do page jumping
 		if(this.relativePos < 0 || this.relativePos > this.handleSize){
 			this.relativePos = this.handleSize*0.5
@@ -86,6 +95,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 
 	proto.onFingerUp = function(event){
 		this.state = this.states.out
+		this.fingerDown = 0
 	}
 
 	proto.onFingerHover = function(event){

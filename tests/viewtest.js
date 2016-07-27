@@ -41,8 +41,8 @@ var Scrollbars = require('canvas').extend({
 			margin:1,
 			initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.2),
 			handleSize:0.2,
-			w:8,
-			h:50//'100%',
+			w:12,
+			h:150//'100%',
 		})
 		this.endRect()
 	}

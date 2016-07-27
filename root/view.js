@@ -198,6 +198,7 @@ module.exports = require('class').extend(function View(proto){
 		todo.clearTodo()
 		// lets set some globals
 		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+		todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 
 		// we need to render to a texture
 		if(this.surface){
@@ -205,6 +206,7 @@ module.exports = require('class').extend(function View(proto){
 			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
 			todo = this.todo
 			todo.mat4Global(painter.nameId('this_DOT_viewPosition'),identityMat4)
+			todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 			todo.mat4Global(painter.nameId('this_DOT_camPosition'),identityMat4)
 			todo.mat4Global(painter.nameId('this_DOT_camProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)

@@ -1031,8 +1031,11 @@ module.exports = require('class').extend(function Shader(proto){
 		tween: {noTween:true, value:0.},
 		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
+
 		// for ease of use define them here
+		fingerPos:{kind:'uniform', asGlobal:true, type:types.vec4},
 		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
+		viewInverse:{kind:'uniform', asGlobal:true, type:types.mat4},
 		camPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		camProjection:{kind:'uniform', asGlobal:true, type:types.mat4}
 	}

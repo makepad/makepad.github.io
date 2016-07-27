@@ -92,6 +92,9 @@ function fingerMove(fingers){
 		p.fn = 'onFingerMove'
 		p.digit = op.digit
 		p.pick = op.pick
+
+		services.painter.updateFinger(p.digit, p.x, p.y)
+
 		if(!op.pick){
 			var queue = op.queue || (op.queue = [])
 			queue.push(p)
@@ -103,7 +106,7 @@ var dx = 0, dy =0
 function fingerHover(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
-
+		services.painter.updateFinger(0, p.x, p.y)
 		services.painter.pick(0, p.x, p.y).then(function(p, pick){
 			p.pick = pick
 			p.fn = 'onFingerHover'

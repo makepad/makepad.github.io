@@ -31,6 +31,9 @@ module.exports = require('shader').extend(function QuadShader(proto){
 	proto.vertexStyle = function(){
 	}
 
+	proto.vertexPost = function(){
+	}
+
 	proto.vertex = function(){$
 		this.vertexStyle()
 
@@ -53,6 +56,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 			0., 
 			1.
 		)
+
+		this.vertexPost()
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}

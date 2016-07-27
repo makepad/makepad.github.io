@@ -105,6 +105,12 @@ function newPickWindow(width, height){
 var pickPass = false
 var pickPromises = {}
 
+var fingerPos = [0,0,0,0]
+exports.updateFinger = function(digit, x, y){
+	fingerPos[0] = x
+	fingerPos[1] = y
+}
+
 // pick the screen for digit , at x and y
 exports.pick = function pick(digit, x, y, immediate){
 	var pick = {}
@@ -256,6 +262,7 @@ function renderColor(framebuffer){
 
 	// lets set some globals
 	globalsLen = 0
+	vec4Global(nameIds.this_DOT_fingerPos, fingerPos)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	intGlobal(nameIds.painterPickPass, 0)
 	// compensation matrix for viewport size lag main thread vs user thread
@@ -456,6 +463,26 @@ function floatGlobal(nameId, x){
 	var i = globalsLen
 	globals[i] = nameId
 	globals[i+1] = 11
+	globals[i+2] = i32
+	globals[i+3] = f32
+	globals[i+4] = o
+	globalsLen += 5
+}
+
+function vec4Global(nameId, x){
+	var i32 = globalI32//[nameid*10]
+	var f32 = globalF32//[nameid*10]
+	var o = nameId * 20
+	i32[o+0] = 14
+	i32[o+1] = 5
+	i32[o+2] = nameId
+	f32[o+3] = x[0]
+	f32[o+4] = x[1]
+	f32[o+5] = x[2]
+	f32[o+6] = x[3]
+	var i = globalsLen
+	globals[i] = nameId
+	globals[i+1] = 14
 	globals[i+2] = i32
 	globals[i+3] = f32
 	globals[i+4] = o
