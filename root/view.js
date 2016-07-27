@@ -23,6 +23,7 @@ module.exports = require('class').extend(function View(proto){
 		w:NaN,
 		h:NaN,
 		d:NaN,
+		clip:true,
 		xCenter:0.5,
 		yCenter:0.5,
 		xScale:1,
@@ -217,6 +218,12 @@ module.exports = require('class').extend(function View(proto){
 		turtle._w = this.$w
 		turtle._h = this.$h
 
+		// lets set up a clipping rect
+		if(this.clip){
+			this.viewClip = [0,0,this.$w,this.$h]
+		}
+		turtle._turtleClip = [-50000,-50000,50000,50000]
+
 		this.$stampId = 1
 
 		this.beginTurtle()
@@ -250,136 +257,6 @@ module.exports = require('class').extend(function View(proto){
 		}
 	}
 
-	// relayout the viewtree
-	proto.$relayoutViews = function(){
-
-		var iter = this
-		var layout = this.$turtleLayout
-
-		// reset the write list
-		layout.$writeList.length = 0
-		layout.$turtleStack.len = 0
-		layout.view = layout
-
-		iter._x = 0
-		iter._y = 0
-		iter._w = painter.w
-		iter._h = painter.h
-
-		while(iter){
-			var turtle = layout.turtle
-
-			iter.$matrixClean = false
-
-			// copy the props from the iterator node to the turtle
-			turtle._x = iter._x
-			turtle._y = iter._y
-			if(iter.$drawDependentLayout){
-				iter.$drawDependentLayout = false
-				turtle._w = iter.$wDraw
-				turtle._h = iter.$hDraw
-			}
-			else{
-				turtle._w = iter._w
-				turtle._h = iter._h
-			}
-			turtle._margin = iter._margin
-			turtle._padding = iter._padding
-			turtle._align = iter._align
-			turtle._wrap = iter._wrap
-
-			var level = layout.$turtleStack.len - (
-				typeof turtle._x === "number" && !isNaN(turtle._x) || typeof turtle._x === "string" || 
-				typeof turtle._y === "number" && !isNaN(turtle._y) || typeof turtle._y === "string"
-			)?-1:0
-
-			layout.$writeList.push(iter, level)
-
-			layout.beginTurtle()
-			turtle = layout.turtle
-
-			turtle.view_iter = iter
-
-			// depth first recursion free walk
-			var next = iter.children[0]
-			if(next) next.$childIndex = 0
-			else while(!next){ // skip to parent next
-				var view = turtle.view_iter
-				
-				var ot = layout.endTurtle()
-
-				//if(!layout.turtle.outer)debugger
-				layout.turtle.walk(ot)
-
-				turtle = layout.turtle
-				
-				// copy the layout from the turtle to the view
-				view.$xAbs = turtle._x 
-				view.$yAbs = turtle._y 
-				view.$w = turtle._w
-				view.$h = turtle._h
-
-				// we need an extra layout cycle after redraw
-				if(isNaN(view.$w) || isNaN(view.$h)){
-					iter.$drawDependentLayout = true
-					this.$drawDependentLayout = true
-				}
-				//console.log(view.name, view.$w)
-				// treewalk
-				var index = iter.$childIndex + 1 // make next index
-				iter = iter.parent // hop to parent
-				if(!iter) break // cant walk up anymore
-				next = iter.children[index] // grab next node
-				if(next) next.$childIndex = index // store the index
-			}
-			iter = next
-		}
-
-		// compute relative positions
-		var iter = this
-		iter.$x = 0
-		iter.$y = 0
-		while(iter){
-			if(iter.parent){
-				iter.$x = iter.$xAbs - iter.parent.$xAbs
-				iter.$y = iter.$yAbs - iter.parent.$yAbs
-			}			
-			var next = iter.children[0]
-			if(next) next.$childIndex = 0
-			else while(!next){ // skip to parent next
-				var index = iter.$childIndex + 1 // make next index
-				iter = iter.parent // hop to parent
-				if(!iter) break // cant walk up anymore
-				next = iter.children[index] // grab next node
-				if(next) next.$childIndex = index // store the index
-			}
-			iter = next
-		}
-	}
-
-	proto.$redrawViews = function(){
-		// we can submit a todo now
-		this._time = (Date.now() - painter.timeBoot) / 1000
-		this._frameId++
-		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
-
-		var todo = this.todo
-
-		if(!this.$layoutClean){
-			this.$layoutClean = false
-			this.$relayoutViews()
-		}
-
-		this.$redrawView()
-
-		// needs another draw cycle because some sizes depended on their draw
-		if(this.$drawDependentLayout){
-			this._frameId++
-			this.$drawDependentLayout = false
-			this.$relayoutViews()
-			this.$redrawView()			
-		}
-	}
 
 	proto.recompose = function(){
 	}

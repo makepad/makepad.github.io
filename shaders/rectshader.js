@@ -24,6 +24,9 @@ module.exports = require('shader').extend(function RectShader(proto){
 		borderWidth: {pack:'int12', value:[0,0,0,0]},
 		borderRadius: {pack:'int12', value:[8,8,8,8]},
 		
+		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
+		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+
 		shadowBlur: 0.0,
 		shadowSpread: 0.0,
 		shadowOffset: {pack:'int12', value:[0.0,0.0]},
@@ -43,20 +46,34 @@ module.exports = require('shader').extend(function RectShader(proto){
 		0, 1, 1,
 		1, 1, 1
 	)
-
 	proto.vertexStyle = function(){}
 	proto.pixelStyle = function(){}
 
 	proto.vertex = function(){$
-		
 		this.vertexStyle()
 
 		if (this.visible < 0.5) return vec4(0.0)
 
+		// compute the normal rect positions
+		var shift = vec2(this.x, this.y)
+		if(this.mesh.z < 0.5){
+			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
+		}
+
+		// lets clip it
+		var size = vec2(this.w, this.h)
+
+		this.mesh.xy = (clamp(
+			this.mesh.xy * size + shift, 
+			max(this.turtleClip.xy, this.viewClip.xy),
+			min(this.turtleClip.zw, this.viewClip.zw)
+		) - shift) / size
+
 		var pos = vec2(
-			this.mesh.x*this.w,
-			this.mesh.y*this.h
-		)
+			this.mesh.x * this.w,
+			this.mesh.y * this.h
+		) + shift
+
 		var adjust = 1.
 		if(this.mesh.z < 0.5){
 			// bail if we have no visible shadow
@@ -79,15 +96,9 @@ module.exports = require('shader').extend(function RectShader(proto){
 		}
 		else this.fastPath = 0.
 
-
-		// compute the normal rect positions
-		if(this.mesh.z < 0.5){
-			pos.xy += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
-		}
-
 		var br = this.borderRadius * 2. 
 		
-		return vec4(pos + vec2(this.x, this.y), 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
+		return vec4(pos , 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	proto.pixel = function(){$

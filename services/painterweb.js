@@ -74,7 +74,7 @@ function runTodo(todo){
 		var ret = fn(i32, f32, o)
 		if(ret) repaint = true
 	}
-	if(repaint || todo.animLoop || todo.timeMax > renderTime) return true
+	if(repaint || todo.animLoop || todo.timeMax > repaintTime) return true
 }
 
 

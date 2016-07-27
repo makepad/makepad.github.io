@@ -36,6 +36,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		margin:{styleLevel:1, value:[0,0,0,0]},
 		text:{styleLevel:1, value:''},
 
+		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
+		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+
 		x1:{noStyle:1, noTween:1, value:0},
 		y1:{noStyle:1, noTween:1, value:0},
 		x2:{noStyle:1, noTween:1, value:0},
@@ -73,18 +76,36 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			return vec4(0.)
 		}
 		
+		var minPos = vec2(
+			this.x + this.fontSize * this.x1,
+			this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
+		)
+		var maxPos = vec2(
+			this.x + this.fontSize * this.x2 ,
+			this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
+		)
+
+		// clip the rect
+		var shift = vec2(0.)
+		if(this.mesh.z < 0.5){
+			shift = this.shadowOffset.xy
+		}
+
+		// clip mesh
+		this.mesh.xy = (clamp(
+			mix(minPos, maxPos, this.mesh.xy) + shift, 
+			max(this.turtleClip.xy, this.viewClip.xy),
+			min(this.turtleClip.zw, this.viewClip.zw)
+		) - minPos - shift) / (maxPos - minPos)
+		
+		// compute position
 		var pos = mix(
-			vec2(
-				this.x + this.fontSize * this.x1,
-				this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
-			),
-			vec2(
-				this.x + this.fontSize * this.x2 ,
-				this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
-			),
+			minPos,
+			maxPos,
 			this.mesh.xy
 		)
 
+		// we cant clip italic. ahwell
 		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
 
 		// shadow
@@ -143,7 +164,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	proto.toolMacros = {
 		draw:function(overload){
 			var turtle = this.turtle
-			this.$STYLEPROPS(overload)
+			this.$STYLEPROPS(overload, 1)
 
 			var abspos = !isNaN(turtle._x) && !isNaN(turtle._y)
 			var txt = turtle._text

@@ -25,6 +25,8 @@ module.exports = require('class').extend(function Turtle(proto){
 
 		this.align = outer._align || (this.$align || (this.$align=[0,0]))
 
+		// do clipping
+		this._turtleClip = outer._turtleClip
 		// read the x
 		var _x = outer._x, _y = outer._y, _w = outer._w, _h = outer._h
 

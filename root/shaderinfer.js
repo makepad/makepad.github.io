@@ -551,6 +551,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 						node.infer = {
 							kind:'value',
+							lvalue:true,
 							type:proptype
 						}
 						return fullname
@@ -603,6 +604,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 					node.infer = {
 						kind:'value',
+						lvalue:true,
 						type:proptype
 					}
 					return fullname
@@ -1094,7 +1096,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			}
 			// lets check
 			if(leftinfer.type !==  rightinfer.type){
-				throw this.InferErr(node, 'lefthand differs from righthand in assignment '+JSON.stringify(leftinfer) +' = '+ JSON.stringify(rightinfer))
+				throw this.InferErr(node, 'lefthand differs from righthand in assignment '+leftinfer.type.name +' = '+ rightinfer.type.name)
 			}
 		}
 

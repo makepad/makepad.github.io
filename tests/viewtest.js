@@ -33,16 +33,19 @@ var Scrollbars = require('canvas').extend({
 			}
 		})
 	},
-	padding:10,
 	onDraw:function(){
-		this.beginRect(this)
-		for(var i = 0; i < 1000; i++)
+		this.beginRect({
+			padding:10,
+			w:this.$w,
+			h:this.$h
+		})
+		for(var i = 0; i < 300; i++)
 		this.drawScrollBar({
 			id:i,
 			margin:1,
 			handleSize:0.2,
-			w:16,
-			h:100//'100%',
+			w:8,
+			h:50//'100%',
 		})
 		this.endRect()
 	}
@@ -55,8 +58,9 @@ var App = require('app').extend({
 			//	text:'TextNode'
 			//}),
 			Scrollbars({
-				w:1800,
-				h:900
+				margin:10,
+				w:500,
+				h:300
 			}),
 			Div({
 				surface:true,

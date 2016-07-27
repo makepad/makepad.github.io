@@ -785,56 +785,88 @@ module.exports = require('class').extend(function Shader(proto){
 				var pack = prop.config.pack
 				if(pack){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
 					if(pack === 'float12'){
-						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
-						propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColorPacked(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
-						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[0]*4095)|0)\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'if(typeof _'+prop.name+' === "string")this.$parseColorPacked(_'+prop.name+',1.0,$a,$o+'+o+')\n'
-						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
+						if(prop.config.noCast){
+							propcode += indent +'$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
+						}
+						else{
+							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
+							propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColorPacked(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
+							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[0]*4095)|0)\n'
+							propcode += indent + '}\n'
+							propcode += indent + 'if(typeof _'+prop.name+' === "string")this.$parseColorPacked(_'+prop.name+',1.0,$a,$o+'+o+')\n'
+							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
+						}
 					}
 					else{ // int packing
-						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
-						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0])<<12) + ((_'+prop.name+'[0])|0)\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+						if(prop.config.noCast){
+							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
+						}
+						else{
+							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
+							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0])<<12) + ((_'+prop.name+'[0])|0)\n'
+							propcode += indent + '}\n'
+							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+						}
 					}
 				}
 				else{
-					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-					propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
-					propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=$a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'[0]\n'
-					propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColor(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
-					propcode += indent + '}\n'
-					propcode += indent + 'else if(typeof _'+prop.name+' === "string")this.$parseColor(_'+prop.name+',1.0,$a,$o+'+o+')\n'
-					propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+'] = $a[$o+'+(o+1)+'] = $a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'\n'
+					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
+					if(prop.config.noCast){
+						propcode += indent +'$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
+					}
+					else{
+						propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
+						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=$a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'[0]\n'
+						propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColor(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'else if(typeof _'+prop.name+' === "string")this.$parseColor(_'+prop.name+',1.0,$a,$o+'+o+')\n'
+						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+'] = $a[$o+'+(o+1)+'] = $a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'\n'
+					}
 				}
 			}
 			else if(prop.type.name === 'vec2'){
 				// check packing
 				var pack = prop.config.pack
 				if(pack){
-					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					if(pack === 'float12'){
-						propcode += indent + '	$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'else $a[$o+'+o+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
+						if(prop.config.noCast){
+							propcode += indent + '$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
+						}
+						else{
+							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+							propcode += indent + '	$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
+							propcode += indent + '}\n'
+							propcode += indent + 'else $a[$o+'+o+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
+						}
 					}
 					else{ // int packing
-						propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+						if(prop.config.noCast){
+							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
+						}
+						else{
+							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+							propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
+							propcode += indent + '}\n'
+							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+						}
 					}
 				}
 				else{
-					propcode += indent + 'var _$' + prop.name + ' = '+ propsource +'\n'
-					propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-					propcode += indent + '	$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
-					propcode += indent + '}\n'
-					propcode += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+prop.name+'\n'
+					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
+					if(prop.config.noCast){
+						propcode += indent + '$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
+					}
+					else{
+						propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
+						propcode += indent + '	$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
+						propcode += indent + '}\n'
+						propcode += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+prop.name+'\n'
+					}
 				}
 			}
 			else{
@@ -843,8 +875,8 @@ module.exports = require('class').extend(function Shader(proto){
 				}
 				else{
 					propcode += indent + 'var _' + prop.name + ' = '+propsource+'\n'
-					propcode += indent + 'if(_'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
-					propcode += indent + 'else '
+					//propcode += indent + 'if(_'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
+					//propcode += indent + 'else '
 					for(var i = 0; i < slots; i++){
 						if(i) propcode += ','
 						propcode += '$a[$o+'+(o+i)+']=_'+prop.name+'['+i+']\n'
