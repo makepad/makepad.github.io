@@ -6,6 +6,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		handlePos:0.,
 		handleSize:0.25,
 		fingerDown:0.,
+		relativePos:0,
 		initPos:0.
 	}
 
@@ -16,13 +17,14 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 			handleColor:'#bbb',
 			borderRadius:4,
 			handlePos:0.25,
+			relativePos:0.,
 			handleSize:0.25,
 			fingerDown:0.,
 			vertexPost:function(){
 				if(this.fingerDown>0.5){
 					var localFinger = vec4(this.fingerPos.xy,0,1.) * this.viewInverse
 					localFinger.xy -= vec2(this.x, this.y)
-					this.handlePos = clamp(localFinger.y / this.h - 0.5*this.handleSize, 0., 1. - this.handleSize)
+					this.handlePos = clamp(localFinger.y / this.h - this.relativePos, 0., 1. - this.handleSize)
 				}
 			},
 			pixelStyle:function(){},
