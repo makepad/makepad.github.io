@@ -55,7 +55,7 @@ var App = require('app').extend({
 			//}),
 			Scrollbars({
 				w:800,
-				h:800
+				h:900
 			}),
 			Div({
 				surface:true,
