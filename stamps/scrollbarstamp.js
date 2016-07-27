@@ -4,7 +4,8 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		text:'Button',
 		id:0,
 		handlePos:0.,
-		handleSize:0.25
+		handleSize:0.25,
+		initPos:0.
 	}
 
 	proto.tools = {
@@ -72,6 +73,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		if(this.relativePos < 0 || this.relativePos > this.handleSize){
 			this.handlePos = clamp(this.handlePos + sign(this.relativePos)*this.handleSize,0,1.-this.handleSize)
 			this.relativePos = mousepos - this.handlePos
+			this.handleMoved = true
 		}
 		this.state = this.states.hover
 	}
@@ -87,6 +89,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.onFingerMove = function(event){
 		var mousepos = event.y / this.$h
 		this.handlePos = clamp(mousepos - this.relativePos,0,1.-this.handleSize)
+		this.handleMoved = true
 		this.redraw()
 	}
 
@@ -105,7 +108,13 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.toolMacros = {
 		draw:function(overload){
 			this.$STYLESTAMP(overload)
+		
+			if(!$stamp.handleMoved){
+				$stamp.handlePos = $stamp.initPos
+			}
+
 			this.$DRAWSTAMP()
+
 			return $stamp
 		}
 	}

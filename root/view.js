@@ -135,15 +135,30 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.clearTodo()
 
 		// see if we need to resize buffers
-		if(pass.w !== w || pass.h !== h){
+		if(pass.sw !== sw || pass.sh !== sh){
 			pass.framebuffer.resize(sw, sh)
 			pass.w = w
 			pass.h = h
+			pass.sw = sw
+			pass.sh = sh
 			mat4.ortho(pass.projection,0, pass.w, pass.h, 0, -100, 100)
 		}
 
 		return pass
 	}
+
+	Object.defineProperty(proto, 'viewGeom', {
+		get:function(){
+			return {
+				w:this.$w,
+				h:this.$h,
+				padding:this.padding
+			}
+		},
+		set:function(){
+			throw new Error('Dont call set on geom')
+		}
+	})
 
 	proto.endSurface = function(){
 		// stop the pass and restore our todo
@@ -210,7 +225,7 @@ module.exports = require('class').extend(function View(proto){
 		this.$turtleStack.len = 0
 		var turtle = this.turtle
 		turtle._margin = zeroMargin
-		turtle._padding = this._padding
+		turtle._padding = zeroMargin// this._padding
 		turtle._align = this._align
 		turtle._wrap = this._wrap
 		turtle._x = 0
@@ -220,6 +235,7 @@ module.exports = require('class').extend(function View(proto){
 
 		// lets set up a clipping rect
 		if(this.clip){
+			//console.log(this.$x, this.$y, this.$w, this.$h)
 			this.viewClip = [0,0,this.$w,this.$h]
 		}
 		turtle._turtleClip = [-50000,-50000,50000,50000]

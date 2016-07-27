@@ -14,7 +14,7 @@ var Div = require('canvas').extend({
 var Text = require('canvas').extend({
 	padding:10,
 	onDraw:function(){
-		this.beginRect(this)
+		this.beginRect(this.viewGeom)
 		this.drawText({
 			color:'white',
 			text:this.text
@@ -28,24 +28,21 @@ var Scrollbars = require('canvas').extend({
 		ScrollBar:require('stamps/scrollbarstamp').extend({
 			ScrollBar:{
 				pixelStyle2:function(){
-					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.slideHeight)
+					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.handleSize)
 				}
 			}
 		})
 	},
 	onDraw:function(){
-		this.beginRect({
-			padding:10,
-			w:this.$w,
-			h:this.$h
-		})
-		for(var i = 0; i < 300; i++)
+		this.beginRect(this.viewGeom)
+		for(var i = 0; i < 1500; i++)
 		this.drawScrollBar({
 			id:i,
 			margin:1,
-			handleSize:0.2,
-			w:8,
-			h:50//'100%',
+			initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.1),
+			handleSize:0.1,
+			w:16,
+			h:150//'100%',
 		})
 		this.endRect()
 	}
@@ -54,13 +51,15 @@ var Scrollbars = require('canvas').extend({
 var App = require('app').extend({
 	onCompose:function(){
 		return [
-			//Text({
-			//	text:'TextNode'
-			//}),
+			Text({
+				margin:10,
+				text:'TextNode'
+			}),
 			Scrollbars({
 				margin:10,
-				w:500,
-				h:300
+				padding:10,
+				w:1500,
+				h:1300
 			}),
 			Div({
 				surface:true,
@@ -69,7 +68,7 @@ var App = require('app').extend({
 				Div({
 					margin:10,
 					bgColor:'orange',
-					padding:10,
+					padding:20,
 					onFingerDown:function(){
 						this.w = 40
 						this.margin = 40
