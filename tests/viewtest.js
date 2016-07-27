@@ -41,7 +41,6 @@ var Scrollbars = require('canvas').extend({
 			id:i,
 			margin:1,
 			handleSize:0.2,
-			//slidePos:abs(sin(i*0.1))*0.75,
 			w:16,
 			h:100//'100%',
 		})

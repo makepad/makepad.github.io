@@ -68,11 +68,16 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		var mousepos = event.y / this.$h
 		// lets compute the relative mousepos to the nob
 		this.relativePos = mousepos - this.handlePos
+		// do page jumping
 		if(this.relativePos < 0 || this.relativePos > this.handleSize){
 			this.handlePos = clamp(this.handlePos + sign(this.relativePos)*this.handleSize,0,1.-this.handleSize)
 			this.relativePos = mousepos - this.handlePos
-			this.view.redraw()
 		}
+		this.state = this.states.hover
+	}
+
+	proto.onFingerUp = function(event){
+		this.state = this.states.out
 	}
 
 	proto.onFingerHover = function(event){
@@ -80,21 +85,17 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	}
 
 	proto.onFingerMove = function(event){
-		// lets figure out where the mouse is in relation to the nob
 		var mousepos = event.y / this.$h
-		
-		// nob pos is
 		this.handlePos = clamp(mousepos - this.relativePos,0,1.-this.handleSize)
-
-		this.view.redraw()
+		this.redraw()
 	}
 
 	proto.onFingerOver = function(){
-		//this.state = this.states.hover
+		this.state = this.states.hover
 	}
 
 	proto.onFingerOut = function(){
-		//this.state = this.states.out
+		this.state = this.states.out
 	}
 
 	proto.onDraw = function(){

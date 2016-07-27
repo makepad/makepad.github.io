@@ -22,6 +22,10 @@ module.exports = require('class').extend(function Stamp(proto){
 		}
 	})
 
+	proto.redraw = function(){
+		this.view.redraw()
+	}
+
 	proto.props = {
 		x:NaN,
 		y:NaN,
