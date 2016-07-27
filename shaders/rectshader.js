@@ -117,7 +117,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 				return this.color
 			}
 		}
-		var adjust = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 
 		var br = this.borderRadius
 		var hwh = vec2(.5*this.w, .5*this.h)
@@ -174,9 +174,9 @@ module.exports = require('shader').extend(function RectShader(proto){
 			var borderfinal = vec4()
 			// remove the error in the border
 			if(abs(border - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
-			else borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(border*adjust+1.,0.,1.))
+			else borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(border*antialias+1.,0.,1.))
 
-			return mix(this.color, borderfinal, clamp(fill * adjust + 1., 0., 1.))
+			return mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.))
 		}
 	}
 

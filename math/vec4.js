@@ -495,10 +495,10 @@ vec4.random = function (out, scale) {
  */
 vec4.transformMat4 = function(out, a, m) {
     var x = a[0], y = a[1], z = a[2], w = a[3];
-    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
-    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
-    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
-    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+    out[0] = m[0] * x + m[1] * y + m[2] * z + m[3] * w;
+    out[1] = m[4] * x + m[5] * y + m[6] * z + m[7] * w;
+    out[2] = m[8] * x + m[9] * y + m[10] * z + m[1] * w;
+    out[3] = m[12] * x + m[13] * y + m[14] * z + m[15] * w;
     return out;
 };
 

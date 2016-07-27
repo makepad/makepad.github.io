@@ -50,6 +50,8 @@ module.exports = require('class').extend(function View(proto){
 
 		// our matrix
 		this.viewPosition = mat4.create()
+		this.viewInverse = mat4.create()
+		this.viewTotal = mat4.create()
 
 		// shader tree and stamp array
 		this.$shaders = {}
@@ -161,8 +163,17 @@ module.exports = require('class').extend(function View(proto){
 			var hw = this.$w * this.xCenter
 			var hh = this.$h * this.yCenter
 			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
+
 			if(this.parent && !this.parent.surface){
 				mat4.multiply(this.viewPosition, this.viewPosition, this.parent.viewPosition)
+			}
+			// keep total and inverse
+			if(this.parent){
+				mat4.multiply(this.viewTotal, this.viewPosition, this.parent.viewPosition)
+				mat4.invert(this.viewInverse, this.viewTotal)
+			}
+			else{
+				mat4.invert(this.viewInverse, this.viewPosition)
 			}
 		}
 		
@@ -350,7 +361,6 @@ module.exports = require('class').extend(function View(proto){
 		// we can submit a todo now
 		this._time = (Date.now() - painter.timeBoot) / 1000
 		this._frameId++
-
 		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
 
 		var todo = this.todo

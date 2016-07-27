@@ -3,7 +3,7 @@
 var painter = require('painter')
 var fingers = require('fingers')
 var mat4 = require('math/mat4')
-
+var vec4 = require('math/vec4')
 module.exports = require('view').extend(function App(proto, base){
 	proto.name = 'App'
 	// lets define some props
@@ -56,9 +56,18 @@ module.exports = require('view').extend(function App(proto, base){
 		function fingerMessage(event, viewId, stampId, msg){
 			var view = views[viewId]
 			if(!view) return
+			var xyLocal = [0,0,0,0]
+			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
+			msg.xAbs = msg.x
+			msg.yAbs = msg.y
+			msg.x = msg.xView = xyLocal[0]
+			msg.y = msg.yView = xyLocal[1]
 			if(view[event]) view[event](msg)
 			var stamp = view.$stamps[stampId]
-			if(stamp && stamp[event]) stamp[event](msg)
+			if(!stamp) return
+			msg.x = msg.xView - stamp.$x
+			msg.y = msg.yView - stamp.$y
+			if(stamp[event]) stamp[event](msg)
 		}
 
 		// dispatch mouse events

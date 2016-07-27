@@ -27,8 +27,8 @@ var Scrollbars = require('canvas').extend({
 	tools:{
 		ScrollBar:require('stamps/scrollbarstamp').extend({
 			ScrollBar:{
-				pixelStyle:function(){
-					this.slidePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.slideHeight)
+				pixelStyle2:function(){
+					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.slideHeight)
 				}
 			}
 		})
@@ -36,12 +36,14 @@ var Scrollbars = require('canvas').extend({
 	padding:10,
 	onDraw:function(){
 		this.beginRect(this)
-		for(var i = 0; i < 1500; i++)
+		for(var i = 0; i < 1000; i++)
 		this.drawScrollBar({
 			id:i,
-			slidePos:clamp(random(),0,0.75),
-			w:8,
-			h:50//'100%',
+			margin:1,
+			handleSize:0.2,
+			//slidePos:abs(sin(i*0.1))*0.75,
+			w:16,
+			h:100//'100%',
 		})
 		this.endRect()
 	}
@@ -54,7 +56,7 @@ var App = require('app').extend({
 			//	text:'TextNode'
 			//}),
 			Scrollbars({
-				w:800,
+				w:1800,
 				h:900
 			}),
 			Div({
