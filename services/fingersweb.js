@@ -52,7 +52,7 @@ function fingerDown(fingers){
 
 		storeNewFinger(p)
 
-		services.painter.pick(p.digit, p.x, p.y).then(function(p, pick){
+		services.painter.pick(p.digit, p.x, p.y, fingers.length === 1).then(function(p, pick){
 			// set the ID
 			p.fn = 'onFingerDown'
 			// store startx for delta

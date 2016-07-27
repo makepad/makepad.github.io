@@ -1,27 +1,4 @@
-var styles = {
-	CSize:{
-		name:'CSize',
-		Rect:{
-			padding:20
-		},
-		Text:{
-			//outlineWidth:10,
-			//outlineColor:'black',
-			fontSize:20
-		},
-		margin:30
-	},
-	MyDiv:{
-		//margin:[10,10,0,10],
-		//x:0,
-		//y:0,
-		w:150,
-		h:40,
-		bgColor:'orange'
-	}
-}
-
-var Div = require('canvas').extend(styles.Div,{
+var Div = require('canvas').extend({
 	props:{
 		bgColor:[1,0,0,1]
 	},
@@ -34,15 +11,10 @@ var Div = require('canvas').extend(styles.Div,{
 	}
 })
 
-// create a couple of styled classes
-var MyDiv = Div.extend(styles.MyDiv)
-
-var CSize = require('canvas').extend(styles.CSize,{
-	props:{
-		bgColor:[1,0,0,1]
-	},
+var Text = require('canvas').extend({
+	padding:10,
 	onDraw:function(){
-		this.beginRect()
+		this.beginRect(this)
 		this.drawText({
 			color:'white',
 			text:this.text
@@ -51,23 +23,48 @@ var CSize = require('canvas').extend(styles.CSize,{
 	}
 })
 
+var Scrollbars = require('canvas').extend({
+	tools:{
+		ScrollBar:require('stamps/scrollbarstamp').extend({
+			ScrollBar:{
+				pixelStyle:function(){
+					this.slidePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.slideHeight)
+				}
+			}
+		})
+	},
+	padding:10,
+	onDraw:function(){
+		this.beginRect(this)
+		for(var i = 0; i < 1500; i++)
+		this.drawScrollBar({
+			id:i,
+			slidePos:clamp(random(),0,0.75),
+			w:8,
+			h:50//'100%',
+		})
+		this.endRect()
+	}
+})
+
 var App = require('app').extend({
 	onCompose:function(){
 		return [
-			CSize({
-				text:'Full view textnode'
+			//Text({
+			//	text:'TextNode'
+			//}),
+			Scrollbars({
+				w:800,
+				h:800
 			}),
 			Div({
-				name:'MyDiv',
 				surface:true,
-				y:100,
-				rotate:45,
-				//w:200,
-				//h:200,
-				bgColor:'purple'},
-				MyDiv({
+				margin:10,
+				bgColor:'gray'},
+				Div({
 					margin:10,
-					//w:100,
+					bgColor:'orange',
+					padding:10,
 					onFingerDown:function(){
 						this.w = 40
 						this.margin = 40

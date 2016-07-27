@@ -248,7 +248,7 @@
 				factory = new Function("require", "exports", "module", source)
 			} 
 			catch(e){
-				return worker.postMessage({$:'parseerror', url:code.resourceurl})
+				return worker.postMessage({$:'parseerror', msg:{url:code.resourceurl}})
 			}
 
 			modules[code.resourceurl] = last = {

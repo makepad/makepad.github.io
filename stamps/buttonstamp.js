@@ -1,7 +1,7 @@
 module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.props = {
-		text:'Hello',
+		text:'Button',
 	}
 
 	proto.tools = {
@@ -16,13 +16,10 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.states = {
 		default:{
-			tween:0.3,
 			Bg:{color:'gray'}
 		},
 		hover:{
-			tween:0.3,
-			Bg:{color:'blue',borderColor:'yellow',borderRadius:40,borderWidth:[5,0,5,0],padding:40},
-			Text:{fontSize:35}
+			Bg:{color:'red'},
 		}
 	}
 
@@ -34,7 +31,6 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 		this.state = this.states.default
 	}
 
-	//margin,x/y/w/h
 	proto.onDraw = function(){
 		this.beginBg(this)
 		this.drawText({

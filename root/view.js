@@ -111,7 +111,7 @@ module.exports = require('class').extend(function View(proto){
 			pass.framebuffer = new painter.Framebuffer(sw, sh, {
 				color0:pass.color0,
 				pick:pass.pick,
-				depth:pass.depth,
+				depth:pass.depth
 			})
 			pass.todo = new painter.Todo()
 			pass.todo.name = 'surface-' + (this.name || this.constructor.name)
@@ -119,7 +119,7 @@ module.exports = require('class').extend(function View(proto){
 			pass.w = w
 			pass.h = h
 
-			mat4.ortho(pass.projection,0, pass.w, pass.h, 0, -100, 100)
+			mat4.ortho(pass.projection, 0, pass.w, pass.h, 0, -100, 100)
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodo(pass.todo)
 		}

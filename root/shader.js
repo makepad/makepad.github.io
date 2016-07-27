@@ -13,7 +13,7 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
-	proto.tweenTime = function(){
+	proto.tweenTime = function(){$
 		if(this.tween < 0.01) return 1.
 		return this.tweenBezier(
 			this.ease.x, 
@@ -458,11 +458,13 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 
-	function stylePropCode(indent, inobj, styleProps, noif){
+	function stylePropCode(indent, inobj, styleProps, styleLevel, noif){
 		var code = ''
 		for(var key in styleProps){
-			var name = styleProps[key].name
-			if(styleProps[key].config.noStyle) continue
+			var prop = styleProps[key]
+			var name = prop.name
+			if(prop.config.noStyle) continue
+			if(styleLevel && prop.config.styleLevel > styleLevel) continue
 			if(!noif){
 				code += indent+'if(_'+name+' === undefined) _'+name+ ' = '+inobj+'.' + name +'\n'
 			}
@@ -473,11 +475,13 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	function styleStampRootCode(indent, inobj, props, styleProps){
+	function styleStampRootCode(indent, inobj, props, styleProps, styleLevel){
 		var code = ''
 		for(var key in styleProps){
-			var name = styleProps[key].name
-			if(styleProps[key].config.noStyle) continue
+			var prop = styleProps[key]
+			var name = prop.name
+			if(prop.config.noStyle) continue
+			if(styleLevel && prop.config.styleLevel > styleLevel) continue
 			if(name in props){
 				code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
 			}
@@ -502,33 +506,34 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// lets make the vars
 		var code = indent + 'var $turtle = this.turtle'
+		var styleLevel = macroargs[1]
 		for(var key in styleProps){
 			var prop = styleProps[key]
 			if(prop.config.noStyle) continue
-			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
+			if(styleLevel && prop.config.styleLevel > styleLevel) continue
 			code += ', _' + prop.name
 		}
 		code += '\n\n'
 		code += 'if(' + macroargs[0] + ' === this){\n'
-		code += styleStampRootCode('	', macroargs[0], target._props, styleProps)
+		code += styleStampRootCode('	', macroargs[0], target._props, styleProps, styleLevel)
 		code += '}\n'
 		code += 'else if(' + macroargs[0] + '){\n'
-		code += stylePropCode('	', macroargs[0], styleProps, true)
+		code += stylePropCode('	', macroargs[0], styleProps, styleLevel, true)
 		code += '}\n'
 
 		code += 'var $p0 = this.$stampArgs && this.$stampArgs.'+classname+'\n'
 		code += 'if($p0){\n'
-		code += stylePropCode('	', '$p0', styleProps)
+		code += stylePropCode('	', '$p0', styleProps, styleLevel)
 		code += '}\n'
 
 		code += 'var $p1 = this.$outerState && this.$outerState.'+classname+'\n'
 		code += 'if($p1){\n'
-		code += stylePropCode('	', '$p1', styleProps)
+		code += stylePropCode('	', '$p1', styleProps, styleLevel)
 		code += '}\n'
 
 		code += 'var $p2 = this._state && this._state.'+classname+'\n'
 		code += 'if($p2){\n'
-		code += stylePropCode('	', '$p2', styleProps)
+		code += stylePropCode('	', '$p2', styleProps, styleLevel)
 		code += '}\n'
 
 		code += 'var $p3 = this.$stampArgs\n'
@@ -550,7 +555,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// last one is the class
 		code += 'var $p9 = this._'+classname+'.prototype\n'
-		code += stylePropCode('', '$p9', styleProps)
+		code += stylePropCode('', '$p9', styleProps, styleLevel)
 
 		//console.log(code)
 		// store it on the turtle
@@ -937,7 +942,7 @@ module.exports = require('class').extend(function Shader(proto){
 	})
 	
 	var abs = Math.abs
-	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){
+	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){$
 
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 
@@ -949,7 +954,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var by = 3.0 * (cp3 - cp1) - cy
 		var ay = 1.0 - cy - by
 		var u = t
-	
+
 		for(var i = 0; i < 6; i++){
 			var x = ((ax * u + bx) * u + cx) * u - t
 			if(abs(x) < epsilon) return ((ay * u + by) * u + cy) * u

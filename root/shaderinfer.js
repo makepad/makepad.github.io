@@ -77,13 +77,17 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var state = error.state
 		if(!state) throw error
 		var curfn = state.curFunction
+		var exc = 0
 		try{
 			curfn.callee()
 		}
-		catch(efn){
+		catch(e){
+			exc = e
+		}
+		if(exc){
 			// ok lets parse out the line offset of this thing
-			var stack = efn.stack.toString()
-			var fileerr = efn.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
+			var stack = exc.stack.toString()
+			var fileerr = exc.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
 			var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
 			var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
 			// alright we have a lineoff, now we need to take the node
@@ -112,7 +116,17 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			console.error(
 				filename+':'+realline+':'+realcol, error.type + ': '+ error.message
 			)
-		}			
+		}
+		else{
+			this.exception = {
+				type:error.type,
+				message:error.message
+			}
+
+			console.error(
+				'Please add $ after {', error.type + ': '+ error.message
+			)
+		}
 	}
 
 	proto.walk = function(node, parent){
@@ -949,6 +963,10 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var initinfer = init.infer
 
 		if(initinfer.kind === 'value' || initinfer.kind === 'type'){
+			
+			if(this.curFunction.scope[node.id.name]){
+				throw this.InferErr(node, 'Variable '+node.id.name+' already defined')
+			}
 			node.infer = this.curFunction.scope[node.id.name] = {
 				kind:'value',
 				lvalue:true,
@@ -1002,7 +1020,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var rightinfer = node.right.infer
 
 		if(leftinfer.kind !== 'value' || rightinfer.kind !== 'value'){
-			throw this.InferErr(node, 'Not a value type '+ret)
+			throw this.InferErr(node, 'Not a value type '+leftinfer.kind + " - " + rightinfer.kind)
 		}
 		var group = groupBinaryExpression[node.operator]
 		if(group === 1){
@@ -1131,10 +1149,13 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
 	proto.ForStatement = function(node){
-		var ret = 'for(' + this.walk(node.init) + ';' 
-		ret += this.walk(node.test)+';'
-		ret += this.walk(node.update)+') '
+		var oldscope = this.curFunction.scope 
+		this.curFunction.scope = Object.create(oldscope)
+		var ret = 'for(' + this.walk(node.init, node) + ';' 
+		ret += this.walk(node.test, node)+';'
+		ret += this.walk(node.update, node)+') '
 		ret += this.walk(node.body, node)
+		this.curFunction.scope = oldscope
 		return ret
 	}
 

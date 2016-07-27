@@ -64,15 +64,17 @@ function runTodo(todo){
 	var i32 = todo.i32
 	var len = todo.length
 	var last = 0
+	var repaint = false
 	for(var o = 0; o < len; o += argc + 2){
 		var fnid = i32[o]
 		var argc = i32[o + 1]
 		var fn = todofn[fnid]
 		if(!fn) console.error('cant find '+fnid+ ' last was ' + last)
 		last = fnid
-		fn(i32, f32, o)
+		var ret = fn(i32, f32, o)
+		if(ret) repaint = true
 	}
-	if(todo.animLoop || todo.timeMax > renderTime) return true
+	if(repaint || todo.animLoop || todo.timeMax > renderTime) return true
 }
 
 
@@ -104,7 +106,7 @@ var pickPass = false
 var pickPromises = {}
 
 // pick the screen for digit , at x and y
-exports.pick = function pick(digit, x, y){
+exports.pick = function pick(digit, x, y, immediate){
 	var pick = {}
 
 	pick.promise = new Promise(function(res, rej){pick.resolve = res, pick.reject = rej})
@@ -112,8 +114,14 @@ exports.pick = function pick(digit, x, y){
 	pick.y = y
 
 	if(pickPromises[digit]) pickPromises[digit].reject()
+	
+	if(immediate){
+		pick.resolve(renderPickWindow(digit, pick.x, pick.y))
+	}
+	else{
+		pickPromises[digit] = pick
+	}
 
-	pickPromises[digit] = pick
 	// mouse picks are done in request animation frame
 	requestRepaint()
 	return pick.promise
@@ -129,7 +137,7 @@ function renderPickDep(framebuffer){
 	// lets set some globals
 	globalsLen = 0
 	pickPass = true
-	floatGlobal(nameIds.this_DOT_time, renderTime)
+	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	intGlobal(nameIds.painterPickPass, 1)
 	mat4Global(nameIds.painterPickMat4, identityMat)
 	// alright lets bind the pick framebuffer
@@ -200,7 +208,7 @@ function renderPickWindow(digit, x, y, force){
 
 	// set up global uniforms
 	globalsLen = 0
-	floatGlobal(nameIds.this_DOT_time, renderTime)
+	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	mat4Global(nameIds.painterPickMat4, pickMat)
 	intGlobal(nameIds.painterPickPass, 1)
 	pickPass = true
@@ -240,14 +248,15 @@ var identityMat = [
 
 function renderColor(framebuffer){
 	var todo = framebuffer.todo
-
+	var repaint = false
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
-		renderColor(framebufferIds[deps[i]])
+		var ret = renderColor(framebufferIds[deps[i]])
+		if(ret) repaint = true
 	}
 
 	// lets set some globals
 	globalsLen = 0
-	floatGlobal(nameIds.this_DOT_time, renderTime)
+	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	intGlobal(nameIds.painterPickPass, 0)
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
@@ -270,12 +279,12 @@ function renderColor(framebuffer){
 
 	pickPass = false
 		// lets check our maxDuration
-	if(runTodo(todo)) requestRepaint()
+	if(runTodo(todo)) return true
 }
 
 var repaintPending = false
 function repaint(time){
-	renderTime = (Date.now() - args.timeBoot) / 1000
+	repaintTime = (Date.now() - args.timeBoot) / 1000
 
 	repaintPending = false
 
@@ -295,7 +304,7 @@ function repaint(time){
 	pickPromises = {}
 
 	// render the main scene
-	renderColor(mainFramebuffer)
+	if(renderColor(mainFramebuffer)) requestRepaint()
 }
 
 function requestRepaint(){
@@ -1143,7 +1152,7 @@ userfn.updateTodo = function(msg){
 
 todofn[1] = function addChildTodo(i32, f32, o){
 	var todo = todoIds[i32[o+2]]
-	runTodo(todo)
+	return runTodo(todo)
 }
 
 //

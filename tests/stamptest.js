@@ -5,6 +5,17 @@ var App = require('app').extend(function(proto){
 			margin:2,
 			Text:{
 				fontSize:15
+			},
+			states:{
+				default:{
+					tween:0.3,
+					Bg:{color:'gray'}
+				},
+				hover:{
+					tween:0.3,
+					Bg:{color:'blue',borderColor:'yellow',borderRadius:40,borderWidth:[5,0,5,0],padding:40},
+					Text:{fontSize:35}
+				}
 			}
 		}),
 		Bg:require('shaders/rectshader')
