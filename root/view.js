@@ -77,12 +77,16 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.name = this.name || this.constructor.name
 	}
 
+	proto._onInit = function(){
+		// connect our todo map
+		this.app.$viewTodoMap[this.todo.todoId] = this
+	}
+
 	proto._onDestroy = function(){
 		// destroy the todo
 		this.todo.destroyTodo()
 		this.todo = undefined
 	}
-
 
 	proto.onDrawChildren = function(){
 		var todo = this.todo
@@ -117,11 +121,13 @@ module.exports = require('class').extend(function View(proto){
 				depth:pass.depth
 			})
 			pass.todo = new painter.Todo()
+			// store the view reference
+			this.app.$viewTodoMap[pass.todo.todoId] = this
+
 			pass.todo.name = 'surface-' + (this.name || this.constructor.name)
 			pass.projection = mat4.create()
 			pass.w = w
 			pass.h = h
-
 			mat4.ortho(pass.projection, 0, pass.w, pass.h, 0, -100, 100)
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodo(pass.todo)
@@ -150,6 +156,7 @@ module.exports = require('class').extend(function View(proto){
 	Object.defineProperty(proto, 'viewGeom', {
 		get:function(){
 			return {
+				lockScroll:0.,
 				w:this.$w,
 				h:this.$h,
 				padding:this.padding
@@ -172,7 +179,7 @@ module.exports = require('class').extend(function View(proto){
 		this._time = this.app._time
 		this._frameId = this.app._frameId
 		this.$writeList.length = 0
-
+		this.$drawClean = true
 		// update the matrix?
 		if(!this.$matrixClean){
 			this.$matrixClean = true
@@ -260,6 +267,34 @@ module.exports = require('class').extend(function View(proto){
 		this.$wDraw = turtle._w
 		this.$hDraw = turtle._h
 
+		// store the total and view heights for scrolling on the todo
+		this.todo.xTotal = this.turtle.x2
+		this.todo.xView = this.$wDraw
+		this.todo.yTotal = this.turtle.y2
+		this.todo.yView = this.$hDraw
+		this.todo.momentum = 0.9
+		// check if we are larger than our view area, show a scrollbar
+		if(this.turtle.y2 > this.$hDraw){
+
+			this.$yScroll = this.drawScrollBar({
+				lockScroll:0,
+				x:this.$wDraw - 10,
+				handleSize: this.$hDraw/this.turtle.y2,
+				y:0,
+				w:10,
+				h:this.$hDraw,
+			})
+	
+			this.todo.yScrollId = this.$yScroll.$stampId
+
+			this.$yScroll.onSlide = function(v){
+				
+			}
+		}
+		if(this.turtle.x2 > this.$wDraw){
+			this.todo.xView = this.todo.xTotal
+		}
+
 		// if we are a surface, end the pass and draw it to ourselves
 		if(this.surface){
 			this.endSurface()
@@ -274,7 +309,6 @@ module.exports = require('class').extend(function View(proto){
 			})
 		}
 	}
-
 
 	proto.recompose = function(){
 	}
@@ -300,6 +334,7 @@ module.exports = require('class').extend(function View(proto){
 	proto.onFlag4 = proto.relayout
 
 	proto.tools = {
+		ScrollBar: require('stamps/scrollbarstamp'),
 		Surface:require('shader').extend(function Surface(proto){
 			proto.props = {
 				x: NaN,

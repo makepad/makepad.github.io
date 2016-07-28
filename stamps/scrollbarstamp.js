@@ -1,29 +1,34 @@
 module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	var vec4 = require('math/vec4')
+
 	proto.props = {
 		text:'Button',
 		id:0,
 		handlePos:0.,
 		handleSize:0.25,
-		fingerDown:0.,
+		fingerDigit:0.,
 		relativePos:0,
+		lockScroll:1.,
 		initPos:0.
 	}
 
 	proto.tools = {
 		ScrollBar: require('shaders/quadshader').extend({
-			id:0,
-			bgColor:'#555',
-			handleColor:'#bbb',
-			borderRadius:4,
-			handlePos:0.25,
-			relativePos:0.,
-			handleSize:0.25,
-			fingerDown:0.,
-			vertexPost:function(){
-				if(this.fingerDown>0.5){
-					var localFinger = vec4(this.fingerPos.xy,0,1.) * this.viewInverse
-					localFinger.xy -= vec2(this.x, this.y)
+			props:{
+				fingerDigit:{noTween:true,value:0.},
+				relativePos:{noTween:true,value:0.},
+				id:{noTween:true,value:0},
+				bgColor:'#555',
+				handleColor:'#bbb',
+				borderRadius:4,
+				handlePos:0.25,
+				handleSize:0.25
+			},
+			vertexPost:function(){ // bypass the worker roundtrip :)
+				if(this.fingerDigit>0.5 && this.fingerDigit < 2.5){
+					var inPos = this.fingerPos.xy
+					if(this.fingerDigit>1.5) inPos = this.fingerPos.zw
+					var localFinger = vec4(inPos,0,1.) * this.viewInverse - vec4(this.x, this.y,0,0)
 					this.handlePos = clamp(localFinger.y / this.h - this.relativePos, 0., 1. - this.handleSize)
 				}
 			},
@@ -75,17 +80,20 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		}
 	}
 
+	proto.onHandlePos = function(pos){
+		//console.log(pos)
+	}
+
 	// see what to do
 	proto.onFingerDown = function(event){
 		// lets figure out where the mouse is in relation to the nob
 		var mousepos = event.y / this.$h
 		// lets compute the relative mousepos to the nob
 		this.relativePos = mousepos - this.handlePos
-		this.fingerDown = 1
+		this.fingerDigit = event.digit
 		// do page jumping
 		if(this.relativePos < 0 || this.relativePos > this.handleSize){
 			this.relativePos = this.handleSize*0.5
-
 			//this.handlePos = clamp(this.handlePos + sign(this.relativePos)*this.handleSize,0,1.-this.handleSize)
 			//this.relativePos = mousepos - this.handlePos
 			this.handleMoved = true
@@ -97,7 +105,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 
 	proto.onFingerUp = function(event){
 		this.state = this.states.out
-		this.fingerDown = 0
+		this.fingerDigit = 0
 	}
 
 	proto.onFingerHover = function(event){
@@ -108,7 +116,6 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		var mousepos = event.y / this.$h
 		this.handlePos = clamp(mousepos - this.relativePos,0,1.-this.handleSize)
 		this.handleMoved = true
-		this.redraw()
 	}
 
 	proto.onFingerOver = function(){
@@ -126,13 +133,11 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.toolMacros = {
 		draw:function(overload){
 			this.$STYLESTAMP(overload)
-		
+			
 			if(!$stamp.handleMoved){
-				$stamp.handlePos = $stamp.initPos
+				$stamp._handlePos = $stamp._initPos
 			}
-
 			this.$DRAWSTAMP()
-
 			return $stamp
 		}
 	}

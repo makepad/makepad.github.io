@@ -58,7 +58,10 @@ var renderTime = 0
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
 	if(!todo) return false
-	//var deltaT = todo.timeStamp - todo.timeStart
+
+	// set todoId
+	floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
+	vec2fGlobal(nameIds.this_DOT_fingerScroll, todo.xScroll, todo.yScroll)
 
 	var f32 = todo.f32
 	var i32 = todo.i32
@@ -74,6 +77,16 @@ function runTodo(todo){
 		var ret = fn(i32, f32, o)
 		if(ret) repaint = true
 	}
+	
+	if(todo.xFlick !== 0 || todo.yFlick !== 0){
+		doScroll(todo, todo.xFlick, todo.yFlick)
+		todo.xFlick *= todo.momentum
+		todo.yFlick *= todo.momentum
+		if(Math.abs(todo.xFlick) < 2) todo.xFlick = 0
+		if(Math.abs(todo.yFlick) < 2) todo.yFlick = 0
+		if(todo.xFlick !== 0 || todo.yFlick !== 0) return true
+	}
+
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime) return true
 }
 
@@ -105,14 +118,61 @@ function newPickWindow(width, height){
 var pickPass = false
 var pickPromises = {}
 
+// we have the first 2 digits in high performance access
 var fingerPos = [0,0,0,0]
-exports.updateFinger = function(digit, x, y){
-	fingerPos[0] = x
-	fingerPos[1] = y
+
+function doScroll(todo, dx, dy){
+	// do some scrolling with your finger
+	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), todo.xTotal - todo.xView)
+	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), todo.yTotal - todo.yView)
+
+	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
+		todo.xScroll = xScroll
+		todo.yScroll = yScroll
+		return true
+	}
+}
+
+exports.updateFinger = function(pick, digit, x, y, dx, dy, flick){
+	//console.log(digit, x, y)
+	if(digit <= 1){
+		fingerPos[0] = x
+		fingerPos[1] = y
+	}
+	else if(digit == 2){
+		fingerPos[2] = x
+		fingerPos[3] = y
+	}
+	// do some potential scrolling on touch devices
+	var todo = todoIds[pick.todoId]
+	if(!todo) return
+
+	if(pick.pickId === todo.yScrollId || pick.pickId === todo.xScrollId) return
+
+	if(doScroll(todo, dx, dy) || flick === 2){
+		if(flick){
+			todo.xFlick = dx
+			todo.yFlick = dy
+		}
+		else{
+			todo.xFlick = 0
+			todo.yFlick = 0
+		}
+		requestRepaint()
+	}
+}
+
+// ok so what if you up your finger, it will need to keep repainting till scroll is up
+exports.scrollFinger = function(pick, x, y){
+	var todo = todoIds[pick.todoId]
+
+	if(!todo) return
+	todo.yScroll =	Math.min(Math.max(todo.yScroll + y, 0), todo.yTotal - todo.yView)
+	requestRepaint()
 }
 
 // pick the screen for digit , at x and y
-exports.pick = function pick(digit, x, y, immediate){
+exports.pickFinger = function pick(digit, x, y, immediate){
 	var pick = {}
 
 	pick.promise = new Promise(function(res, rej){pick.resolve = res, pick.reject = rej})
@@ -134,7 +194,7 @@ exports.pick = function pick(digit, x, y, immediate){
 }
 
 function renderPickDep(framebuffer){
-	var todo = framebuffer.todo
+	var todo = todoIds[framebuffer.todoId]
 	//console.log('RENDER PICKDEP')
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
 		renderPickDep(framebufferIds[deps[i]])
@@ -182,7 +242,7 @@ function renderPickWindow(digit, x, y, force){
 	pickMat[3] = -((x*args.pixelRatio - pickw)/w)*facx + (facx-1.)// + 0.5 * facx
 	pickMat[7] = ((y*args.pixelRatio - pickh)/h)*facy - (facy-1.)// - 0.5 * facy
 
-	var todo = mainFramebuffer.todo
+	var todo = todoIds[mainFramebuffer.todoId]
 
 	if(force){ // render deps before framebuffer
 		for(var deps = todo.deps, i = 0; i < deps.length; i++){
@@ -232,9 +292,9 @@ function renderPickWindow(digit, x, y, force){
 	pick.ylast = y
 
 	return {
-		hi:pick.buf[0],
-		lo:(pick.buf[1]<<8) | pick.buf[2],
-		pid:pick.buf[3]
+		todoId:pick.buf[0],
+		pickId:(pick.buf[1]<<8) | pick.buf[2],
+		workerId:pick.buf[3]
 	}
 }
 
@@ -253,7 +313,8 @@ var identityMat = [
 ]
 
 function renderColor(framebuffer){
-	var todo = framebuffer.todo
+	var todo = todoIds[framebuffer.todoId]
+
 	var repaint = false
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
 		var ret = renderColor(framebufferIds[deps[i]])
@@ -267,8 +328,8 @@ function renderColor(framebuffer){
 	intGlobal(nameIds.painterPickPass, 0)
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
-		lagCompMat[0] = todo.w / args.w 
-		lagCompMat[5] = todo.h / args.h
+		lagCompMat[0] = todo.wPainter / args.w 
+		lagCompMat[5] = todo.hPainter / args.h
 		lagCompMat[3] = -(args.w - todo.w) / args.w
 		lagCompMat[7] = (args.h - todo.h) / args.h
 		mat4Global(nameIds.painterPickMat4, lagCompMat)
@@ -463,6 +524,24 @@ function floatGlobal(nameId, x){
 	var i = globalsLen
 	globals[i] = nameId
 	globals[i+1] = 11
+	globals[i+2] = i32
+	globals[i+3] = f32
+	globals[i+4] = o
+	globalsLen += 5
+}
+
+function vec2fGlobal(nameId, x, y){
+	var i32 = globalI32//[nameid*10]
+	var f32 = globalF32//[nameid*10]
+	var o = nameId * 20
+	i32[o+0] = 12
+	i32[o+1] = 3
+	i32[o+2] = nameId
+	f32[o+3] = x
+	f32[o+4] = y
+	var i = globalsLen
+	globals[i] = nameId
+	globals[i+1] = 12
 	globals[i+2] = i32
 	globals[i+3] = f32
 	globals[i+4] = o
@@ -812,9 +891,9 @@ var textureDataTypes = [
 	gl.UNSIGNED_BYTE,
 	gl.UNSIGNED_SHORT,
 	OES_texture_float && gl.FLOAT,
-	OES_texture_half_float.HALF_FLOAT_OES,
-	OES_texture_float_linear.FLOAT_LINEAR_OES,
-	OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
+	OES_texture_half_float && OES_texture_half_float.HALF_FLOAT_OES,
+	OES_texture_float_linear && OES_texture_float_linear.FLOAT_LINEAR_OES,
+	OES_texture_half_float_linear && OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
 ]
 
 // other flags
@@ -917,7 +996,7 @@ userfn.newFramebuffer = function(msg){
 	framebufferIds[msg.fbId] = {
 		glpfb:glpfb,
 		glfb:glfb,
-		todo: prev && prev.todo || undefined,
+		todoId: prev && prev.todoId || undefined,
 		attach:attach
 	}
 }
@@ -926,7 +1005,7 @@ userfn.newFramebuffer = function(msg){
 userfn.assignTodoToFramebuffer = function(msg){
 	// we are attaching a todo to a framebuffer.
 	var framebuffer = framebufferIds[msg.fbId]
-	framebuffer.todo = todoIds[msg.todoId]
+	framebuffer.todoId = msg.todoId
 	// if we attached to the main framebuffer, repaint
 	if(framebuffer === mainFramebuffer){
 		requestRepaint()
@@ -1143,16 +1222,21 @@ todofn[30] = function drawArrays(i32, f32, o){
 // Todo management
 //
 //
-
 userfn.newTodo = function(msg){
-	todoIds[msg.todoId] = {f32:undefined, i32:undefined, length:0}
+	todoIds[msg.todoId] = {
+		todoId:msg.todoId,
+		xScroll:0,
+		yScroll:0,
+		xFlick:0,
+		yFlick:0
+	}
 }
 
 userfn.updateTodo = function(msg){
+	// lets just store the todo message as is
 	var todo = todoIds[msg.todoId]
-	todo.f32 = new Float32Array(msg.buffer)
-	todo.i32 = new Int32Array(msg.buffer)
 
+	// redefine deps
 	var deps = msg.deps
 	if(!todo.deps) todo.deps = []
 	todo.deps.length = 0
@@ -1160,19 +1244,24 @@ userfn.updateTodo = function(msg){
 		todo.deps.push(key)
 	}
 
+	todo.f32 = new Float32Array(msg.buffer)
+	todo.i32 = new Int32Array(msg.buffer)
+	todo.name = msg.name
 	todo.length = msg.length
-	todo.w = msg.w
-	todo.h = msg.h
-
 	todo.timeStart = msg.timeStart
 	todo.timeMax = msg.timeMax
-	todo.timeStamp = (Date.now() - args.timeBoot) / 1000
 	todo.animLoop = msg.animLoop
-
-	todo.name = msg.name
-	// we are updating a todo.. but..
+	todo.wPainter = msg.wPainter
+	todo.hPainter = msg.hPainter
+	todo.xTotal = msg.xTotal
+	todo.xView = msg.xView
+	todo.yTotal = msg.yTotal
+	todo.yView = msg.yView
+	todo.xScrollId = msg.xScrollId
+	todo.yScrollId = msg.yScrollId
+	todo.momentum = msg.momentum
 	// what if we are the todo of the mainFrame
-	if(mainFramebuffer && mainFramebuffer.todo === todo){
+	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()
 	}
 }

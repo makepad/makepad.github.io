@@ -12,7 +12,7 @@ module.exports = require('view').extend(function App(proto, base){
 
 	proto._onConstruct = function(){
 		base._onConstruct.call(this)
-		var views = this.$views = []
+		var viewTodoMap = this.$viewTodoMap = []
 		
 		// our layout object used for running turtles on the view tree
 		var layout = this.$turtleLayout = {
@@ -53,8 +53,8 @@ module.exports = require('view').extend(function App(proto, base){
 		
 		this._frameId = 0
 
-		function fingerMessage(event, viewId, stampId, msg){
-			var view = views[viewId]
+		function fingerMessage(event, todoId, pickId, msg){
+			var view = viewTodoMap[todoId]
 			if(!view) return
 			var xyLocal = [0,0,0,0]
 			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
@@ -63,7 +63,7 @@ module.exports = require('view').extend(function App(proto, base){
 			msg.x = msg.xView = xyLocal[0]
 			msg.y = msg.yView = xyLocal[1]
 			if(view[event]) view[event](msg)
-			var stamp = view.$stamps[stampId]
+			var stamp = view.$stamps[pickId]
 			if(!stamp) return
 			msg.x = msg.xView - stamp.$x
 			msg.y = msg.yView - stamp.$y
@@ -72,34 +72,34 @@ module.exports = require('view').extend(function App(proto, base){
 
 		// dispatch mouse events
 		fingers.onFingerDown = function(msg){
-			fingerMessage('onFingerDown', msg.pick.hi, msg.pick.lo, msg)
+			fingerMessage('onFingerDown', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
 		fingers.onFingerMove = function(msg){
-			fingerMessage('onFingerMove', msg.pick.hi, msg.pick.lo, msg)
+			fingerMessage('onFingerMove', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
 		fingers.onFingerUp = function(msg){
-			fingerMessage('onFingerUp', msg.pick.hi, msg.pick.lo, msg)
+			fingerMessage('onFingerUp', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
-		var lastViewId = 0
-		var lastStampId = 0
+		var lastTodoId = 0
+		var lastPickId = 0
 		fingers.onFingerHover = function(msg){
 			// we want mouse in/out messages to go to the right view and stamp.
-			var viewId = msg.pick.hi
-			var stampId = msg.pick.lo
-			if(viewId!==lastViewId || stampId !== lastStampId){
-				fingerMessage('onFingerOut', lastViewId, lastStampId, msg)
-				fingerMessage('onFingerOver', msg.pick.hi, msg.pick.lo, msg)
+			var todoId = msg.pick.todoId
+			var pickId = msg.pick.pickId
+			if(todoId !== lastTodoId || pickId !== lastPickId){
+				fingerMessage('onFingerOut', lastTodoId, lastPickId, msg)
+				fingerMessage('onFingerOver', msg.pick.todoId, msg.pick.pickId, msg)
 			}
-			lastViewId = viewId
-			lastStampId = stampId
-			fingerMessage('onFingerHover', msg.pick.hi, msg.pick.lo, msg)
+			lastTodoId = todoId
+			lastPickId = pickId
+			fingerMessage('onFingerHover', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
 		fingers.onFingerWheel = function(msg){
-			fingerMessage('onFingerWheel', msg.pick.hi, msg.pick.lo, msg)
+			fingerMessage('onFingerWheel', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
 		painter.onResize = function(){
@@ -113,13 +113,13 @@ module.exports = require('view').extend(function App(proto, base){
 		this.$composeTree(this)
 
 		// regenerate view ids
-		this.$generateViewIds()
+		//this.$generateViewIds()
 
 		// lets attach our todo to the main framebuffer
 		painter.mainFramebuffer.assignTodo(this.todo)
 
 		// first draw
-		this.$redrawViews(0,0)		
+		this.$redrawViews(0,0)
 	}
 
 	proto._onDestroy = function(){
@@ -164,6 +164,7 @@ module.exports = require('view').extend(function App(proto, base){
 		if(node.onComposed) node.onComposed()
 	}
 
+	/*
 	proto.$generateViewIds = function(){
 		var viewId = 1
 		var map = this.$views
@@ -186,8 +187,7 @@ module.exports = require('view').extend(function App(proto, base){
 			}
 			iter = next
 		}
-	}
-
+	}*/
 
 	// relayout the viewtree
 	proto.$relayoutViews = function(){

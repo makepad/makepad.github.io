@@ -18,6 +18,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		padding: {styleLevel:2, value:[0,0,0,0]},
 		margin: {styleLevel:1, value:[0,0,0,0]},
 
+		lockScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
@@ -42,7 +43,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		}
 
 		// vertexshader clipping!
-		var shift = vec2(this.x, this.y)
+		var shift = vec2(this.x - this.fingerScroll.x*this.lockScroll, this.y - this.fingerScroll.y*this.lockScroll)
 		var size = vec2(this.w, this.h)
 
 		this.mesh.xy = (clamp(

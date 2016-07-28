@@ -25,6 +25,11 @@ var Text = require('canvas').extend({
 
 var Scrollbars = require('canvas').extend({
 	tools:{
+		Button:require('stamps/buttonstamp').extend({
+			Bg:{
+				borderWidth:1,
+			}
+		}),
 		ScrollBar:require('stamps/scrollbarstamp').extend({
 			ScrollBar:{
 				pixelStyle2:function(){
@@ -35,15 +40,28 @@ var Scrollbars = require('canvas').extend({
 	},
 	onDraw:function(){
 		this.beginRect(this.viewGeom)
-		for(var i = 0; i < 2500; i++)
-		this.drawScrollBar({
-			id:i,
-			margin:1,
-			initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.2),
-			handleSize:0.2,
-			w:12,
-			h:150//'100%',
-		})
+		for(var i = 0; i < 400; i++){
+			if(i%20 === 0){
+				this.drawText({
+					text:'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n'
+				})
+			}
+			this.drawButton({
+				fontSize:20,
+				outlineWidth:1,
+				outlineColor:'black',
+				color:'white',
+				text:(i+'')
+			})	
+			this.drawScrollBar({
+				id:i,
+				margin:1,
+				initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.2),
+				handleSize:0.2,
+				w:10,
+				h:50//'100%',
+			})
+		}
 		this.endRect()
 	}
 })
@@ -51,16 +69,16 @@ var Scrollbars = require('canvas').extend({
 var App = require('app').extend({
 	onCompose:function(){
 		return [
-			Text({
+			/*Text({
 				margin:10,
 				text:'TextNode'
-			}),
+			}),*/
 			Scrollbars({
 				margin:10,
 				padding:10,
-				w:1500,
-				h:1300
-			}),
+				w:'100%',
+				h:'100%'
+			})/*,
 			Div({
 				surface:true,
 				margin:10,
@@ -80,7 +98,7 @@ var App = require('app').extend({
 						h:10
 					})
 				)
-			)
+			)*/
 		]
 	}
 })()

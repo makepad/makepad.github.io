@@ -1,7 +1,8 @@
 module.exports = require('class').extend(function Stamp(proto){
 	//var types = require('types')
+	require('props')(proto)
 	require('tools')(proto)
-	
+/*	
 	Object.defineProperty(proto, 'props', {
 		get:function(){
 			throw new Error('props is a configurator, please only assign objects: this.props = {...}')
@@ -21,7 +22,10 @@ module.exports = require('class').extend(function Stamp(proto){
 			}
 		}
 	})
+*/
+	proto.onFlag = 1
 
+	proto.onFlag1 =
 	proto.redraw = function(){
 		this.view.redraw()
 	}
@@ -57,6 +61,7 @@ module.exports = require('class').extend(function Stamp(proto){
 
 		code += indent + 'if(!$stamp){\n'
 		code += indent + '	$stamp = $view.$stamps[$stampId] = Object.create(this._'+classname+'.prototype)\n'
+		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
 		code += indent + '	$stamp.turtle = this.turtle\n'
 		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
@@ -64,7 +69,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
 		code += indent + '	if($stamp._states)$stamp._state = $stamp._states.default\n'
 		code += indent + '}\n'
-		code += indent + '$stamp.turtle._pickIdLo = $stampId\n'
+		code += indent + '$stamp.turtle._pickId = $stampId\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
 		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
 
@@ -99,7 +104,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent +'}\n'
 
 		for(var key in props){
-			code += indent + 'if(_'+key+' !== undefined) $stamp.'+key+' = _'+key+'\n'
+			code += indent + 'if(_'+key+' !== undefined) $stamp._'+key+' = _'+key+'\n'
 		}
 
 		return code

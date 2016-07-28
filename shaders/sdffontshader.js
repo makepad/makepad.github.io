@@ -36,6 +36,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		margin:{styleLevel:1, value:[0,0,0,0]},
 		text:{styleLevel:1, value:''},
 
+		lockScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
@@ -86,9 +87,10 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		)
 
 		// clip the rect
-		var shift = vec2(0.)
+		var shift = vec2(-this.fingerScroll.x*this.lockScroll, -this.fingerScroll.y*this.lockScroll)
+
 		if(this.mesh.z < 0.5){
-			shift = this.shadowOffset.xy
+			shift += this.shadowOffset.xy
 		}
 
 		// clip mesh
@@ -103,7 +105,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			minPos,
 			maxPos,
 			this.mesh.xy
-		)
+		) + shift
 
 		// we cant clip italic. ahwell
 		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
@@ -114,7 +116,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				return vec4(0)
 			}
 			var meshmz = this.mesh.xy *2. - 1.
-			pos.xy += this.shadowOffset.xy// + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
+			//pos.xy += this.shadowOffset.xy// + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
 		}
 
 		this.textureCoords = mix(

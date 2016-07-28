@@ -90,8 +90,15 @@ painter.Todo = require('class').extend(function Todo(proto){
 			timeStart:this.timeStart,
 			timeMax:this.timeMax,
 			animLoop:this.animLoop,
-			w:painter.w,
-			h:painter.h
+			wPainter:painter.w,
+			hPainter:painter.h,
+			xTotal:this.xTotal,
+			xView:this.xView,
+			yTotal:this.yTotal,
+			yView:this.yView,
+			xScrollId:this.xScrollId,
+			yScrollId:this.yScrollId,
+			momentum:this.momentum
 		}
 	}
 

@@ -36,7 +36,7 @@ module.exports = function(proto){
 			set:function(value){
 				var old = this[_key]
 				this[_key] = value
-				var flags = this[_onkey]
+				var flags = this[_onkey] || this.onFlag
 				if(flags){
 					var id = 1
 					while(flags){

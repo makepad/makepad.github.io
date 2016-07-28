@@ -23,7 +23,8 @@ module.exports = require('shader').extend(function RectShader(proto){
 
 		borderWidth: {pack:'int12', value:[0,0,0,0]},
 		borderRadius: {pack:'int12', value:[8,8,8,8]},
-		
+
+		lockScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
@@ -55,7 +56,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 		if (this.visible < 0.5) return vec4(0.0)
 
 		// compute the normal rect positions
-		var shift = vec2(this.x, this.y)
+		var shift = vec2(this.x - this.fingerScroll.x*this.lockScroll, this.y - this.fingerScroll.y*this.lockScroll)
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
 		}

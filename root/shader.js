@@ -40,7 +40,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var color = this.pixel()
 		if(painterPickPass != 0){
 			if(color.a < this.pickAlpha) discard
-			gl_FragColor = vec4(this.pickIdHi/255.,floor(this.pickIdLo/256.0)/255.,mod(this.pickIdLo,256.0)/255.,float(painterPickPass)/255.)
+			gl_FragColor = vec4(this.todoId/255.,floor(this.pickId/256.0)/255.,mod(this.pickId,256.0)/255.,float(painterPickPass)/255.)
 		}
 		else{
 			gl_FragColor = color
@@ -483,7 +483,7 @@ module.exports = require('class').extend(function Shader(proto){
 			if(prop.config.noStyle) continue
 			if(styleLevel && prop.config.styleLevel > styleLevel) continue
 			if(name in props){
-				code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
+				code += indent+'_'+name+ ' = '+inobj+'._' + name +'\n'
 			}
 		}
 		return code
@@ -1025,18 +1025,25 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.props = {
 		time:{kind:'uniform', value: 1.0},
 		pickAlpha: {kind:'uniform', value:0.5},
-		pickIdHi: {kind:'uniform', value:0.},
-		pickIdLo: {noTween:true, noStyle:true, value:0.},
+		todoId: {kind:'uniform', value:0.},
+		pickId: {noTween:true, noStyle:true, value:0.},
 		ease: {noTween:true, value:[0,0,1.0,1.0]},
 		tween: {noTween:true, value:0.},
 		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 
 		// for ease of use define them here
+		fingerScroll:{kind:'uniform', asGlobal:true, type:types.vec2},
 		fingerPos:{kind:'uniform', asGlobal:true, type:types.vec4},
 		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		viewInverse:{kind:'uniform', asGlobal:true, type:types.mat4},
 		camPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		camProjection:{kind:'uniform', asGlobal:true, type:types.mat4}
 	}
+
+	painter.nameId('this_DOT_time')
+	painter.nameId('this_DOT_todoId')
+	painter.nameId('this_DOT_fingerPos')
+	painter.nameId('this_DOT_fingerScroll')
+
 })

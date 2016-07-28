@@ -40,7 +40,7 @@ function storeNewFinger(p){
 	// we need to alloc a new one
 	if(!digit || fingermap[digit]) fingermap[digit = fingermapalloc++] = p
 	else fingermap[digit] = p
-	p.digit = digit
+	p.digit = parseInt(digit)
 }
 
 function fingerDown(fingers){
@@ -52,7 +52,7 @@ function fingerDown(fingers){
 
 		storeNewFinger(p)
 
-		services.painter.pick(p.digit, p.x, p.y, fingers.length === 1).then(function(p, pick){
+		services.painter.pickFinger(p.digit, p.x, p.y, fingers.length === 1).then(function(p, pick){
 			// set the ID
 			p.fn = 'onFingerDown'
 			// store startx for delta
@@ -61,6 +61,9 @@ function fingerDown(fingers){
 			p.sy = p.y
 			p.dx = 0
 			p.dy = 0
+
+			services.painter.updateFinger(p.pick, p.digit, p.x, p.y, 0, 0, 2)
+
 			// post the message
 			bus.postMessage(p)
 			if(p.queue){
@@ -87,13 +90,16 @@ function fingerMove(fingers){
 		}
 		p.sx = op.sx
 		p.sy = op.sy
-		p.dx = p.x - p.sx
-		p.dy = p.y - p.sy
+
+		op.dx = p.dx = isNaN(op.lx)?0:op.lx - p.x
+		op.dy = p.dy = isNaN(op.ly)?0:op.ly - p.y
+		op.lx = p.x
+		op.ly = p.y
 		p.fn = 'onFingerMove'
 		p.digit = op.digit
 		p.pick = op.pick
 
-		services.painter.updateFinger(p.digit, p.x, p.y)
+		services.painter.updateFinger(p.pick, p.digit, p.x, p.y, p.dx, p.dy, 0)
 
 		if(!op.pick){
 			var queue = op.queue || (op.queue = [])
@@ -107,7 +113,7 @@ function fingerHover(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 		services.painter.updateFinger(0, p.x, p.y)
-		services.painter.pick(0, p.x, p.y).then(function(p, pick){
+		services.painter.pickFinger(0, p.x, p.y).then(function(p, pick){
 			p.pick = pick
 			p.fn = 'onFingerHover'
 			bus.postMessage(p)
@@ -119,7 +125,8 @@ function fingerWheel(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var p = fingers[i]
 
-		services.painter.pick(0, p.x, p.y).then(function(p, pick){
+		services.painter.pickFinger(0, p.x, p.y).then(function(p, pick){
+			services.painter.scrollFinger(pick, p.xScroll, p.yScroll)
 			p.pick = pick
 			p.fn = 'onFingerWheel'
 			bus.postMessage(p)
@@ -141,15 +148,16 @@ function fingerUp(fingers){
 			console.log('End finger without matching finger', p)
 			continue
 		}
+
 		p.sx = op.sx
 		p.sy = op.sy
-		p.dx = p.x - p.sx
-		p.dy = p.y - p.sy
 		p.fn = 'onFingerUp'
-		p.finger = op.finger
+		p.digit = op.digit
 		p.pick = op.pick
 		// remove the old from the finger set
 		fingermap[op.digit] = undefined
+
+		services.painter.updateFinger(p.pick, p.digit, p.x, p.y, op.dx, op.dy, 1)
 
 		p.isTap = p.time - op.time < TAP_TIME && Math.sqrt(p.dx*p.dx+p.dy*p.dy) < TAP_DIST
 
@@ -241,23 +249,23 @@ function wheel(e){
 	if(e.deltaMode === 1) fac = 6
 	else if(e.deltaMode === 2) fac = 400
 	else if(is_windows) fac = 0.125
-	p[0].wheelx = e.deltaX * fac
-	p[0].wheely = e.deltaY * fac
+	p[0].xScroll = e.deltaX * fac
+	p[0].yScroll = e.deltaY * fac
 	return fingerWheel(p)
 }
 
 var canvas = service.canvas
 
 canvas.addEventListener('mousedown',mousedown)
-canvas.addEventListener('mouseup',mouseup)
-canvas.addEventListener('mousemove',mousemove)
+window.addEventListener('mouseup',mouseup)
+window.addEventListener('mousemove',mousemove)
 canvas.addEventListener('contextmenu',function(e){
 	e.preventDefault()
 	return false
 })
 canvas.addEventListener('touchstart', touchstart)
-canvas.addEventListener('touchmove',touchmove)
-canvas.addEventListener('touchend', touchend, false)
+window.addEventListener('touchmove',touchmove)
+window.addEventListener('touchend', touchend, false)
 canvas.addEventListener('touchcancel', touchend)
 canvas.addEventListener('touchleave', touchend)
 canvas.addEventListener('wheel', wheel)

@@ -2,6 +2,9 @@ module.exports = require('class').extend(function Turtle(proto){
 
 	proto.onConstruct = function(view){
 		this.view = view
+		this.x1 = this.y1 = Infinity
+		this.x2 = this.y2 = -Infinity
+		this.mh = 0
 	}
 
 	proto.begin = function(outer){
@@ -51,7 +54,6 @@ module.exports = require('class').extend(function Turtle(proto){
 		this.x1 = this.y1 = Infinity
 		this.x2 = this.y2 = -Infinity
 		this.mh = 0
-
 		// begin walking
 		this.sx = this.wx = this.ix + padding[3] + margin[3]
 		this.sy = this.wy = this.iy + padding[0] + margin[0]
@@ -104,6 +106,8 @@ module.exports = require('class').extend(function Turtle(proto){
 			var ny = this.wy + nh
 			if(ny > this.y2) this.y2 = ny
 		}
+		if(this._x < this.x1) this.x1 = this._x
+		if(this._y < this.y1) this.y1 = this._y
 	}
 
 	proto.lineBreak = function(){
@@ -118,6 +122,12 @@ module.exports = require('class').extend(function Turtle(proto){
 
 		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
 		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
+
+		// lets update x2 and y2
+		if(this.x1 < outer.x1) outer.x1 = this.x1
+		if(this.y1 < outer.y1) outer.y1 = this.y1
+		if(this.x2 > outer.x2) outer.x2 = this.x2
+		if(this.y2 > outer.y2) outer.y2 = this.y2
 
 		// align
 		if(this.align[0] !== 0 || this.align[1] !== 0){
