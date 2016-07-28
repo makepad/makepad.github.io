@@ -15,14 +15,16 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.tools = {
 		ScrollBar: require('shaders/quadshader').extend({
 			props:{
-				fingerDigit:{noTween:true,value:0.},
-				relativePos:{noTween:true,value:0.},
-				id:{noTween:true,value:0},
+				x:{noTween:1, value:NaN},
+				y:{noTween:1, value:NaN},
+				fingerDigit:{noTween:1,value:0.},
+				relativePos:{noTween:1,value:0.},
+				id:{noTween:1,value:0},
 				bgColor:'#555',
 				handleColor:'#bbb',
 				borderRadius:4,
-				handlePos:0.25,
-				handleSize:0.25
+				handlePos:{noTween:1, value:0.25},
+				handleSize:{noTween:1, value:0.25}
 			},
 			vertexPost:function(){ // bypass the worker roundtrip :)
 				if(this.fingerDigit>0.5 && this.fingerDigit < 2.5){
@@ -60,28 +62,29 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.states = {
 		default:{
 			ScrollBar:{
-				tween:0.4,
-				bgColor:'#444',
-				handleColor:'#888'
-			}
-		},
-		out:{
-			ScrollBar:{
-				tween:0.4,
+				tween:0.3,
 				bgColor:'#444',
 				handleColor:'#888'
 			}
 		},
 		hover:{
 			ScrollBar:{
+				tween:0.1,
 				bgColor:'#555',
 				handleColor:'yellow'
 			}
 		}
 	}
 
-	proto.onHandlePos = function(pos){
-		//console.log(pos)
+	proto.onHandlePos = function(){
+		if(this.onSlide) this.onSlide(this.handlePos)
+	}
+
+	// external api
+	proto.setHandlePos = function(pos){
+		this._handlePos = pos
+		this.handleMoved = true
+		this.redraw()
 	}
 
 	// see what to do
@@ -104,7 +107,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	}
 
 	proto.onFingerUp = function(event){
-		this.state = this.states.out
+		this.state = this.states.default
 		this.fingerDigit = 0
 	}
 
@@ -123,7 +126,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	}
 
 	proto.onFingerOut = function(){
-		this.state = this.states.out
+		this.state = this.states.default
 	}
 
 	proto.onDraw = function(){

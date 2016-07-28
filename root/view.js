@@ -273,6 +273,7 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.yTotal = this.turtle.y2
 		this.todo.yView = this.$hDraw
 		this.todo.momentum = 0.9
+
 		// check if we are larger than our view area, show a scrollbar
 		if(this.turtle.y2 > this.$hDraw){
 
@@ -286,10 +287,15 @@ module.exports = require('class').extend(function View(proto){
 			})
 	
 			this.todo.yScrollId = this.$yScroll.$stampId
+			
+			this.todo.onScroll = function(x, y){
+				this.$yScroll.setHandlePos(y / this.todo.yTotal)
+			}.bind(this)
 
 			this.$yScroll.onSlide = function(v){
-				
-			}
+				// scroll the todo
+				this.todo.setScroll(0, v * this.todo.yTotal) 
+			}.bind(this)
 		}
 		if(this.turtle.x2 > this.$wDraw){
 			this.todo.xView = this.todo.xTotal

@@ -56,7 +56,6 @@ var Scrollbars = require('canvas').extend({
 			this.drawScrollBar({
 				id:i,
 				margin:1,
-				initPos: (.5+.5*sin(2.*this.time+i*0.2))*(1.-0.2),
 				handleSize:0.2,
 				w:10,
 				h:50//'100%',

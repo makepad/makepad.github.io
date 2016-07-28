@@ -31,6 +31,7 @@ painter.sync = function(){
 	})
 }
 
+
 var nameIds = {}
 var nameIdsAlloc = 1
 
@@ -48,6 +49,11 @@ painter.nameId = function(name){
 
 var todoIdsAlloc = 1
 var todoIds = {}
+
+painter.onScrollTodo = function(msg){
+	var todo = todoIds[msg.todoId]
+	if(todo && todo.onScroll) todo.onScroll(msg.x, msg.y)
+}
 
 painter.Todo = require('class').extend(function Todo(proto){
 
@@ -100,6 +106,15 @@ painter.Todo = require('class').extend(function Todo(proto){
 			yScrollId:this.yScrollId,
 			momentum:this.momentum
 		}
+	}
+
+	proto.setScroll = function(x, y){
+		bus.postMessage({
+			fn:'scrollTodo',
+			todoId:this.todoId,
+			x:x,
+			y:y
+		})
 	}
 
 	proto.resize = function(){

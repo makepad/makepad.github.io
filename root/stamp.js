@@ -27,7 +27,7 @@ module.exports = require('class').extend(function Stamp(proto){
 
 	proto.onFlag1 =
 	proto.redraw = function(){
-		this.view.redraw()
+		if(this.view) this.view.redraw()
 	}
 
 	proto.props = {

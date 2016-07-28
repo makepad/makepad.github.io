@@ -129,6 +129,12 @@ function doScroll(todo, dx, dy){
 	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
 		todo.xScroll = xScroll
 		todo.yScroll = yScroll
+		bus.postMessage({
+			fn:'onScrollTodo',
+			todoId:todo.todoId,
+			x:xScroll,
+			y:yScroll
+		})
 		return true
 	}
 }
@@ -1264,6 +1270,13 @@ userfn.updateTodo = function(msg){
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()
 	}
+}
+
+userfn.scrollTodo = function(msg){
+	var todo = todoIds[msg.todoId]
+	if(msg.x !== undefined) todo.xScroll = msg.x
+	if(msg.y !== undefined) todo.yScroll = msg.y
+	requestRepaint()
 }
 
 todofn[1] = function addChildTodo(i32, f32, o){
