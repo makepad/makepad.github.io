@@ -655,7 +655,11 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			fn:'updateMesh',
 			meshId:this.meshId,
 			length:this.length,
-			array:this.array
+			array:this.array,
+			xOffset:this.xOffset,
+			yOffset:this.yOffset,
+			wOffset:this.wOffset,
+			hOffset:this.hOffset
 		}
 	}
 

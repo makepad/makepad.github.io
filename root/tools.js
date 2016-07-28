@@ -74,8 +74,8 @@ module.exports = function(proto){
 			var level = writes[i+3]
 			if(current > level) continue
 			var slots = props.slots
-			var xoff = props.xoffset
-			var yoff = props.yoffset
+			var xoff = props.xOffset
+			var yoff = props.yOffset
 			var array = props.array
 			for(var j = begin; j < end; j++){
 				array[j * slots + xoff] += dx
@@ -90,8 +90,12 @@ module.exports = function(proto){
 		var info = this['_' + classname].prototype.$compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
-		props.xoffset = info.instanceProps.this_DOT_x.offset
-		props.yoffset = info.instanceProps.this_DOT_y.offset
+		props.xOffset = info.instanceProps.this_DOT_x.offset
+		props.yOffset = info.instanceProps.this_DOT_y.offset
+		var wProp = info.instanceProps.this_DOT_w
+		props.wOffset = wProp && wProp.offset
+		var hProp = info.instanceProps.this_DOT_h
+		props.hOffset = hProp && hProp.offset
 		return shader
 	}
 

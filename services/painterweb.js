@@ -54,11 +54,12 @@ window.addEventListener('resize', resize)
 resize()
 
 var renderTime = 0
-
+var currentTodo 
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
 	if(!todo) return false
-
+	var lastTodo = currentTodo
+	currentTodo = todo
 	// set todoId
 	floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
 	vec2fGlobal(nameIds.this_DOT_fingerScroll, todo.xScroll, todo.yScroll)
@@ -77,7 +78,7 @@ function runTodo(todo){
 		var ret = fn(i32, f32, o)
 		if(ret) repaint = true
 	}
-	
+	currentTodo = lastTodo
 	if(todo.xFlick !== 0 || todo.yFlick !== 0){
 		doScroll(todo, todo.xFlick, todo.yFlick)
 		todo.xFlick *= todo.momentum
@@ -830,6 +831,10 @@ userfn.newMesh = function(msg){
 
 userfn.updateMesh = function(msg){
 	var glbuffer = meshids[msg.meshId]
+	glbuffer.xOffset = msg.xOffset
+	glbuffer.yOffset = msg.yOffset
+	glbuffer.wOffset = msg.wOffset
+	glbuffer.hOffset = msg.hOffset
 	glbuffer.array = msg.array
 	glbuffer.length = msg.length
 	gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
@@ -866,7 +871,29 @@ todofn[4] = function instances(i32, f32, o){
 	var slotoff = 0
 	var mesh = meshids[meshid]
 
-	currentShader.instlength = mesh.length
+	// fast geometry clipping
+	var len = mesh.length
+	if( mesh.yOffset &&  len > 100){ // otherwise dont bother
+		var array = mesh.array
+		var yScroll = currentTodo.yScroll
+		var yMax = currentTodo.yView
+		var yOffset = mesh.yOffset
+		var slots = (stride>>2)
+
+		for(var start = 0; start < len; start += 100){
+			if(array[slots*start + yOffset] - yScroll >= 0) break
+		}
+		start = Math.max(start - 100,0)
+
+		for(var end = start; end < len; end += 100){
+			if(array[slots*end + yOffset] - yScroll > yMax) break
+		}
+
+		offset = start * slots * 4
+		len = end - start
+	}
+
+	currentShader.instlength = len
 	currentShader.instanced = true
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 	for(var i = 0; i < range; i++){

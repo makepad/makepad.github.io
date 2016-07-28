@@ -99,6 +99,13 @@ module.exports = require('shader').extend(function RectShader(proto){
 
 		var br = this.borderRadius * 2. 
 		
+		this.quick =  vec4(
+			max(this.borderRadius.x, this.borderRadius.w) + this.borderWidth.w,
+			max(this.borderRadius.x, this.borderRadius.y)+ this.borderWidth.x,
+			this.w - max(this.borderRadius.y, this.borderRadius.z) - this.borderWidth.y,
+			this.h - max(this.borderRadius.z, this.borderRadius.w) - this.borderWidth.z
+		)
+
 		return vec4(pos , 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
@@ -109,12 +116,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 		this.pixelStyle()
 		
 		// NOT ENOUGH VARYINGS ON IOS. otherwise this goes in the vertex shader
-		var quick = vec4(
-			max(this.borderRadius.x, this.borderRadius.w) + this.borderWidth.w,
-			max(this.borderRadius.x, this.borderRadius.y)+ this.borderWidth.x,
-			this.w - max(this.borderRadius.y, this.borderRadius.z) - this.borderWidth.y,
-			this.h - max(this.borderRadius.z, this.borderRadius.w) - this.borderWidth.z
-		)
+		var quick = this.quick
 
 		// quick out
 		if(this.mesh.z < 0.5){

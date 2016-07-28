@@ -36,17 +36,21 @@ module.exports = function(proto){
 			set:function(value){
 				var old = this[_key]
 				this[_key] = value
-				var flags = this[_onkey] || this.onFlag
-				if(flags){
-					var id = 1
-					while(flags){
-						if(flags&1){
-							this['onFlag'+id]({key:key, old:old, value:value})
+				var flags = this[_onkey] || this.onFlag0
+
+				if(!config.onChange || old !== value){
+					if(flags){
+						var id = 1
+						while(flags){
+							if(flags&1){
+								this['onFlag'+id]({key:key, old:old, value:value})
+							}
+							id = id<<1, flags = flags>>1
 						}
-						id = id<<1, flags = flags>>1
 					}
+
+					if(this[onkey])this[onkey]({setter:true, old:old, value:value})
 				}
-				if(this[onkey]) this[onkey]({setter:true, old:old, value:value})
 			}
 		})
 	}

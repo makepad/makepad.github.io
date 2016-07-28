@@ -23,7 +23,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		}
 	})
 */
-	proto.onFlag = 1
+	proto.onFlag0 = 1
 
 	proto.onFlag1 =
 	proto.redraw = function(){

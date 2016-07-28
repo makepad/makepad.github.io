@@ -289,7 +289,9 @@ module.exports = require('class').extend(function View(proto){
 			this.todo.yScrollId = this.$yScroll.$stampId
 			
 			this.todo.onScroll = function(x, y){
-				this.$yScroll.setHandlePos(y / this.todo.yTotal)
+				this.todo.xScroll = x
+				this.todo.yScroll = y
+				//this.$yScroll.setHandlePos(y / this.todo.yTotal)
 			}.bind(this)
 
 			this.$yScroll.onSlide = function(v){

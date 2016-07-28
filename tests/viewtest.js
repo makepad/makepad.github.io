@@ -30,7 +30,7 @@ var Scrollbars = require('canvas').extend({
 				borderWidth:1,
 			}
 		}),
-		ScrollBar:require('stamps/scrollbarstamp').extend({
+		Scroller:require('stamps/scrollbarstamp').extend({
 			ScrollBar:{
 				pixelStyle2:function(){
 					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.handleSize)
@@ -53,7 +53,7 @@ var Scrollbars = require('canvas').extend({
 				color:'white',
 				text:(random()+'').slice(3,5)
 			})	
-			this.drawScrollBar({
+			this.drawScroller({
 				id:i,
 				margin:1,
 				handleSize:0.2,

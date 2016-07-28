@@ -2,9 +2,8 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	var vec4 = require('math/vec4')
 
 	proto.props = {
-		text:'Button',
 		id:0,
-		handlePos:0.,
+		handlePos:{onChange:1, value:0.},
 		handleSize:0.25,
 		fingerDigit:0.,
 		relativePos:0,
