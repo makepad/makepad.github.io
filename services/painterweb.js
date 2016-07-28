@@ -173,8 +173,9 @@ exports.scrollFinger = function(pick, x, y){
 	var todo = todoIds[pick.todoId]
 
 	if(!todo) return
-	todo.yScroll =	Math.min(Math.max(todo.yScroll + y, 0), todo.yTotal - todo.yView)
-	requestRepaint()
+	if(doScroll(todo, x, y)){
+		requestRepaint()
+	}
 }
 
 // pick the screen for digit , at x and y

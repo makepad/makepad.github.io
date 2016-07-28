@@ -51,7 +51,7 @@ var Scrollbars = require('canvas').extend({
 				outlineWidth:1,
 				outlineColor:'black',
 				color:'white',
-				text:(i+'')
+				text:(random()+'').slice(3,5)
 			})	
 			this.drawScrollBar({
 				id:i,
