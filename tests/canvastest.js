@@ -36,7 +36,7 @@ var App = require('app').extend(function(proto){
 				})
 					
 					this.drawBg({w:30,h:30})
-				//this.drawText({text:'Hi'})
+				this.drawText({text:'text '})
 
 				this.endBg()
 				this.drawText({text:'Flowing around A B C',wrapping:'word',color:'black',margin:[0,0,0,0]})

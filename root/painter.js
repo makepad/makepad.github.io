@@ -182,7 +182,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+2] = startnameid
 		i32[o+3] = range
 		i32[o+4] = mesh.meshId
-		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
+		i32[o+5] = stride || mesh.slots
 		i32[o+6] = offset
 	}
 
@@ -202,7 +202,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+2] = startnameid
 		i32[o+3] = range
 		i32[o+4] = mesh.meshId
-		i32[o+5] = stride || mesh.slots * mesh.arraytype.BYTES_PER_ELEMENT
+		i32[o+5] = stride || mesh.slots
 		i32[o+6] = offset
 		i32[o+7] = divisor || 1
 	}

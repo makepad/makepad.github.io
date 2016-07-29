@@ -75,6 +75,8 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 		}
 	}
 
+	proto.inPlace = true
+
 	proto.onHandlePos = function(){
 		if(this.onSlide) this.onSlide(this.handlePos)
 	}
@@ -83,7 +85,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.setHandlePos = function(pos){
 		this._handlePos = pos
 		this.handleMoved = true
-		this.redraw()
+		//this.redraw()
 	}
 
 	// see what to do

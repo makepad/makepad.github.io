@@ -338,8 +338,8 @@ function renderColor(framebuffer){
 	if(framebuffer === mainFramebuffer){
 		lagCompMat[0] = todo.wPainter / args.w 
 		lagCompMat[5] = todo.hPainter / args.h
-		lagCompMat[3] = -(args.w - todo.w) / args.w
-		lagCompMat[7] = (args.h - todo.h) / args.h
+		lagCompMat[3] = -(args.w - todo.wPainter) / args.w
+		lagCompMat[7] = (args.h - todo.hPainter) / args.h
 		mat4Global(nameIds.painterPickMat4, lagCompMat)
 		// alright lets 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null)
@@ -364,7 +364,7 @@ function repaint(time){
 
 	repaintPending = false
 
-	bus.postMessage({fn:'onSync', time:time/1000, frameId:frameId++})
+	bus.postMessage({fn:'onSync', time:repaintTime, frameId:frameId++})
 
 	if(!mainFramebuffer) return
 
@@ -815,6 +815,7 @@ todofn[2] = function useShader(i32, f32, o){
 	shader.instanced = false
 	shader.indexed = false
 	shader.samplers = 0
+	shader.fallbackInstancedArrays = false
 	gl.useProgram(shader)
 }
 
@@ -837,12 +838,13 @@ userfn.updateMesh = function(msg){
 	glbuffer.hOffset = msg.hOffset
 	glbuffer.array = msg.array
 	glbuffer.length = msg.length
+	glbuffer.updateId = frameId
 	gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
 	gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 }
 
 todofn[3] = function attributes(i32, f32, o){
-	var startnameid = i32[o+2]
+	var startId = i32[o+2]
 	var range = i32[o+3]
 	var meshid = i32[o+4]
 	var stride = i32[o+5]
@@ -851,18 +853,27 @@ todofn[3] = function attributes(i32, f32, o){
 	var mesh = meshids[meshid]
 	currentShader.attrlength = mesh.length
 
+	if(!ANGLE_instanced_arrays){
+		if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
+		var attr = currentShader.fallbackInstancedArrays.attr
+		attr.mesh = mesh
+		attr.stride = stride
+		attr.startId = startId
+		attr.range = range
+	}
+
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 
 	for(var i = 0; i < range; i++){
-		var loc = currentShader.attrlocs[startnameid+i]
-		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
-		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
+		var loc = currentShader.attrlocs[startId+i]
+		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset + slotoff)
+		if(ANGLE_instanced_arrays) ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 		slotoff += loc.slots * 4
 	}
 }
 
 todofn[4] = function instances(i32, f32, o){
-	var startnameid = i32[o+2]
+	var startId = i32[o+2]
 	var range = i32[o+3]
 	var meshid = i32[o+4]
 	var stride = i32[o+5]
@@ -878,28 +889,43 @@ todofn[4] = function instances(i32, f32, o){
 		var yScroll = currentTodo.yScroll
 		var yMax = currentTodo.yView
 		var yOffset = mesh.yOffset
-		var slots = (stride>>2)
-
+		var hOffset = mesh.hOffset
+		var slots = stride
+		var guard = yMax*0.5
 		for(var start = 0; start < len; start += 100){
-			if(array[slots*start + yOffset] - yScroll >= 0) break
+			var o = slots*start
+			if(array[o + yOffset] - yScroll + (hOffset?array[o + hOffset]:guard) >= 0) break
 		}
 		start = Math.max(start - 100,0)
 
 		for(var end = start; end < len; end += 100){
-			if(array[slots*end + yOffset] - yScroll > yMax) break
+			if(array[slots*end + yOffset] - yScroll - guard> yMax) break
 		}
-
-		offset = start * slots * 4
+		end = Math.min(end, len)
+		offset = start 
 		len = end - start
 	}
 
 	currentShader.instlength = len
 	currentShader.instanced = true
+
+	if(!ANGLE_instanced_arrays){
+		if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
+		var inst = currentShader.fallbackInstancedArrays.inst
+		inst.mesh = mesh
+		inst.stride = stride
+		inst.startId = startId
+		inst.range = range
+		inst.offset = offset
+		inst.len = len
+		return
+	}
+
 	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 	for(var i = 0; i < range; i++){
-		var loc = currentShader.attrlocs[startnameid+i]
+		var loc = currentShader.attrlocs[startId+i]
 		var index = loc.index
-		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride, offset + slotoff)
+		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * slots  * 4 + slotoff)
 		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 		slotoff += loc.slots * 4
 	}
@@ -1210,7 +1236,7 @@ var drawTypes = [
 	gl.LINE_STRIP,
 	gl.LINE_LOOP
 ]
-
+ANGLE_instanced_arrays = undefined
 todofn[30] = function drawArrays(i32, f32, o){
 	//console.log('DRAW ARRAYS', currentShader.name)
 
@@ -1230,15 +1256,77 @@ todofn[30] = function drawArrays(i32, f32, o){
 	//}
 
 	if(currentShader.instanced){
-		var from = i32[o+3]
-		var to =  i32[o+4]
-		var inst = i32[o+5]
-		if(from < 0){
-			from = 0
-			to = currentShader.attrlength
-			inst = currentShader.instlength
+
+		if(currentShader.fallbackInstancedArrays){
+			// alright we need to construct an array which is
+			var fb = currentShader.fallbackInstancedArrays
+			// well use the instances mesh
+			var instmesh = fb.inst.mesh
+			var vertexsize = fb.attr.stride + fb.inst.stride
+			var instlen = fb.inst.mesh.length
+			var attrlen = fb.attr.mesh.length
+			var inststride = fb.inst.stride
+			var attrstride = fb.attr.stride
+			var numvertices = instlen * attrlen
+			var totalsize = numvertices * vertexsize
+			var attrarray = fb.attr.mesh.array
+			var instarray = fb.inst.mesh.array
+			// lets check if we need to update it
+			if(instmesh.fbUpdateId !== instmesh.updateId){
+				//console.log("UYPDATE",instmesh.fbUpdateId,instmesh.updateId)
+				instmesh.fbUpdateId = instmesh.updateId
+				var array = instmesh.fbArray = new Float32Array(totalsize)
+				for(var i = 0; i < numvertices; i++){
+					// first write the attribute data
+					var o = i * vertexsize
+					var attrvertex = (i % attrlen) * attrstride
+					for(var j = 0; j < attrstride; j++){
+						array[o++] =  attrarray[attrvertex + j]
+					}
+					// write the instance data
+					var instvertex = Math.floor(i / attrlen) * inststride
+					for(var j = 0; j < inststride; j++){
+						array[o++] =  instarray[instvertex + j]
+					}
+				}
+				// update geometry
+				if(!instmesh.fbglbuf) instmesh.fbglbuf = gl.createBuffer()
+				gl.bindBuffer(gl.ARRAY_BUFFER, instmesh.fbglbuf )
+				gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW)
+			}
+			gl.bindBuffer(gl.ARRAY_BUFFER, instmesh.fbglbuf )
+
+			// set all attributes
+			var range = fb.attr.range
+			var startId = fb.attr.startId
+			var slotoff = 0
+			for(var i = 0; i < range; i++){
+				var loc = currentShader.attrlocs[startId+i]
+				gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, vertexsize * 4, slotoff)
+				slotoff += loc.slots * 4
+			}
+
+			var range = fb.inst.range
+			var startId = fb.inst.startId
+			for(var i = 0; i < range; i++){
+				var loc = currentShader.attrlocs[startId+i]
+				if(loc.index !== -1) gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, vertexsize * 4, slotoff)
+				slotoff += loc.slots * 4
+			}
+
+			gl.drawArrays(type, fb.inst.offset * attrlen, fb.inst.len * attrlen )
 		}
-		ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, from, to, inst)
+		else{
+			var from = i32[o+3]
+			var to =  i32[o+4]
+			var inst = i32[o+5]
+			if(from < 0){
+				from = 0
+				to = currentShader.attrlength
+				inst = currentShader.instlength
+			}
+			ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, from, to, inst)
+		}
 	}
 	else{
 		var from = i32[o+3]
@@ -1265,7 +1353,7 @@ userfn.newTodo = function(msg){
 		yFlick:0
 	}
 }
-
+var t = 0
 userfn.updateTodo = function(msg){
 	// lets just store the todo message as is
 	var todo = todoIds[msg.todoId]
@@ -1293,6 +1381,7 @@ userfn.updateTodo = function(msg){
 	todo.yView = msg.yView
 	todo.xScrollId = msg.xScrollId
 	todo.yScrollId = msg.yScrollId
+
 	todo.momentum = msg.momentum
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){

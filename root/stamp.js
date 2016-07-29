@@ -27,8 +27,14 @@ module.exports = require('class').extend(function Stamp(proto){
 
 	proto.onFlag1 =
 	proto.redraw = function(){
-		if(this.view) this.view.redraw()
+		if(this.inPlace){
+
+			console.log("INPLACe")
+		}
+		else if(this.view) this.view.redraw()
 	}
+
+	proto.inPlace = false
 
 	proto.props = {
 		x:NaN,
@@ -52,7 +58,7 @@ module.exports = require('class').extend(function Stamp(proto){
 	}
 
 	proto.$STYLESTAMP = function(target, classname, macroargs, mainargs, indent){
-		// create / lookup stamp
+		// so how do we rexecute a stamp
 
 		var code = ''
 		code += indent + 'var $view = this.view\n\n'
@@ -66,8 +72,8 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + '	$stamp.turtle = this.turtle\n'
 		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
 		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
-		code += indent + '	if($stamp.onConstruct)$stamp.onConstruct()\n'
-		code += indent + '	if($stamp._states)$stamp._state = $stamp._states.default\n'
+		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
+		code += indent + '	if($stamp._states) $stamp._state = $stamp._states.default\n'
 		code += indent + '}\n'
 		code += indent + '$stamp.turtle._pickId = $stampId\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
