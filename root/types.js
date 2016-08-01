@@ -75,6 +75,12 @@ types.int = Type({
 	array:Int32Array
 })
 
+types.uint16 = Type({
+	name:'uint16',
+	slots:1,
+	array:Uint16Array
+})
+
 types.vec1 = 
 types.float = Type({
 	name:'float',

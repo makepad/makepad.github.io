@@ -11,6 +11,7 @@ var App = require('app').extend(function(proto){
 	}
 
 	proto.onDraw = function(){
+		this.todo.drawRanging = true
 		for(var i = 0 ; i< 4000;i++){
 			this.drawText({
 				text:''+i,
@@ -20,7 +21,7 @@ var App = require('app').extend(function(proto){
 				shadowOffset:[2,2],
 				color:[Math.random(),Math.random(),Math.random(),1.],
 				outlineColor:'black',
-				x:Math.random()*1500,
+				x:Math.random()*1000,
 				y:Math.random()*1000
 			})
 		}

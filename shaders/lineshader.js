@@ -113,7 +113,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 
 	proto.pixel = function(){$
 		// map the field to pixels?
-		var adjust = 1./length(vec2(length(dFdx(this.pos.x)), length(dFdy(this.pos.y))))
+		var antialias = 1./length(vec2(length(dFdx(this.pos.x)), length(dFdy(this.pos.y))))
 		var outline = (abs(this.mesh.y-.5)-.5)*2.*this.lineWidth// * 2. * this.lineWidth //- 0.5*this.lineWidth
 
 		if(this.mesh.z < 0.5){
@@ -124,8 +124,8 @@ module.exports = require('shader').extend(function RectShader(proto){
 		var fill = outline + this.outlineWidth
 		var borderfinal = vec4()
 		if(abs(outline - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
-		else borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline*adjust + 1.,0.,1.))
-		return mix(this.color, borderfinal, clamp(fill * adjust + 1., 0., 1.))
+		else borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline*antialias + 1.,0.,1.))
+		return mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.))
 	}
 
 	proto.toolMacros = {

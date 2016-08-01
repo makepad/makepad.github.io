@@ -85,6 +85,15 @@ painter.Todo = require('class').extend(function Todo(proto){
 		todoIds[todoId] = this
 	}
 
+	proto.updateTodoTime = function(){
+		bus.batchMessage({
+			fn:'updateTodoTime',
+			todoId:this.todoId,
+			timeStart:this.timeStart,
+			timeMax:this.timeMax
+		})
+	}
+
 	proto.toMessage = function(){
 		return {
 			fn:'updateTodo',
@@ -207,10 +216,10 @@ painter.Todo = require('class').extend(function Todo(proto){
 		i32[o+7] = divisor || 1
 	}
 
-	proto.indexes = function(nameId, mesh){
+	proto.indices = function(mesh){
 
 		var o = (this.last = this.length)
-		if((this.length += 4) > this.allocated) this.resize()
+		if((this.length += 3) > this.allocated) this.resize()
 		var i32 = this.i32
 
 		// use the mesh message for lazy serialization
@@ -220,9 +229,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 		}
 
 		i32[o+0] = 5
-		i32[o+1] = 2
-		i32[o+2] = nameId
-		i32[o+3] = mesh.meshId
+		i32[o+1] = 1
+		i32[o+2] = mesh.meshId
 	}
 
 	// min/magfilter values
@@ -656,11 +664,16 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			meshId:this.meshId,
 			length:this.length,
 			array:this.array,
+			drawDiscard: this.drawDiscard,
 			xOffset:this.xOffset,
 			yOffset:this.yOffset,
 			wOffset:this.wOffset,
 			hOffset:this.hOffset
 		}
+	}
+
+	proto.updateMesh = function(){
+		bus.batchMessage(this)
 	}
 
 	proto.onConstruct = function(type, initalloc){

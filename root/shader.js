@@ -586,7 +586,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'var $shader = this.$shaders.'+classname+'\n'
 		code += indent+'if(!$shader) $shader = this.$allocShader("'+classname+'")\n'
 		code += indent+'var $props = $shader.$props\n'
-		code += indent+'if($props.$frameId !== $view._frameId){\n'
+		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
 		code += indent+'	var $proto = this._' + classname +'.prototype\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.length = 0\n'
@@ -609,6 +609,10 @@ module.exports = require('class').extend(function Shader(proto){
 			//code += indent+'	$attrlen = $proto.'+nodot+'.length\n'
 			code += indent+'	$todo.attributes('+(attrbase+attrid)+','+attrange+',$proto.'+nodot+')\n'
 			attrid += attrange
+		}
+		// check if we have indice
+		if(this.indices){
+			code += indent+'	$todo.indices($proto.indices)\n'
 		}
 		
 		// lets set the blendmode
@@ -641,23 +645,27 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets draw it
 		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent + '}\n'
-		code += indent + 'var $need = $props.length + '+need+'\n'
-		code += indent + 'if($need >= $props.allocated) $props.alloc($need)\n'
+		code += indent + 'var $propslength = $props.length\n\n'
+		code += indent + 'var $need = $propslength + '+need+'\n'
+		code += indent + 'if($need > $props.allocated) $props.alloc($need)\n'
 		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
-		code += indent + '$view.$writeList.push($props, $props.length, $need, $writelevel)\n'
-		code += indent + 'this.turtle.$propoffset = $props.length\n'
+		code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
+		code += indent + 'this.turtle.$propoffset = $propslength\n'
+		code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
+		code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
+		code += indent + '	this.$propsLen'+classname+' = $propslength\n'
+		code += indent + '}\n'
 		code += indent + '$props.length = $need\n'
-		//console.log(code)
 
 		return code
 	}
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+		code += indent + 'var $tweenDef = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
 		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($view._time < $tweenStart + $tween){\n'
-		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenStart)/$tween))\n'
+		code += indent + 'if($view._time < $tweenStart + $tweenDef){\n'
+		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenStart)/$tweenDef))\n'
 		code += indent + tweencode 
 		code += indent + '}'
 		return code
@@ -714,15 +722,18 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		code += indent + 'var $turtle = this.turtle\n'
 		code += indent + 'var $view = this.view\n'
+		code += indent + 'var $inPlace = $view.$inPlace\n\n'
 		code += indent +'var $shader = this.$shaders.'+classname+'\n'
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.array\n'
+		code += indent + 'if($turtle.$propoffset === undefined)debugger\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 		code += indent +'var $timeMax = $view._time + $turtle._tween\n'
 		//code += indent + '_props.length++\n'
 		
 		// lets store our max time on our todo
 		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+
 		var tweencode = '	var $f = $tween, $1mf = 1.-$tween, $upn, $upo\n'
 		var propcode = ''
 
@@ -732,11 +743,16 @@ module.exports = require('class').extend(function Shader(proto){
 			var slots = prop.slots
 			var o = prop.offset
 			var notween = prop.config.noTween
+			var noInPlace = prop.config.noInPlace
+		
+			propcode += '\n'+indent+'// '+key + '\n'
+
 			// generate the code to tween.
 			if(!notween){
 				// new, old
+				if(noInPlace) tweencode += indent + 'if(!$inPlace){\n'
+
 				tweencode += '\n'+indent+'	//' + key + '\n'
-				propcode += '\n'+indent+'// '+key + '\n'
 
 				var pack = prop.config.pack
 				if(pack){
@@ -762,6 +778,11 @@ module.exports = require('class').extend(function Shader(proto){
 							'$a[$o+'+(o +i)+']\n'
 					}
 				}
+				if(noInPlace) tweencode += indent + '}\n'
+			}
+
+			if(noInPlace){
+				propcode += indent + 'if(!$inPlace){\n'
 			}
 			// assign properties
 			// check if we are a vec4 and typeof string
@@ -884,11 +905,17 @@ module.exports = require('class').extend(function Shader(proto){
 					propcode += '\n'
 				}
 			}
+
+			if(noInPlace){
+				propcode += indent+'}\n'
+			}			
 		}
+
 		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
 		code += propcode
 		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
 		// lets generate the write-out
+		//console.log(code)
 		return code
 	}
 
@@ -1033,7 +1060,8 @@ module.exports = require('class').extend(function Shader(proto){
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 
 		// for ease of use define them here
-		fingerScroll:{kind:'uniform', asGlobal:true, type:types.vec2},
+		pixelRatio:{kind:'uniform', asGlobal:true, type:types.float},
+		viewScroll:{kind:'uniform', asGlobal:true, type:types.vec2},
 		fingerPos:{kind:'uniform', asGlobal:true, type:types.vec4},
 		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		viewInverse:{kind:'uniform', asGlobal:true, type:types.mat4},
@@ -1042,8 +1070,9 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	painter.nameId('this_DOT_time')
+	painter.nameId('this_DOT_pixelRatio')
 	painter.nameId('this_DOT_todoId')
 	painter.nameId('this_DOT_fingerPos')
-	painter.nameId('this_DOT_fingerScroll')
+	painter.nameId('this_DOT_viewScroll')
 
 })

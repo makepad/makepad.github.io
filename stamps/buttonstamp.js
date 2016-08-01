@@ -2,7 +2,11 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.props = {
 		text:'Button',
+		//w:50,
+		//h:50
 	}
+
+	proto.inPlace = 1
 
 	proto.tools = {
 		Bg: require('shaders/rectshader').extend({
@@ -19,6 +23,7 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 			Bg:{color:'gray'}
 		},
 		hover:{
+			tween:0.1,
 			Bg:{color:'red'},
 		}
 	}

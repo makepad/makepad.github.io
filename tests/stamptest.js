@@ -2,6 +2,7 @@ var App = require('app').extend(function(proto){
 
 	proto.tools = {
 		Button:require('stamps/buttonstamp').extend({
+			inPlace:0,
 			margin:2,
 			Text:{
 				fontSize:15

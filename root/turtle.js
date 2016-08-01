@@ -62,6 +62,7 @@ module.exports = require('class').extend(function Turtle(proto){
 	}	
 
 	proto.walk = function(oldturtle){
+		if(this.view.$inPlace) return
 
 		var _w = this._w
 		if(typeof _w === 'string') this._w = this.evalw(_w)

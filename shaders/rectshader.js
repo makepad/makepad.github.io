@@ -6,10 +6,10 @@ module.exports = require('shader').extend(function RectShader(proto){
 	proto.props = {
 		visible: {noTween:true, value:1.0},
 
-		x: NaN,
-		y: NaN,
-		w: NaN,
-		h: NaN,
+		x: {noInPlace:1, value:NaN},
+		y: {noInPlace:1, value:NaN},
+		w: {noInPlace:1, value:NaN},
+		h: {noInPlace:1, value:NaN},
 		z: 0,
 
 		wrap: {styleLevel:2, value:1},
@@ -25,7 +25,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 		borderRadius: {pack:'int12', value:[8,8,8,8]},
 
 		lockScroll:{noTween:1, value:1.},
-		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
+		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
 		shadowBlur: 0.0,
@@ -56,7 +56,7 @@ module.exports = require('shader').extend(function RectShader(proto){
 		if (this.visible < 0.5) return vec4(0.0)
 
 		// compute the normal rect positions
-		var shift = vec2(this.x - this.fingerScroll.x*this.lockScroll, this.y - this.fingerScroll.y*this.lockScroll)
+		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
 		}

@@ -65,8 +65,12 @@ module.exports = require('view').extend(function App(proto, base){
 			if(view[event]) view[event](msg)
 			var stamp = view.$stamps[pickId]
 			if(!stamp) return
-			msg.x = msg.xView - stamp.$x
+			msg.x = msg.xView - stamp.$x 
 			msg.y = msg.yView - stamp.$y
+			if(stamp.lockScroll){
+				msg.x += view.todo.xScroll || 0
+				msg.y += view.todo.yScroll || 0
+			}
 			if(stamp[event]) stamp[event](msg)
 		}
 
@@ -296,10 +300,14 @@ module.exports = require('view').extend(function App(proto, base){
 		}
 	}
 
-	proto.$redrawViews = function(){
-		// we can submit a todo now
+	proto.$updateTime = function(){
 		this._time = (Date.now() - painter.timeBoot) / 1000
 		this._frameId++
+	}
+
+	proto.$redrawViews = function(){
+		this.$updateTime()
+		// we can submit a todo now
 		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
 
 		var todo = this.todo

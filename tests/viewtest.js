@@ -36,11 +36,16 @@ var Scrollbars = require('canvas').extend({
 					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.handleSize)
 				}
 			}
+		}),
+		Rect:require('shaders/fastrectshader').extend({
+			borderRadius:8,
 		})
 	},
+	drawDiscard:'y',
 	onDraw:function(){
 		this.beginRect(this.viewGeom)
-		for(var i = 0; i < 1; i++){
+		
+		for(var i = 0; i < 800; i++){
 			if(i%20 === 0){
 				this.drawText({
 					text:'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n'
@@ -55,12 +60,14 @@ var Scrollbars = require('canvas').extend({
 			})	
 			this.drawScroller({
 				id:i,
+				lockScroll:1.,
 				margin:1,
 				handleSize:0.2,
 				w:10,
 				h:50//'100%',
 			})
 		}
+		//this.drawRect({w:100,h:4000})
 		this.endRect()
 	}
 })

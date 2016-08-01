@@ -2,36 +2,60 @@ module.exports = require('class').extend(function Stamp(proto){
 	//var types = require('types')
 	require('props')(proto)
 	require('tools')(proto)
-/*	
-	Object.defineProperty(proto, 'props', {
-		get:function(){
-			throw new Error('props is a configurator, please only assign objects: this.props = {...}')
-		},
-		set:function(props){
-			if(!this.hasOwnProperty('_props')){
-				this._props = this._props?Object.create(this._props):{}
-			}
-			for(var key in props){
-				var config = props[key]
-				if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
-					config = {value:config}
-				}
-				this._props[key] = config
-				if(config.value !== undefined) this[key] = config.value
-				//if(!config.type) config.type = types.typeFromValue(config.value)
-			}
-		}
-	})
-*/
+
 	proto.onFlag0 = 1
 
 	proto.onFlag1 =
 	proto.redraw = function(){
-		if(this.inPlace){
+		var view = this.view
+		if(view && this.inPlace){
+			// figure out all the shader props lengths 
+			var keys = Object.keys(this)
+			var lengths = {}
+			for(var i = 0; i < keys.length; i++){
+				var key = keys[i]
+				if(key.indexOf('$propsLen') === 0){
+					var shader = key.slice(9)
+					// lets reset the $props.length
+					var props = this.$shaders[shader].$props
+					lengths[shader] = props.length
+					props.length = this[key]
+				}
+			}
+			
+			// re-run draw
+			view.app.$updateTime()
+			view._frameId = view.app._frameId
+			view._time = view.app._time
+			view.$writeList.length = 0
 
-			console.log("INPLACe")
+			// flag in place so the drawcalls dont modify the todo
+			view.$inPlace = true
+			view.todo.timeStart = view._time 
+			view.todo.timeMax = 0
+			view.$turtleStack.len = 0
+			this.turtle = view.$turtleStack[0]
+			this.turtle._pickId = this.$stampId
+
+			// re-run draw
+			this.onDraw()
+
+			// putback the lengths
+			for(var key in lengths){
+				var props = this.$shaders[key].$props
+				props.length = lengths[key]
+				props.updateMesh()
+			}
+			view.todo.updateTodoTime()
+
+			// remove inplace flag
+			view.$inPlace = false
+
+			// put back lengths
+			//console.log('here')
+			// let props update
 		}
-		else if(this.view) this.view.redraw()
+		else if(view) view.redraw()
 	}
 
 	proto.inPlace = false
@@ -124,6 +148,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + '$stamp.$y = $turtle._y\n'
 		code += indent + '$stamp.$w = $turtle._w\n'
 		code += indent + '$stamp.$h = $turtle._h\n'
+		code += indent + '$turtle._pickId = 0'
 		return code
 	}
 
@@ -166,7 +191,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		},
 		set:function(state){
 			this._state = state
-			this.view.redraw()	
+			this.redraw()	
 		}
 	})
 })

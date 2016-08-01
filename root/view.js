@@ -177,6 +177,7 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.$redrawView = function(){		
 		this._time = this.app._time
+
 		this._frameId = this.app._frameId
 		this.$writeList.length = 0
 		this.$drawClean = true
@@ -285,13 +286,16 @@ module.exports = require('class').extend(function View(proto){
 				w:10,
 				h:this.$hDraw,
 			})
-	
+
 			this.todo.yScrollId = this.$yScroll.$stampId
+			
+			// alright im'a going to allow prop buffer
+			// patching from a widget.
 			
 			this.todo.onScroll = function(x, y){
 				this.todo.xScroll = x
 				this.todo.yScroll = y
-				//this.$yScroll.setHandlePos(y / this.todo.yTotal)
+				this.$yScroll.setHandlePos(y / this.todo.yTotal)
 			}.bind(this)
 
 			this.$yScroll.onSlide = function(v){

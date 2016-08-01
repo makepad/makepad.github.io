@@ -14,8 +14,8 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.tools = {
 		ScrollBar: require('shaders/quadshader').extend({
 			props:{
-				x:{noTween:1, value:NaN},
-				y:{noTween:1, value:NaN},
+				x:{noTween:1, noInPlace:1, value:NaN},
+				y:{noTween:1, noInPlace:1, value:NaN},
 				fingerDigit:{noTween:1,value:0.},
 				relativePos:{noTween:1,value:0.},
 				id:{noTween:1,value:0},
@@ -29,7 +29,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 				if(this.fingerDigit>0.5 && this.fingerDigit < 2.5){
 					var inPos = this.fingerPos.xy
 					if(this.fingerDigit>1.5) inPos = this.fingerPos.zw
-					var localFinger = vec4(inPos,0,1.) * this.viewInverse - vec4(this.x, this.y,0,0)
+					var localFinger = vec4(inPos,0,1.) * this.viewInverse - vec4(this.x - this.lockScroll * this.viewScroll.x, this.y - this.lockScroll * this.viewScroll.y,0,0)
 					this.handlePos = clamp(localFinger.y / this.h - this.relativePos, 0., 1. - this.handleSize)
 				}
 			},
@@ -85,7 +85,7 @@ module.exports = require('stamp').extend(function ScrollBarStamp(proto){
 	proto.setHandlePos = function(pos){
 		this._handlePos = pos
 		this.handleMoved = true
-		//this.redraw()
+		this.redraw()
 	}
 
 	// see what to do

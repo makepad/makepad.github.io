@@ -13,7 +13,7 @@ var options = {
 	antialias: canvas.getAttribute("antialias")?true:false,
 	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
 	preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
-	preferLowPowerToHighPerformance: false//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
+	preferLowPowerToHighPerformance: true//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
 }
 
 var gl = canvas.getContext('webgl', options) ||
@@ -62,7 +62,7 @@ function runTodo(todo){
 	currentTodo = todo
 	// set todoId
 	floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
-	vec2fGlobal(nameIds.this_DOT_fingerScroll, todo.xScroll, todo.yScroll)
+	vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
 
 	var f32 = todo.f32
 	var i32 = todo.i32
@@ -126,7 +126,7 @@ function doScroll(todo, dx, dy){
 	// do some scrolling with your finger
 	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), todo.xTotal - todo.xView)
 	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), todo.yTotal - todo.yView)
-
+	if(yScroll === -Infinity || xScroll === -Infinity) return
 	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
 		todo.xScroll = xScroll
 		todo.yScroll = yScroll
@@ -152,6 +152,7 @@ exports.updateFinger = function(pick, digit, x, y, dx, dy, flick){
 	}
 	// do some potential scrolling on touch devices
 	var todo = todoIds[pick.todoId]
+
 	if(!todo) return
 
 	if(pick.pickId === todo.yScrollId || pick.pickId === todo.xScrollId) return
@@ -212,6 +213,7 @@ function renderPickDep(framebuffer){
 	globalsLen = 0
 	pickPass = true
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
+	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
 	intGlobal(nameIds.painterPickPass, 1)
 	mat4Global(nameIds.painterPickMat4, identityMat)
 	// alright lets bind the pick framebuffer
@@ -283,6 +285,7 @@ function renderPickWindow(digit, x, y, force){
 	// set up global uniforms
 	globalsLen = 0
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
+	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
 	mat4Global(nameIds.painterPickMat4, pickMat)
 	intGlobal(nameIds.painterPickPass, 1)
 	pickPass = true
@@ -333,6 +336,7 @@ function renderColor(framebuffer){
 	globalsLen = 0
 	vec4Global(nameIds.this_DOT_fingerPos, fingerPos)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
+	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
 	intGlobal(nameIds.painterPickPass, 0)
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
@@ -418,7 +422,7 @@ var WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtens
 
 var shaderIds = {}
 var nameIds = {}
-var meshids = {}
+var meshIds = {}
 var todoIds = {}
 var textureIds = {}
 var framebufferIds = {}
@@ -827,20 +831,31 @@ todofn[2] = function useShader(i32, f32, o){
 
 userfn.newMesh = function(msg){
 	var glbuffer = gl.createBuffer()
-	meshids[msg.meshId] = glbuffer
+	meshIds[msg.meshId] = glbuffer
 }
 
 userfn.updateMesh = function(msg){
-	var glbuffer = meshids[msg.meshId]
-	glbuffer.xOffset = msg.xOffset
-	glbuffer.yOffset = msg.yOffset
-	glbuffer.wOffset = msg.wOffset
-	glbuffer.hOffset = msg.hOffset
+	var glbuffer = meshIds[msg.meshId]
+
+	if(glbuffer.drawDiscard = msg.drawDiscard){
+		glbuffer.xOffset = msg.xOffset
+		glbuffer.yOffset = msg.yOffset
+		glbuffer.wOffset = msg.wOffset
+		glbuffer.hOffset = msg.hOffset
+	}
 	glbuffer.array = msg.array
 	glbuffer.length = msg.length
 	glbuffer.updateId = frameId
-	gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
-	gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
+	// check the type
+
+	if(msg.array.constructor === Uint16Array){
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
+	}
+	else{
+		gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
+		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
+	}
 }
 
 todofn[3] = function attributes(i32, f32, o){
@@ -850,7 +865,7 @@ todofn[3] = function attributes(i32, f32, o){
 	var stride = i32[o+5]
 	var offset = i32[o+6]
 	var slotoff = 0
-	var mesh = meshids[meshid]
+	var mesh = meshIds[meshid]
 	currentShader.attrlength = mesh.length
 
 	if(!ANGLE_instanced_arrays){
@@ -866,7 +881,7 @@ todofn[3] = function attributes(i32, f32, o){
 
 	for(var i = 0; i < range; i++){
 		var loc = currentShader.attrlocs[startId+i]
-		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset + slotoff)
+		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
 		if(ANGLE_instanced_arrays) ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 		slotoff += loc.slots * 4
 	}
@@ -880,26 +895,26 @@ todofn[4] = function instances(i32, f32, o){
 	var offset = i32[o+6]
 	var divisor = i32[o+7]
 	var slotoff = 0
-	var mesh = meshids[meshid]
+	var mesh = meshIds[meshid]
 
 	// fast geometry clipping
 	var len = mesh.length
-	if( mesh.yOffset &&  len > 100){ // otherwise dont bother
+	
+	if( mesh.yOffset &&  len > 100 && mesh.drawDiscard === 'y'){ // otherwise dont bother
 		var array = mesh.array
 		var yScroll = currentTodo.yScroll
 		var yMax = currentTodo.yView
 		var yOffset = mesh.yOffset
 		var hOffset = mesh.hOffset
-		var slots = stride
 		var guard = yMax*0.5
 		for(var start = 0; start < len; start += 100){
-			var o = slots*start
+			var o = stride*start
 			if(array[o + yOffset] - yScroll + (hOffset?array[o + hOffset]:guard) >= 0) break
 		}
 		start = Math.max(start - 100,0)
 
 		for(var end = start; end < len; end += 100){
-			if(array[slots*end + yOffset] - yScroll - guard> yMax) break
+			if(array[stride*end + yOffset] - yScroll - guard> yMax) break
 		}
 		end = Math.min(end, len)
 		offset = start 
@@ -925,14 +940,17 @@ todofn[4] = function instances(i32, f32, o){
 	for(var i = 0; i < range; i++){
 		var loc = currentShader.attrlocs[startId+i]
 		var index = loc.index
-		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * slots  * 4 + slotoff)
+		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
 		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 		slotoff += loc.slots * 4
 	}
 }
 
-todofn[5] = function indexes(){
-
+todofn[5] = function indices(i32, f32, o){
+	var mesh = meshIds[i32[o+2]]
+	currentShader.attrlength = mesh.length
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh)
+	currentShader.indexed = true
 }
 
 // texture flags
@@ -1139,7 +1157,6 @@ todofn[8] = function sampler(i32, f32, o){
 
 		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, samplerFilter[(samplerType>>0)&0xf])
 		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, samplerFilter[(samplerType>>4)&0xf])
-
 		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, samplerWrap[(samplerType>>8)&0xf])
 		gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, samplerWrap[(samplerType>>12)&0xf])
 	}
@@ -1148,7 +1165,7 @@ todofn[8] = function sampler(i32, f32, o){
 	}
 
 	// bind it
-	currentShader.maxTexIndex = texid
+	//currentShader.maxTexIndex = texid
 	gl.activeTexture(gl.TEXTURE0 + texid)
 	gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
 	gl.uniform1i(currentUniLocs[i32[o+2]], texid)
@@ -1236,9 +1253,8 @@ var drawTypes = [
 	gl.LINE_STRIP,
 	gl.LINE_LOOP
 ]
-ANGLE_instanced_arrays = undefined
-todofn[30] = function drawArrays(i32, f32, o){
-	//console.log('DRAW ARRAYS', currentShader.name)
+//ANGLE_instanced_arrays = undefined
+todofn[30] = function draw(i32, f32, o){
 
 	// set the global uniforms
 	var type = drawTypes[i32[o+2]]
@@ -1247,13 +1263,6 @@ todofn[30] = function drawArrays(i32, f32, o){
 			todofn[globals[i+1]](globals[i+2], globals[i+3], globals[i+4])
 		}
 	}
-	// lets unbind previously used textures
-	//if(currentShader.maxTexIndex < currentShader.prevMaxTexIndex){
-	//	for(var i = currentShader.maxTexIndex + 1; i <= currentShader.prevMaxTexIndex; i++){
-	//		gl.activeTexture(gl.TEXTURE0 + i)
-	//		gl.bindTexture(gl.TEXTURE_2D, null)
-	//	}
-	//}
 
 	if(currentShader.instanced){
 
@@ -1313,29 +1322,43 @@ todofn[30] = function drawArrays(i32, f32, o){
 				if(loc.index !== -1) gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, vertexsize * 4, slotoff)
 				slotoff += loc.slots * 4
 			}
-
-			gl.drawArrays(type, fb.inst.offset * attrlen, fb.inst.len * attrlen )
+			if(currentShader.indexed){
+				gl.drawElements(type, fb.inst.len * attrlen, gl.UNSIGNED_SHORT, fb.inst.offset * attrlen)
+			}
+			else{
+				gl.drawArrays(type, fb.inst.offset * attrlen, fb.inst.len * attrlen)
+			}
 		}
 		else{
-			var from = i32[o+3]
-			var to =  i32[o+4]
+			var offset = i32[o+3]
+			var len =  i32[o+4]
 			var inst = i32[o+5]
-			if(from < 0){
-				from = 0
-				to = currentShader.attrlength
+			if(offset < 0){
+				offset = 0
+				len = currentShader.attrlength
 				inst = currentShader.instlength
 			}
-			ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, from, to, inst)
+			if(currentShader.indexed){
+				ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
+			}
+			else{
+				ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, offset, len, inst)
+			}
 		}
 	}
 	else{
-		var from = i32[o+3]
-		var to =  i32[o+4]
-		if(from < 0){
-			from = 0
-			to = currentShader.attrlength
+		var offset = i32[o+3]
+		var len =  i32[o+4]
+		if(offset < 0){
+			offset = 0
+			len = currentShader.attrlength
 		}
-		gl.drawArrays(type, from, to)
+		if(currentShader.indexed){
+			gl.drawElements(type, len, gl.UNSIGNED_SHORT, offset)
+		}
+		else{
+			gl.drawArrays(type, offset, len)
+		}
 	}
 }
 
@@ -1353,7 +1376,7 @@ userfn.newTodo = function(msg){
 		yFlick:0
 	}
 }
-var t = 0
+
 userfn.updateTodo = function(msg){
 	// lets just store the todo message as is
 	var todo = todoIds[msg.todoId]
@@ -1387,6 +1410,13 @@ userfn.updateTodo = function(msg){
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()
 	}
+}
+
+userfn.updateTodoTime = function(msg){
+	var todo = todoIds[msg.todoId]
+	todo.timeStart = msg.timeStart
+	todo.timeMax = msg.timeMax
+	requestRepaint()
 }
 
 userfn.scrollTodo = function(msg){

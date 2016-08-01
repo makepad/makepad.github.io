@@ -1,19 +1,17 @@
 var App = require('app').extend(function(proto){
 
 	proto.tools = {
-		Line:require('shaders/lineshader').extend(function(proto){
+		Line:require('shaders/lineshader').extend({
 
-			proto.liney = function(pt){$
-				return cos(pt*0.01)*400.+400.
-			}
-			
-			proto.linex = function(pt){$
-				return sin(pt*0.04+this.time)*400.+400.
-			}
-
-			proto.vertexStyle = function(){$
+			liney:function(pt){$
+				return cos(pt*0.11)*200.+200.
+			},
+			linex:function(pt){$
+				return sin(pt*0.04+this.time)*200.+200.
+			},
+			vertexStyle:function(){$
 				var p = this.point
-				this.color = vec4(sin(p*0.1), cos(p*0.02), sin(p),1.)
+				//this.color = vec4(sin(p*0.1), cos(p*0.02), sin(p),1.)
 				//this.lineWidth = 4.+4.*sin(p*10.+5.*this.time)
 				this.ax = this.linex(p-1.)
 				this.ay = this.liney(p-1.)
@@ -23,7 +21,11 @@ var App = require('app').extend(function(proto){
 				this.cy = this.liney(p+1.)
 				this.dx = this.linex(p+2.)
 				this.dy = this.liney(p+2.)
-			}
+			},
+			lineWidth:1.,
+			color:[1,1,0,1],
+			outlineColor:[0,0,0,1],
+			outlineWidth:0
 
 		})
 	}
@@ -37,13 +39,9 @@ var App = require('app').extend(function(proto){
 			for(var i = 0; i < 1000; i++){
 				this.drawLine({
 					//shadowOffset:[10,10],
-					lineWidth:20,
-					color:[0,0,0,0],
-					outlineColor:[1,1,1,1],
-					outlineWidth:0,
 					first:i===0,
 					x:i*20,
-					y:100.//this.Line.prototype.tweenBezier(pz,0,pz,1,i/10)*200
+					y:100+sin(i*0.4)*50//this.Line.prototype.tweenBezier(pz,0,pz,1,i/10)*200
 				})
 			}
 		}

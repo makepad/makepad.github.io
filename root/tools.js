@@ -47,7 +47,7 @@ module.exports = function(proto){
 		if(!turtle){
 			turtle = this.turtle = view.$turtleStack[len] = new view.Turtle(view)
 		}
-		turtle._pickIdLo = outer._pickIdLo
+		turtle._pickId = outer._pickId
 		turtle.begin(outer)
 		return turtle
 	}
@@ -87,7 +87,8 @@ module.exports = function(proto){
 	// internal API used by canvas macros
 	proto.$allocShader = function(classname){
 		var shaders = this.$shaders
-		var info = this['_' + classname].prototype.$compileInfo
+		var proto = this['_' + classname].prototype
+		var info = proto.$compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
 		props.xOffset = info.instanceProps.this_DOT_x.offset
@@ -96,6 +97,7 @@ module.exports = function(proto){
 		props.wOffset = wProp && wProp.offset
 		var hProp = info.instanceProps.this_DOT_h
 		props.hOffset = hProp && hProp.offset
+		props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
 		return shader
 	}
 

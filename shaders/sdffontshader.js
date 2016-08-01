@@ -7,8 +7,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	// special
 	proto.props = {
 		visible:{noTween:1, value:1.},
-		x:NaN,
-		y:NaN,
+		x:{noInPlace:1, value:NaN},
+		y:{noInPlace:1, value:NaN},
 
 		lineSpacing:{styleLevel:1, value:1.3},
 
@@ -37,7 +37,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		text:{styleLevel:1, value:''},
 
 		lockScroll:{noTween:1, value:1.},
-		turtleClip:{styleLevel:3, noCast:1, value:[-50000,-50000,50000,50000]},
+		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
 		x1:{noStyle:1, noTween:1, value:0},
@@ -87,7 +87,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		)
 
 		// clip the rect
-		var shift = vec2(-this.fingerScroll.x*this.lockScroll, -this.fingerScroll.y*this.lockScroll)
+		var shift = vec2(-this.viewScroll.x*this.lockScroll, -this.viewScroll.y*this.lockScroll)
 
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy
