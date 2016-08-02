@@ -625,7 +625,7 @@ todofn[40] = function clear(i32, f32, o){
 		if(!pickPass){
 			gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
 		} else {
-			gl.clearColor(0,0,0,0)
+			gl.clearColor(currentTodo.todoId/255,0,0,0)
 		}
 		clr |= gl.COLOR_BUFFER_BIT
 	}
