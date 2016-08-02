@@ -736,9 +736,6 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 		code += indent +'var $timeMax = $view._time + $turtle._duration\n'
-		//code += indent + '_props.length++\n'
-		
-		// lets store our max time on our todo
 		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'

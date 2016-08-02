@@ -29,7 +29,7 @@ var App = require('app').extend(function(proto){
 	var rnd = Math.random
 	proto.wrap = false
 	proto.onDraw = function(){
-		require.perf()
+		//require.perf()
 		for(var i = 0; i < 500; i++){
 			this.drawButton({
 				text:""+i
@@ -50,6 +50,6 @@ var App = require('app').extend(function(proto){
 			h:295,
 		})*/
 
-		require.perf()
+		//require.perf()
 	}
 })()

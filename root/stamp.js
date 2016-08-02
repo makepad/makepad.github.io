@@ -32,7 +32,6 @@ module.exports = require('class').extend(function Stamp(proto){
 			// flag in place so the drawcalls dont modify the todo
 			view.$inPlace = true
 			view.todo.timeStart = view._time 
-			view.todo.timeMax = 0
 			view.$turtleStack.len = 0
 			this.turtle = view.$turtleStack[0]
 			this.turtle._pickId = this.$stampId

@@ -53,7 +53,6 @@ args.timeBoot = Date.now()
 window.addEventListener('resize', resize)
 resize()
 
-var renderTime = 0
 var currentTodo 
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
@@ -88,7 +87,7 @@ function runTodo(todo){
 		if(todo.xFlick !== 0 || todo.yFlick !== 0) return true
 	}
 
-	if(repaint || todo.animLoop || todo.timeMax > repaintTime) return true
+	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
 
 
@@ -385,7 +384,9 @@ function repaint(time){
 	pickPromises = {}
 
 	// render the main scene
-	if(renderColor(mainFramebuffer)) requestRepaint()
+	if(renderColor(mainFramebuffer)){
+		requestRepaint()
+	}
 }
 
 function requestRepaint(){
@@ -1382,7 +1383,7 @@ userfn.updateTodo = function(msg){
 	todo.name = msg.name
 	todo.length = msg.length
 	todo.timeStart = msg.timeStart
-	todo.timeMax = msg.timeMax
+	todo.timeMax = msg.timeMax 
 	todo.animLoop = msg.animLoop
 	todo.wPainter = msg.wPainter
 	todo.hPainter = msg.hPainter
@@ -1392,7 +1393,6 @@ userfn.updateTodo = function(msg){
 	todo.yView = msg.yView
 	todo.xScrollId = msg.xScrollId
 	todo.yScrollId = msg.yScrollId
-
 	todo.momentum = msg.momentum
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
