@@ -24,6 +24,7 @@ module.exports = require('view').extend(function EditView(proto){
 				var v = sin(time*PI)
 				this.y -= v*4.
 				this.h += v*8.
+				this.x -= v
 				this.w += v*2.
 				//this.color = mix('white','gray',v)
 
