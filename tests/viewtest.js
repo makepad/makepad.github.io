@@ -26,7 +26,6 @@ var Text = require('canvas').extend({
 var Scrollbars = require('canvas').extend({
 	tools:{
 		Button:require('stamps/buttonstamp').extend({
-			inPlace:false,
 			Bg:{
 				borderWidth:1,
 			}

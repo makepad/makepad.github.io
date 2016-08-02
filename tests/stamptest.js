@@ -29,12 +29,12 @@ var App = require('app').extend(function(proto){
 	var rnd = Math.random
 	proto.wrap = false
 	proto.onDraw = function(){
-		//require.perf()
-		for(var i = 0; i < 1000; i++){
+		require.perf()
+		for(var i = 0; i < 500; i++){
 			this.drawButton({
 				text:""+i
 			})
-			if(i && !(i%40)) this.turtle.lineBreak()
+			if(i && !(i%20)) this.turtle.lineBreak()
 		}
 		/*
 		this.drawBg({
@@ -50,6 +50,6 @@ var App = require('app').extend(function(proto){
 			h:295,
 		})*/
 
-		//require.perf()
+		require.perf()
 	}
 })()

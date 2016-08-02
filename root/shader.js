@@ -1036,10 +1036,10 @@ module.exports = require('class').extend(function Shader(proto){
 	//proto.tweenTime = proto.tweenSimple
 	proto.tweenTime = proto.tweenAll
 	
-	proto.tweenTimeJS = function(tween, time, easex, easey, easez, easew){
-		console.log(tween, time, easex, easey, easez, easew)
-		return 1.
-	}
+	//proto.tweenTimeJS = function(tween, time, easex, easey, easez, easew){
+	//	console.log(tween, time, easex, easey, easez, easew)
+	//	return this.tweenTime(tween, time, easex, easey, easez, easew)
+	//}
 
 	proto.tweenEase = function(t, easein, easeout){
 		var a = -1. / max(1.,(easein*easein))

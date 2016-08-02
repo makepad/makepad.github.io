@@ -249,7 +249,7 @@ module.exports = require('class').extend(function View(proto){
 			this.viewClip = [0,0,this.$w,this.$h]
 		}
 		turtle._turtleClip = [-50000,-50000,50000,50000]
-
+		turtle._pickId = 0
 		this.$stampId = 1
 
 		this.beginTurtle()

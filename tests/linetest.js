@@ -46,7 +46,6 @@ var App = require('app').extend(function(proto){
 			})
 			for(var i = 0; i < 1000; i++){
 				var t = i/1000
-
 				var f = this.Line.prototype.tweenTime(4, t, 0.8, 4, 8,4)
 				this.drawLine({
 					//shadowOffset:[10,10],
