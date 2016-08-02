@@ -14,7 +14,7 @@ module.exports = require('view').extend(function EditView(proto){
 			fontSize:24,
 			color:'#ccc'
 		}),
-		Cursor:require('shaders/quadshader').extend({
+		Cursor:require('shaders/rectshader').extend({
 			duration:0.2,
 			ease:[1,100,0,0],
 			tween:2,
@@ -26,8 +26,8 @@ module.exports = require('view').extend(function EditView(proto){
 				this.h += v*8.
 				this.x -= v
 				this.w += v*2.
+				this.shadowOffset = vec2(-v,v)*4.
 				//this.color = mix('white','gray',v)
-
 			}
 		})
 	}
@@ -173,9 +173,9 @@ module.exports = require('view').extend(function EditView(proto){
 				var cursor = cursors[i]
 				var t = this.cursorRect(cursor.start)
 				this.drawCursor({
-					x:t.x,
+					x:t.x-1,
 					y:t.y,
-					w:1,
+					w:2,
 					h:t.h
 				})
 			}
