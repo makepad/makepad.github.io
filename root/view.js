@@ -30,6 +30,7 @@ module.exports = require('class').extend(function View(proto){
 		yScale:1,
 		rotate:0,
 		time:0,
+		hasFocus:false,
 		frameId:0,
 		surface:false,
 		margin:[0,0,0,0],
@@ -339,6 +340,23 @@ module.exports = require('class').extend(function View(proto){
 	proto.relayout = function(){
 		this.app.$layoutClean = false
 		this.redraw()
+	}
+
+	proto.setFocus = function(){
+		var old = this.app.$focusView
+		if(old !== this){
+			this.app.$focusView = this
+			old.hasFocus = false
+			this.hasFocus = true
+		}
+	}
+
+	proto.clearFocus = function(){
+		var old = this.app.$focusView		
+		this.app.$focusView = undefined
+		if(old){
+			old.hasFocus = false
+		}
 	}
 
 	proto.onFlag1 = proto.recompose

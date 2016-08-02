@@ -278,17 +278,17 @@ types.colorFromString = function(str, alpha, a, o){
 			return true
 		}
 		else if(str.length === 7){
-			a[o] = (hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/255
-			a[o+1] = (hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/255
-			a[o+2] = (hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/255
+			a[o] = (hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)] << 4))/255
+			a[o+1] = (hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)] << 4))/255
+			a[o+2] = (hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)] << 4))/255
 			a[o+3] = alpha
 			return true
 		}
 		else if(str.length === 9){
-			a[o] = (hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/255
-			a[o+1] = (hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/255
-			a[o+2] = (hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/255
-			a[o+3] = (hex[str.charCodeAt(7)] | (hex[str.charCodeAt(8)] << 4))/255
+			a[o] = (hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)] << 4))/255
+			a[o+1] = (hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)] << 4))/255
+			a[o+2] = (hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)] << 4))/255
+			a[o+3] = (hex[str.charCodeAt(8)] | (hex[str.charCodeAt(7)] << 4))/255
 			return true
 		}
 		return false
@@ -310,22 +310,22 @@ types.colorFromStringPacked = function(str, alpha, a, o){
 			var r = hex[str.charCodeAt(1)]
 			var g = hex[str.charCodeAt(2)]
 			var b = hex[str.charCodeAt(3)]
-			a[o] = (((r|r<<4)/4095)<<12) + (((g|g<<4)/4095)|0)
-			a[o+1] = (((b|b<<4)/4095)<<12) + ((alpha*4095)|0)
+			a[o] = ((r|r<<4)<<16) + (((g|g<<4))<<4)
+			a[o+1] = ((b|b<<4)<<16) + ((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 7){
-			a[o] = (((hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/4095)<<12) + 
-				(((hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/4095)<<0)
-			a[o+1] = (((hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/4095)<<12)+
+			a[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))<<16) + 
+				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))<<4)
+			a[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))<<16)+
 				((alpha*4095)|0)
 			return true
 		}
 		else if(str.length === 9){
-			a[o] = (((hex[str.charCodeAt(1)] | (hex[str.charCodeAt(2)] << 4))/4095)<<12)+
-				(((hex[str.charCodeAt(3)] | (hex[str.charCodeAt(4)] << 4))/4095)|0)
-			a[o+1] = (((hex[str.charCodeAt(5)] | (hex[str.charCodeAt(6)] << 4))/4095)<<12)+
-				(((hex[str.charCodeAt(7)] | (hex[str.charCodeAt(8)] << 4))/4095)|0)
+			a[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))<<16) + 
+				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))<<4)
+			a[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))<<16)+
+				((hex[str.charCodeAt(8)] | (hex[str.charCodeAt(7)]<<4))<<4)
 			return true
 		}
 		return false

@@ -164,6 +164,23 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.toolMacros = {
+		read:function(offset){
+			this.$READPROPS({
+				$offset:offset,
+				x:1,
+				y:1,
+				unicode:1,
+				baseLine:1,
+				fontSize:1,
+				italic:1,
+				x1:1,
+				y1:1,
+				x2:1,
+				y2:1,
+			})
+			// write the bounding box
+			return $read
+		},
 		draw:function(overload){
 			var turtle = this.turtle
 			this.$STYLEPROPS(overload, 1)
@@ -203,7 +220,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					for(var b = off; b < len; b++){
 						var unicode = txt.charCodeAt(b)
 						width += glyphs[unicode].advance * fontSize
-						if(b > off && (unicode === 32||unicode===9)){
+						if(b > off && (unicode === 32||unicode===9||unicode===10)){
 							b++
 							break
 						}
@@ -237,12 +254,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 						})
 						turtle._x += g.advance * fontSize
 					}
+					if(unicode===10) this.turtle.lineBreak()
 				}
 			}
-		},
-		begin:function(){
-		},
-		end:function(){
 		}
 	}
 

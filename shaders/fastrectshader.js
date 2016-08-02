@@ -94,6 +94,7 @@ module.exports = require('shader').extend(function Rect9Shader(proto){
 
 	proto.vertex = function(){$
 		this.vertexStyle()
+		this.borderRadius = max(1., this.borderRadius)
 		
 		if(this.mesh.x == 0.2){
 			this.mesh.x = this.borderRadius / this.w

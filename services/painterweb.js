@@ -82,8 +82,8 @@ function runTodo(todo){
 		doScroll(todo, todo.xFlick, todo.yFlick)
 		todo.xFlick *= todo.momentum
 		todo.yFlick *= todo.momentum
-		if(Math.abs(todo.xFlick) < 2) todo.xFlick = 0
-		if(Math.abs(todo.yFlick) < 2) todo.yFlick = 0
+		if(Math.abs(todo.xFlick) < 1) todo.xFlick = 0
+		if(Math.abs(todo.yFlick) < 1) todo.yFlick = 0
 		if(todo.xFlick !== 0 || todo.yFlick !== 0) return true
 	}
 

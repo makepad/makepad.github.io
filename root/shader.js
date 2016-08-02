@@ -703,6 +703,32 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
+	proto.$READPROPS = function(target, classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
+		var code = ''
+		var info = this.$compileInfo
+	
+		code += indent +'var $props =  this.$shaders.'+classname+'.$props\n'
+		code += indent +'var $a = $props.array\n'
+		//code += indent +'var $o = (this.turtle.$propoffset - 1) * ' + info.propSlots +'\n'
+
+		var instanceProps = info.instanceProps
+
+		var argobj = macroargs[0]
+		code += indent + 'var $o = ' + argobj.$offset + ' * '+ info.propSlots +'\n'
+		code += indent + 'var $read = {}\n'
+		for(var key in argobj){
+			if(key === '$offset') continue
+			var prop = instanceProps['this_DOT_'+key]
+			if(!prop) continue
+			// lets read props
+			if(prop.config.pack) throw new Error('Please implement READPROPS packing support '+key)
+			if(prop.config.type.slots>1) throw new Error('Please implement READPROPS vector support '+key)
+
+			code += indent + '$read.'+key +' = $a[$o + '+prop.offset+']\n'
+		}
+		return code
+	}
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
 		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
@@ -1047,7 +1073,9 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.tweenBounce = function(t, f){
 		// add bounciness
 		var it = t * (1. / (1. - f)) + 0.5
-		var k = floor(log((f - 1.) * it + 1.) / log(f))
+		var inlog = (f - 1.) * it + 1.
+		if(inlog <= 0.) return 1.
+		var k = floor(log(inlog) / log(f))
 		var d = pow(f, k)
 		return 1. - (d * (it - (d - 1.) / (f - 1.)) - pow((it - (d-1.) / (f - 1.)), 2.)) * 4.
 	}

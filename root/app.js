@@ -2,6 +2,8 @@
 //var fingers = require('fingers')
 var painter = require('painter')
 var fingers = require('fingers')
+var keyboard = require('keyboard')
+
 var mat4 = require('math/mat4')
 var vec4 = require('math/vec4')
 module.exports = require('view').extend(function App(proto, base){
@@ -12,8 +14,10 @@ module.exports = require('view').extend(function App(proto, base){
 
 	proto._onConstruct = function(){
 		base._onConstruct.call(this)
-		var viewTodoMap = this.$viewTodoMap = []
 		
+		var viewTodoMap = this.$viewTodoMap = []
+		var app = this
+
 		// our layout object used for running turtles on the view tree
 		var layout = this.$turtleLayout = {
 			$writeList: [],
@@ -106,12 +110,29 @@ module.exports = require('view').extend(function App(proto, base){
 			fingerMessage('onFingerWheel', msg.pick.todoId, msg.pick.pickId, msg)
 		}
 
+		keyboard.onKeyDown = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyDown) focus.onKeyDown(msg)
+		}
+
+		keyboard.onKeyUp = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyUp) focus.onKeyUp(msg)
+		}
+
+		keyboard.onKeyPress = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyPress) focus.onKeyPress(msg)
+		}
+
 		painter.onResize = function(){
-			this.$redrawViews()
-		}.bind(this)
+			app.$redrawViews()
+		}
 
 		// lets do our first redraw
 		this.app = this
+		// we are the default focus
+		this.$focusView = this
 
 		// compose the tree
 		this.$composeTree(this)
