@@ -18,7 +18,16 @@ module.exports = require('view').extend(function EditView(proto){
 			duration:0.2,
 			ease:[1,100,0,0],
 			tween:2,
-			color:'#fff'
+			color:'#fff',
+			vertexStyle:function(){
+				var time = clamp((this.time - this.tweenStart) / this.duration,0.,1.)
+				var v = sin(time*PI)
+				this.y -= v*4.
+				this.h += v*8.
+				this.w += v*2.
+				//this.color = mix('white','gray',v)
+
+			}
 		})
 	}
 
