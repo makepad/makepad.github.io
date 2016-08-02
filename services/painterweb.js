@@ -124,8 +124,9 @@ var fingerPos = [0,0,0,0]
 
 function doScroll(todo, dx, dy){
 	// do some scrolling with your finger
-	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), todo.xTotal - todo.xView)
-	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), todo.yTotal - todo.yView)
+	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), Math.max(0,todo.xTotal - todo.xView))
+	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), Math.max(0,todo.yTotal - todo.yView))
+
 	if(yScroll === -Infinity || xScroll === -Infinity) return
 	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
 		todo.xScroll = xScroll
