@@ -734,7 +734,6 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $shader = this.$shaders.'+classname+'\n'
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.array\n'
-		code += indent + 'if($turtle.$propoffset === undefined)debugger\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 		code += indent +'var $timeMax = $view._time + $turtle._tween\n'
 		//code += indent + '_props.length++\n'

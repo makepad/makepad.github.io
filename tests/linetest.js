@@ -32,11 +32,7 @@ var App = require('app').extend(function(proto){
 	}
 
 	proto.onDraw = function(){
-		//this.drawBg({w:100*Math.sin(this.time),h:100})
-		//require.perf()
 		for(var j = 0; j < 1; j++){
-			//var px = random()*500, py = random()*500
-			//var pz = random()
 			this.drawRect({
 				borderRadius:0,
 				borderWidth:1,
