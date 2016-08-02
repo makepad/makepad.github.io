@@ -660,24 +660,6 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$TWEENJS = function(indent, tweencode, instanceProps){
-		var code = ''
-		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($view._time < $tweenStart + $duration){\n'
-		code += indent + '	var $time = $proto.tweenTime('
-		code += '$a[$o + ' + instanceProps.this_DOT_tween.offset +']'
-		code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
-		code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
-		code += ')\n'
-		code += indent + tweencode 
-		code += indent + '}'
-		return code
-	}
-
 	proto.$DUMPPROPS = function(instanceProps, indent){
 		var code = ''
 
@@ -721,6 +703,24 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
+	proto.$TWEENJS = function(indent, tweencode, instanceProps){
+		var code = ''
+		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+		code += indent + 'if($view._time < $tweenStart + $duration){\n'
+		code += indent + '	var $time = $proto.tweenTime('
+		code += '$a[$o + ' + instanceProps.this_DOT_tween.offset +']'
+		code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
+		code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
+		code += ')\n'
+		code += indent + tweencode 
+		code += indent + '}'
+		return code
+	}
+
 	proto.$WRITEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// load the turtle
@@ -743,7 +743,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
-		tweencode += '	var $cf = Math.max(1.,Math.min(0.,$time)), $1mcf = 1.-$cf\n'
+		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
 
 		var propcode = ''
 
