@@ -439,37 +439,40 @@ var currentUniLocs
 //
 //
 
-var shaderBootCache = {}
+function bootCache(){
+	// now we have to bind the textures
+	var mesh = gl.createBuffer()
+	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16), gl.STATIC_DRAW)
+	gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, 0)
+	gl.enableVertexAttribArray(0)
+	var gltex = gl.createTexture()
+	gl.bindTexture(gl.TEXTURE_2D, gltex)
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
 
-for ( var i = 0, len = localStorage.length; i < len; ++i ) {
-	var cacheid = localStorage.key(i)
-	if(typeof cacheid === 'string' && cacheid.indexOf('@@@@') !== -1){
+	for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+
+		var cacheid = localStorage.key(i)
+		if(typeof cacheid !== 'string' || cacheid.indexOf('@@@@') === -1) continue
+
 		var shadercode = cacheid.split('@@@@')
-		var vertexshader = gl.createShader(gl.VERTEX_SHADER)
-		gl.shaderSource(vertexshader, shadercode[0])
-		gl.compileShader(vertexshader)
-		// compile pixelshader
-		var pixelshader = gl.createShader(gl.FRAGMENT_SHADER)
-		gl.shaderSource(pixelshader, shadercode[1])
-		gl.compileShader(pixelshader)
 
-		var shader = gl.createProgram()
-		gl.attachShader(shader, vertexshader)
-		gl.attachShader(shader, pixelshader)
-		gl.linkProgram(shader)
-
-		// store the cache entry
-		shaderBootCache[cacheid] = {
-			vertexshader:vertexshader,
-			pixelshader:pixelshader,
-			shader:shader
-		}
-
+		var shader = shaderCache[cacheid] = compileShader(shadercode[0], shadercode[1])
 		// delete it
 		localStorage.removeItem(cacheid)
 		--i
+
+		gl.useProgram(shader)
+		// set up some fake textures
+		for(var t = 0; t< 8; t++){
+			gl.activeTexture(gl.TEXTURE0 + t)
+			gl.bindTexture(gl.TEXTURE_2D, gltex)
+		}
+		gl.drawArrays(gl.TRIANGLES,0,1)
 	}
 }
+// wait a bit and fire it up
+setTimeout(bootCache, 10)
 
 // new shader helpers
 function addLineNumbers(code){
@@ -683,78 +686,39 @@ var slotsTable = {
 	'vec4':4,
 }
 
-userfn.newShader = function(msg){
-	var pixelcode = msg.code.pixel
-	var vertexcode = msg.code.vertex
-	var shaderid = msg.shaderId
+
+function compileShader(vertexcode, pixelcode){
+	var vertexshader = gl.createShader(gl.VERTEX_SHADER)
+	gl.shaderSource(vertexshader, vertexcode)
+	gl.compileShader(vertexshader)
+	if (!gl.getShaderParameter(vertexshader, gl.COMPILE_STATUS)){
+		return console.error(gl.getShaderInfoLog(vertexshader), addLineNumbers(vertexcode))
+	}
 	
-	pixelcode =  "#extension GL_OES_standard_derivatives : enable\n"+
-				 "precision highp float;\nprecision highp int;\n"+
-	             pixelcode
-	vertexcode = "precision highp float;\nprecision highp int;\n"+
-				 vertexcode
-
-	var cacheid = vertexcode + '@@@@' + pixelcode
-
-	var shader = shaderCache[cacheid]
-
-	if(shader){
-		shader.refCount++
-		shaderIds[shaderid] = shader
-		return
+	// compile pixelshader
+	var pixelshader = gl.createShader(gl.FRAGMENT_SHADER)
+	gl.shaderSource(pixelshader, pixelcode)
+	gl.compileShader(pixelshader)
+	if (!gl.getShaderParameter(pixelshader, gl.COMPILE_STATUS)){
+		return console.error(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
 	}
 
-	localStorage.setItem(cacheid, 1)
-
-	// compile vertexshader
-	var bootCache = shaderBootCache[cacheid]
-	var shader
-	if(bootCache){
-		if (!gl.getShaderParameter(bootCache.vertexshader, gl.COMPILE_STATUS)){
-			return console.error(gl.getShaderInfoLog(bootCache.vertexshader), addLineNumbers(vertexcode))
-		}
-		if (!gl.getShaderParameter(bootCache.pixelshader, gl.COMPILE_STATUS)){
-			return console.error(gl.getShaderInfoLog(bootCache.pixelshader), addLineNumbers(pixelcode))
-		}
-		if(!gl.getProgramParameter(bootCache.shader, gl.LINK_STATUS)){
-			return console.error(
-				gl.getProgramInfoLog(bootCache.shader),
-				addLineNumbers(vertexcode), 
-				addLineNumbers(pixelcode)
-			)
-		}
-		shader = bootCache.shader
-	}
-	else{
-		var vertexshader = gl.createShader(gl.VERTEX_SHADER)
-		gl.shaderSource(vertexshader, vertexcode)
-		gl.compileShader(vertexshader)
-		if (!gl.getShaderParameter(vertexshader, gl.COMPILE_STATUS)){
-			return console.error(gl.getShaderInfoLog(vertexshader), addLineNumbers(vertexcode))
-		}
-		
-		// compile pixelshader
-		var pixelshader = gl.createShader(gl.FRAGMENT_SHADER)
-		gl.shaderSource(pixelshader, pixelcode)
-		gl.compileShader(pixelshader)
-		if (!gl.getShaderParameter(pixelshader, gl.COMPILE_STATUS)){
-			return console.error(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
-		}
-
-		shader = gl.createProgram()
-		gl.attachShader(shader, vertexshader)
-		gl.attachShader(shader, pixelshader)
-		gl.linkProgram(shader)
-		if(!gl.getProgramParameter(shader, gl.LINK_STATUS)){
-			return console.error(
-				gl.getProgramInfoLog(shader),
-				addLineNumbers(vertexcode), 
-				addLineNumbers(pixelcode)
-			)
-		}
-
+	shader = gl.createProgram()
+	gl.attachShader(shader, vertexshader)
+	gl.attachShader(shader, pixelshader)
+	gl.linkProgram(shader)
+	if(!gl.getProgramParameter(shader, gl.LINK_STATUS)){
+		return console.error(
+			gl.getProgramInfoLog(shader),
+			addLineNumbers(vertexcode), 
+			addLineNumbers(pixelcode)
+		)
 	}
 
+	return shader
+}
+
+function mapShaderIO(shader, vertexcode, pixelcode){
 	// parse out uniforms and attributes
 	var attrs = parseShaderAttributes(vertexcode)
 
@@ -778,7 +742,6 @@ userfn.newShader = function(msg){
 	shader.attrlocs = attrlocs
 	shader.maxAttrIndex = maxAttrIndex
 	shader.refCount = 1
-	shader.name = msg.name
 	var uniLocs = {}
 	for(var name in uniforms){
 		var nameid = nameIds[name]
@@ -786,9 +749,33 @@ userfn.newShader = function(msg){
 		uniLocs[nameid] = index
 	}
 	shader.uniLocs = uniLocs
+}
 
-	shaderIds[shaderid] = shaderCache[cacheid] = shader
+userfn.newShader = function(msg){
+	var pixelcode = msg.code.pixel
+	var vertexcode = msg.code.vertex
+	var shaderid = msg.shaderId
+	
+	pixelcode =  "#extension GL_OES_standard_derivatives : enable\n"+
+				 "precision highp float;\nprecision highp int;\n"+
+	             pixelcode
+	vertexcode = "precision highp float;\nprecision highp int;\n"+
+				 vertexcode
 
+	var cacheid = vertexcode + '@@@@' + pixelcode
+
+	localStorage.setItem(cacheid, 1)
+	var shader = shaderCache[cacheid]
+
+	if(shader){
+		if(!shader.attrlocs) mapShaderIO(shader, vertexcode, pixelcode)
+		shader.refCount++
+		shaderIds[shaderid] = shader
+		return
+	}
+	shader = shaderIds[shaderid] = shaderCache[cacheid] = compileShader(vertexcode, pixelcode)
+	mapShaderIO(shader, vertexcode, pixelcode)
+	shader.name = msg.name
 }
 
 todofn[2] = function useShader(i32, f32, o){

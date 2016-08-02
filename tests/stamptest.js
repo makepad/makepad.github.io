@@ -9,11 +9,15 @@ var App = require('app').extend(function(proto){
 			},
 			states:{
 				default:{
-					tween:0.3,
+					tween:4,
+					ease:[0.2,8,4,4],
+					duration:1.,
 					Bg:{color:'gray'}
 				},
 				hover:{
-					tween:0.3,
+					tween:4,
+					ease:[0.2,8,4,4],
+					duration:1.,
 					Bg:{color:'blue',borderColor:'yellow',borderRadius:40,borderWidth:[5,0,5,0],padding:40},
 					Text:{fontSize:35}
 				}

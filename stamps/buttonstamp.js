@@ -20,10 +20,10 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.states = {
 		default:{
+			
 			Bg:{color:'gray'}
 		},
 		hover:{
-			tween:0.1,
 			Bg:{color:'red'},
 		}
 	}

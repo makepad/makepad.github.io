@@ -26,6 +26,7 @@ var Text = require('canvas').extend({
 var Scrollbars = require('canvas').extend({
 	tools:{
 		Button:require('stamps/buttonstamp').extend({
+			inPlace:false,
 			Bg:{
 				borderWidth:1,
 			}
@@ -43,11 +44,13 @@ var Scrollbars = require('canvas').extend({
 	},
 	drawDiscard:'y',
 	onDraw:function(){
+		require.perf()
 		this.beginRect(this.viewGeom)
 		
-		for(var i = 0; i < 800; i++){
+		for(var i = 0; i < 1500; i++){
 			if(i%20 === 0){
 				this.drawText({
+					color:[random(),random(),random(),1],
 					text:'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n'
 				})
 			}
@@ -69,6 +72,7 @@ var Scrollbars = require('canvas').extend({
 		}
 		//this.drawRect({w:100,h:4000})
 		this.endRect()
+		require.perf()
 	}
 })
 

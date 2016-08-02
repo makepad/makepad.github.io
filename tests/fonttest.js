@@ -11,7 +11,6 @@ var App = require('app').extend(function(proto){
 	}
 
 	proto.onDraw = function(){
-		this.todo.drawRanging = true
 		for(var i = 0 ; i< 4000;i++){
 			this.drawText({
 				text:''+i,

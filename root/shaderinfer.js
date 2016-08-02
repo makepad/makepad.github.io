@@ -182,7 +182,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var exps = node.expressions
 		for(var i = 0; i < exps.length; i++){
 			var exp = exps[i]
-			if(i) i += ', '
+			if(i) ret += ', '
 			ret += this.walk(exp, node)
 		}
 		return ret

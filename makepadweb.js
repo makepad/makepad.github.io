@@ -586,6 +586,9 @@
 			var t = Math.max(Math.min(v - e0 / e2, 1),0)
 			return t * t * (3 - 2 * t)
 		}
+		g.mix = function(a, b, f){
+			return a*(1.-f) + b*f
+		}
 	}
 
 	function watchFileChange(){

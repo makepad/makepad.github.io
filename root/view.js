@@ -273,7 +273,7 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.xView = this.$wDraw
 		this.todo.yTotal = this.turtle.y2
 		this.todo.yView = this.$hDraw
-		this.todo.momentum = 0.9
+		this.todo.momentum = 0.92
 
 		// check if we are larger than our view area, show a scrollbar
 		if(this.turtle.y2 > this.$hDraw){

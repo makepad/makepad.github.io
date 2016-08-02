@@ -13,19 +13,18 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
-	proto.tweenTime = function(){$
-		if(this.tween < 0.01) return 1.
-		return this.tweenBezier(
-			this.ease.x, 
-			this.ease.y, 
-			this.ease.z, 
-			this.ease.w, 
-			clamp((this.time - this.tweenStart) / this.tween, 0.0, 1.0)
-		)
-	}
-
 	proto.vertexMain = function(){$
-		var T = this.tweenTime()
+		var T = 1.
+		if(this.tween > 0.01){
+			T = this.tweenTime(
+				this.tween,
+				clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0), 
+				this.ease.x,
+				this.ease.y,
+				this.ease.z,
+				this.ease.w
+			)
+		}
 		$CALCULATETWEEN
 		var position = this.vertex()
 		if(painterPickMat4[0][0] != 1. || painterPickMat4[1][1] != 1.){
@@ -492,6 +491,7 @@ module.exports = require('class').extend(function Shader(proto){
 	function styleTweenCode(indent, inobj){
 		var code = ''
 		code += indent+'if(_tween === undefined) _tween = '+inobj+'.tween\n'
+		code += indent+'if(_duration === undefined) _duration = '+inobj+'.duration\n'
 		code += indent+'if(_delay === undefined) _delay = '+inobj+'.delay\n'
 		code += indent+'if(_ease === undefined) _ease = '+inobj+'.ease\n'
 		return code
@@ -662,10 +662,17 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var $tweenDef = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
 		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($view._time < $tweenStart + $tweenDef){\n'
-		code += indent + '	var $tween = Math.min(1,Math.max(0,($view._time - $tweenStart)/$tweenDef))\n'
+		code += indent + 'if($view._time < $tweenStart + $duration){\n'
+		code += indent + '	var $time = $proto.tweenTime('
+		code += '$a[$o + ' + instanceProps.this_DOT_tween.offset +']'
+		code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
+		code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
+		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
+		code += ')\n'
 		code += indent + tweencode 
 		code += indent + '}'
 		return code
@@ -723,6 +730,7 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + 'var $turtle = this.turtle\n'
 		code += indent + 'var $view = this.view\n'
 		code += indent + 'var $inPlace = $view.$inPlace\n\n'
+		code += indent +'var $proto = this._' + classname +'.prototype\n'
 		code += indent +'var $shader = this.$shaders.'+classname+'\n'
 		code += indent +'var $props = $shader.$props\n'
 		code += indent +'var $a = $props.array\n'
@@ -734,7 +742,9 @@ module.exports = require('class').extend(function Shader(proto){
 		// lets store our max time on our todo
 		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 
-		var tweencode = '	var $f = $tween, $1mf = 1.-$tween, $upn, $upo\n'
+		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
+		tweencode += '	var $cf = Math.max(1.,Math.min(0.,$time)), $1mcf = 1.-$cf\n'
+
 		var propcode = ''
 
 		// lets generate the tween
@@ -760,10 +770,10 @@ module.exports = require('class').extend(function Shader(proto){
 					for(var i = 0; i < slots; i++){
 						tweencode += indent + '_upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
 						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
-							'(($1mf * Math.floor(_upo/4096) +' +
-							'$f * Math.floor(_upn/4096)) << 12) + ' + 
-							'(($1mf * (_upo%4096) +' +
-							'$f * (_upn%4096))|0)\n'
+							'(($1mcf * Math.floor(_upo/4096) +' +
+							'$cf * Math.floor(_upn/4096)) << 12) + ' + 
+							'(($1mcf * (_upo%4096) +' +
+							'$cf * (_upn%4096))|0)\n'
 
 						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
 							'$a[$o+'+(o +i)+']\n'
@@ -999,9 +1009,71 @@ module.exports = require('class').extend(function Shader(proto){
 			for(var key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
+
+	proto.tweenSimple = function(tween, time, easex, easey, easez, easew){
+		if(tween == 1.) return time
+		return this.tweenEase(time, easex, easey)
+	}
+
+	proto.tweenAll = function(tween, time, easex, easey, easez, easew){
+		if(tween == 1.) return time
+		if(tween == 2.){
+			return this.tweenEase(time, easex, easey)
+		}
+		if(tween == 3.){
+			return this.tweenBounce(time, easex)
+		}
+		if(tween == 4.){
+			return this.tweenOvershoot(time, easex, easey, easez, easew)
+		}
+		if(tween == 5.){
+		//	return this.tweenBezier(time, easex, easey, easez, easew)
+		}
+
+		return 1.
+	}
+
+	//proto.tweenTime = proto.tweenSimple
+	proto.tweenTime = proto.tweenAll
 	
-	var abs = Math.abs
-	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){$
+	proto.tweenTimeJS = function(tween, time, easex, easey, easez, easew){
+		console.log(tween, time, easex, easey, easez, easew)
+		return 1.
+	}
+
+	proto.tweenEase = function(t, easein, easeout){
+		var a = -1. / max(1.,(easein*easein))
+		var b = 1. + 1. / max(1.,(easeout*easeout))
+		var t2 = pow(((a - 1.) * -b) / (a * (1. - b)), t)
+		return (-a * b + b * a * t2) / (a * t2 - b)
+	}
+
+	proto.tweenBounce = function(t, f){
+		// add bounciness
+		var it = t * (1. / (1. - f)) + 0.5
+		var k = floor(log((f - 1.) * it + 1.) / log(f))
+		var d = pow(f, k)
+		return 1. - (d * (it - (d - 1.) / (f - 1.)) - pow((it - (d-1.) / (f - 1.)), 2.)) * 4.
+	}
+
+	proto.tweenOvershoot = function(t, dur, freq, decay, ease){
+		var easein = ease
+		var easeout = 1.
+		if(ease < 0.) easeout = -ease, easein = 1.
+
+		if(t < dur){
+			return this.tweenEase(t / dur, easein, easeout)
+		}
+		else{
+			// we have to snap the frequency so we end at 0
+			var w = (floor(.5+ (1.-dur)*freq*2. ) / ((1.-dur)*2.)) * PI * 2.
+			var velo = ( this.tweenEase(1.001, easein, easeout) - this.tweenEase(1., easein, easeout))/(0.001*dur)
+
+			return 1. + velo * ((sin((t - dur) * w) / exp((t - dur) * decay)) / w)
+		}
+	}
+
+	proto.tweenBezier = function(cp0, cp1, cp2, cp3, t){
 
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 
@@ -1054,8 +1126,9 @@ module.exports = require('class').extend(function Shader(proto){
 		pickAlpha: {kind:'uniform', value:0.5},
 		todoId: {kind:'uniform', value:0.},
 		pickId: {noTween:true, noStyle:true, value:0.},
-		ease: {noTween:true, value:[0,0,1.0,1.0]},
 		tween: {noTween:true, value:0.},
+		ease: {noTween:true, value:[0,0,1.0,1.0]},
+		duration: {noTween:true, value:0.},
 		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 
