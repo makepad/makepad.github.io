@@ -325,6 +325,11 @@ module.exports = require('view').extend(function EditView(proto){
 		this.cs.delete()
 	}
 
+	proto.onEnter = function(e){
+		this.cs.insertText('\n')
+		this.cs.movePos(1)
+	}
+
 	proto.onKeyDown = function(e){
 		// lets trigger an event
 		var name = e.name
