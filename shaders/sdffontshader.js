@@ -10,8 +10,6 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		x:{noInPlace:1, value:NaN},
 		y:{noInPlace:1, value:NaN},
 
-		lineSpacing:{styleLevel:1, value:1.3},
-
 		color:{pack:'float12', value:'black'},
 		outlineColor:{pack:'float12', value:'white'},
 		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
@@ -19,7 +17,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		fontSize:12,
 
 		italic:0.,
-		baseLine:1,
+		baseLine:{kind:'uniform', value:1.},
 
 		shadowBlur: 1.0,
 		shadowSpread: -1.,
@@ -50,6 +48,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		ty2:{noStyle:1, noTween:1, value:0}
 	}
 
+	proto.lineSpacing = 1.3
+
 	proto.mesh = painter.Mesh(types.vec3).pushQuad(
 		0, 0, 0,
 		0, 1, 0,
@@ -76,7 +76,10 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		if(this.visible < 0.5){
 			return vec4(0.)
 		}
-		
+
+		// ref it otherwise it doesnt get written
+		this.unicode
+
 		var minPos = vec2(
 			this.x + this.fontSize * this.x1,
 			this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
@@ -164,22 +167,49 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.toolMacros = {
-		read:function(offset){
-			this.$READPROPS({
-				$offset:offset,
-				x:1,
-				y:1,
-				unicode:1,
-				baseLine:1,
-				fontSize:1,
-				italic:1,
-				x1:1,
-				y1:1,
-				x2:1,
-				y2:1,
-			})
+		read:function(o){
+			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			
+			this.$READBEGIN()
+			var len = this.$PROPLEN()
+			if(o < 0 || o >= len) return
+
+			var read = {
+				x:this.$READPROP(o, 'x'),
+				y:this.$READPROP(o, 'y'),
+				unicode:this.$READPROP(o, 'unicode'),
+				fontSize:this.$READPROP(o, 'fontSize'),
+				italic:this.$READPROP(o, 'italic')
+			}
+
+			read.lineSpacing = this._NAME.prototype.lineSpacing
+			read.baseLine = this._NAME.prototype.baseLine
+			read.advance = glyphs[read.unicode].advance
+
 			// write the bounding box
-			return $read
+			return read
+		},
+		seek:function(x, y, box){
+			// lets find where we are inbetween
+			var $read = {}
+			var len = this.$PROPLEN() - 1
+
+			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var lineSpacing = this._NAME.prototype.lineSpacing
+			this.$READBEGIN()
+			for(var i = 0; i < len; i++){
+				var tx = this.$READPROP(i, 'x')
+				var ty = this.$READPROP(i, 'y')
+				var fs = this.$READPROP(i, 'fontSize')
+				var unicode = this.$READPROP(i, 'unicode')
+				var advance = glyphs[unicode].advance
+				if(y<ty) return -1
+				if(y >= ty && (unicode === 10 || x <= tx + advance * fs) && y <= ty + fs * lineSpacing){
+					if(unicode !== 10 && !box && x > tx + advance * fs * 0.5) return i + 1
+					return i
+				}
+			}
+			return -2
 		},
 		draw:function(overload){
 			var turtle = this.turtle
@@ -187,40 +217,39 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 
 			var abspos = !isNaN(turtle._x) && !isNaN(turtle._y)
 			var txt = turtle._text
-			var len = txt.length
-
+			var elen = txt.length
+			var len = elen + 1
 			this.$ALLOCDRAW(len)
 
 			// lets fetch the font
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var lineSpacing = this._NAME.prototype.lineSpacing
 			var wrapping = turtle._wrapping
 			var fontSize = turtle._fontSize
-			var lineSpacing = turtle._lineSpacing
-			var baseLine = turtle._baseLine
 			var off = 0
 
 			turtle._h = fontSize * lineSpacing
-			//turtle._x = 10
-			//turtle._y = 0
+
 			while(off < len){
 				var width = 0
 				var start = off
+				// compute size of next chunk
 				if(!wrapping){
 					for(var b = off; b < len; b++){
-						var unicode = txt.charCodeAt(b)
+						var unicode = b === elen? 32: txt.charCodeAt(b)
 						width += glyphs[unicode].advance * fontSize
 					}
 					off = len
 				}
 				else if(wrapping === 'char'){
-					width += glyphs[txt.charCodeAt(off)].advance * fontSize
+					width += glyphs[off === elen? 32: txt.charCodeAt(off)].advance * fontSize
 					off++
 				}
 				else{
 					for(var b = off; b < len; b++){
-						var unicode = txt.charCodeAt(b)
+						var unicode = b === elen? 32: txt.charCodeAt(b)
 						width += glyphs[unicode].advance * fontSize
-						if(b > off && (unicode === 32||unicode===9||unicode===10)){
+						if(b >= off && (unicode === 32||unicode===9||unicode===10)){
 							b++
 							break
 						}
@@ -228,6 +257,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					off = b
 				}
 				if(width){
+					// run the turtle
 					turtle._w = width
 					if(!abspos){
 						turtle._x = NaN
@@ -235,11 +265,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					}
 					else abspos = false
 					turtle.walk()
-					//console.log('breakin',turtle.wx, txt.slice(start,b))
-
+					// output
 					for(var i = start; i < off; i++){
-						var unicode = txt.charCodeAt(i)
-						//if(unicode !== 32 && unicode !== 9 && unicode !== 10){
+						var unicode = i === elen? 32: txt.charCodeAt(i)
 						var g = glyphs[unicode]
 						this.$WRITEPROPS({
 							tx1: g.tx1,
@@ -254,7 +282,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 						})
 						turtle._x += g.advance * fontSize
 					}
-					if(unicode===10) this.turtle.lineBreak()
+				}
+				if(unicode===10){
+					this.turtle.lineBreak()
 				}
 			}
 		}

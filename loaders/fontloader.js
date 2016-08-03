@@ -82,13 +82,13 @@ module.exports = function(font){
 	map.glyphs[10] = { // newline
 		x1: 0,
 		y1: -0.3,
-		x2: 2,
+		x2: 0.5,
 		y2: 1.,
 		tx1:0,
 		ty1:0,
 		tx2:0,
 		ty2:0,
-		advance: 2
+		advance: 0.5
 	}
 	map.glyphs[9] = { // tab
 		x1: 0,

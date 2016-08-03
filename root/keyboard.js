@@ -1,6 +1,6 @@
 var service = require('services/keyboard')
 
-var idToKeyName = { // slap a usable name on keys
+var idToKeyName = {
 	8:'backSpace',9:'tab',13:'enter',16:'shift',17:'ctrl',18:'alt',
 	19:'pause',20:'capsLock',27:'escape',
 	32:'space',33:'pageUp',34:'pageDown',

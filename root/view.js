@@ -243,6 +243,8 @@ module.exports = require('class').extend(function View(proto){
 		turtle._y = 0		
 		turtle._w = this.$w
 		turtle._h = this.$h
+		turtle.x1 = turtle.y1 = Infinity
+		turtle.x2 = turtle.y2 = -Infinity
 
 		// lets set up a clipping rect
 		if(this.clip){

@@ -703,32 +703,29 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$READPROPS = function(target, classname, macroargs, mainargs, indent){
+	proto.$PROPLEN = function(target, classname, macroargs, mainargs, indent){
+		return 'this.$shaders.'+classname+'.$props.length'
+	}
+
+	proto.$READBEGIN = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
 	
 		code += indent +'var $props =  this.$shaders.'+classname+'.$props\n'
 		code += indent +'var $a = $props.array\n'
-		//code += indent +'var $o = (this.turtle.$propoffset - 1) * ' + info.propSlots +'\n'
 
-		var instanceProps = info.instanceProps
-
-		var argobj = macroargs[0]
-		code += indent + 'var $o = ' + argobj.$offset + ' * '+ info.propSlots +'\n'
-		code += indent + 'var $read = {}\n'
-		for(var key in argobj){
-			if(key === '$offset') continue
-			var prop = instanceProps['this_DOT_'+key]
-			if(!prop) continue
-			// lets read props
-			if(prop.config.pack) throw new Error('Please implement READPROPS packing support '+key)
-			if(prop.config.type.slots>1) throw new Error('Please implement READPROPS vector support '+key)
-
-			code += indent + '$read.'+key +' = $a[$o + '+prop.offset+']\n'
-		}
 		return code
 	}
+
+	proto.$READPROP = function(target, classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
+		var code = ''
+		var info = this.$compileInfo
+		var prop = info.instanceProps['this_DOT_'+macroargs[1].slice(1,-1)]
+		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
+	}
+
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
 		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
@@ -825,7 +822,7 @@ module.exports = require('class').extend(function Shader(proto){
 				// tweenstart?
 				//console.log(prop.name)
 				if(prop.name === 'tweenStart'){
-					propsource = '$view._time'
+					propsource = '($view._time + $turtle._delay)'
 				}
 				else{
 					var marg = macroargs[0][prop.name]
