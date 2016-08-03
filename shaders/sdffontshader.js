@@ -26,7 +26,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		boldness:0, 
 		shadowOffset: {pack:'int12', value:[0., 0.]},
 
-		unicode:{noStyle:1, noTween:1, value:0},
+		unicode:{noStyle:1, value:0},
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
@@ -167,7 +167,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.toolMacros = {
-		read:function(o){
+		$readOffset:function(o){
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			
 			this.$READBEGIN()
@@ -189,11 +189,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			// write the bounding box
 			return read
 		},
-		seek:function(x, y, box){
+		$seekPos:function(x, y, box){
 			// lets find where we are inbetween
-			var $read = {}
 			var len = this.$PROPLEN() - 1
-
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			this.$READBEGIN()
@@ -210,6 +208,30 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				}
 			}
 			return -2
+		},
+		$boundRects:function(start, end){
+
+			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var lineSpacing = this._NAME.prototype.lineSpacing
+			this.$READBEGIN()
+			var boxes = []
+			var curBox
+			for(var i = start; i < end; i++){
+				var tx = this.$READPROP(i, 'x')
+				var ty = this.$READPROP(i, 'y')
+				var fs = this.$READPROP(i, 'fontSize')
+				var unicode = this.$READPROP(i, 'unicode')
+				var advance = glyphs[unicode].advance
+
+				if(!curBox){
+					boxes.push(curBox = {x:tx, y:ty, h:fs * lineSpacing})
+				}
+				if(unicode === 10 || i === end-1){ // end current box
+					curBox.w = (tx + fs * advance) - curBox.x
+					curBox = undefined
+				}
+			}
+			return boxes
 		},
 		draw:function(overload){
 			var turtle = this.turtle
@@ -287,6 +309,56 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					this.turtle.lineBreak()
 				}
 			}
+		},
+		$drawFast:function(txt, style){
+			var len = txt.length
+			var turtle = this.turtle
+			this.$ALLOCDRAW(len, true)
+			var posx = turtle._x
+			var posy = turtle._y
+			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var fontSize = style.fontSize
+			for(var i = 0; i < len; i++){
+				var unicode = txt.charCodeAt(i)
+				var g = glyphs[unicode]
+				this.$WRITEPROPS({
+					$fastWrite:true,
+					visible:1,
+					x:posx,
+					y:posy,
+					ease:style.ease,
+					duration:style.duration,
+					tween:style.tween,
+					color: style.color,
+					outlineColor: style.outlineColor,
+					shadowColor: style.shadowColor,
+					fontSize:fontSize,
+					italic:style.italic,
+					shadowBlur:style.shadowBlur,
+					shadowSpread:style.shadowSpread,
+					outlineWidth:style.outlineWidth,
+					boldness:style.boldness, 
+					shadowOffset:style.shadowOffset,
+					lockScroll:style.lockScroll,
+					turtleClip:turtle._turtleClip,
+					unicode:unicode,
+					tx1: g.tx1,
+					ty1: g.ty1,
+					tx2: g.tx2,
+					ty2: g.ty2,
+					x1: g.x1,
+					y1: g.y1,
+					x2: g.x2,
+					y2: g.y2,
+					unicode: unicode
+				})
+				posx += g.advance * fontSize
+				if(unicode === 10){
+					if(posx>turtle.x2) turtle.x2 = posx
+					posx = 0, posy += fontSize * this._NAME.prototype.lineSpacing
+				}
+			}
+			if(posy>turtle.y2) turtle.y2 = posy
 		}
 	}
 

@@ -150,6 +150,7 @@ exports.updateFinger = function(pick, digit, x, y, dx, dy, flick){
 		fingerPos[2] = x
 		fingerPos[3] = y
 	}
+	if(!pick) return
 	// do some potential scrolling on touch devices
 	var todo = todoIds[pick.todoId]
 
@@ -226,7 +227,6 @@ function renderPickDep(framebuffer){
 }
 
 function renderPickWindow(digit, x, y, force){
-
 	// find a pick window
 	var pick = pickWindows[digit]
 
@@ -270,6 +270,7 @@ function renderPickWindow(digit, x, y, force){
 	if(Math.abs(px) >= 0.5*pickw || Math.abs(py) >= 0.5*pickh) force = true
 
 	if(!force){
+
 		gl.readPixels(0.5*pickw+px,0.5*pickh-py, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, pick.buf)
 
 		// render deps after framebuffer pick

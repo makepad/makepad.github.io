@@ -49,15 +49,14 @@ function keyUp(e){
 }
 
 function keyPress(e){
-	if(!e.charCode || e.charCode === 13) return
+	if(!e.charCode || e.charCode === 13 || e.ctrlKey || e.metaKey) return
+
 	bus.postMessage({
 		fn:'onKeyPress',
-		char:e.charCode,
-		repeat: e.repeat,
 		shift: e.shiftKey?true:false,
 		alt: e.altKey?true:false,
-		ctrl: e.ctrlKey?true:false,
-		meta: e.metaKey?true:false
+		char:e.charCode,
+		repeat: e.repeat,
 	})
 }
 

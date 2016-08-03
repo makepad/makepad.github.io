@@ -16,9 +16,10 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.vertexMain = function(){$
 		var T = 1.
 		if(this.tween > 0.01){
-			T = this.tweenTime(
+			this.normalTween = clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
+			T = this.easedTween = this.tweenTime(
 				this.tween,
-				clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0), 
+				this.normalTween, 
 				this.ease.x,
 				this.ease.y,
 				this.ease.z,
@@ -580,18 +581,20 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		
 		var need = macroargs[0] || 1
+		var fastWrite = macroargs[1]
 
 		code += indent+'var $view = this.view\n'
-		code += indent+'var $todo = $view.todo\n'
 		code += indent+'var $shader = this.$shaders.'+classname+'\n'
 		code += indent+'if(!$shader) $shader = this.$allocShader("'+classname+'")\n'
 		code += indent+'var $props = $shader.$props\n'
+		code += indent+'var $proto = this._' + classname +'.prototype\n'
 		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
-		code += indent+'	var $proto = this._' + classname +'.prototype\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.length = 0\n'
+		code += indent+'	$props.changed = false\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
+		code += indent+'	var $todo = $view.todo\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// first do the normal attributes
 		var geometryProps = info.geometryProps
@@ -648,13 +651,15 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + 'var $propslength = $props.length\n\n'
 		code += indent + 'var $need = $propslength + '+need+'\n'
 		code += indent + 'if($need > $props.allocated) $props.alloc($need)\n'
-		code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
-		code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
+		if(!fastWrite){
+			code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
+			code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
+			code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
+			code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
+			code += indent + '	this.$propsLen'+classname+' = $propslength\n'
+			code += indent + '}\n'
+		}
 		code += indent + 'this.turtle.$propoffset = $propslength\n'
-		code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
-		code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
-		code += indent + '	this.$propsLen'+classname+' = $propslength\n'
-		code += indent + '}\n'
 		code += indent + '$props.length = $need\n'
 
 		return code
@@ -728,9 +733,10 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
+		code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
 		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
 		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($view._time < $tweenStart + $duration){\n'
+		code += indent + 'if($tween > 0 && $view._time < $tweenStart + $duration){\n'
 		code += indent + '	var $time = $proto.tweenTime('
 		code += '$a[$o + ' + instanceProps.this_DOT_tween.offset +']'
 		code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
@@ -747,20 +753,30 @@ module.exports = require('class').extend(function Shader(proto){
 	proto.$WRITEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// load the turtle
+
+		var fastWrite = typeof macroargs[0] === 'object'?macroargs[0].$fastWrite:false
+
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 		var code = ''
 		code += indent + 'var $turtle = this.turtle\n'
-		code += indent + 'var $view = this.view\n'
-		code += indent + 'var $inPlace = $view.$inPlace\n\n'
-		code += indent +'var $proto = this._' + classname +'.prototype\n'
-		code += indent +'var $shader = this.$shaders.'+classname+'\n'
-		code += indent +'var $props = $shader.$props\n'
+
+		if(!fastWrite){
+			code += indent + 'var $view = this.view\n'
+			code += indent + 'var $inPlace = $view.$inPlace\n\n'
+			code += indent +'var $proto = this._' + classname +'.prototype\n'
+			code += indent +'var $shader = this.$shaders.'+classname+'\n'
+			code += indent +'var $props = $shader.$props\n'
+			code += indent +'var $timeMax = $view._time + $turtle._duration\n'
+			code += indent +'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+		}
+		else{
+			code += indent +'var $timeMax = $view._time + '+macroargs[0].duration+'\n'
+			code += indent +'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+		}
 		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
-		code += indent +'var $timeMax = $view._time + $turtle._duration\n'
-		code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-
+		code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
 		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
 
@@ -771,8 +787,8 @@ module.exports = require('class').extend(function Shader(proto){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
-			var notween = prop.config.noTween
-			var noInPlace = prop.config.noInPlace
+			var notween =  prop.config.noTween
+			var noInPlace = fastWrite?false:prop.config.noInPlace
 		
 			propcode += '\n'+indent+'// '+key + '\n'
 
@@ -794,8 +810,8 @@ module.exports = require('class').extend(function Shader(proto){
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
 
-						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
-							'$a[$o+'+(o +i)+']\n'
+						propcode += indent + 'if($a[$o+'+(o + i + slots)+'] !== ' +
+							'$a[$o+'+(o +i)+']) $changed = true, $a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				else{
@@ -803,8 +819,8 @@ module.exports = require('class').extend(function Shader(proto){
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
 							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
 							'$f * $a[$o+'+(o +i)+']\n'
-						propcode += indent + '$a[$o+'+(o + i + slots)+'] = ' +
-							'$a[$o+'+(o +i)+']\n'
+						propcode += indent + 'if($a[$o+'+(o + i + slots)+'] !== ' +
+							'$a[$o+'+(o +i)+']) $changed = true, $a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				if(noInPlace) tweencode += indent + '}\n'
@@ -818,16 +834,13 @@ module.exports = require('class').extend(function Shader(proto){
 
 			var propsource = '$turtle._' + prop.name
 
-			if(prop.config.noStyle){ // its an arg here
-				// tweenstart?
-				//console.log(prop.name)
-				if(prop.name === 'tweenStart'){
-					propsource = '($view._time + $turtle._delay)'
-				}
-				else{
-					var marg = macroargs[0][prop.name]
-					if(marg) propsource = marg
-				}
+			if(prop.name === 'tweenStart'){
+				propsource = '($view._time + $turtle._delay)'
+			}
+			if(typeof macroargs[0] === 'object'){
+				var marg = macroargs[0][prop.name]
+				if(marg) propsource = marg
+				else if(prop.name !== 'tweenStart' && fastWrite) continue
 			}
 
 			if(prop.type.name === 'vec4'){
@@ -836,8 +849,8 @@ module.exports = require('class').extend(function Shader(proto){
 				if(pack){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					if(pack === 'float12'){
-						if(prop.config.noCast){
-							propcode += indent +'$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
+						if(fastWrite || prop.config.noCast){
+							propcode += indent +'$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0),$a[$o+'+(o+1)+']=((_'+prop.name+'[2] * 4095)<<12) + ((_'+prop.name+'[3]*4095)|0)\n'
 						}
 						else{
 							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
@@ -850,7 +863,7 @@ module.exports = require('class').extend(function Shader(proto){
 						}
 					}
 					else{ // int packing
-						if(prop.config.noCast){
+						if(fastWrite || prop.config.noCast){
 							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
 						}
 						else{
@@ -864,7 +877,7 @@ module.exports = require('class').extend(function Shader(proto){
 				}
 				else{
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(prop.config.noCast){
+					if(fastWrite || prop.config.noCast){
 						propcode += indent +'$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
 					}
 					else{
@@ -884,7 +897,7 @@ module.exports = require('class').extend(function Shader(proto){
 				if(pack){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					if(pack === 'float12'){
-						if(prop.config.noCast){
+						if(fastWrite || prop.config.noCast){
 							propcode += indent + '$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
 						}
 						else{
@@ -895,7 +908,7 @@ module.exports = require('class').extend(function Shader(proto){
 						}
 					}
 					else{ // int packing
-						if(prop.config.noCast){
+						if(fastWrite || prop.config.noCast){
 							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
 						}
 						else{
@@ -908,7 +921,7 @@ module.exports = require('class').extend(function Shader(proto){
 				}
 				else{
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(prop.config.noCast){
+					if(fastWrite || prop.config.noCast){
 						propcode += indent + '$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
 					}
 					else{
@@ -939,9 +952,12 @@ module.exports = require('class').extend(function Shader(proto){
 				propcode += indent+'}\n'
 			}			
 		}
-
+		//if(!fastWrite){
 		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
+		//}
 		code += propcode
+		code += 'if(!$changed) $a[$o+'+instanceProps.this_DOT_tweenStart.offset+'] = 0\n'
+		code += 'else $props.changed = true\n'
 		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
 		// lets generate the write-out
 		//console.log(code)

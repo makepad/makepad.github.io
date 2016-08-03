@@ -5,6 +5,8 @@ var App = require('app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			Edit({
+				w:'100%',
+				h:'100%'
 			})//,
 			//Edit({
 			//})

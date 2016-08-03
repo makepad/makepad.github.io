@@ -712,11 +712,12 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 	proto.initalloc = 1024
 
 	proto.alloc = function(newlength){
+		var oldalloc = this.allocated * this.slots
 		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
 		var newarray = new this.arraytype(this.allocated * this.slots)
 		var oldarray = this.array
 
-		for(var i = 0, len = this.length * this.slots; i < len; i++){
+		for(var i = 0; i < oldalloc; i++){
 			newarray[i] = oldarray[i]
 		}
 		this.array = newarray

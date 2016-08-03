@@ -322,9 +322,9 @@ types.colorFromStringPacked = function(str, alpha, a, o){
 			return true
 		}
 		else if(str.length === 9){
-			a[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))<<16) + 
-				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))<<4)
-			a[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))<<16)+
+			a[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))*alpha<<16) + 
+				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))*alpha<<4)
+			a[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))*alpha<<16)+
 				((hex[str.charCodeAt(8)] | (hex[str.charCodeAt(7)]<<4))<<4)
 			return true
 		}

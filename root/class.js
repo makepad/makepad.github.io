@@ -71,7 +71,7 @@ function extend(body){
 	}
 
 	if(this.prototype.onextendclass) this.prototype.onextendclass.call(proto)
-
+	Constructor.body = body
 	return Constructor
 }
 

@@ -1067,6 +1067,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			this.varyOut[leftstr] = {
 				type:rightinfer.type
 			}
+			node.infer = rightinfer
 			return ret
 		}
 
@@ -1075,6 +1076,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 			var existout = this.outputs[leftstr]
 			if(existout && existout !== rightinfer.type) throw this.InferErr(node, 'Output changed type '+existout.name + ' -> '+ rightinfer.type.name)
 			this.outputs[leftstr] =  rightinfer.type
+			node.infer = rightinfer
 			return ret
 		}
 		if(!leftinfer.lvalue){
@@ -1092,7 +1094,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		else{
 			node.infer = rightinfer
 			if(!leftinfer || !rightinfer){
-				console.log(node)
+				console.log(rightstr)
 			}
 			// lets check
 			if(leftinfer.type !==  rightinfer.type){
