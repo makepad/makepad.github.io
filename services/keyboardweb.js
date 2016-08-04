@@ -191,7 +191,7 @@ textarea:focus.makepad{\n\
 document.body.appendChild(style)
 document.body.appendChild(cliptext)
 if(!isTouchDevice){
-	cliptext.style.opacity = 1.
+	cliptext.style.opacity = 0.
 }
 
 cliptext.focus()
