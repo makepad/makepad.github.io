@@ -338,11 +338,11 @@ var userMessage = {
 	setClipboardText:function(msg){
 		lastClipboard = cliptext.value = '\n  ' + msg.text + ' \n'
 		// lets wait for a mouse up to set selection
-		//if(!isTouchDevice){
-		lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
-		lastEnd = cliptext.selectionEnd = msg.text.length + 3
+		if(isIOSDevice || !isTouchDevice){
+			lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
+			lastEnd = cliptext.selectionEnd = msg.text.length + 3
 
-		//}
+		}
 		cliptext.focus()
 	},
 	captureRightMouse:function(msg){
