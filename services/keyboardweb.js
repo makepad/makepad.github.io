@@ -99,6 +99,7 @@ exports.mouseDown = function(x, y){
 
 exports.mouseUp = function(x, y){
 	if(!captureRightMouse) return
+	cliptext.focus()
 	mouseIsDown = false
 	return true
 }
@@ -144,7 +145,7 @@ cliptext.setAttribute('spellcheck','false')
 
 cliptext.addEventListener('keydown', keyDown)
 cliptext.addEventListener('keyup', keyUp)
-cliptext.addEventListener('keypress', keyPress)
+//cliptext.addEventListener('keypress', keyPress)
 
 cliptext.style.zIndex = 100000
 
@@ -238,10 +239,6 @@ cliptext.addEventListener('select',function(e){
 	}
 }.bind(this))
 
-cliptext.addEventListener('keypress', function(e){
-	e.preventDefault()
-})
-
 var lastEnd = 0, lastStart = 0
 // poll for arrow keys
 function arrowCursorPoll(){
@@ -312,9 +309,11 @@ cliptext.addEventListener('input',function(){
 		}
 		// swipey and android keyboards
 		else for(var i = defaultStart; i < value.length - 2; i++){
+			var charcode = value.charCodeAt(i)
+			if(charcode !== 10)
 			bus.postMessage({
 				fn:'onKeyPress',
-				char:value.charCodeAt(i),
+				char:charcode,
 				repeat: 1
 			})
 		}
