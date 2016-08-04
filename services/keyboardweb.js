@@ -84,7 +84,6 @@ function keyPress(e){
 }
 
 var captureRightMouse = false
-var mouseIsDown = false
 exports.mouseDown = function(x, y){
 	if(!captureRightMouse) return
 	cliptext.style.left = x - 10
@@ -93,14 +92,12 @@ exports.mouseDown = function(x, y){
 		cliptext.style.left =  -20
 		cliptext.style.top =  -20
 	}, 0)
-	mouseIsDown = true
 	return true
 }
 
 exports.mouseUp = function(x, y){
 	if(!captureRightMouse) return
 	cliptext.focus()
-	mouseIsDown = false
 	return true
 }
 
@@ -220,8 +217,8 @@ cliptext.addEventListener('paste', function(e){
 })
 
 cliptext.addEventListener('select',function(e){
+	//console.log('selectall?', keyboardSelectAll, mouseIsDown)
 	if(keyboardSelectAll) return keyboardSelectAll = false
-	if(mouseIsDown) return
 	if(cliptext.selectionStart === 0 && cliptext.selectionEnd === cliptext.value.length){
 		bus.postMessage({
 			fn:'onKeyDown',
