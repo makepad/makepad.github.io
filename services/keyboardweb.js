@@ -54,6 +54,13 @@ function keyDown(e){
 	})
 }
 
+function doSelect(){
+	var len = cliptext.value.length
+	if(len > 5) cliptext.selectionStart = 3
+	else cliptext.selectionStart = defaultStart
+	cliptext.selectionEnd = len - 2
+}
+
 function keyUp(e){
 	var code = fireFoxRemap[e.keyCode] || e.keyCode
 	
@@ -62,10 +69,7 @@ function keyUp(e){
 		cliptext.style.top =  -20
 	}
 	// do the selection
-	var len = cliptext.value.length
-	if(len > 5) cliptext.selectionStart = 3
-	else cliptext.selectionStart = defaultStart
-	cliptext.selectionEnd = len - 2
+	doSelect()
 
 	bus.postMessage({
 		fn:'onKeyUp',
@@ -114,7 +118,6 @@ exports.touchStart = function(x, y){
 
 	if(isIOSDevice){
 		// move the cliptext
-		console.log("MOVE HERE")
 		cliptext.style.left = x - 10
 		cliptext.style.top = y - 10
 		cliptext.focus()
@@ -129,10 +132,7 @@ exports.touchStart = function(x, y){
 exports.touchEnd = function(x, y){
 	ignoreSelect = false
 	// lets make the selection now
-	var len = cliptext.value.length
-	if(len > 5) cliptext.selectionStart = 3
-	else cliptext.selectionStart = defaultStart
-	cliptext.selectionEnd = len - 2
+	doSelect()
 }
 
 var cliptext = document.createElement('textarea')
