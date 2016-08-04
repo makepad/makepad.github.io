@@ -42,6 +42,7 @@ function keyDown(e){
 		cliptext.style.top = characterAccentMenuPos.y + 12
 	}
 
+	cliptext.focus()
 	bus.postMessage({
 		fn:'onKeyDown',
 		repeat: e.repeat,
@@ -60,6 +61,11 @@ function keyUp(e){
 		cliptext.style.left =  -20
 		cliptext.style.top =  -20
 	}
+	// do the selection
+	var len = cliptext.value.length
+	if(len > 5) cliptext.selectionStart = 3
+	else cliptext.selectionStart = defaultStart
+	cliptext.selectionEnd = len - 2
 
 	bus.postMessage({
 		fn:'onKeyUp',
@@ -108,6 +114,7 @@ exports.touchStart = function(x, y){
 
 	if(isIOSDevice){
 		// move the cliptext
+		console.log("MOVE HERE")
 		cliptext.style.left = x - 10
 		cliptext.style.top = y - 10
 		cliptext.focus()
@@ -184,7 +191,7 @@ textarea:focus.makepad{\n\
 document.body.appendChild(style)
 document.body.appendChild(cliptext)
 if(!isTouchDevice){
-	cliptext.style.opacity = 0.
+	cliptext.style.opacity = 1.
 }
 
 cliptext.focus()
@@ -341,7 +348,6 @@ var userMessage = {
 		if(isIOSDevice || !isTouchDevice){
 			lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
 			lastEnd = cliptext.selectionEnd = msg.text.length + 3
-
 		}
 		cliptext.focus()
 	},
