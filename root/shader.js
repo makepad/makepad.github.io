@@ -776,7 +776,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
-		code += indent +'var $changed = false\n'
+		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
 		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
 
@@ -810,8 +810,7 @@ module.exports = require('class').extend(function Shader(proto){
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
 
-						propcode += indent + 'if($a[$o+'+(o + i + slots)+'] !== ' +
-							'$a[$o+'+(o +i)+']) $changed = true, $a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				else{
@@ -819,8 +818,7 @@ module.exports = require('class').extend(function Shader(proto){
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
 							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
 							'$f * $a[$o+'+(o +i)+']\n'
-						propcode += indent + 'if($a[$o+'+(o + i + slots)+'] !== ' +
-							'$a[$o+'+(o +i)+']) $changed = true, $a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				if(noInPlace) tweencode += indent + '}\n'

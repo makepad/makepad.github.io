@@ -125,6 +125,11 @@ module.exports = require('view').extend(function App(proto, base){
 			if(focus && focus.onKeyPress) focus.onKeyPress(msg)
 		}
 
+		keyboard.onKeyPaste = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyPaste) focus.onKeyPaste(msg)
+		}
+
 		painter.onResize = function(){
 			app.$redrawViews()
 		}
@@ -145,6 +150,18 @@ module.exports = require('view').extend(function App(proto, base){
 
 		// first draw
 		this.$redrawViews(0,0)
+	}
+
+	proto.setClipboardText = function(text){
+		keyboard.setClipboardText(text)
+	}
+
+	proto.captureRightMouse = function(capture){
+		keyboard.captureRightMouse(capture)
+	}
+
+	proto.setCharacterAccentMenuPos = function(x,y){
+		keyboard.setCharacterAccentMenuPos(x,y)
 	}
 
 	proto._onDestroy = function(){

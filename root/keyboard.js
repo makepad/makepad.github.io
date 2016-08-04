@@ -20,7 +20,7 @@ var idToKeyName = {
 	118:'f7',119:'f8',120:'f9',121:'f10',122:'f11',123:'f12',
 	144:'numlock',145:'scrollLock',186:'semiColon',187:'equals',188:'comma',
 	189:'dash',190:'period',191:'slash',192:'accent',219:'openBracket',
-	220:'backSlash',221:'closeBracket',222:'singleQuote',
+	220:'backSlash',221:'closeBracket',222:'singleQuote'
 }
 
 var Keyboard = require('class').extend(function Keyboard(proto){
@@ -29,7 +29,37 @@ var Keyboard = require('class').extend(function Keyboard(proto){
 
 var keyboard = module.exports = new Keyboard()
 
+keyboard.setClipboardText = function(text){
+	service.bus.postMessage({
+		fn:'setClipboardText',
+		text:text
+	})
+}
+
+keyboard.captureRightMouse = function(capture){
+	service.bus.postMessage({
+		fn:'captureRightMouse',
+		capture:capture
+	})
+}
+
+keyboard.setCharacterAccentMenuPos = function(x, y){
+	service.bus.postMessage({
+		fn:'setCharacterAccentMenuPos',
+		x:x,y:y
+	})
+}
+
+
+keyboard.setSelectCursor = function(x, y, h){
+	service.bus.postMessage({
+		fn:'setSelectCursor',
+		x:x,y:y,h:h
+	})
+}
+
+
 service.bus.onMessage = function(msg){
-	if(msg.code) msg.name = idToKeyName[msg.code]
+	if(msg.code) msg.name = idToKeyName[msg.code] || 'unknown'
 	if(keyboard[msg.fn]) keyboard[msg.fn](msg)
 }

@@ -145,7 +145,7 @@ function fingerUp(fingers){
 
 		// copy over the startx/y
 		if(!op){
-			console.log('End finger without matching finger', p)
+			//console.log('End finger without matching finger', p)
 			continue
 		}
 
@@ -202,9 +202,12 @@ function touchFinger(e){
 }
 
 var down = false
-
+var showingInput = false
 function mousedown(e){
 	e.preventDefault()
+	if(e.button === 2){
+		if(services.keyboard.mouseDown(e.pageX, e.pageY))return
+	}
 	down = true
 	fingerDown(mouseFinger(e))
 }
@@ -212,6 +215,9 @@ function mousedown(e){
 function mouseup(e){
 	down = false
 	e.preventDefault()
+	if(e.button === 2){
+		if(services.keyboard.mouseUp(e.pageX, e.pageY)) return
+	}
 	fingerUp(mouseFinger(e))
 }
 
@@ -226,6 +232,7 @@ function mousemove(e){
 
 function touchstart(e){
 	e.preventDefault()
+	services.keyboard.touchStart(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 	fingerDown(touchFinger(e))
 }
 
@@ -235,7 +242,7 @@ function touchmove(e){
 
 function touchend(e){
 	if(exports.onTouchEndHook) exports.onTouchEndHook()
-
+	services.keyboard.touchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 	e.preventDefault()
 	fingerUp(touchFinger(e))
 }

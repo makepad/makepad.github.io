@@ -228,7 +228,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					curBox = undefined
 				}
 				if(!curBox){
-					boxes.push(curBox = {x:tx, y:ty, h:fs * lineSpacing})
+					boxes.push(curBox = {fontSize:fs, x:tx, y:ty, h:fs * lineSpacing})
 				}
 				if(unicode === 10 || i === end-1){ // end current box
 					curBox.w = (tx + fs * advance) - curBox.x
@@ -265,18 +265,21 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				if(!wrapping){
 					for(var b = off; b < len; b++){
 						var unicode = b === elen? 32: txt.charCodeAt(b)
-						width += glyphs[unicode].advance * fontSize
+						var g = glyphs[unicode] || glyphs[63]
+						width += g.advance * fontSize
 					}
 					off = len
 				}
 				else if(wrapping === 'char'){
-					width += glyphs[off === elen? 32: txt.charCodeAt(off)].advance * fontSize
+					var g = glyphs[off === elen? 32: txt.charCodeAt(off)] || glyphs[63]
+					if(g) width += g.advance * fontSize
 					off++
 				}
 				else{
 					for(var b = off; b < len; b++){
 						var unicode = b === elen? 32: txt.charCodeAt(b)
-						width += glyphs[unicode].advance * fontSize
+						var g = glyphs[unicode] || glyphs[63]
+						width += g.advance * fontSize
 						if(b >= off && (unicode === 32||unicode===9||unicode===10)){
 							b++
 							break
@@ -298,7 +301,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					// output
 					for(var i = start; i < off; i++){
 						var unicode = i === elen? 32: txt.charCodeAt(i)
-						var g = glyphs[unicode]
+						var g = glyphs[unicode] || glyphs[63]
 						this.$WRITEPROPS({
 							tx1: g.tx1,
 							ty1: g.ty1,

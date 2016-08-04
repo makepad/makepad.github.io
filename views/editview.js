@@ -80,6 +80,12 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onHasFocus = function(){
+		if(this.hasFocus){
+			this.app.captureRightMouse(true)
+		}
+		else{
+			this.app.captureRightMouse(false)
+		}
 		this.redraw()
 	}
 
@@ -97,6 +103,12 @@ module.exports = require('view').extend(function EditView(proto){
 		})
 
 		this.drawSelect()
+
+		//var parser = require('jsparser/jsparser')
+		//js = require('shader').body.toString()
+		//require.perf()
+		//parser.parse(js)
+		//require.perf()
 
 		this.drawText({
 			wrapping:'char',
@@ -119,8 +131,8 @@ module.exports = require('view').extend(function EditView(proto){
 						w:box.w,
 						h:box.h
 					})
+					// lets tell the keyboard
 				}
-
 				this.drawCursor({
 					x:t.x-1,
 					y:t.y,
@@ -162,6 +174,7 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.moveToOffset = function(){
 			this.start = this.end = offset
 			this.max = this.editor.cursorRect(this.end).x
+			this.editor.cursorChanged(this)
 		}
 
 		proto.movePos = function(delta, onlyEnd){
@@ -171,6 +184,7 @@ module.exports = require('view').extend(function EditView(proto){
 			}
 			var rect = this.editor.textRect(this.end)
 			this.max = rect?rect.x:0
+			this.editor.cursorChanged(this)
 		}
 
 		proto.moveLine = function(lines, onlyEnd){
@@ -178,6 +192,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
 			if(this.end < 0) this.end = 0
 			if(!onlyEnd) this.start = this.end
+			this.editor.cursorChanged(this)
 		}
 		
 		proto.moveTo = function(x, y, onlyEnd){
@@ -185,6 +200,7 @@ module.exports = require('view').extend(function EditView(proto){
 			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0
 			if(!onlyEnd) this.start = this.end
+			this.editor.cursorChanged(this)
 		}
 
 		proto.insertText = function(text){
@@ -199,6 +215,8 @@ module.exports = require('view').extend(function EditView(proto){
 				this.cursorSet.delta += len
 				this.editor.addUndoDelete(lo, lo +len)
 			}
+			this.start = this.end = lo
+			this.editor.cursorChanged(this)
 		}
 
 		proto.deleteRange = function(){
@@ -208,6 +226,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.cursorSet.delta -= hi - lo
 			this.start = this.end = lo
 			this.max = this.editor.cursorRect(this.end).x
+			this.editor.cursorChanged(this)
 		}
 
 		proto.delete = function(){
@@ -218,6 +237,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.cursorSet.delta -= 1
 			this.editor.forkRedo()
 			this.max = this.editor.cursorRect(this.end).x
+			this.editor.cursorChanged(this)
 		}
 
 		proto.backSpace = function(){
@@ -230,6 +250,13 @@ module.exports = require('view').extend(function EditView(proto){
 			this.editor.forkRedo()
 			this.start = this.end = prev
 			this.max = this.editor.cursorRect(this.end).x
+			this.editor.cursorChanged(this)
+		}
+
+		proto.select = function(start, end){
+			this.start = start
+			this.end = end
+			this.editor.cursorChanged()
 		}
 	})
 
@@ -325,6 +352,27 @@ module.exports = require('view').extend(function EditView(proto){
 		this.redraw()
 	}
 
+	// serialize all selections, lazily
+	proto.cursorChanged = function(){
+		if(!this.$selChangeTimer) this.$selChangeTimer = setTimeout(function(){
+			this.$selChangeTimer = undefined
+			var txt = ''
+			for(var i = 0; i < this.cs.cursors.length; i++){
+				var cursor = this.cs.cursors[i]
+				txt += this.text.slice(cursor.lo(), cursor.hi())
+			}
+			this.app.setClipboardText(txt)
+
+			// lets set the character accent menu pos
+			var cursor = this.cs.cursors[0]
+			var rd = this.$readOffsetText(cursor.lo())
+
+			this.app.setCharacterAccentMenuPos(rd.x + 0.5 * rd.advance, rd.y)
+
+			this.redraw()
+		}.bind(this))
+	}
+
 	//
 	//
 	// Undo stack
@@ -344,6 +392,11 @@ module.exports = require('view').extend(function EditView(proto){
 	// Key and input bindings
 	//
 	//
+
+	proto.onKeyPaste = function(e){
+		this.cs.insertText(e.text)
+		this.cs.movePos(e.text.length)
+	}
 
 	proto.onCtrlZ =
 	proto.onMetaZ = function(){
@@ -388,8 +441,7 @@ module.exports = require('view').extend(function EditView(proto){
 		if(!e.ctrl && !e.meta) return
 		// select all
 		var cur = this.cs.clearCursors()
-		cur.start = 0, cur.end = this.textLength()
-		this.redraw()
+		cur.select(0, this.textLength())
 	}
 
 	proto.onKeyDown = function(e){
@@ -404,27 +456,34 @@ module.exports = require('view').extend(function EditView(proto){
 		//if(e.ctrl || e.meta || e.alt || e.shift) return
 		var out = String.fromCharCode(e.char === 13?10:e.char)
 		// lets run over all our cursors
+		// if repeat is -1 we have to replace last char
+		if(e.special){
+			this.cs.backSpace()			
+		}
 		this.cs.insertText(out)
 		this.cs.movePos(1)
 	}
 
 	proto.onFingerDown = function(e){
 		if(e.digit!== 1)return
-
-		this.setFocus()
+		if(e.button !== 1) return
+		this.setFocus() 
 
 		if(e.meta){
 			this.fingerCursor = this.cs.addCursor()
 		}
 		else{
+			var oldstart = this.cs.cursors[0].start
 			this.fingerCursor = this.cs.clearCursors()
+			this.fingerCursor.start = oldstart
 		}
-		this.fingerCursor.moveTo(e.x, e.y)	
+		this.fingerCursor.moveTo(e.x, e.y, e.shift)	
 		this.redraw()
 	}
 
 	proto.onFingerMove = function(e){
 		if(e.digit!== 1) return
+		if(e.button !== 1) return
 		this.fingerCursor.moveTo(e.x, e.y, true)
 		this.redraw()
 	}
