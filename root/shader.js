@@ -956,8 +956,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
 		//}
 		code += propcode
-		code += 'if(!$changed) $a[$o+'+instanceProps.this_DOT_tweenStart.offset+'] = 0\n'
-		code += 'else $props.changed = true\n'
+		//code += 'if(!$changed) $a[$o+'+instanceProps.this_DOT_tweenStart.offset+'] = 0\n'
+		//code += 'else $props.changed = true\n'
 		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
 		// lets generate the write-out
 		//console.log(code)

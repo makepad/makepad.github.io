@@ -210,12 +210,12 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			return -2
 		},
 		$boundRects:function(start, end){
-
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			this.$READBEGIN()
 			var boxes = []
 			var curBox
+			var lty, ltx, lfs, lad
 			for(var i = start; i < end; i++){
 				var tx = this.$READPROP(i, 'x')
 				var ty = this.$READPROP(i, 'y')
@@ -223,6 +223,10 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				var unicode = this.$READPROP(i, 'unicode')
 				var advance = glyphs[unicode].advance
 
+				if(curBox && lty && lty !== ty){
+					curBox.w = (ltx + lfs * lad) - curBox.x
+					curBox = undefined
+				}
 				if(!curBox){
 					boxes.push(curBox = {x:tx, y:ty, h:fs * lineSpacing})
 				}
@@ -230,6 +234,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					curBox.w = (tx + fs * advance) - curBox.x
 					curBox = undefined
 				}
+				lty = ty, ltx = tx, lfs = fs, lad = advance
 			}
 			return boxes
 		},
@@ -240,7 +245,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var abspos = !isNaN(turtle._x) && !isNaN(turtle._y)
 			var txt = turtle._text
 			var elen = txt.length
-			var len = elen + 1
+			var len = overload.$editMode?elen + 1:elen
+	
 			this.$ALLOCDRAW(len)
 
 			// lets fetch the font
@@ -286,7 +292,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 						turtle._y = NaN
 					}
 					else abspos = false
+					//console.log("MARK")
 					turtle.walk()
+					//console.log("END")
 					// output
 					for(var i = start; i < off; i++){
 						var unicode = i === elen? 32: txt.charCodeAt(i)
@@ -358,6 +366,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					posx = 0, posy += fontSize * this._NAME.prototype.lineSpacing
 				}
 			}
+			posy += fontSize * this._NAME.prototype.lineSpacing
 			if(posy>turtle.y2) turtle.y2 = posy
 		}
 	}

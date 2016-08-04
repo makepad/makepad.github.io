@@ -82,6 +82,7 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 
 		// check if we wrap around
+		//console.log(this.wx, this._w + margin[3] + margin[1], this.sx, this.width)
 		if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
 			var dx = this.sx - this.wx 
 			var dy = this.mh

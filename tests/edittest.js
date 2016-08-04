@@ -7,9 +7,7 @@ var App = require('app').extend(function(proto){
 			Edit({
 				w:'100%',
 				h:'100%'
-			})//,
-			//Edit({
-			//})
+			})
 		]
 	}
 })()

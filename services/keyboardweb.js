@@ -24,6 +24,7 @@ function keyDown(e){
 	var code = fireFoxRemap[e.keyCode] || e.keyCode
 	// we only wanna block backspace 
 	if(code === 8 || code === 9) e.preventDefault()
+	console.log(e)
 	bus.postMessage({
 		fn:'onKeyDown',
 		repeat: e.repeat,
@@ -37,6 +38,7 @@ function keyDown(e){
 
 function keyUp(e){
 	var code = fireFoxRemap[e.keyCode] || e.keyCode
+	console.log(e)
 	bus.postMessage({
 		fn:'onKeyUp',
 		repeat: e.repeat,
@@ -50,6 +52,7 @@ function keyUp(e){
 
 function keyPress(e){
 	if(!e.charCode || e.charCode === 13 || e.ctrlKey || e.metaKey) return
+	console.log(e)
 
 	bus.postMessage({
 		fn:'onKeyPress',

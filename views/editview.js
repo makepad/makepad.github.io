@@ -71,9 +71,10 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onInit = function(){
 		this.cs = new CursorSet(this)
 		this.setFocus()
-		this.text = ""
+		this.text = "HELLO WORLD"
 		//console.log(this.$drawFastText.toString())
-		this.text = require('shaders/lineshader').body.toString()
+		
+		//this.text = require('shaders/lineshader').body.toString()
 		//this.text = Array(100).join("Hello World i'm a piece of text Hello World i'm a piece of text Hello World i'm a piece of text Hello World i'm a piece of text\n")
 		//this.text = "H\nO\n"
 	}
@@ -89,31 +90,19 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 
 	proto.onDraw = function(){
-		this.beginBg()
+
+		this.beginBg({
+			w:this.$w,
+			h:this.$h
+		})
 
 		this.drawSelect()
 
-		var style = {
-			color:[1,1,1,1],
-			outlineColor:[0,0,0,0],
-			shadowColor:[0,0,0,0],
-			fontSize:12,
-			italic:0,
-			duration:1,
-			tween:1,
-			ease:[0,0,0,0],
-			shadowBlur:0,
-			shadowSpread:0,
-			shadowOffset:[0,0],
-			outlineWidth:0,
-			boldness:0,
-			lockScroll:1
-		}
-		var parser = require('jsparser/jsparser')
-		//var text = this.text.split(' ')
-		//for(var i =0 ;i < text.length; i++){
-		this.$drawFastText(this.text, style)
-		//}
+		this.drawText({
+			wrapping:'char',
+			$editMode:true,
+			text:this.text
+		})
 
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
