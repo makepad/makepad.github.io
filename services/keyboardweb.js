@@ -54,6 +54,26 @@ function keyDown(e){
 	})
 }
 
+var cliptextWrapper
+
+function defaultClipTextPos(){
+	if(cliptextWrapper){
+		cliptextWrapper.style.left = window.innerWidth-60
+		cliptextWrapper.style.top = 10
+	}
+	cliptext.style.left = window.innerWidth-55
+	cliptext.style.top = 10
+}
+
+function hideClipTextPos(){
+	if(cliptextWrapper){
+		cliptextWrapper.style.left = -100
+		cliptextWrapper.style.top = -100
+	}
+	cliptext.style.left = -100
+	cliptext.style.top = -100
+}
+
 function doSelect(){
 	var len = cliptext.value.length
 	if(len > 5) cliptext.selectionStart = 3
@@ -65,8 +85,8 @@ function keyUp(e){
 	var code = fireFoxRemap[e.keyCode] || e.keyCode
 	
 	if(!isTouchDevice && characterAccentMenuPos){
-		cliptext.style.left =  -20
-		cliptext.style.top =  -20
+		cliptext.style.left =  -100
+		cliptext.style.top =  -100
 	}
 	// do the selection
 	doSelect()
@@ -111,10 +131,10 @@ exports.mouseUp = function(x, y){
 	return true
 }
 
-var ignoreSelect = false
+var ignoreCursorPoll = false
 
 exports.touchStart = function(x, y){
-	ignoreSelect = true
+	ignoreCursorPoll = true
 
 	if(isIOSDevice){
 		// move the cliptext
@@ -122,15 +142,14 @@ exports.touchStart = function(x, y){
 		cliptext.style.top = y - 10
 		cliptext.focus()
 		setTimeout(function(){
-			cliptext.style.left = window.innerWidth-50
-			cliptext.style.top = 10
+			defaultClipTextPos()
 		}, 0)
 	}
 	return true
 }
 
 exports.touchEnd = function(x, y){
-	ignoreSelect = false
+	ignoreCursorPoll = false
 	// lets make the selection now
 	doSelect()
 }
@@ -153,16 +172,36 @@ cliptext.addEventListener('keyup', keyUp)
 
 cliptext.style.zIndex = 100000
 
-if(isTouchDevice) window.addEventListener('resize', function(){
-	cliptext.style.left = window.innerWidth-50
-	cliptext.style.top = 10
+
+var defaultHeight = window.innerHeight
+// ok we have to differentiate rotation and keyboard opening.
+window.addEventListener('orientationchange', function(e){
+	defaultHeight = window.innerHeight
+	bus.postMessage({
+		fn:'onOrientationChange'
+	})
+})
+
+if(isTouchDevice) window.addEventListener('resize', function(e){
+	if(window.innerHeight < defaultHeight){
+		defaultClipTextPos()
+		bus.postMessage({
+			fn:'onKeyboardOpen'
+		})
+	}
+	else{
+		hideClipTextPos()
+		bus.postMessage({
+			fn:'onKeyboardClose'
+		})
+	}
 })
 
 var style = document.createElement('style')
 style.innerHTML = "\n\
-::selection2 { background:transparent; color:red; }\n\
+::selection { background:transparent; color:transparent; }\n\
 textarea.makepad{\n\
-	opacity: 0.5;\n\
+	opacity: 0;\n\
 	border-radius:4px;\n\
 	color: white;\n\
 	font-size:6;\n\
@@ -189,7 +228,33 @@ textarea:focus.makepad{\n\
 	-webkit-appearance:none;\n\
 }"
 document.body.appendChild(style)
+
+if(isTouchDevice){
+	cliptextWrapper = document.createElement('span')
+	cliptextWrapper.innerHTML = "Clipboard"
+	cliptextWrapper.style.display = 'flex'
+	cliptextWrapper.style.justifyContent = 'center'
+	cliptextWrapper.style.alignItems = 'flex-end'
+	cliptextWrapper.style.position = 'absolute'
+	cliptextWrapper.style.fontSize = 8
+	cliptextWrapper.style.color = 'white'
+	cliptextWrapper.style.textAlign = 'center'
+	cliptextWrapper.style.verticalAlign = 'bottom'
+	cliptextWrapper.style.borderRadius = '8px'
+	cliptextWrapper.style.padding = '4px'
+	cliptextWrapper.style.left = -100
+	cliptextWrapper.style.top = -100
+	cliptextWrapper.style.width = 40
+	cliptextWrapper.style.height = 30
+	cliptextWrapper.style.userSelect = 'none'
+	cliptextWrapper.style.webkitUserSelect = "none"
+	cliptextWrapper.style.MozUserSelect = "none"
+	cliptextWrapper.style.backgroundColor = "rgba(128,128,128,0.3)"
+	document.body.appendChild(cliptextWrapper)
+}
+
 document.body.appendChild(cliptext)
+
 if(!isTouchDevice){
 	cliptext.style.opacity = 0.
 }
@@ -223,6 +288,11 @@ cliptext.addEventListener('paste', function(e){
 	e.preventDefault()
 })
 
+var magicClip = '\n\u00A0\u00A0\u00A0\n'
+//var magicClip = '\n   \n'
+
+//var magicClip = '$AAB$'
+
 cliptext.addEventListener('select',function(e){
 	//console.log('selectall?', keyboardSelectAll, mouseIsDown)
 	if(keyboardSelectAll) return keyboardSelectAll = false
@@ -246,10 +316,10 @@ cliptext.addEventListener('select',function(e){
 var lastEnd = 0, lastStart = 0
 // poll for arrow keys
 function arrowCursorPoll(){
-	if(ignoreSelect) return
+	if(ignoreCursorPoll) return
 	if((lastEnd !== cliptext.selectionEnd || lastStart !== cliptext.selectionStart)){
-		
 		var dir = cliptext.selectionStart
+
 		//return
 		var key = 0
 		if(dir == 0) key = 38
@@ -257,6 +327,7 @@ function arrowCursorPoll(){
 		if(dir == 3 && cliptext.value.length > 5) dir = 2
 		if(dir == 2) key = 37
 		if(dir == 3) key = 39
+
 		lastStart = cliptext.selectionStart = defaultStart
 		lastEnd = cliptext.selectionEnd = defaultEnd
 
@@ -280,9 +351,8 @@ cliptext.addEventListener('input',function(){
 	// if we dont have a space its a special char?
 	var value = cliptext.value
 
-	if(value.length === 4  || lastClipboard && value === '\n   \n'){
-
-		cliptext.value = '\n   \n'
+	if(value.length === 4  || lastClipboard && value === magicClip){
+		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
 		if(keyDownTriggered){
@@ -301,12 +371,12 @@ cliptext.addEventListener('input',function(){
 	}
 	if(value !== lastClipboard){
 		lastClipboard = ''
-		cliptext.value = '\n   \n'
+		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
 
 		// special character popup
-		if(defaultStart === 3 && value.charCodeAt(2) !== 32){
+		if(defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
 			bus.postMessage({
 				fn:'onKeyPress',
 				char:value.charCodeAt(2),
@@ -315,14 +385,18 @@ cliptext.addEventListener('input',function(){
 			})
 		}
 		// swipey and android keyboards
-		else for(var i = defaultStart; i < value.length - 2; i++){
-			var charcode = value.charCodeAt(i)
-			if(charcode !== 10)
-			bus.postMessage({
+		else for(var i = 0, len = value.length - 2 - defaultStart; i < len; i++){
+			var charcode = value.charCodeAt(i + defaultStart)
+			var msg = {
 				fn:'onKeyPress',
 				char:charcode,
 				repeat: 1
-			})
+			}
+			if(len>1){
+				msg.groupIndex = i
+				msg.groupLen = len
+			}
+			if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) bus.postMessage(msg)
 		}
 	}
 })
@@ -335,15 +409,22 @@ cliptext.addEventListener('touchmove', function(e){
 canvas.addEventListener('focus', function(){
 	cliptext.focus()
 })
-cliptext.value = '\n   \n'
+cliptext.value = magicClip
 cliptext.selectionStart = defaultStart
 cliptext.selectionEnd = defaultEnd
+
+cliptext.addEventListener('blur', function(){
+	if(isTouchDevice){
+		hideClipTextPos()
+	}
+})
 
 var arrowCursorPollInterval
 var lastClipboard = ''
 var userMessage = {
 	setClipboardText:function(msg){
-		lastClipboard = cliptext.value = '\n  ' + msg.text + ' \n'
+		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
+
 		// lets wait for a mouse up to set selection
 		if(isIOSDevice || !isTouchDevice){
 			lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
