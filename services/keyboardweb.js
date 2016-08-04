@@ -240,15 +240,20 @@ var lastEnd = 0, lastStart = 0
 // poll for arrow keys
 function arrowCursorPoll(){
 	if(ignoreSelect) return
-	if(cliptext.value.length === 5 && (lastEnd !== cliptext.selectionEnd || lastStart !== cliptext.selectionStart)){
+	if((lastEnd !== cliptext.selectionEnd || lastStart !== cliptext.selectionStart)){
 		
 		var dir = cliptext.selectionStart
 		//return
 		var key = 0
 		if(dir == 0) key = 38
-		if(dir == 5) key = 40
+		if(dir >= cliptext.value.length - 2) key = 40
+		if(dir == 3 && cliptext.value.length > 5) dir = 2
 		if(dir == 2) key = 37
-		if(dir === 3) key = 39
+		if(dir == 3) key = 39
+		lastStart = cliptext.selectionStart = defaultStart
+		lastEnd = cliptext.selectionEnd = defaultEnd
+
+		if(key == 0) return
 
 		bus.postMessage({
 			fn:'onKeyDown',
@@ -261,8 +266,6 @@ function arrowCursorPoll(){
 			code: key
 		})
 
-		lastStart = cliptext.selectionStart = defaultStart
-		lastEnd = cliptext.selectionEnd = defaultEnd
 	}
 }
 
@@ -336,8 +339,8 @@ var userMessage = {
 		lastClipboard = cliptext.value = '\n  ' + msg.text + ' \n'
 		// lets wait for a mouse up to set selection
 		//if(!isTouchDevice){
-		cliptext.selectionStart = msg.text.length?3:defaultStart
-		cliptext.selectionEnd = msg.text.length + 3
+		lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
+		lastEnd = cliptext.selectionEnd = msg.text.length + 3
 
 		//}
 		cliptext.focus()
