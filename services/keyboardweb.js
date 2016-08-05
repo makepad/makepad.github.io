@@ -12,12 +12,12 @@ var services = service.others
 var isIOSDevice = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/)
 var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints)
 
-// IOS uses a default selection and the rest does not (so start is 1)
+// IOS uses a default selection and the rest does not
 var defaultStart = isIOSDevice?2:3
 var defaultEnd = 3
 // the magic data that goes into the textarea
-var magicClip = '\n\u00A0\u00A0\u00A0\n'
-
+var magicClip = '\n\u00A0\u00A0\u00A1\n'
+var androidBackspace = '\n\u00A0\u00A1\n'
 //
 //
 // Service API
@@ -71,7 +71,8 @@ function finalizeSelection(){
 	cliptext.selectionEnd = len - 2
 }
 
-// poll for arrow keys on iOS. Yes this is horrible.
+// poll for arrow keys on iOS. Yes this is horrible, but the only way
+// we watch how the selection changes in a time loop poll
 function arrowCursorPoll(){
 	if(ignoreCursorPoll) return
 	if((lastEnd !== cliptext.selectionEnd || lastStart !== cliptext.selectionStart)){
@@ -166,7 +167,7 @@ textarea.makepad{\n\
 	opacity: 0;\n\
 	border-radius:4px;\n\
 	color: white;\n\
-	font-size:1;\n\
+	font-size:6;\n\
 	background: gray;\n\
 	-moz-appearance: none;\n\
 	appearance: none;\n\
@@ -221,6 +222,12 @@ document.body.appendChild(cliptext)
 
 if(!isTouchDevice){
 	cliptext.style.opacity = 0.
+}
+if(isIOSDevice){
+	cliptext.style.fontSize = 1
+}
+if(!isIOSDevice && isTouchDevice){
+	cliptext.style.fontSize = 12
 }
 
 cliptext.focus()
@@ -286,10 +293,13 @@ var fireFoxKeyRemap = {
 function onKeyDown(e){
 	keyDownTriggered = true
 	var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
+
 	// we only wanna block backspace 
-	if(code === 8 || code === 9) e.preventDefault()
-	if(code === 88 && (e.metaKey || e.ctrlKey))keyboardCut = true
-	if(code === 65 && (e.metaKey || e.ctrlKey))keyboardSelectAll = true		
+	if(code === 8 || code === 9) e.preventDefault() // backspace/tab
+	if(code === 88 && (e.metaKey || e.ctrlKey))keyboardCut = true // x cut
+	if(code === 65 && (e.metaKey || e.ctrlKey))keyboardSelectAll = true	 // all (select all)	
+	if(code === 90 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
+	if(code === 89 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
 
 	// move the text area for the character accent menu
 	if(!isTouchDevice && characterAccentMenuPos){
@@ -377,11 +387,11 @@ function onSelect(e){
 	}
 }
 
+// the magic 'watch input event' function on the textares
 function onInput(){
-	// if we dont have a space its a special char?
 	var value = cliptext.value
-
-	if(value.length === 4  || lastClipboard && value === magicClip){
+	// we seem to have pressed backspace on android	
+	if(value.length === 4 && value === androidBackspace){// || lastClipboard && value === magicClip){
 		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
@@ -398,14 +408,15 @@ function onInput(){
 				code: 8
 			})
 		}
+		return
 	}
+	// Something changed from our clipboard-set to now
 	if(value !== lastClipboard){
 		lastClipboard = ''
 		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
-
-		// special character popup
+		// special character accent popup 
 		if(defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
 			bus.postMessage({
 				fn:'onKeyPress',
@@ -414,7 +425,8 @@ function onInput(){
 				repeat: 1
 			})
 		}
-		// swipey and android keyboards
+		// the main keypress entry including multiple characters
+		// like swipe android keyboards 
 		else for(var i = 0, len = value.length - 2 - defaultStart; i < len; i++){
 			var charcode = value.charCodeAt(i + defaultStart)
 			var msg = {
@@ -422,10 +434,13 @@ function onInput(){
 				char:charcode,
 				repeat: 1
 			}
+			// if we are more than one character let the otherside know
+			// about this (for instance for undo handling)
 			if(len>1){
 				msg.groupIndex = i
 				msg.groupLen = len
 			}
+			// ignore newlines and magicClip values
 			if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) bus.postMessage(msg)
 		}
 	}

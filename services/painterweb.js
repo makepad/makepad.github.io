@@ -426,6 +426,7 @@ exports.onFingerMove = function(f){
 exports.onFingerUp = function(f){
 	var todo = todoIds[f.todoId]
 	if(!todo) return
+	if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return
 	// do a flick?
 	todo.xFlick = f.dx
 	todo.yFlick = f.dy

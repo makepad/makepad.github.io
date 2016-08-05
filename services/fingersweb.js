@@ -3,6 +3,16 @@ var bus = service.bus
 var canvas = service.canvas
 var services = service.others
 
+var TAP_TIME = 200
+var TAP_DIST = 5
+var isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
+
+// 
+// 
+// Service API
+// 
+//
+
 var userMessage = {
 	setCursor:function(msg){
 		canvas.style.cursor = msg.cursor
@@ -14,8 +24,31 @@ bus.onmessage = function(msg){
 	userMessage[msg.fn](msg)
 }
 
-var TAP_TIME = 200
-var TAP_DIST = 5
+// 
+// 
+// Attached listeners
+// 
+// 
+
+canvas.addEventListener('mousedown',onMouseDown)
+window.addEventListener('mouseup',onMouseUp)
+window.addEventListener('mousemove',onMouseMove)
+canvas.addEventListener('contextmenu',function(e){
+	e.preventDefault()
+	return false
+})
+canvas.addEventListener('touchstart', onTouchStart)
+window.addEventListener('touchmove',onTouchMove)
+window.addEventListener('touchend', onTouchEnd, false)
+canvas.addEventListener('touchcancel', onTouchEnd)
+canvas.addEventListener('touchleave', onTouchEnd)
+canvas.addEventListener('wheel', onWheel)
+
+// 
+// 
+// Finger map query
+// 
+// 
 
 var fingermap = {}
 var fingermapalloc = 1
@@ -43,7 +76,13 @@ function storeNewFinger(f){
 	f.digit = parseInt(digit)
 }
 
-function fingerDown(fingers){
+// 
+// 
+// Finger listeners (called by direct listeners)
+// 
+// 
+
+function onFingerDown(fingers){
 	if(!services.painter) return
 	// pick all fingers in set
 	// send 
@@ -79,7 +118,7 @@ function fingerDown(fingers){
 	}
 }
 
-function fingerMove(fingers){
+function onFingerMove(fingers){
 	if(!services.painter) return
 	for(var i = 0; i < fingers.length; i++){
 		var f = fingers[i]
@@ -112,41 +151,10 @@ function fingerMove(fingers){
 		else bus.postMessage(f)
 	}
 }
-var dx = 0, dy =0 
-function fingerHover(fingers){
-	for(var i = 0; i < fingers.length; i++){
-		var f = fingers[i]
 
-		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
-			f.pickId = pick.pickId
-			f.todoId = pick.todoId
-			f.workerId = pick.workerId
-			f.fn = 'onFingerHover'
-			services.painter.onFingerHover(f)
-			bus.postMessage(f)
-		}.bind(null, f), function(){})
-	}
-}
-
-function fingerWheel(fingers){
-	for(var i = 0; i < fingers.length; i++){
-		var f = fingers[i]
-
-		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
-			f.pickId = pick.pickId
-			f.todoId = pick.todoId
-			f.workerId = pick.workerId
-			f.fn = 'onFingerWheel'
-			services.painter.onFingerWheel(f)
-			bus.postMessage(f)
-		}.bind(null, f), function(){})
-	}
-}
-
-function fingerUp(fingers){
+function onFingerUp(fingers){
 	if(!services.painter) return
-	// lets retire a finger
-	// lets find the nearest finger
+
 	for(var i = 0; i < fingers.length; i++){
 		var f = fingers[i]
 
@@ -183,8 +191,45 @@ function fingerUp(fingers){
 		}
 	}
 }
+function onFingerHover(fingers){
+	for(var i = 0; i < fingers.length; i++){
+		var f = fingers[i]
 
-function mouseFinger(e){
+		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
+			f.pickId = pick.pickId
+			f.todoId = pick.todoId
+			f.workerId = pick.workerId
+			f.fn = 'onFingerHover'
+			services.painter.onFingerHover(f)
+			bus.postMessage(f)
+		}.bind(null, f), function(){})
+	}
+}
+
+function onFingerWheel(fingers){
+	for(var i = 0; i < fingers.length; i++){
+		var f = fingers[i]
+
+		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
+			f.pickId = pick.pickId
+			f.todoId = pick.todoId
+			f.workerId = pick.workerId
+			f.fn = 'onFingerWheel'
+			services.painter.onFingerWheel(f)
+			bus.postMessage(f)
+		}.bind(null, f), function(){})
+	}
+}
+
+
+// 
+// 
+// Direct listeners
+// 
+// 
+
+// convert mouse event to finger
+function mouseToFinger(e){
 	return [{
 		x:e.pageX,
 		y:e.pageY,
@@ -199,7 +244,7 @@ function mouseFinger(e){
 	}]
 }
 
-function touchFinger(e){
+function touchToFinger(e){
 	var f = []
 	for(var i = 0; i < e.changedTouches.length; i++){
 		var t = e.changedTouches[i]
@@ -214,78 +259,60 @@ function touchFinger(e){
 	return f
 }
 
-var down = false
-var showingInput = false
-function mousedown(e){
+var mouseIsDown = false
+
+function onMouseDown(e){
 	e.preventDefault()
 	if(e.button === 2){
 		if(services.keyboard.onMouseDown(e.pageX, e.pageY))return
 	}
-	down = true
-	fingerDown(mouseFinger(e))
+	mouseIsDown = true
+	onFingerDown(mouseToFinger(e))
 }
 
-function mouseup(e){
-	down = false
+function onMouseUp(e){
+	mouseIsDown = false
 	e.preventDefault()
 	if(e.button === 2){
 		if(services.keyboard.onMouseUp(e.pageX, e.pageY)) return
 	}
-	fingerUp(mouseFinger(e))
+	onFingerUp(mouseToFinger(e))
 }
 
-function mousemove(e){
-	if(down){
-		fingerMove(mouseFinger(e))
+function onMouseMove(e){
+	if(mouseIsDown){
+		onFingerMove(mouseToFinger(e))
 	}
 	else{
-		fingerHover(mouseFinger(e))
+		onFingerHover(mouseToFinger(e))
 	}
 }
 
-function touchstart(e){
+function onTouchStart(e){
 	e.preventDefault()
 	services.keyboard.onTouchStart(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
-	fingerDown(touchFinger(e))
+	onFingerDown(touchToFinger(e))
 }
 
-function touchmove(e){
-	fingerMove(touchFinger(e))
+function onTouchMove(e){
+	onFingerMove(touchToFinger(e))
 }
 
-function touchend(e){
-	if(exports.onTouchEndHook) exports.onTouchEndHook()
+function onTouchEnd(e){
+	if(services.audio) services.audio.onTouchEnd()
 	services.keyboard.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 	e.preventDefault()
-	fingerUp(touchFinger(e))
+	onFingerUp(touchToFinger(e))
 }
 
-var is_windows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
-
-function wheel(e){
-	var f = mouseFinger(e)
+function onWheel(e){
+	var f = mouseToFinger(e)
 	e.preventDefault()
 	var fac = 1
 	if(e.deltaMode === 1) fac = 6
 	else if(e.deltaMode === 2) fac = 400
-	else if(is_windows) fac = 0.125
+	else if(isWindows) fac = 0.125
 	f[0].xWheel = e.deltaX * fac
 	f[0].yWheel = e.deltaY * fac
-	return fingerWheel(f)
+	return onFingerWheel(f)
 }
-
-var canvas = service.canvas
-
-canvas.addEventListener('mousedown',mousedown)
-window.addEventListener('mouseup',mouseup)
-window.addEventListener('mousemove',mousemove)
-canvas.addEventListener('contextmenu',function(e){
-	e.preventDefault()
-	return false
-})
-canvas.addEventListener('touchstart', touchstart)
-window.addEventListener('touchmove',touchmove)
-window.addEventListener('touchend', touchend, false)
-canvas.addEventListener('touchcancel', touchend)
-canvas.addEventListener('touchleave', touchend)
-canvas.addEventListener('wheel', wheel)

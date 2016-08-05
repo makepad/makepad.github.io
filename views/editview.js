@@ -71,11 +71,14 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onInit = function(){
 		this.cs = new CursorSet(this)
 		this.setFocus()
-		this.text = Array(100).join("HELLO WORLD\n")
+		this.$undoStack = []
+		this.$redoStack = []
+		this.$undoGroup = 0
+		//this.text = Array(100).join("HELLO WORLD\n")
 		//console.log(this.$drawFastText.toString())
 		
 		//this.text = require('shaders/lineshader').body.toString()
-		//this.text = Array(100).join("Hello World i'm a piece of text Hello World i'm a piece of text Hello World i'm a piece of text Hello World i'm a piece of text\n")
+		this.text = Array(2).join("Hello World i'm a piece of text\nLine 2\nLine 3")
 		//this.text = "H\nO\n"
 	}
 
@@ -200,6 +203,37 @@ module.exports = require('view').extend(function EditView(proto){
 			this.editor.cursorChanged(this)
 		}
 
+		proto.moveWordRight = function(onlyEnd){
+			this.movePos(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
+		}
+
+		proto.moveWordLeft = function(onlyEnd){
+			this.movePos(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
+		}
+
+		proto.moveLineLeft = function(onlyEnd){
+			var delta = this.editor.scanLineLeft(this.end) - this.end
+			this.movePos(delta, onlyEnd)
+			return delta
+		}
+
+		proto.moveLineRight = function(onlyEnd){
+			var delta = this.editor.scanLineRight(this.end) - this.end
+			if(delta) this.movePos(delta, onlyEnd)
+		}
+
+		proto.moveLineLeftUp = function(onlyEnd){
+			var delta = this.editor.scanLineLeft(this.end) - this.end
+			if(delta) this.movePos(delta, onlyEnd)
+			else this.moveLine(-1, onlyEnd)
+		}
+
+		proto.moveLineRightDown = function(onlyEnd){
+			var delta = this.editor.scanLineRight(this.end) - this.end
+			if(delta) this.movePos(delta, onlyEnd)
+			else this.moveLine(1, onlyEnd)
+		}
+
 		proto.insertText = function(text){
    			var lo = this.lo(), hi = this.hi()
 
@@ -216,8 +250,9 @@ module.exports = require('view').extend(function EditView(proto){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.deleteRange = function(){
-			var lo = this.lo(), hi = this.hi()
+		proto.deleteRange = function(lo, hi){
+			if(lo === undefined) lo = this.lo()
+			if(hi === undefined) hi = this.hi()
 			this.editor.addUndoInsert(lo, hi)
 			this.editor.removeText(lo, hi)
 			this.cursorSet.delta -= hi - lo
@@ -237,6 +272,18 @@ module.exports = require('view').extend(function EditView(proto){
 			this.editor.cursorChanged(this)
 		}
 
+		proto.deleteWord = function(){
+			// move start to beginning of word
+			if(this.start !== this.end) return this.deleteRange()
+			this.deleteRange(this.end, this.editor.scanWordRight(this.end))
+		}
+
+		proto.deleteLine = function(){
+			// move start to beginning of word
+			if(this.start !== this.end) return this.deleteRange()
+			this.deleteRange(this.end, this.editor.scanLineRight(this.end))
+		}
+
 		proto.backSpace = function(){
 			if(this.start !== this.end) return this.deleteRange()
 			if(this.start === 0) return
@@ -248,6 +295,18 @@ module.exports = require('view').extend(function EditView(proto){
 			this.start = this.end = prev
 			this.max = this.editor.cursorRect(this.end).x
 			this.editor.cursorChanged(this)
+		}
+
+		proto.backSpaceWord = function(){
+			// move start to beginning of word
+			if(this.start !== this.end) return this.deleteRange()
+			this.deleteRange(this.editor.scanWordLeft(this.end))
+		}
+
+		proto.backSpaceLine = function(){
+			// move start to beginning of word
+			if(this.start !== this.end) return this.deleteRange()
+			this.deleteRange(this.editor.scanLineLeft(this.end))
 		}
 
 		proto.select = function(start, end){
@@ -297,6 +356,27 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.updateSet = function(){
 			this.editor.redraw()
 		}
+
+		proto.serializeToArray = function(){
+			var out = []
+			for(var i = 0; i < this.cursors.length; i++){
+				var cursor = this.cursors[i]
+				out.push(cursor.start, cursor.end, cursor.max)
+			}
+			return out
+		}
+
+		proto.deserializeFromArray = function(inp){
+			this.cursors = []
+			for(var i = 0; i < inp.length; i += 3){
+				var cursor = new Cursor(this, this.editor)
+				cursor.start = inp[i]
+				cursor.end = inp[i+1]
+				cursor.max = inp[i+2]
+				this.cursors.push(cursor)
+			}
+			this.updateSet()
+		}
 	})
 
 
@@ -344,9 +424,45 @@ module.exports = require('view').extend(function EditView(proto){
 		this.redraw()
 	}
 
+
 	proto.removeText = function(start, end){
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 		this.redraw()
+	}
+
+	function charType(char){
+		if(char.match(/\w/))return 1
+		if(char.match(/\s/))return 2
+		return 3
+	}
+
+	proto.scanWordLeft = function(start){
+		if(start == 0) return 0
+		var i = start - 1, type = 2
+		while(i>= 0 && type === 2) type = charType(this.text.charAt(i--))
+		while(i>= 0 && type === charType(this.text.charAt(i))) i--
+		return i + 1
+	}
+
+	proto.scanWordRight = function(start){
+		var i = start, type = 2
+		while(i < this.text.length && type === 2) type = charType(this.text.charAt(i++))
+		while(i < this.text.length && type === charType(this.text.charAt(i))) i++
+		return i
+	}
+
+	proto.scanLineLeft = function(start){
+		for(var i = start - 1; i >= 0; i--){
+			if(this.text.charCodeAt(i) === 10) break
+		}
+		return i + 1
+	}
+
+	proto.scanLineRight = function(start){
+		for(var i = start; i < this.text.length; i++){
+			if(this.text.charCodeAt(i) === 10) break
+		}
+		return i
 	}
 
 	// serialize all selections, lazily
@@ -375,52 +491,124 @@ module.exports = require('view').extend(function EditView(proto){
 	// Undo stack
 	//
 	//
-	proto.addUndoInsert = function(){
+
+	proto.addUndoInsert = function(start, end, stack){
+		if(!stack) stack = this.$undoStack
+		var last = stack[stack.length - 1]
+		if(last && last.type === 'insert' && last.start == end){
+			var group = last.group
+			last.group = this.$undoGroup
+			for(var i = stack.length - 2; i >= 0; i--){
+				if(stack[i].group === group) stack[i].group = this.$undoGroup
+			}
+		}
+		stack.push({
+			group: this.$undoGroup,
+			type:'insert',
+			start:start,
+			data: this.text.slice(start, end),
+			cursors: this.cs.serializeToArray()
+		})
 	}
 
-	proto.addUndoDelete = function(){
+	proto.addUndoDelete = function(start, end, stack){
+		if(!stack) stack = this.$undoStack
+		var last = stack[stack.length - 1]
+		if(last && last.type === 'delete' && last.end === start){
+			last.end += end - start
+			return
+		}
+		stack.push({
+			group: this.$undoGroup,
+			type:'delete',
+			start:start,
+			end:end,
+			cursors:this.cs.serializeToArray()
+		})
 	}
 
 	proto.forkRedo = function(){
+		if(this.$undoStack.length){
+			this.$undoStack[this.$undoStack.length -1].redo = this.$redoStack
+		}
+		this.$redoStack = []
+	}
+
+	proto.undoRedo = function(stack1, stack2){
+		if(!stack1.length) return
+		var lastGroup = stack1[stack1.length - 1].group
+		for(var i = stack1.length - 1; i >= 0; i--){
+			var item = stack1[i]
+			var lastCursors
+			if(item.group !== lastGroup) break
+			if(item.type === 'insert'){
+				this.addUndoDelete(item.start, item.start + item.data.length, stack2)
+				this.insertText(item.start, item.data)
+				lastCursors = item.cursors
+			}
+			else{
+				this.addUndoInsert(item.start, item.end, stack2)
+				this.removeText(item.start, item.end)
+				lastCursors = item.cursors
+			}
+		}
+		stack1.splice(i+1)
+		this.cs.deserializeFromArray(lastCursors)
 	}
 
 	//
 	//
-	// Key and input bindings
+	// Command keys
 	//
 	//
 
-	proto.onKeyPaste = function(k){
-		this.cs.insertText(k.text)
-		this.cs.movePos(k.text.length)
+	proto.onKeyZ =
+	proto.onKeyZ = function(k){
+		if(!k.ctrl && !k.meta) return
+		this.$undoGroup++
+		this.undoRedo(this.$undoStack, this.$redoStack)
 	}
 
-	proto.onCtrlZ =
-	proto.onMetaZ = function(){
-
+	proto.onKeyY =
+	proto.onKeyY = function(k){
+		if(!k.ctrl && !k.meta) return
+		this.$undoGroup++
+		this.undoRedo(this.$redoStack, this.$undoStack)
 	}
 
 	proto.onKeyLeftArrow = function(k){
+		if(k.ctrl || k.alt) return this.cs.moveWordLeft(k.shift)
+		if(k.meta) return this.cs.moveLineLeft(k.shift)
 		this.cs.movePos(-1, k.shift)
 	}
 
 	proto.onKeyRightArrow = function(k){
+		if(k.ctrl || k.alt) return this.cs.moveWordRight(k.shift)
+		if(k.meta) return this.cs.moveLineRight(k.shift)
 		this.cs.movePos(1, k.shift)
 	}
 
 	proto.onKeyUpArrow = function(k){
+		if(k.ctrl) return proto.onKeyPageUp()
+		if(k.alt) return this.cs.moveLineLeftUp(k.shift)
 		this.cs.moveLine(-1, k.shift)
 	}
 
 	proto.onKeyDownArrow = function(k){
+		if(k.ctrl) return proto.onKeyPageDown()
+		if(k.alt) return this.cs.moveLineRightDown(k.shift)
 		this.cs.moveLine(1, k.shift)
 	}
 
 	proto.onKeyBackSpace = function(k){
+		if(k.ctrl || k.alt) return this.cs.backSpaceWord()
+		if(k.meta) return this.cs.backSpaceLine()
 		this.cs.backSpace()
 	}
 
 	proto.onKeyDelete = function(k){
+		if(k.ctrl || k.alt) return this.cs.deleteWord()
+		if(k.meta) return this.cs.deleteLine()
 		this.cs.delete()
 	}
 
@@ -431,6 +619,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onKeyX = function(k){
 		if(!k.ctrl && !k.meta) return
+		this.$undoGroup++
 		this.cs.delete()		
 	}
 
@@ -448,9 +637,22 @@ module.exports = require('view').extend(function EditView(proto){
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
 		if(this[evname]) return this[evname](k)
 	}
+
+	//
+	//
+	// Character input
+	//
+	//
+
+	proto.onKeyPaste = function(k){
+		this.$undoGroup ++
+		this.cs.insertText(k.text)
+		this.cs.movePos(k.text.length)
+	}
 	
 	proto.onKeyPress = function(k){
 		//if(e.ctrl || e.meta || e.alt || e.shift) return
+		this.$undoGroup ++
 		var out = String.fromCharCode(k.char === 13?10:k.char)
 		// lets run over all our cursors
 		// if repeat is -1 we have to replace last char
@@ -460,6 +662,12 @@ module.exports = require('view').extend(function EditView(proto){
 		this.cs.insertText(out)
 		this.cs.movePos(1)
 	}
+
+	//
+	//
+	// touch/mouse input
+	//
+	//
 
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
