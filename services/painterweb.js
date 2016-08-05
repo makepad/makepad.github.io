@@ -2,7 +2,12 @@ var canvas = service.canvas
 var args = service.args
 var bus = service.bus
 
-// api implementations
+//
+//
+//  GL Context initialization
+//
+//
+
 var todofn = Array(100)
 var userfn = {}
 
@@ -53,6 +58,27 @@ args.timeBoot = Date.now()
 window.addEventListener('resize', resize)
 resize()
 
+//
+//
+// Extensions
+//
+//
+
+var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
+var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
+var EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
+var OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
+var OES_texture_float_linear = gl.getExtension('OES_texture_float_linear')
+var OES_texture_half_float = gl.getExtension('OES_texture_half_float')
+var OES_texture_float = gl.getExtension('OES_texture_float')
+var WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
+
+//
+//
+//  Todo execution
+//
+//
+
 var currentTodo 
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
@@ -90,6 +116,11 @@ function runTodo(todo){
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
 
+//
+//
+//  Screen picking
+//
+//
 
 var pickWindows = {}
 
@@ -118,68 +149,6 @@ function newPickWindow(width, height){
 var pickPass = false
 var pickPromises = {}
 
-// we have the first 2 digits in high performance access
-var fingerPos = [0,0,0,0]
-
-function doScroll(todo, dx, dy){
-	// do some scrolling with your finger
-	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), Math.max(0,todo.xTotal - todo.xView))
-	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), Math.max(0,todo.yTotal - todo.yView))
-
-	if(yScroll === -Infinity || xScroll === -Infinity) return
-	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
-		todo.xScroll = xScroll
-		todo.yScroll = yScroll
-		bus.postMessage({
-			fn:'onScrollTodo',
-			todoId:todo.todoId,
-			x:xScroll,
-			y:yScroll
-		})
-		return true
-	}
-}
-
-exports.updateFinger = function(pick, digit, x, y, dx, dy, flick){
-	//console.log(digit, x, y)
-	if(digit <= 1){
-		fingerPos[0] = x
-		fingerPos[1] = y
-	}
-	else if(digit == 2){
-		fingerPos[2] = x
-		fingerPos[3] = y
-	}
-	if(!pick) return
-	// do some potential scrolling on touch devices
-	var todo = todoIds[pick.todoId]
-
-	if(!todo) return
-
-	if(pick.pickId === todo.yScrollId || pick.pickId === todo.xScrollId) return
-
-	if(doScroll(todo, dx, dy) || flick === 2){
-		if(flick){
-			todo.xFlick = dx
-			todo.yFlick = dy
-		}
-		else{
-			todo.xFlick = 0
-			todo.yFlick = 0
-		}
-		requestRepaint()
-	}
-}
-
-// ok so what if you up your finger, it will need to keep repainting till scroll is up
-exports.scrollFinger = function(pick, x, y){
-	var todo = todoIds[pick.todoId]
-
-	if(!todo) return
-	if(doScroll(todo, x, y)){
-		requestRepaint()
-	}
-}
 
 // pick the screen for digit , at x and y
 exports.pickFinger = function pick(digit, x, y, immediate){
@@ -310,6 +279,12 @@ function renderPickWindow(digit, x, y, force){
 	}
 }
 
+//
+//
+//  Color buffer rendering
+//
+//
+
 var lagCompMat = [
 	1,0,0,0,
 	0,1,0,0,
@@ -397,25 +372,86 @@ function requestRepaint(){
 	}
 }
 
+//
+//
+//  Direct scrolling interface
+//
+//
+
+var fingerPos = [0,0,0,0]
+function doScroll(todo, dx, dy){
+	// do some scrolling with your finger
+	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), Math.max(0,todo.xTotal - todo.xView))
+	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), Math.max(0,todo.yTotal - todo.yView))
+
+	if(yScroll === -Infinity || xScroll === -Infinity) return
+	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
+		todo.xScroll = xScroll
+		todo.yScroll = yScroll
+		bus.postMessage({
+			fn:'onScrollTodo',
+			todoId:todo.todoId,
+			x:xScroll,
+			y:yScroll
+		})
+		return true
+	}
+}
+
+exports.onFingerDown = function(f){
+	// lets store finger pos
+	var o = f.digit <= 1?0:2
+	fingerPos[o+0] = f.x
+	fingerPos[o+1] = f.y
+	requestRepaint()
+}
+
+exports.onFingerMove = function(f){
+	// store finger pos
+	var o = f.digit <= 1?0:2
+	fingerPos[o+0] = f.x
+	fingerPos[o+1] = f.y
+
+	var todo = todoIds[f.todoId]
+	if(!todo) return
+
+	// dont scroll
+	if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return	
+
+	if(doScroll(todo, f.dx, f.dy)){
+		requestRepaint()
+	}
+}
+
+exports.onFingerUp = function(f){
+	var todo = todoIds[f.todoId]
+	if(!todo) return
+	// do a flick?
+	todo.xFlick = f.dx
+	todo.yFlick = f.dy
+	requestRepaint()
+}
+
+exports.onFingerHover = function(f){
+	var o = f.digit <= 1?0:2
+	fingerPos[o+0] = f.x
+	fingerPos[o+1] = f.y
+	requestRepaint()
+}
+
+exports.onFingerWheel = function(f){
+	var todo = todoIds[f.todoId]
+	if(!todo) return
+	if(doScroll(todo, f.xWheel, f.yWheel)){
+		requestRepaint()
+	}
+}
+
+
 bus.onMessage = function(msg){
 	userfn[msg.fn](msg)
 }
 
-
-//
-//
-// Extensions
-//
-//
-
-var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
-var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
-var EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
-var OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
-var OES_texture_float_linear = gl.getExtension('OES_texture_float_linear')
-var OES_texture_half_float = gl.getExtension('OES_texture_half_float')
-var OES_texture_float = gl.getExtension('OES_texture_float')
-var WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
 
 //
 //

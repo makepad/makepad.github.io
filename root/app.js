@@ -80,34 +80,34 @@ module.exports = require('view').extend(function App(proto, base){
 
 		// dispatch mouse events
 		fingers.onFingerDown = function(msg){
-			fingerMessage('onFingerDown', msg.pick.todoId, msg.pick.pickId, msg)
+			fingerMessage('onFingerDown', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerMove = function(msg){
-			fingerMessage('onFingerMove', msg.pick.todoId, msg.pick.pickId, msg)
+			fingerMessage('onFingerMove', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerUp = function(msg){
-			fingerMessage('onFingerUp', msg.pick.todoId, msg.pick.pickId, msg)
+			fingerMessage('onFingerUp', msg.todoId, msg.pickId, msg)
 		}
 
 		var lastTodoId = 0
 		var lastPickId = 0
 		fingers.onFingerHover = function(msg){
 			// we want mouse in/out messages to go to the right view and stamp.
-			var todoId = msg.pick.todoId
-			var pickId = msg.pick.pickId
+			var todoId = msg.todoId
+			var pickId = msg.pickId
 			if(todoId !== lastTodoId || pickId !== lastPickId){
 				fingerMessage('onFingerOut', lastTodoId, lastPickId, msg)
-				fingerMessage('onFingerOver', msg.pick.todoId, msg.pick.pickId, msg)
+				fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
 			}
 			lastTodoId = todoId
 			lastPickId = pickId
-			fingerMessage('onFingerHover', msg.pick.todoId, msg.pick.pickId, msg)
+			fingerMessage('onFingerHover', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerWheel = function(msg){
-			fingerMessage('onFingerWheel', msg.pick.todoId, msg.pick.pickId, msg)
+			fingerMessage('onFingerWheel', msg.todoId, msg.pickId, msg)
 		}
 
 		keyboard.onKeyDown = function(msg){
@@ -156,8 +156,8 @@ module.exports = require('view').extend(function App(proto, base){
 		keyboard.setClipboardText(text)
 	}
 
-	proto.captureRightMouse = function(capture){
-		keyboard.captureRightMouse(capture)
+	proto.useSystemEditMenu = function(capture){
+		keyboard.useSystemEditMenu(capture)
 	}
 
 	proto.setCharacterAccentMenuPos = function(x,y){

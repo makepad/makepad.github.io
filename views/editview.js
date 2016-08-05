@@ -71,7 +71,7 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onInit = function(){
 		this.cs = new CursorSet(this)
 		this.setFocus()
-		this.text = "HELLO WORLD"
+		this.text = Array(100).join("HELLO WORLD\n")
 		//console.log(this.$drawFastText.toString())
 		
 		//this.text = require('shaders/lineshader').body.toString()
@@ -81,10 +81,10 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onHasFocus = function(){
 		if(this.hasFocus){
-			this.app.captureRightMouse(true)
+			this.app.useSystemEditMenu(true)
 		}
 		else{
-			this.app.captureRightMouse(false)
+			this.app.useSystemEditMenu(false)
 		}
 		this.redraw()
 	}
@@ -97,10 +97,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onDraw = function(){
 
-		this.beginBg({
-			w:this.$w,
-			h:this.$h
-		})
+		this.beginBg(this.viewGeom)
 
 		this.drawSelect()
 
@@ -393,9 +390,9 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	//
 
-	proto.onKeyPaste = function(e){
-		this.cs.insertText(e.text)
-		this.cs.movePos(e.text.length)
+	proto.onKeyPaste = function(k){
+		this.cs.insertText(k.text)
+		this.cs.movePos(k.text.length)
 	}
 
 	proto.onCtrlZ =
@@ -403,73 +400,72 @@ module.exports = require('view').extend(function EditView(proto){
 
 	}
 
-	proto.onKeyLeftArrow = function(e){
-		this.cs.movePos(-1, e.shift)
+	proto.onKeyLeftArrow = function(k){
+		this.cs.movePos(-1, k.shift)
 	}
 
-	proto.onKeyRightArrow = function(e){
-		this.cs.movePos(1, e.shift)
+	proto.onKeyRightArrow = function(k){
+		this.cs.movePos(1, k.shift)
 	}
 
-	proto.onKeyUpArrow = function(e){
-		this.cs.moveLine(-1, e.shift)
+	proto.onKeyUpArrow = function(k){
+		this.cs.moveLine(-1, k.shift)
 	}
 
-	proto.onKeyDownArrow = function(e){
-		this.cs.moveLine(1, e.shift)
+	proto.onKeyDownArrow = function(k){
+		this.cs.moveLine(1, k.shift)
 	}
 
-	proto.onKeyBackSpace = function(e){
+	proto.onKeyBackSpace = function(k){
 		this.cs.backSpace()
 	}
 
-	proto.onKeyDelete = function(e){
+	proto.onKeyDelete = function(k){
 		this.cs.delete()
 	}
 
-	proto.onKeyEnter = function(e){
+	proto.onKeyEnter = function(k){
 		this.cs.insertText('\n')
 		this.cs.movePos(1)
 	}
 
-	proto.onKeyX = function(e){
-		if(!e.ctrl && !e.meta) return
+	proto.onKeyX = function(k){
+		if(!k.ctrl && !k.meta) return
 		this.cs.delete()		
 	}
 
-	proto.onKeyA = function(e){
-		if(!e.ctrl && !e.meta) return
+	proto.onKeyA = function(k){
+		if(!k.ctrl && !k.meta) return
 		// select all
 		var cur = this.cs.clearCursors()
 		cur.select(0, this.textLength())
 	}
 
-	proto.onKeyDown = function(e){
+	proto.onKeyDown = function(k){
 		// lets trigger an event
-		var name = e.name
+		var name = k.name
 		var prefix = ''
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
-		if(this[evname]) return this[evname](e)
+		if(this[evname]) return this[evname](k)
 	}
 	
-	proto.onKeyPress = function(e){
+	proto.onKeyPress = function(k){
 		//if(e.ctrl || e.meta || e.alt || e.shift) return
-		var out = String.fromCharCode(e.char === 13?10:e.char)
+		var out = String.fromCharCode(k.char === 13?10:k.char)
 		// lets run over all our cursors
 		// if repeat is -1 we have to replace last char
-		if(e.special){
+		if(k.special){
 			this.cs.backSpace()			
 		}
 		this.cs.insertText(out)
 		this.cs.movePos(1)
 	}
 
-	proto.onFingerDown = function(e){
-		if(e.digit!== 1)return
-		if(e.button !== 1) return
+	proto.onFingerDown = function(f){
+		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		this.setFocus() 
 
-		if(e.meta){
+		if(f.meta){
 			this.fingerCursor = this.cs.addCursor()
 		}
 		else{
@@ -477,19 +473,18 @@ module.exports = require('view').extend(function EditView(proto){
 			this.fingerCursor = this.cs.clearCursors()
 			this.fingerCursor.start = oldstart
 		}
-		this.fingerCursor.moveTo(e.x, e.y, e.shift)	
+		this.fingerCursor.moveTo(f.x, f.y, f.shift)	
 		this.redraw()
 	}
 
-	proto.onFingerMove = function(e){
-		if(e.digit!== 1) return
-		if(e.button !== 1) return
-		this.fingerCursor.moveTo(e.x, e.y, true)
+	proto.onFingerMove = function(f){
+		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
+		this.fingerCursor.moveTo(f.x, f.y, true)
 		this.redraw()
 	}
 
-	proto.onFingerUp = function(e){
-		if(e.digit!== 1)return
+	proto.onFingerUp = function(f){
+		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		this.fingerCursor = undefined
 	}
 

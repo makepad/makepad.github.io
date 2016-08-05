@@ -36,9 +36,9 @@ keyboard.setClipboardText = function(text){
 	})
 }
 
-keyboard.captureRightMouse = function(capture){
+keyboard.useSystemEditMenu = function(capture){
 	service.bus.postMessage({
-		fn:'captureRightMouse',
+		fn:'useSystemEditMenu',
 		capture:capture
 	})
 }
