@@ -51,10 +51,10 @@ keyboard.setCharacterAccentMenuPos = function(x, y){
 }
 
 
-keyboard.setSelectCursor = function(x, y, h){
+keyboard.setKeyboardFocus = function(focus){
 	service.bus.postMessage({
-		fn:'setSelectCursor',
-		x:x,y:y,h:h
+		fn:'setKeyboardFocus',
+		focus:focus
 	})
 }
 

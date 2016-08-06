@@ -132,6 +132,17 @@ module.exports = require('view').extend(function App(proto, base){
 			if(focus && focus.onKeyPaste) focus.onKeyPaste(msg)
 		}
 
+		keyboard.onKeyboardOpen = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyboardOpen) focus.onKeyboardOpen(msg)
+		}
+
+		keyboard.onKeyboardClose = function(msg){
+			var focus = app.$focusView
+			if(focus && focus.onKeyboardClose) focus.onKeyboardClose(msg)
+		}
+
+
 		painter.onResize = function(){
 			app.$redrawViews()
 		}
@@ -164,6 +175,10 @@ module.exports = require('view').extend(function App(proto, base){
 
 	proto.setCharacterAccentMenuPos = function(x,y){
 		keyboard.setCharacterAccentMenuPos(x,y)
+	}
+
+	proto.setKeyboardFocus = function(focus){
+		keyboard.setKeyboardFocus(focus)
 	}
 
 	proto._onDestroy = function(){

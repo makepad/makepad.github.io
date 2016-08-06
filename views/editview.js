@@ -1,5 +1,5 @@
 module.exports = require('view').extend(function EditView(proto){
-
+	var painter = require('painter')
 	proto.props = {
 	}
 
@@ -76,7 +76,7 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$undoGroup = 0
 		this.text = ''
 		for(var i= 0 ;i <100;i++)
-			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
+			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input, mobile keyboard input, mobile keyboard input\n"
 	}
 
 	proto.onHasFocus = function(){
@@ -166,6 +166,10 @@ module.exports = require('view').extend(function EditView(proto){
 
 		proto.span = function(){
 			return abs(this.start - this.end)
+		}
+
+		proto.hasSelection = function(){
+			return this.start !== this.end
 		}
 
 		proto.moveDelta = function(delta, onlyEnd){
@@ -431,7 +435,6 @@ module.exports = require('view').extend(function EditView(proto){
 		this.redraw()
 	}
 
-
 	proto.removeText = function(start, end){
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 		this.redraw()
@@ -472,6 +475,23 @@ module.exports = require('view').extend(function EditView(proto){
 		return i
 	}
 
+	proto.showLastCursor = function(){
+		if(!this.cs) return
+		require.log(painter.h)
+
+		// lets set the character accent menu pos
+		var cursor = this.cs.cursors[this.cs.cursors.length - 1]
+		var rd = this.$readOffsetText(cursor.end)
+
+		// ok so lets move the thing into view
+		this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
+
+		this.app.setCharacterAccentMenuPos(
+			rd.x + 0.5 * rd.advance - this.todo.xScroll, 
+			rd.y - this.todo.yScroll
+		)
+	}
+
 	// serialize all selections, lazily
 	proto.cursorChanged = function(){
 		if(!this.$selChangeTimer) this.$selChangeTimer = setTimeout(function(){
@@ -483,17 +503,7 @@ module.exports = require('view').extend(function EditView(proto){
 			}
 			this.app.setClipboardText(txt)
 
-			// lets set the character accent menu pos
-			var cursor = this.cs.cursors[this.cs.cursors.length - 1]
-			var rd = this.$readOffsetText(cursor.end)
-
-			// ok so lets move the thing into view
-			this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
-
-			this.app.setCharacterAccentMenuPos(
-				rd.x + 0.5 * rd.advance - this.todo.xScroll, 
-				rd.y - this.todo.yScroll
-			)
+			this.showLastCursor()
 
 			this.redraw()
 		}.bind(this))
@@ -668,6 +678,12 @@ module.exports = require('view').extend(function EditView(proto){
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
 		if(this[evname]) return this[evname](k)
 	}
+	
+	// move the cursor into view when the keyboard opens on mobile
+	proto.onKeyboardOpen = function(){
+		// scroll it into view
+		this.showLastCursor()
+	}
 
 	//
 	//
@@ -702,6 +718,8 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
+		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
+
 		this.setFocus() 
 
 		if(f.meta){
@@ -712,23 +730,33 @@ module.exports = require('view').extend(function EditView(proto){
 			this.fingerCursor = this.cs.clearCursors()
 			this.fingerCursor.start = oldstart
 		}
-		this.fingerCursor.moveTo(f.x, f.y, f.shift)	
+		var touchdy = f.touch?-20:0
+		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
 		this.redraw()
 	}
 
 	proto.onFingerMove = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
-		this.fingerCursor.moveTo(f.x, f.y, true)
+		var touchdy = f.touch?-20:0
+		if(f.touch && f.tapCount < 1){
+			return
+			//if(this.cs.cursors[0].hasSelection()) return
+			//return this.fingerCursor.moveTo(f.x, f.y+touchdy, false)
+		}
+		this.fingerCursor.moveTo(f.x, f.y+touchdy, true)
 		this.redraw()
 	}
 
 	proto.onFingerUp = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		this.fingerCursor = undefined
-	}
-
-	proto.onFingerUp = function(){
-
+		var touchdy = f.touch?-20:0
+		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){
+			var cursor = this.cs.clearCursors()
+			cursor.moveTo(f.x, f.y+touchdy, false)
+			this.app.setKeyboardFocus(true)
+		}
+		this.redraw()
 	}
 
 })

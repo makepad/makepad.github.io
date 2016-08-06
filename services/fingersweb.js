@@ -3,8 +3,8 @@ var bus = service.bus
 var canvas = service.canvas
 var services = service.others
 
-var TAP_TIME = 200
-var TAP_DIST = 5
+var TAP_TIME = 350
+var TAP_DIST = 50
 var isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
 
 // 
@@ -51,6 +51,7 @@ canvas.addEventListener('wheel', onWheel)
 // 
 
 var fingermap = {}
+var tapmap = {}
 var fingermapalloc = 1
 
 function nearestFinger(x, y){
@@ -98,10 +99,19 @@ function onFingerDown(fingers){
 			f.pickId = pick.pickId
 			f.todoId = pick.todoId
 			f.workerId = pick.workerId
-			f.sx = f.x
-			f.sy = f.y
+			f.lx = f.sx = f.x
+			f.ly = f.sy = f.y
 			f.dx = 0
 			f.dy = 0
+
+			var oldf = tapmap[f.digit]
+			if(oldf){
+				var dx = f.x - oldf.x, dy = f.y - oldf.y
+				var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < TAP_DIST
+				if(isTap) f.tapCount = oldf.tapCount
+				else f.tapCount = 0
+			}
+			else f.tapCount = 0
 
 			services.painter.onFingerDown(f)
 
@@ -132,8 +142,8 @@ function onFingerMove(fingers){
 		f.sx = oldf.sx
 		f.sy = oldf.sy
 
-		oldf.dx = f.dx = isNaN(oldf.lx)?0:oldf.lx - f.x
-		oldf.dy = f.dy = isNaN(oldf.ly)?0:oldf.ly - f.y
+		oldf.dx = f.dx = oldf.lx - f.x
+		oldf.dy = f.dy = oldf.ly - f.y
 		oldf.lx = f.x
 		oldf.ly = f.y
 		f.fn = 'onFingerMove'
@@ -141,6 +151,7 @@ function onFingerMove(fingers){
 		f.workerId = oldf.workerId
 		f.todoId = oldf.todoId
 		f.pickId = oldf.pickId
+		f.tapCount = oldf.tapCount
 
 		services.painter.onFingerMove(f)
 
@@ -175,12 +186,18 @@ function onFingerUp(fingers){
 		f.workerId = oldf.workerId
 		f.dx = oldf.dx
 		f.dy = oldf.dy
-		// remove the old from the finger set
+
 		fingermap[oldf.digit] = undefined
 
-		services.painter.onFingerUp(f)
+		// store it for tap counting
+		tapmap[oldf.digit] = f
+		var dx = f.sx - f.x
+		var dy = f.sy - f.y
+		var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < TAP_DIST
+		if(isTap) f.tapCount = oldf.tapCount + 1
+		else f.tapCount = 0
 
-		f.isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(f.dx*f.dx+f.dy*f.dy) < TAP_DIST
+		services.painter.onFingerUp(f)
 
 		if(!oldf.todoId){
 			var queue = oldf.queue || (oldf.queue = [])
@@ -189,6 +206,8 @@ function onFingerUp(fingers){
 		else{
 			bus.postMessage(f)
 		}
+
+		return f.tapCount
 	}
 }
 function onFingerHover(fingers){
@@ -296,9 +315,9 @@ function onTouchMove(e){
 
 function onTouchEnd(e){
 	if(services.audio) services.audio.onTouchEnd()
-	services.keyboard.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 	e.preventDefault()
-	onFingerUp(touchToFinger(e))
+	var tapCount = onFingerUp(touchToFinger(e))
+	services.keyboard.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY, tapCount)
 }
 
 function onWheel(e){
@@ -308,7 +327,6 @@ function onWheel(e){
 	var fac = 1
 	if(e.deltaMode === 1) fac = 6
 	else if(e.deltaMode === 2) fac = 400
-	else if(isWindows) fac = 0.125
 	f[0].xWheel = e.deltaX * fac
 	f[0].yWheel = e.deltaY * fac
 	return onFingerWheel(f)

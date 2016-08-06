@@ -35,17 +35,19 @@ var lastEnd = 0, lastStart = 0
 var useSystemEditMenu = false
 var characterAccentMenuPos
 var arrowCursorPollInterval
+var hasKeyboardFocus
 
 var userMessage = {
 	setClipboardText:function(msg){
 		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
 
 		// lets wait for a mouse up to set selection
-		if(isIOSDevice || !isTouchDevice){
+		if(hasKeyboardFocus || !isTouchDevice){
+
 			lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
 			lastEnd = cliptext.selectionEnd = msg.text.length + 3
 		}
-		cliptext.focus()
+		//cliptext.focus()
 	},
 	useSystemEditMenu:function(msg){
 		useSystemEditMenu = msg.capture
@@ -59,12 +61,18 @@ var userMessage = {
 	},
 	setCharacterAccentMenuPos:function(msg){
 		characterAccentMenuPos = msg
+	},
+	setKeyboardFocus:function(msg){
+		hasKeyboardFocus = msg.focus
+		if(msg.focus) cliptext.focus()
+		else cliptext.blur()
 	}
 
 }
 
 // finalize the selection (selection is lazy sometimes)
 function finalizeSelection(){
+
 	var len = cliptext.value.length
 	if(len > 5) cliptext.selectionStart = 3
 	else cliptext.selectionStart = defaultStart
@@ -106,39 +114,6 @@ function arrowCursorPoll(){
 	}
 }
 
-//
-//
-// Orientation and keyboard open
-//
-//
-
-canvas.addEventListener('focus', function(){
-	cliptext.focus()
-})
-
-var defaultHeight = window.innerHeight
-// ok we have to differentiate rotation and keyboard opening.
-window.addEventListener('orientationchange', function(e){
-	defaultHeight = window.innerHeight
-	bus.postMessage({
-		fn:'onOrientationChange'
-	})
-})
-
-if(isTouchDevice) window.addEventListener('resize', function(e){
-	if(window.innerHeight < defaultHeight){
-		defaultClipTextPos()
-		bus.postMessage({
-			fn:'onKeyboardOpen'
-		})
-	}
-	else{
-		hideClipTextPos()
-		bus.postMessage({
-			fn:'onKeyboardClose'
-		})
-	}
-})
 
 //
 //
@@ -218,8 +193,6 @@ if(isTouchDevice){
 	document.body.appendChild(cliptextWrapper)
 }
 
-document.body.appendChild(cliptext)
-
 if(!isTouchDevice){
 	cliptext.style.opacity = 0.
 }
@@ -230,11 +203,74 @@ if(!isIOSDevice && isTouchDevice){
 	cliptext.style.fontSize = 12
 }
 
-cliptext.focus()
+//cliptext.focus()
 cliptext.value = magicClip
 cliptext.selectionStart = defaultStart
 cliptext.selectionEnd = defaultEnd
 
+document.body.appendChild(cliptext)
+
+//
+//
+// Orientation and keyboard open
+//
+//
+
+//canvas.addEventListener('focus', function(){
+	//cliptext.focus()
+//})
+
+var defaultHeight = window.innerHeight
+// ok we have to differentiate rotation and keyboard opening.
+window.addEventListener('orientationchange', function(e){
+
+	defaultHeight = window.innerHeight
+	cliptext.blur()
+	if(hasKeyboardFocus){
+		bus.postMessage({
+			fn:'onKeyboardClose'
+		})
+		hasKeyboardFocus = false
+	}
+	if(isIOSDevice){
+		document.body.scrollLeft = 0
+		document.body.scrollTop = 0
+		services.painter.resizeCanvas()
+	}
+	bus.postMessage({
+		fn:'onOrientationChange'
+	})
+})
+
+if(isTouchDevice)window.addEventListener('resize', function(e){
+	if(window.innerHeight < defaultHeight){
+		defaultClipTextPos()
+		hasKeyboardFocus = true
+		bus.postMessage({
+			fn:'onKeyboardOpen'
+		})
+	}
+	else{
+		hideClipTextPos()
+		cliptext.blur()
+		hasKeyboardFocus = false
+		bus.postMessage({
+			fn:'onKeyboardClose'
+		})
+	}
+})
+
+if(isIOSDevice){
+	document.addEventListener('focusout', function(e) {
+		hideClipTextPos()
+		cliptext.blur()
+		hasKeyboardFocus = false
+		services.painter.resizeCanvas()
+		bus.postMessage({
+			fn:'onKeyboardClose'
+		})
+	})
+}
 //
 //
 // Text area position
@@ -306,8 +342,7 @@ function onKeyDown(e){
 		cliptext.style.left = characterAccentMenuPos.x + 10
 		cliptext.style.top = characterAccentMenuPos.y + 12
 	}
-
-	cliptext.focus()
+	//cliptext.focus()
 	bus.postMessage({
 		fn:'onKeyDown',
 		repeat: e.repeat,
@@ -493,21 +528,40 @@ var ignoreCursorPoll = false
 
 exports.onTouchStart = function(x, y){
 	ignoreCursorPoll = true
-
-	if(isIOSDevice){
-		// move the cliptext
-		cliptext.style.left = x - 10
-		cliptext.style.top = y - 10
-		cliptext.focus()
-		setTimeout(function(){
-			defaultClipTextPos()
-		}, 0)
-	}
 	return true
 }
 
-exports.onTouchEnd = function(x, y){
+exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
+	if(isIOSDevice && tapCount === 1){
+		//console.log(hasKeyboardFocus)
+		//if(!hasKeyboardFocus) services.painter.disableCanvas()
+		// move the cliptext
+		cliptext.style.left = x - 10
+		cliptext.style.top = document.body.offsetHeight - 40// make sure we scroll
+		cliptext.focus()
+		var itvpoll = setInterval(function(){
+			var st = document.body.scrollTop
+			if(st!==0){
+				clearInterval(itvpoll)
+				// lets clear the canvas
+				services.painter.resizeCanvas(st)
+				if(!hasKeyboardFocus){
+					hasKeyboardFocus = true
+				}
+				bus.postMessage({
+					fn:'onKeyboardOpen'
+				})
+
+				document.body.scrollTop = 0
+				document.body.scrollLeft = 0
+				
+				//services.painter.enableCanvas()			
+				
+			}
+		},16)
+		defaultClipTextPos()
+	}
 	// lets make the selection now
-	finalizeSelection()
+	if(hasKeyboardFocus) finalizeSelection()
 }

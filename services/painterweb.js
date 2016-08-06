@@ -25,13 +25,13 @@ var gl = canvas.getContext('webgl', options) ||
          canvas.getContext('webgl-experimental', options) ||
          canvas.getContext('experimental-webgl', options)
 
-function resize(){
+function resize(dy){
 	var pixelRatio = window.devicePixelRatio
 	var w, h
 	// if a canvas is fullscreen we should size it to fullscreen
 	if(canvas.getAttribute("fullpage")){
-		w = document.body.offsetWidth
-		h = document.body.offsetHeight
+		w = document.body.offsetWidth 
+		h = document.body.offsetHeight- (dy || 0)
 	}
 	else{
 		w = canvas.offsetWidth
@@ -55,7 +55,24 @@ function resize(){
 	requestRepaint()
 }
 args.timeBoot = Date.now()
-window.addEventListener('resize', resize)
+window.addEventListener('resize', resize.bind(null, 0))
+
+exports.resizeCanvas = function(dy){
+	resize(dy)
+}
+
+var showAgain = false
+exports.disableCanvas = function(dy){
+	showAgain = false
+	gl.clear(gl.COLOR_BUFFER_BIT)
+	canvas.style.visibility = 'hidden'
+}
+
+exports.enableCanvas = function(dy){
+	showAgain = true
+	requestRepaint()
+}
+
 resize()
 
 //
@@ -335,6 +352,10 @@ function renderColor(framebuffer){
 
 var repaintPending = false
 function repaint(time){
+
+	if(showAgain)canvas.style.visibility = 'visible'
+	showAgain = false
+
 	repaintTime = (Date.now() - args.timeBoot) / 1000
 
 	repaintPending = false
@@ -483,6 +504,7 @@ exports.onFingerMove = function(f){
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
 
+	if(f.tapCount > 0) return
 	var todo = todoIds[f.todoId]
 	if(!todo) return
 
