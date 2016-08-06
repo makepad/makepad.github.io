@@ -75,8 +75,8 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$redoStack = []
 		this.$undoGroup = 0
 		this.text = ''
-		for(var i= 0 ;i <100;i++)
-			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input, mobile keyboard input, mobile keyboard input\n"
+		for(var i= 0 ;i <25;i++)
+			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
 	}
 
 	proto.onHasFocus = function(){
