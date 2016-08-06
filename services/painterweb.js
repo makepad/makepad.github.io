@@ -407,7 +407,7 @@ function processScrollState(todo){
 		var xs = todo.xScroll
 		if(todo.xScrollTo !== undefined){
 			xs = (todo.xScroll*(1.-todo.scrollToSpeed) + todo.xScrollTo*todo.scrollToSpeed)
-			if(Math.abs(todo.xcroll - todo.xScrollTo) < 1){
+			if(Math.abs(todo.xScroll - todo.xScrollTo) < 1){
 				todo.xScrollTo = undefined
 			}
 		}
@@ -491,7 +491,8 @@ exports.onFingerMove = function(f){
 		return
 	}
 	if(isScrollBarMove === 2){
-		doScroll(todo, ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal - scrollDelta, todo.yScroll)
+		var xs =  ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal - scrollDelta
+		doScroll(todo,xs, todo.yScroll)
 		return
 	}
 
