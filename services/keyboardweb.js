@@ -36,7 +36,7 @@ var useSystemEditMenu = false
 var characterAccentMenuPos
 var arrowCursorPollInterval
 var hasKeyboardFocus
-
+var ignoreFirstIosClipboard
 var userMessage = {
 	setClipboardText:function(msg){
 		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
@@ -44,8 +44,9 @@ var userMessage = {
 		// lets wait for a mouse up to set selection
 		if(hasKeyboardFocus || !isTouchDevice){
 
-			lastStart = cliptext.selectionStart = msg.text.length?3:defaultStart
+			lastStart = cliptext.selectionStart = msg.text.length?3:ignoreFirstIosClipboard?3:defaultStart
 			lastEnd = cliptext.selectionEnd = msg.text.length + 3
+			ignoreFirstIosClipboard = false
 		}
 		//cliptext.focus()
 	},
@@ -533,8 +534,9 @@ exports.onTouchStart = function(x, y){
 
 exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
-	if(isIOSDevice && tapCount === 1){
-		document.body.scrollTop = document.body.offsetHeight
+	if(isIOSDevice && tapCount === 1 && !hasKeyboardFocus){
+		ignoreFirstIosClipboard = true
+		document.body.scrollTop = document.body.offsetHeight 
 		cliptext.style.left = x - 10
 		cliptext.style.top = document.body.offsetHeight - 40// make sure we scroll
 		cliptext.focus()
@@ -544,9 +546,7 @@ exports.onTouchEnd = function(x, y, tapCount){
 				clearInterval(itvpoll)
 				// lets clear the canvas
 				services.painter.resizeCanvas(st)
-				if(!hasKeyboardFocus){
-					hasKeyboardFocus = true
-				}
+				hasKeyboardFocus = true
 				bus.postMessage({
 					fn:'onKeyboardOpen'
 				})
