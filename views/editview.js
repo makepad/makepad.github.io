@@ -642,18 +642,21 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onKeyBackSpace = function(k){
+		this.$undoGroup++
 		if(k.ctrl || k.alt) return this.cs.backSpaceWord()
 		if(k.meta) return this.cs.backSpaceLine()
 		this.cs.backSpace()
 	}
 
 	proto.onKeyDelete = function(k){
+		this.$undoGroup++
 		if(k.ctrl || k.alt) return this.cs.deleteWord()
 		if(k.meta) return this.cs.deleteLine()
 		this.cs.delete()
 	}
 
 	proto.onKeyEnter = function(k){
+		this.$undoGroup++
 		this.cs.insertText('\n')
 		this.cs.moveDelta(1)
 	}
