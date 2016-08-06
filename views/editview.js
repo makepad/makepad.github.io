@@ -388,6 +388,30 @@ module.exports = require('view').extend(function EditView(proto){
 			}
 			this.updateSet()
 		}
+
+		proto.fuse = function(){
+
+			this.cursors.sort(function(a,b){ return (a.start<a.end?a.start:a.end) < (b.start<b.end?b.start:b.end)? -1: 1})
+			// lets do single pass
+			for(var i = 0; i < this.cursors.length - 1;){
+				var cur = this.cursors[i]
+				var nxt = this.cursors[i + 1]
+				if(cur.hi() >= nxt.lo()){
+					if(cur.hi() <= nxt.hi()){
+						if(nxt.end < nxt.start){
+							cur.end = cur.lo()
+							cur.start = nxt.hi()
+						}
+						else{
+							cur.start = cur.lo()
+							cur.end = nxt.hi()
+						}
+					}
+					this.cursors.splice(i+1, 1)
+				}
+				else i++
+			}
+		}
 	})
 
 
@@ -477,7 +501,6 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.showLastCursor = function(){
 		if(!this.cs) return
-		require.log(painter.h)
 
 		// lets set the character accent menu pos
 		var cursor = this.cs.cursors[this.cs.cursors.length - 1]
@@ -496,6 +519,10 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.cursorChanged = function(){
 		if(!this.$selChangeTimer) this.$selChangeTimer = setTimeout(function(){
 			this.$selChangeTimer = undefined
+
+			// lets fuse em
+			this.cs.fuse()
+
 			var txt = ''
 			for(var i = 0; i < this.cs.cursors.length; i++){
 				var cursor = this.cs.cursors[i]
@@ -683,10 +710,9 @@ module.exports = require('view').extend(function EditView(proto){
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
 		if(this[evname]) return this[evname](k)
 	}
-	
+
 	// move the cursor into view when the keyboard opens on mobile
 	proto.onKeyboardOpen = function(){
-		// scroll it into view
 		this.showLastCursor()
 	}
 
@@ -724,13 +750,6 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
-		
-		if(f.tapCount === 1){ // select word under finger
-
-		}
-		else if(f.tapCount === 2){ // select line
-
-		}
 
 		this.setFocus() 
 
@@ -742,8 +761,20 @@ module.exports = require('view').extend(function EditView(proto){
 			this.fingerCursor = this.cs.clearCursors()
 			this.fingerCursor.start = oldstart
 		}
+
 		var touchdy = f.touch?-20:0
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
+
+
+		if(f.tapCount%3 === 1){ // select word under finger
+			var x = this.fingerCursor.end
+			this.fingerCursor.select(this.scanWordLeft(x), this.scanWordRight(x))
+		}
+		else if(f.tapCount%3 === 2){ // select line
+			var x = this.fingerCursor.end
+			this.fingerCursor.select(this.scanLineLeft(x), this.scanLineRight(x)+1)
+		}
+
 		this.redraw()
 	}
 

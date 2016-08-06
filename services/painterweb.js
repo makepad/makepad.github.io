@@ -40,6 +40,8 @@ function resize(dy){
 
 	var sw = canvas.width = w * pixelRatio
 	var sh = canvas.height = h * pixelRatio
+
+	// lets delay this to repaint?
 	canvas.style.width = w + 'px'
 	canvas.style.height = h + 'px'
 
@@ -55,7 +57,11 @@ function resize(dy){
 	requestRepaint()
 }
 args.timeBoot = Date.now()
-window.addEventListener('resize', resize.bind(null, 0))
+
+window.addEventListener('resize', function(){
+	resize()
+	service.others.keyboard.onWindowResize()
+})
 
 exports.resizeCanvas = function(dy){
 	resize(dy)

@@ -243,23 +243,25 @@ window.addEventListener('orientationchange', function(e){
 	})
 })
 
-if(isTouchDevice)window.addEventListener('resize', function(e){
-	if(window.innerHeight < defaultHeight){
-		defaultClipTextPos()
-		hasKeyboardFocus = true
-		bus.postMessage({
-			fn:'onKeyboardOpen'
-		})
+exports.onWindowResize = function(){
+	if(isTouchDevice){
+		if(window.innerHeight < defaultHeight){
+			defaultClipTextPos()
+			hasKeyboardFocus = true
+			bus.postMessage({
+				fn:'onKeyboardOpen'
+			})
+		}
+		else{
+			hideClipTextPos()
+			cliptext.blur()
+			hasKeyboardFocus = false
+			bus.postMessage({
+				fn:'onKeyboardClose'
+			})
+		}
 	}
-	else{
-		hideClipTextPos()
-		cliptext.blur()
-		hasKeyboardFocus = false
-		bus.postMessage({
-			fn:'onKeyboardClose'
-		})
-	}
-})
+}
 
 if(isIOSDevice){
 	document.addEventListener('focusout', function(e) {
