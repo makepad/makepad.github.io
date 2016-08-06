@@ -32,11 +32,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 
 		wrapping:{styleLevel:1, value:'word'},
 		margin:{styleLevel:1, value:[0,0,0,0]},
+		noBounds: {styleLevel:1, value:0},
 		text:{styleLevel:1, value:''},
-
-		lockScroll:{noTween:1, value:1.},
-		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
 		x1:{noStyle:1, noTween:1, value:0},
 		y1:{noStyle:1, noTween:1, value:0},
@@ -270,12 +267,24 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					}
 					off = len
 				}
+				else if(wrapping === 'line'){
+					for(var b = off; b < len; b++){
+						var unicode = b === elen? 32: txt.charCodeAt(b)
+						var g = glyphs[unicode] || glyphs[63]
+						width += g.advance * fontSize
+						if(b >= off && unicode===10){
+							b++
+							break
+						}
+					}
+					off = b
+				}
 				else if(wrapping === 'char'){
 					var g = glyphs[off === elen? 32: txt.charCodeAt(off)] || glyphs[63]
 					if(g) width += g.advance * fontSize
 					off++
 				}
-				else{
+				else{ // wrapping === 'word'
 					for(var b = off; b < len; b++){
 						var unicode = b === elen? 32: txt.charCodeAt(b)
 						var g = glyphs[unicode] || glyphs[63]

@@ -88,7 +88,7 @@ function runTodo(todo){
 	// set todoId
 	floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
 	vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
-
+	vec4fGlobal(nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 	var f32 = todo.f32
 	var i32 = todo.i32
 	var len = todo.length
@@ -104,15 +104,8 @@ function runTodo(todo){
 		if(ret) repaint = true
 	}
 	currentTodo = lastTodo
-	if(todo.xFlick !== 0 || todo.yFlick !== 0){
-		doScroll(todo, todo.xFlick, todo.yFlick)
-		todo.xFlick *= todo.momentum
-		todo.yFlick *= todo.momentum
-		if(Math.abs(todo.xFlick) < 1) todo.xFlick = 0
-		if(Math.abs(todo.yFlick) < 1) todo.yFlick = 0
-		if(todo.xFlick !== 0 || todo.yFlick !== 0) return true
-	}
 
+	if(!pickPass && processScrollState(todo))return true
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
 
@@ -182,10 +175,11 @@ function renderPickDep(framebuffer){
 	// lets set some globals
 	globalsLen = 0
 	pickPass = true
+	mat4Global(nameIds.this_DOT_fingerInfo, fingerInfo)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
-	intGlobal(nameIds.painterPickPass, 1)
-	mat4Global(nameIds.painterPickMat4, identityMat)
+	floatGlobal(nameIds.this_DOT_workerId, -1)
+	mat4Global(nameIds.this_DOT_vertexPostMatrix, identityMat)
 	// alright lets bind the pick framebuffer
 	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glpfb)
 	var pick = framebuffer.attach.pick
@@ -254,10 +248,11 @@ function renderPickWindow(digit, x, y, force){
 
 	// set up global uniforms
 	globalsLen = 0
+	mat4Global(nameIds.this_DOT_fingerInfo, fingerInfo)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
-	mat4Global(nameIds.painterPickMat4, pickMat)
-	intGlobal(nameIds.painterPickPass, 1)
+	mat4Global(nameIds.this_DOT_vertexPostMatrix, pickMat)
+	floatGlobal(nameIds.this_DOT_workerId, -1)
 	pickPass = true
 	//console.log('RENDER PICKMAIN')
 
@@ -310,23 +305,23 @@ function renderColor(framebuffer){
 
 	// lets set some globals
 	globalsLen = 0
-	vec4Global(nameIds.this_DOT_fingerPos, fingerPos)
+	mat4Global(nameIds.this_DOT_fingerInfo, fingerInfo)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
-	intGlobal(nameIds.painterPickPass, 0)
+	floatGlobal(nameIds.this_DOT_workerId, 1)
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
 		lagCompMat[0] = todo.wPainter / args.w 
 		lagCompMat[5] = todo.hPainter / args.h
 		lagCompMat[3] = -(args.w - todo.wPainter) / args.w
 		lagCompMat[7] = (args.h - todo.hPainter) / args.h
-		mat4Global(nameIds.painterPickMat4, lagCompMat)
+		mat4Global(nameIds.this_DOT_vertexPostMatrix, lagCompMat)
 		// alright lets 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 		gl.viewport(0, 0, args.w * args.pixelRatio, args.h * args.pixelRatio)
 	}
 	else{
-		mat4Global(nameIds.painterPickMat4, identityMat)
+		mat4Global(nameIds.this_DOT_vertexPostMatrix, identityMat)
 		// alright lets 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glfb)
 		var color0 = framebuffer.attach.color0
@@ -378,11 +373,12 @@ function requestRepaint(){
 //
 //
 
-var fingerPos = [0,0,0,0]
-function doScroll(todo, dx, dy){
-	// do some scrolling with your finger
-	var xScroll = Math.min(Math.max(todo.xScroll + dx, 0), Math.max(0,todo.xTotal - todo.xView))
-	var yScroll = Math.min(Math.max(todo.yScroll + dy, 0), Math.max(0,todo.yTotal - todo.yView))
+// we support 4 fingers via uniform into the shader
+var fingerInfo = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+function doScroll(todo, sx, sy){
+
+	var xScroll = Math.min(Math.max(sx, 0), Math.max(0,todo.xTotal - todo.xView))
+	var yScroll = Math.min(Math.max(sy, 0), Math.max(0,todo.yTotal - todo.yView))
 
 	if(yScroll === -Infinity || xScroll === -Infinity) return
 	if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
@@ -394,60 +390,149 @@ function doScroll(todo, dx, dy){
 			x:xScroll,
 			y:yScroll
 		})
+		requestRepaint()
 		return true
 	}
 }
 
+function processScrollState(todo){
+	if(todo.yScrollTo !== undefined || todo.xScrollTo !== undefined){
+		var ys = todo.yScroll
+		if(todo.yScrollTo !== undefined){
+			ys = (todo.yScroll*(1.-todo.scrollToSpeed) + todo.yScrollTo*todo.scrollToSpeed)
+			if(Math.abs(todo.yScroll - todo.yScrollTo) < 1){
+				todo.yScrollTo = undefined
+			}
+		}
+		var xs = todo.xScroll
+		if(todo.xScrollTo !== undefined){
+			xs = (todo.xScroll*(1.-todo.scrollToSpeed) + todo.xScrollTo*todo.scrollToSpeed)
+			if(Math.abs(todo.xcroll - todo.xScrollTo) < 1){
+				todo.xScrollTo = undefined
+			}
+		}
+		doScroll(todo, xs, ys)
+
+		return true
+	}
+
+	if(todo.xScrollFlick !== 0 || todo.yScrollFlick !== 0){
+		if(doScroll(todo, todo.xScroll + todo.xScrollFlick, todo.yScroll + todo.yScrollFlick)){
+			if(Math.abs(todo.xScrollFlick) < 1) todo.xScrollFlick = 0
+			if(Math.abs(todo.yScrollFlick) < 1) todo.yScrollFlick = 0
+			todo.xScrollFlick *= todo.scrollMomentum
+			todo.yScrollFlick *= todo.scrollMomentum
+			return true
+		}
+		else{
+			todo.xScrollFlick = 0
+			todo.yScrollFlick = 0
+		}
+	}
+}
+
+var isScrollBarMove = 0
+var scrollDelta
 exports.onFingerDown = function(f){
-	// lets store finger pos
-	var o = f.digit <= 1?0:2
-	fingerPos[o+0] = f.x
-	fingerPos[o+1] = f.y
+	var o = (f.digit-1) * 4
+	fingerInfo[o+0] = f.x
+	fingerInfo[o+1] = f.y
+	fingerInfo[o+2] = f.workerId*256 + f.todoId
+	fingerInfo[o+3] = f.pickId
+	// check if we are down on a scrollbar
+	var todo = todoIds[f.todoId]
+	// mousedown on a scrollbar
+	if(f.pickId === todo.yScrollId){
+		// the position of the scrollbar
+		var ysize = todo.yView
+		var delta = ((f.y - todo.ysScroll) / todo.yView) * todo.yTotal - (todo.ysScroll + todo.yScroll)
+		if(delta < 0){
+			todo.yScrollTo = Math.max(0,todo.yScroll - todo.yView)
+			isScrollBarMove = 0
+		}
+		else if(delta > ysize){
+			todo.yScrollTo = Math.min(Math.max(0.,todo.yTotal - todo.yView),todo.yScroll + todo.yView)
+			isScrollBarMove = 0
+		}
+		else isScrollBarMove = 1
+		scrollDelta = delta
+	}
+	else if(f.pickId === todo.xScrollId){
+		// the position of the scrollbar
+		var ysize = todo.xView
+		var delta = ((f.x - todo.xsScroll) / todo.xView) * todo.xTotal - (todo.xsScroll + todo.xScroll)
+		if(delta < 0){
+			todo.yScrollTo = Math.max(0,todo.xScroll - todo.xView)
+			isScrollBarMove = 0
+		}
+		else if(delta > ysize){
+			todo.yScrollTo = Math.min(Math.max(0.,todo.xTotal - todo.xView),todo.xScroll + todo.xView)
+			isScrollBarMove = 0
+		}
+		else isScrollBarMove = 2
+		scrollDelta = delta
+	}
+	else isScrollBarMove = 0
+
 	requestRepaint()
 }
 
 exports.onFingerMove = function(f){
 	// store finger pos
-	var o = f.digit <= 1?0:2
-	fingerPos[o+0] = f.x
-	fingerPos[o+1] = f.y
+	var o = (f.digit-1) * 4
+	fingerInfo[o+0] = f.x
+	fingerInfo[o+1] = f.y
 
 	var todo = todoIds[f.todoId]
 	if(!todo) return
+
+	if(isScrollBarMove === 1){
+		doScroll(todo, todo.xScroll, ((f.y - todo.ysScroll) / todo.yView)*todo.yTotal - scrollDelta)
+		return
+	}
+	if(isScrollBarMove === 2){
+		doScroll(todo, ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal - scrollDelta, todo.yScroll)
+		return
+	}
 
 	// dont scroll
 	if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return	
 
-	if(doScroll(todo, f.dx, f.dy)){
-		requestRepaint()
-	}
+	doScroll(todo, todo.xScroll + f.dx, todo.yScroll + f.dy)
 }
 
 exports.onFingerUp = function(f){
+	requestRepaint()
+
+	var o = (f.digit-1) * 4
+	fingerInfo[o+0] = f.x
+	fingerInfo[o+1] = f.y
+	fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
+	fingerInfo[o+3] = f.pickId
+
 	var todo = todoIds[f.todoId]
 	if(!todo) return
+
 	if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return
 	// do a flick?
-	todo.xFlick = f.dx
-	todo.yFlick = f.dy
-	requestRepaint()
+	todo.xScrollFlick = f.dx
+	todo.yScrollFlick = f.dy
 }
 
 exports.onFingerHover = function(f){
-	var o = f.digit <= 1?0:2
-	fingerPos[o+0] = f.x
-	fingerPos[o+1] = f.y
+	var o = f.digit * 4
+	fingerInfo[o+0] = f.x
+	fingerInfo[o+1] = f.y
+	fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
+	fingerInfo[o+3] = f.pickId
 	requestRepaint()
 }
 
 exports.onFingerWheel = function(f){
 	var todo = todoIds[f.todoId]
 	if(!todo) return
-	if(doScroll(todo, f.xWheel, f.yWheel)){
-		requestRepaint()
-	}
+	doScroll(todo, todo.xScroll + f.xWheel, todo.yScroll + f.yWheel)
 }
-
 
 bus.onMessage = function(msg){
 	userfn[msg.fn](msg)
@@ -614,6 +699,27 @@ function vec4Global(nameId, x){
 	f32[o+4] = x[1]
 	f32[o+5] = x[2]
 	f32[o+6] = x[3]
+	var i = globalsLen
+	globals[i] = nameId
+	globals[i+1] = 14
+	globals[i+2] = i32
+	globals[i+3] = f32
+	globals[i+4] = o
+	globalsLen += 5
+}
+
+
+function vec4fGlobal(nameId, x, y, z, w){
+	var i32 = globalI32//[nameid*10]
+	var f32 = globalF32//[nameid*10]
+	var o = nameId * 20
+	i32[o+0] = 14
+	i32[o+1] = 5
+	i32[o+2] = nameId
+	f32[o+3] = x
+	f32[o+4] = y
+	f32[o+5] = z
+	f32[o+6] = w
 	var i = globalsLen
 	globals[i] = nameId
 	globals[i+1] = 14
@@ -1399,8 +1505,8 @@ userfn.newTodo = function(msg){
 		todoId:msg.todoId,
 		xScroll:0,
 		yScroll:0,
-		xFlick:0,
-		yFlick:0
+		xScrollFlick:0,
+		yScrollFlick:0
 	}
 }
 
@@ -1431,7 +1537,10 @@ userfn.updateTodo = function(msg){
 	todo.yView = msg.yView
 	todo.xScrollId = msg.xScrollId
 	todo.yScrollId = msg.yScrollId
-	todo.momentum = msg.momentum
+	todo.xsScroll = msg.xsScroll
+	todo.ysScroll = msg.ysScroll
+	todo.scrollToSpeed = msg.scrollToSpeed || .5
+	todo.scrollMomentum = msg.scrollMomentum
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()
@@ -1445,10 +1554,11 @@ userfn.updateTodoTime = function(msg){
 	requestRepaint()
 }
 
-userfn.scrollTodo = function(msg){
+userfn.scrollTo = function(msg){
 	var todo = todoIds[msg.todoId]
-	if(msg.x !== undefined) todo.xScroll = msg.x
-	if(msg.y !== undefined) todo.yScroll = msg.y
+	todo.xScrollTo = msg.x
+	todo.yScrollTo = msg.y
+	todo.scrollToSpeed = msg.scrollToSpeed
 	requestRepaint()
 }
 

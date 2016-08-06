@@ -103,13 +103,17 @@ module.exports = require('class').extend(function Turtle(proto){
 			var nh = this._h +margin[0] + margin[2]
 			if(nh > this.mh) this.mh = nh
 			// compute x bounds
-			if(this.wx > this.x2) this.x2 = this.wx
-			// compute y bounds
-			var ny = this.wy + nh
-			if(ny > this.y2) this.y2 = ny
+			if(!this._noBounds){
+				if(this.wx > this.x2) this.x2 = this.wx
+				// compute y bounds
+				var ny = this.wy + nh
+				if(ny > this.y2) this.y2 = ny
+			}
 		}
-		if(this._x < this.x1) this.x1 = this._x
-		if(this._y < this.y1) this.y1 = this._y
+		if(!this._noBounds){
+			if(this._x < this.x1) this.x1 = this._x
+			if(this._y < this.y1) this.y1 = this._y
+		}
 	}
 
 	proto.lineBreak = function(){

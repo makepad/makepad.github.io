@@ -52,7 +52,11 @@ var todoIds = {}
 
 painter.onScrollTodo = function(msg){
 	var todo = todoIds[msg.todoId]
-	if(todo && todo.onScroll) todo.onScroll(msg.x, msg.y)
+	if(todo){
+		todo.xScroll = msg.x
+		todo.yScroll = msg.y
+		if(todo.onScroll) todo.onScroll(msg.x, msg.y)
+	}
 }
 
 painter.Todo = require('class').extend(function Todo(proto){
@@ -80,6 +84,9 @@ painter.Todo = require('class').extend(function Todo(proto){
 		// the two datamappings
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
+		
+		this.xScroll = 0
+		this.yScroll = 0
 
 		// store the todo
 		todoIds[todoId] = this
@@ -102,27 +109,40 @@ painter.Todo = require('class').extend(function Todo(proto){
 			todoId:this.todoId,
 			buffer:this.f32.buffer,
 			length:this.length,
+			// animation related
 			timeStart:this.timeStart,
 			timeMax:this.timeMax,
 			animLoop:this.animLoop,
+
 			wPainter:painter.w,
 			hPainter:painter.h,
+
+			// scroll viewport
 			xTotal:this.xTotal,
 			xView:this.xView,
 			yTotal:this.yTotal,
 			yView:this.yView,
+			// id's of the scrollbars
 			xScrollId:this.xScrollId,
 			yScrollId:this.yScrollId,
-			momentum:this.momentum
+			// start coordinates of the scrollbars
+			xsScroll:this.xsScroll,
+			ysScroll:this.ysScroll,
+			// momentum
+			scrollMomentum:this.scrollMomentum,
+			scrollToSpeed:this.scrollToSpeed
 		}
 	}
 
-	proto.setScroll = function(x, y){
+	proto.scrollTo = function(x, y, scrollToSpeed){
+		this.xScroll = x
+		this.yScroll = y
 		bus.postMessage({
-			fn:'scrollTodo',
+			fn:'scrollTo',
 			todoId:this.todoId,
 			x:x,
-			y:y
+			y:y,
+			scrollToSpeed:this.scrollToSpeed || scrollToSpeed
 		})
 	}
 

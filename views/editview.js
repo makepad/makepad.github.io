@@ -74,12 +74,9 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$undoStack = []
 		this.$redoStack = []
 		this.$undoGroup = 0
-		//this.text = Array(100).join("HELLO WORLD\n")
-		//console.log(this.$drawFastText.toString())
-		
-		//this.text = require('shaders/lineshader').body.toString()
-		this.text = Array(2).join("Hello World i'm a piece of text\nLine 2\nLine 3")
-		//this.text = "H\nO\n"
+		this.text = ''
+		for(var i= 0 ;i <100;i++)
+			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
 	}
 
 	proto.onHasFocus = function(){
@@ -100,7 +97,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onDraw = function(){
 
-		this.beginBg(this.viewGeom)
+		this.beginBg(this.viewBgProps)
 
 		this.drawSelect()
 
@@ -111,7 +108,7 @@ module.exports = require('view').extend(function EditView(proto){
 		//require.perf()
 
 		this.drawText({
-			wrapping:'char',
+			wrapping:'line',
 			$editMode:true,
 			text:this.text
 		})
@@ -171,17 +168,27 @@ module.exports = require('view').extend(function EditView(proto){
 			return abs(this.start - this.end)
 		}
 
-		proto.moveToOffset = function(){
-			this.start = this.end = offset
-			this.max = this.editor.cursorRect(this.end).x
-			this.editor.cursorChanged(this)
-		}
-
-		proto.movePos = function(delta, onlyEnd){
+		proto.moveDelta = function(delta, onlyEnd){
 			this.end = clamp(this.end + delta, 0, this.editor.textLength())
 			if(!onlyEnd){
 				this.start = this.end
 			}
+			var rect = this.editor.textRect(this.end)
+			this.max = rect?rect.x:0
+			this.editor.cursorChanged(this)
+		}
+
+		proto.moveHome = function(onlyEnd){
+			this.end = 0
+			if(!onlyEnd) this.start = this.end
+			var rect = this.editor.textRect(this.end)
+			this.max = rect?rect.x:0
+			this.editor.cursorChanged(this)
+		}
+
+		proto.moveEnd = function(onlyEnd){
+			this.end = this.editor.textLength()
+			if(!onlyEnd) this.start = this.end
 			var rect = this.editor.textRect(this.end)
 			this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
@@ -204,33 +211,33 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 
 		proto.moveWordRight = function(onlyEnd){
-			this.movePos(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
+			this.moveDelta(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
 		}
 
 		proto.moveWordLeft = function(onlyEnd){
-			this.movePos(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
+			this.moveDelta(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
 		}
 
 		proto.moveLineLeft = function(onlyEnd){
 			var delta = this.editor.scanLineLeft(this.end) - this.end
-			this.movePos(delta, onlyEnd)
+			this.moveDelta(delta, onlyEnd)
 			return delta
 		}
 
 		proto.moveLineRight = function(onlyEnd){
 			var delta = this.editor.scanLineRight(this.end) - this.end
-			if(delta) this.movePos(delta, onlyEnd)
+			if(delta) this.moveDelta(delta, onlyEnd)
 		}
 
 		proto.moveLineLeftUp = function(onlyEnd){
 			var delta = this.editor.scanLineLeft(this.end) - this.end
-			if(delta) this.movePos(delta, onlyEnd)
+			if(delta) this.moveDelta(delta, onlyEnd)
 			else this.moveLine(-1, onlyEnd)
 		}
 
 		proto.moveLineRightDown = function(onlyEnd){
 			var delta = this.editor.scanLineRight(this.end) - this.end
-			if(delta) this.movePos(delta, onlyEnd)
+			if(delta) this.moveDelta(delta, onlyEnd)
 			else this.moveLine(1, onlyEnd)
 		}
 
@@ -477,10 +484,13 @@ module.exports = require('view').extend(function EditView(proto){
 			this.app.setClipboardText(txt)
 
 			// lets set the character accent menu pos
-			var cursor = this.cs.cursors[0]
+			var cursor = this.cs.cursors[this.cs.cursors.length - 1]
 			var rd = this.$readOffsetText(cursor.lo())
 
-			this.app.setCharacterAccentMenuPos(rd.x + 0.5 * rd.advance, rd.y)
+			// ok so lets move the thing into view
+			this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
+
+			//this.app.setCharacterAccentMenuPos(rd.x + 0.5 * rd.advance, rd.y)
 
 			this.redraw()
 		}.bind(this))
@@ -575,17 +585,35 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$undoGroup++
 		this.undoRedo(this.$redoStack, this.$undoStack)
 	}
+	
+	proto.pageSize = 70
+
+	proto.onKeyPageUp = function(k){
+		this.cs.moveLine(-this.pageSize, k.shift)
+	}
+
+	proto.onKeyPageDown = function(k){
+		this.cs.moveLine(this.pageSize, k.shift)
+	}
+
+	proto.onKeyHome = function(k){
+		this.cs.moveHome(k.shift)
+	}
+
+	proto.onKeyEnd = function(k){
+		this.cs.moveEnd(k.shift)
+	}
 
 	proto.onKeyLeftArrow = function(k){
 		if(k.ctrl || k.alt) return this.cs.moveWordLeft(k.shift)
 		if(k.meta) return this.cs.moveLineLeft(k.shift)
-		this.cs.movePos(-1, k.shift)
+		this.cs.moveDelta(-1, k.shift)
 	}
 
 	proto.onKeyRightArrow = function(k){
 		if(k.ctrl || k.alt) return this.cs.moveWordRight(k.shift)
 		if(k.meta) return this.cs.moveLineRight(k.shift)
-		this.cs.movePos(1, k.shift)
+		this.cs.moveDelta(1, k.shift)
 	}
 
 	proto.onKeyUpArrow = function(k){
@@ -614,7 +642,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onKeyEnter = function(k){
 		this.cs.insertText('\n')
-		this.cs.movePos(1)
+		this.cs.moveDelta(1)
 	}
 
 	proto.onKeyX = function(k){
@@ -647,7 +675,7 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onKeyPaste = function(k){
 		this.$undoGroup ++
 		this.cs.insertText(k.text)
-		this.cs.movePos(k.text.length)
+		this.cs.moveDelta(k.text.length)
 	}
 	
 	proto.onKeyPress = function(k){
@@ -660,7 +688,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.cs.backSpace()			
 		}
 		this.cs.insertText(out)
-		this.cs.movePos(1)
+		this.cs.moveDelta(1)
 	}
 
 	//

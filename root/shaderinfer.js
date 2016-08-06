@@ -77,6 +77,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var state = error.state
 		if(!state) throw error
 		var curfn = state.curFunction
+	
 		var exc = 0
 		try{
 			curfn.callee()
@@ -229,6 +230,10 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				return node.raw
 			}
 			infer.type = types.int
+			return node.raw
+		}
+		if(node.kind === 'boolean'){
+			infer.type = types.bool
 			return node.raw
 		}
 		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
@@ -413,11 +418,12 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		if(node.computed){
 			var objinfer = node.object.infer
 			if(objinfer.kind !== 'value'){
-				throw new this.InferErr(node, 'cannot use index[] on non value type')
+				console.log(objinfer)
+				throw this.InferErr(node, 'cannot use index[] on non value type')
 			}
 			var objtype = objinfer.type
 			if(objtype.slots <= 1){
-				throw new this.InferErr(node, 'cannot use index[] on item with size 1')
+				throw this.InferErr(node, 'cannot use index[] on item with size 1')
 			}
 			var argstr = this.walk(node.property, node)
 
@@ -1265,9 +1271,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		gl_MaxTextureImageUnits:types.int,
 		gl_MaxFragmentUniformVectors:types.int,
 		gl_MaxDrawBuffers:types.int,
-		discard:types.void,
-		painterPickPass:types.int,
-		painterPickMat4:types.mat4
+		discard:types.void
 	}
 
 	proto.glsltypes = {

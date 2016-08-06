@@ -20,7 +20,8 @@ module.exports = require('shader').extend(function Rect9Shader(proto){
 		align: {styleLevel:2, value:[0,0]},
 		padding: {styleLevel:2, value:[0,0,0,0]},
 		margin: {styleLevel:1, value:[0,0,0,0]},
-
+		noBounds: {styleLevel:1, value:0},
+		
 		color: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'white'},
 		borderRadius: {value:8},

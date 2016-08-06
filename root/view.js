@@ -154,10 +154,11 @@ module.exports = require('class').extend(function View(proto){
 		return pass
 	}
 
-	Object.defineProperty(proto, 'viewGeom', {
+	Object.defineProperty(proto, 'viewBgProps', {
 		get:function(){
 			return {
 				lockScroll:0.,
+				noBounds:1,
 				w:this.$w,
 				h:this.$h,
 				padding:this.padding
@@ -175,6 +176,20 @@ module.exports = require('class').extend(function View(proto){
 
 	var zeroMargin = [0,0,0,0]
 	var identityMat4 = mat4.create()
+
+	proto.$scrollBarSize = 20
+	proto.$scrollBarRadius = 8
+
+	proto.scrollIntoView = function(x, y, w, h){
+		// we figure out the scroll-to we need
+		var todo = this.todo
+		var sx = todo.xScroll, sy = todo.yScroll
+		if(x < todo.xScroll) sx = Math.max(0., x)
+		if(x+w > todo.xScroll + todo.xView) sx = Math.max(0.,Math.min(x + w - todo.xView, todo.xTotal - todo.xView))
+		if(y < todo.yScroll) sy = Math.max(0., y)
+		if(y+h > todo.yScroll + todo.yView) sy = Math.max(0.,Math.min(y + h - todo.yView, todo.yTotal - todo.yView))
+		this.todo.scrollTo(sx, sy)
+	}
 
 	proto.$redrawView = function(){		
 		this._time = this.app._time
@@ -207,6 +222,7 @@ module.exports = require('class').extend(function View(proto){
 		todo.clearTodo()
 		// lets set some globals
 		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+		//todo.viewInverse = this.viewInverse
 		todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 
 		// we need to render to a texture
@@ -268,46 +284,56 @@ module.exports = require('class').extend(function View(proto){
 		this.endTurtle()
 
 		// store the draw width and height for layout if needed
-		this.$wDraw = turtle._w
-		this.$hDraw = turtle._h
+		var tw = this.$wDraw = turtle._w
+		var th = this.$hDraw = turtle._h
+		var tx2 = this.turtle.x2
+		var ty2 = this.turtle.y2
+		
+		// lets compute if we need scrollbars
+		if(ty2 > th){
+			tw -= this.$scrollBarSize
+			if(tx2 > tw) th -= this.$scrollBarSize // add vert scrollbar
+		}
+		else if(tx2 > tw){
+			th -= this.$scrollBarSize
+			if(ty2 > th) tw -= this.$scrollBarSize
+		}
 
 		// store the total and view heights for scrolling on the todo
-		this.todo.xTotal = this.turtle.x2
-		this.todo.xView = this.$wDraw
-		this.todo.yTotal = this.turtle.y2
-		this.todo.yView = this.$hDraw
-		this.todo.momentum = 0.92
+		this.todo.xTotal = tx2
+		this.todo.xView = tw
+		this.todo.yTotal = ty2
+		this.todo.yView = th
+		this.todo.scrollMomentum = 0.92
+		this.todo.scrollToSpeed = 0.5
+		if(th < this.$hDraw){
+			this.$xScroll = this.drawScrollBar({
+				lockScroll:0,
+				isHorizontal:1.,
+				x:0,
+				y:this.$hDraw - this.$scrollBarSize / painter.pixelRatio,
+				w:tw,
+				h:this.$scrollBarSize / painter.pixelRatio,
+				borderRadius:this.$scrollBarRadius / painter.pixelRatio
+			})
 
-		// check if we are larger than our view area, show a scrollbar
-		if(this.turtle.y2 > this.$hDraw){
+			this.todo.xScrollId = this.$xScroll.$stampId
+			this.todo.xsScroll = this.$xAbs
+		}
 
+		if(tw < this.$wDraw){ // we need a vertical scrollbar
 			this.$yScroll = this.drawScrollBar({
 				lockScroll:0,
-				x:this.$wDraw - 10,
-				handleSize: this.$hDraw/this.turtle.y2,
+				isHorizontal:0.,
+				x:this.$wDraw - this.$scrollBarSize / painter.pixelRatio,
 				y:0,
-				w:10,
-				h:this.$hDraw,
+				w:this.$scrollBarSize / painter.pixelRatio,
+				h:th,
+				borderRadius:this.$scrollBarRadius / painter.pixelRatio
 			})
 
 			this.todo.yScrollId = this.$yScroll.$stampId
-			
-			// alright im'a going to allow prop buffer
-			// patching from a widget.
-			
-			this.todo.onScroll = function(x, y){
-				this.todo.xScroll = x
-				this.todo.yScroll = y
-				this.$yScroll.setHandlePos(y / this.todo.yTotal)
-			}.bind(this)
-
-			this.$yScroll.onSlide = function(v){
-				// scroll the todo
-				this.todo.setScroll(0, v * this.todo.yTotal) 
-			}.bind(this)
-		}
-		if(this.turtle.x2 > this.$wDraw){
-			this.todo.xView = this.todo.xTotal
+			this.todo.ysScroll = this.$yAbs
 		}
 
 		// if we are a surface, end the pass and draw it to ourselves
@@ -366,7 +392,113 @@ module.exports = require('class').extend(function View(proto){
 	proto.onFlag4 = proto.relayout
 
 	proto.tools = {
-		ScrollBar: require('stamps/scrollbarstamp'),
+		ScrollBar: require('stamp').extend(function ScrollBarStamp(proto){
+			proto.props = {
+				isHorizontal:0.,
+				lockScroll:1.,
+				borderRadius:4
+			}
+
+			proto.tools = {
+				ScrollBar: require('shaders/quadshader').extend({
+					props:{
+						x:{noTween:1, noInPlace:1, value:NaN},
+						y:{noTween:1, noInPlace:1, value:NaN},
+						fingerDigit:{noTween:1, value:0.},
+						isHorizontal:{noTween:1, value:0.},
+						id:{noTween:1, value:0},
+						bgColor:'#000',
+						handleColor:'#111',
+						borderRadius:4
+					},
+					vertexStyle:function(){$ // bypass the worker roundtrip :)
+						var pos = vec2()
+						if(this.isHorizontal > .5){
+							this.y += 1./this.pixelRatio
+							this.handleSize = this.viewSpace.x / this.viewSpace.z
+							this.handlePos = this.viewScroll.x / this.viewSpace.z
+						}
+						else{
+							this.x += 1./this.pixelRatio
+							this.handleSize = this.viewSpace.y / this.viewSpace.w
+							this.handlePos = this.viewScroll.y / this.viewSpace.w
+						}
+					},
+					pixelStyle:function(){},
+					pixel:function(){
+						this.pixelStyle()
+						var p = this.mesh.xy * vec2(this.w, this.h)
+						var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+						
+						// background field
+						var pBg = p
+						var bBg = this.borderRadius
+						var hBg = vec2(.5*this.w, .5*this.h)
+						var fBg = length(max(abs(pBg-hBg) - (hBg - vec2(bBg)), 0.)) - bBg
+
+						// handle field
+						var pHan = p
+						var hHan = vec2(.5*this.w, .5*this.h)
+						if(this.isHorizontal > 0.5){
+							pHan -= vec2(this.w * this.handlePos, 0.)
+							hHan *= vec2(this.handleSize, 1.)
+						}
+						else{
+							pHan -=  vec2(0., this.h * this.handlePos)
+							hHan *=  vec2(1., this.handleSize)
+						}
+						
+						var bHan = this.borderRadius
+						var fHan = length(max(abs(pHan-hHan) - (hHan - vec2(bHan)), 0.)) - bHan
+
+						// mix the fields
+						var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*antialias+1.,0.,1.))
+						return mix(this.handleColor, finalBg, clamp(fHan * antialias + 1., 0., 1.))
+					}
+				})
+			}
+
+			proto.states = {
+				default:{
+					ScrollBar:{
+						tween:1,
+						duration:0.3,
+						bgColor:'#4448',
+						handleColor:'#888'
+					}
+				},
+				hover:{
+					ScrollBar:{
+						tween:1,
+						duration:0.1,
+						bgColor:'#555f',
+						handleColor:'yellow'
+					}
+				}
+			}
+
+			proto.inPlace = true
+
+			proto.onFingerOver = function(){
+				this.state = this.states.hover
+			}
+
+			proto.onFingerOut = function(){
+				this.state = this.states.default
+			}
+
+			proto.onDraw = function(){
+				this.drawScrollBar(this)
+			}
+
+			proto.toolMacros = {
+				draw:function(overload){
+					this.$STYLESTAMP(overload)
+					this.$DRAWSTAMP()
+					return $stamp
+				}
+			}
+		}),
 		Surface:require('shader').extend(function Surface(proto){
 			proto.props = {
 				x: NaN,
@@ -387,7 +519,7 @@ module.exports = require('class').extend(function View(proto){
 			}
 
 			proto.pixelMain = function(){$
-				if(painterPickPass != 0){
+				if(this.workerId < 0.){
 					gl_FragColor = texture2D(this.pickSampler, this.mesh.xy)
 				}
 				else{

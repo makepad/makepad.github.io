@@ -28,8 +28,8 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		$CALCULATETWEEN
 		var position = this.vertex()
-		if(painterPickMat4[0][0] != 1. || painterPickMat4[1][1] != 1.){
-			gl_Position = position * painterPickMat4
+		if(this.vertexPostMatrix[0][0] != 1. || this.vertexPostMatrix[1][1] != 1.){
+			gl_Position = position * this.vertexPostMatrix
 		}
 		else{
 			gl_Position = position
@@ -38,13 +38,37 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.pixelMain = function(){$
 		var color = this.pixel()
-		if(painterPickPass != 0){
+		if(this.workerId < 0.){
 			if(color.a < this.pickAlpha) discard
-			gl_FragColor = vec4(this.todoId/255.,floor(this.pickId/256.0)/255.,mod(this.pickId,256.0)/255.,float(painterPickPass)/255.)
+			gl_FragColor = vec4(this.todoId/255.,floor(this.pickId/256.0)/255.,mod(this.pickId,256.0)/255.,abs(this.workerId)/255.)
 		}
 		else{
 			gl_FragColor = color
 		}
+	}
+
+	// fingerdown
+	proto.isFingerDown = function(pos){$
+		for(var i = 0; i < 4; i++){
+			var f = this.fingerInfo[i]
+			if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && this.pickId == f[3] ){
+				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy - vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+				return i+1
+			}
+		}
+		return 0
+	}
+
+	// finger over
+	proto.isFingerOver = function(pos){$
+		for(var i = 0; i < 4; i++){
+			var f = this.fingerInfo[i]
+			if(f[2] < 0. && abs(this.workerId) == floor(-f[2]/256.) && this.todoId == mod(-f[2],256.) && this.pickId == f[3] ){
+				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy - vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+				return i+1
+			}
+		}
+		return 0
 	}
 
 	proto.onextendclass = function(){
@@ -58,7 +82,7 @@ module.exports = require('class').extend(function Shader(proto){
 	// ok the alpha blend modes. how do we do it.
 	proto.$mapExceptions = true
 
-	proto.$uniformHeader = "\n// painter uniforms\nuniform int painterPickPass;\nuniform mat4 painterPickMat4;\n"
+	proto.$uniformHeader = ""
 	proto.$pixelHeader = ""
 	proto.$vertexHeader = ""
 
@@ -1155,32 +1179,52 @@ module.exports = require('class').extend(function Shader(proto){
 		'SQRT1_2':'0.70710678118654757'
 	}
 
+
 	// default shader properties
 	proto.props = {
 		time:{kind:'uniform', value: 1.0},
+
+		// pick values
 		pickAlpha: {kind:'uniform', value:0.5},
+		workerId:{kind:'uniform', asGlobal:true, type:types.float},
 		todoId: {kind:'uniform', value:0.},
 		pickId: {noTween:true, noStyle:true, value:0.},
+
+		// tweening
 		tween: {noTween:true, value:0.},
 		ease: {noTween:true, value:[0,0,1.0,1.0]},
 		duration: {noTween:true, value:0.},
 		delay: {styleLevel:1, value:0.},
 		tweenStart: {noTween:true, noStyle:true, value:1.0},
 
+		// clipping and scrolling
+		noBounds: {styleLevel:1, value:0},
+		lockScroll:{noTween:1, value:1.},
+		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
+		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+
 		// for ease of use define them here
 		pixelRatio:{kind:'uniform', asGlobal:true, type:types.float},
 		viewScroll:{kind:'uniform', asGlobal:true, type:types.vec2},
-		fingerPos:{kind:'uniform', asGlobal:true, type:types.vec4},
+		viewSpace:{kind:'uniform', asGlobal:true, type:types.vec4},
+
+		fingerInfo:{kind:'uniform', asGlobal:true, type:types.mat4},
+		vertexPostMatrix:{kind:'uniform', asGlobal:true, type:types.mat4},
+
 		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		viewInverse:{kind:'uniform', asGlobal:true, type:types.mat4},
+
 		camPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
 		camProjection:{kind:'uniform', asGlobal:true, type:types.mat4}
 	}
 
 	painter.nameId('this_DOT_time')
 	painter.nameId('this_DOT_pixelRatio')
+	painter.nameId('this_DOT_workerId')
 	painter.nameId('this_DOT_todoId')
-	painter.nameId('this_DOT_fingerPos')
 	painter.nameId('this_DOT_viewScroll')
+	painter.nameId('this_DOT_viewSpace')
+	painter.nameId('this_DOT_fingerInfo')
+	painter.nameId('this_DOT_vertexPostMatrix')
 
 })

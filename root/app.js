@@ -64,13 +64,15 @@ module.exports = require('view').extend(function App(proto, base){
 			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
 			msg.xAbs = msg.x
 			msg.yAbs = msg.y
-			msg.x = msg.xView = xyLocal[0]
-			msg.y = msg.yView = xyLocal[1]
+			msg.xLocal = xyLocal[0]
+			msg.yLocal = xyLocal[1]
+			msg.x = msg.xView = xyLocal[0] + (view.todo.xScroll || 0)
+			msg.y = msg.yView = xyLocal[1] + (view.todo.yScroll || 0)
 			if(view[event]) view[event](msg)
 			var stamp = view.$stamps[pickId]
 			if(!stamp) return
-			msg.x = msg.xView - stamp.$x 
-			msg.y = msg.yView - stamp.$y
+			msg.x = msg.xLocal - stamp.$x
+			msg.y = msg.yLocal - stamp.$y
 			if(stamp.lockScroll){
 				msg.x += view.todo.xScroll || 0
 				msg.y += view.todo.yScroll || 0
