@@ -632,12 +632,14 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onKeyUpArrow = function(k){
 		if(k.ctrl) return proto.onKeyPageUp()
 		if(k.alt) return this.cs.moveLineLeftUp(k.shift)
+		if(k.meta) return proto.onKeyHome()
 		this.cs.moveLine(-1, k.shift)
 	}
 
 	proto.onKeyDownArrow = function(k){
 		if(k.ctrl) return proto.onKeyPageDown()
 		if(k.alt) return this.cs.moveLineRightDown(k.shift)
+		if(k.meta) return proto.onKeyEnd()
 		this.cs.moveLine(1, k.shift)
 	}
 
@@ -722,6 +724,13 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
+		
+		if(f.tapCount === 1){ // select word under finger
+
+		}
+		else if(f.tapCount === 2){ // select line
+
+		}
 
 		this.setFocus() 
 
