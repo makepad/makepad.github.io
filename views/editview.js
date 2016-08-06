@@ -485,7 +485,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 			// lets set the character accent menu pos
 			var cursor = this.cs.cursors[this.cs.cursors.length - 1]
-			var rd = this.$readOffsetText(cursor.lo())
+			var rd = this.$readOffsetText(cursor.end)
 
 			// ok so lets move the thing into view
 			this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
