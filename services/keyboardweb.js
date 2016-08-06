@@ -463,10 +463,14 @@ function onBlur(){
 //
 //
 
-exports.onMouseDown = function(x, y){
-	if(!useSystemEditMenu) return
-	cliptext.style.left = x - 10
-	cliptext.style.top = y  - 10
+exports.onMouseDown = function(e){
+	if(e.button !==2){ // defocus the text input for a sec to hide character popup menu
+		cliptext.blur()
+		cliptext.focus()
+	}
+	if(e.button !==2 || !useSystemEditMenu) return
+	cliptext.style.left = e.pageX - 10
+	cliptext.style.top = e.pageY  - 10
 	setTimeout(function(){
 		cliptext.style.left =  -20
 		cliptext.style.top =  -20
@@ -474,10 +478,15 @@ exports.onMouseDown = function(x, y){
 	return true
 }
 
-exports.onMouseUp = function(x, y){
-	if(!useSystemEditMenu) return
+exports.onMouseUp = function(e){
+	if(e.button !==2 || !useSystemEditMenu) return
 	cliptext.focus()
 	return true
+}
+
+exports.onMouseWheel = function(e){
+	cliptext.blur()
+	cliptext.focus()
 }
 
 var ignoreCursorPoll = false

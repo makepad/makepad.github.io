@@ -263,9 +263,7 @@ var mouseIsDown = false
 
 function onMouseDown(e){
 	e.preventDefault()
-	if(e.button === 2){
-		if(services.keyboard.onMouseDown(e.pageX, e.pageY))return
-	}
+	if(services.keyboard.onMouseDown(e))return
 	mouseIsDown = true
 	onFingerDown(mouseToFinger(e))
 }
@@ -273,9 +271,7 @@ function onMouseDown(e){
 function onMouseUp(e){
 	mouseIsDown = false
 	e.preventDefault()
-	if(e.button === 2){
-		if(services.keyboard.onMouseUp(e.pageX, e.pageY)) return
-	}
+	if(services.keyboard.onMouseUp(e)) return
 	onFingerUp(mouseToFinger(e))
 }
 
@@ -306,6 +302,7 @@ function onTouchEnd(e){
 }
 
 function onWheel(e){
+	if(services.keyboard.onMouseWheel(e)) return
 	var f = mouseToFinger(e)
 	e.preventDefault()
 	var fac = 1

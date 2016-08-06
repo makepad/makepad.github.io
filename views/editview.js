@@ -490,7 +490,10 @@ module.exports = require('view').extend(function EditView(proto){
 			// ok so lets move the thing into view
 			this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
 
-			//this.app.setCharacterAccentMenuPos(rd.x + 0.5 * rd.advance, rd.y)
+			this.app.setCharacterAccentMenuPos(
+				rd.x + 0.5 * rd.advance - this.todo.xScroll, 
+				rd.y - this.todo.yScroll
+			)
 
 			this.redraw()
 		}.bind(this))
