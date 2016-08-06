@@ -534,15 +534,13 @@ exports.onTouchStart = function(x, y){
 exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
 	if(isIOSDevice && tapCount === 1){
-		//console.log(hasKeyboardFocus)
-		//if(!hasKeyboardFocus) services.painter.disableCanvas()
-		// move the cliptext
+		document.body.scrollTop = document.body.offsetHeight
 		cliptext.style.left = x - 10
 		cliptext.style.top = document.body.offsetHeight - 40// make sure we scroll
 		cliptext.focus()
 		var itvpoll = setInterval(function(){
 			var st = document.body.scrollTop
-			if(st!==0){
+			if(st!==document.body.offsetHeight){
 				clearInterval(itvpoll)
 				// lets clear the canvas
 				services.painter.resizeCanvas(st)
@@ -555,9 +553,6 @@ exports.onTouchEnd = function(x, y, tapCount){
 
 				document.body.scrollTop = 0
 				document.body.scrollLeft = 0
-				
-				//services.painter.enableCanvas()			
-				
 			}
 		},16)
 		defaultClipTextPos()
