@@ -479,11 +479,11 @@ module.exports = require('class').extend(function View(proto){
 
 			proto.inPlace = true
 
-			proto.onFingerOver = function(){
+			proto.onFingerDown = function(){
 				this.state = this.states.hover
 			}
 
-			proto.onFingerOut = function(){
+			proto.onFingerUp = function(){
 				this.state = this.states.default
 			}
 
