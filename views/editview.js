@@ -1,6 +1,7 @@
 module.exports = require('view').extend(function EditView(proto){
 	var painter = require('painter')
 	proto.props = {
+		cursorTrim:0.
 	}
 
 	//
@@ -483,9 +484,11 @@ module.exports = require('view').extend(function EditView(proto){
 		var rd = this.$readOffsetText(offset)
 		if(!rd) return
 		return {
+			fontSize:rd.fontSize,
+			advance:rd.advance,
 			x:rd.x, //+ t.fontSize * t.x1,
-			y:rd.y + 0.1*rd.fontSize, //- t.fontSize * t.y1,
-			h:rd.fontSize
+			y:rd.y + this.cursorTrim * rd.fontSize,
+			h:rd.fontSize * rd.lineSpacing - 2.* this.cursorTrim * rd.fontSize
 		}
 	}
 
@@ -527,6 +530,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.scanWordRight = function(start){
 		var i = start, type = 2
+		if(this.text.charCodeAt(start) === 10) return start
 		while(i < this.text.length && type === 2) type = charType(this.text.charAt(i++))
 		while(i < this.text.length && type === charType(this.text.charAt(i))) i++
 		return i
@@ -551,11 +555,12 @@ module.exports = require('view').extend(function EditView(proto){
 
 		// lets set the character accent menu pos
 		var cursor = this.cs.cursors[this.cs.cursors.length - 1]
-		var rd = this.$readOffsetText(cursor.end)
+		var rd = this.cursorRect(cursor.end)
 
 		// ok so lets move the thing into view
-		this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.fontSize)
+		this.scrollIntoView(rd.x-.5*rd.fontSize, rd.y, .5*rd.fontSize, rd.h)
 
+		//console.log(rd.y - this.todo.yScroll, this.todo.yView)
 		this.app.setCharacterAccentMenuPos(
 			rd.x + 0.5 * rd.advance - this.todo.xScroll, 
 			rd.y - this.todo.yScroll
@@ -809,7 +814,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.fingerCursor.start = oldstart
 		}
 
-		var touchdy = f.touch?-20:0
+		var touchdy = 0//f.touch?-20:0
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
 		
 		var tapDiv = f.touch?4:3, tapStart = f.touch?2:1
@@ -829,21 +834,40 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onFingerMove = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
-		var touchdy = f.touch?-20:0
+		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount < 1){
 			return
-			//if(this.cs.cursors[0].hasSelection()) return
-			//return this.fingerCursor.moveTo(f.x, f.y+touchdy, false)
 		}
 		this.fingerCursor.byFinger = true
+
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, true)
+
+		var tapDiv = f.touch?4:3, tapStart = f.touch?2:1
+		if(f.tapCount%tapDiv === tapStart+0){
+			if(this.fingerCursor.end < this.fingerCursor.start){
+				this.fingerCursor.end = this.scanWordLeft(this.fingerCursor.end)
+			}
+			else{
+				this.fingerCursor.end = this.scanWordRight(this.fingerCursor.end)
+			}
+
+		}
+		else if(f.tapCount%tapDiv === tapStart+1){ // select line
+			if(this.fingerCursor.end < this.fingerCursor.start){
+				this.fingerCursor.end = this.scanLineRight(this.fingerCursor.end)+1
+			}
+			else {
+				this.fingerCursor.end = this.scanLineLeft(this.fingerCursor.end)
+			}
+		}
+
 		this.redraw()
 	}
 
 	proto.onFingerUp = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		this.fingerCursor = undefined
-		var touchdy = f.touch?-20:0
+		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){
 			var cursor = this.cs.clearCursors()
 			cursor.moveTo(f.x, f.y+touchdy, false)

@@ -10,6 +10,7 @@ var App = require('app').extend(function(proto){
 		return [
 			Edit({
 				text:extext,
+				cursorTrim:0.1,
 				Text:{
 					fontSize:24,
 					font:require('fonts/ubuntu_medium_256.sdffont'),

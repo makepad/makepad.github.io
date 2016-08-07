@@ -1,16 +1,15 @@
 var App = require('app').extend(function(proto){
 
 	var Code = require('views/codeview')
-
-require('stamps/buttonstamp')
-
+	
 	proto.onCompose = function(){
 		return [
 			Code({
-				text:"hello",
+				text:require('stamps/buttonstamp').body.toString(),
 				Text:{
 					fontSize:12,
-					boldness:.2,
+					boldness:0.1,
+					color:'white',
 					font:require('fonts/ubuntu_monospace_256.sdffont'),
 				},
 				w:'100%',

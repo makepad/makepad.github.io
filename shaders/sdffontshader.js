@@ -384,11 +384,15 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.onextendclass = function(){
-		if(this.font && !this.font.fontmap){
-			var map = this.font.fontmap = fontloader(this.font)
+		if(this.font){
+			if(!this.font.fontmap){
+				var map = this.font.fontmap = fontloader(this.font)
+				this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, map.texw, map.texh, map.textureArray)
+			}
 			// make the texture.
-			this.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, map.texw, map.texh, map.textureArray)
+			this.fontSampler = this.font.fontSampler
 		}
+
 		base.onextendclass.apply(this, arguments)
 	}
 })

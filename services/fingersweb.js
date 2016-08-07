@@ -4,7 +4,10 @@ var canvas = service.canvas
 var services = service.others
 
 var TAP_TIME = 350
-var TAP_DIST = 50
+
+var TAP_DIST_TOUCH = 50
+var TAP_DIST_MOUSE = 5
+
 var isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
 
 // 
@@ -116,7 +119,7 @@ function onFingerDown(fingers){
 			var oldf = tapmap[f.digit]
 			if(oldf){
 				var dx = f.x - oldf.x, dy = f.y - oldf.y
-				var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < TAP_DIST
+				var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?TAP_DIST_TOUCH:TAP_DIST_MOUSE)
 				if(isTap) f.tapCount = oldf.tapCount
 				else f.tapCount = 0
 			}
@@ -207,7 +210,7 @@ function onFingerUp(fingers){
 		tapmap[oldf.digit] = f
 		var dx = f.sx - f.x
 		var dy = f.sy - f.y
-		var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < TAP_DIST
+		var isTap = f.time - oldf.time < TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?TAP_DIST_TOUCH:TAP_DIST_MOUSE)
 		if(isTap) f.tapCount = oldf.tapCount + 1
 		else f.tapCount = 0
 

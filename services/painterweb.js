@@ -218,7 +218,7 @@ function renderPickWindow(digit, x, y, force){
 
 	// use 100x100 pickwindow
 	var pickw = 100, pickh = 100 
-
+	if(!mainFramebuffer) return {}
 	if(!pick) pickWindows[digit] = pick = newPickWindow(pickh,pickw), force = true
 
 	// if our window is older than a frame, force it
@@ -467,6 +467,7 @@ exports.onFingerDown = function(f){
 	fingerInfo[o+3] = f.pickId
 	// check if we are down on a scrollbar
 	var todo = todoIds[f.todoId]
+	if(!todo) return
 	// mousedown on a scrollbar
 	if(f.pickId === todo.yScrollId){
 		// the position of the scrollbar
