@@ -181,7 +181,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 
 			read.lineSpacing = this._NAME.prototype.lineSpacing
 			read.baseLine = this._NAME.prototype.baseLine
-			read.advance = glyphs[read.unicode].advance
+			read.advance = (glyphs[read.unicode] || glyphs[63]).advance
 
 			// write the bounding box
 			return read
@@ -197,7 +197,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				var ty = this.$READPROP(i, 'y')
 				var fs = this.$READPROP(i, 'fontSize')
 				var unicode = this.$READPROP(i, 'unicode')
-				var advance = glyphs[unicode].advance
+				var advance = (glyphs[unicode] || glyphs[63]).advance
 				if(y<ty) return -1
 				if(y >= ty && (unicode === 10 || x <= tx + advance * fs) && y <= ty + fs * lineSpacing){
 					if(unicode !== 10 && !box && x > tx + advance * fs * 0.5) return i + 1
@@ -218,7 +218,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				var ty = this.$READPROP(i, 'y')
 				var fs = this.$READPROP(i, 'fontSize')
 				var unicode = this.$READPROP(i, 'unicode')
-				var advance = glyphs[unicode].advance
+				var advance = (glyphs[unicode] || glyphs[63]).advance
 
 				if(curBox && lty && lty !== ty){
 					curBox.w = (ltx + lfs * lad) - curBox.x

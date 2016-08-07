@@ -711,16 +711,16 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onKeyUpArrow = function(k){
-		if(k.ctrl) return proto.onKeyPageUp()
+		if(k.ctrl) return this.onKeyPageUp(k)
 		if(k.alt) return this.cs.moveLineLeftUp(k.shift)
-		if(k.meta) return proto.onKeyHome()
+		if(k.meta) return this.onKeyHome(k)
 		this.cs.moveLine(-1, k.shift)
 	}
 
 	proto.onKeyDownArrow = function(k){
-		if(k.ctrl) return proto.onKeyPageDown()
+		if(k.ctrl) return this.onKeyPageDown(k)
 		if(k.alt) return this.cs.moveLineRightDown(k.shift)
-		if(k.meta) return proto.onKeyEnd()
+		if(k.meta) return this.onKeyEnd(k)
 		this.cs.moveLine(1, k.shift)
 	}
 
@@ -783,7 +783,6 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 	
 	proto.onKeyPress = function(k){
-		//if(e.ctrl || e.meta || e.alt || e.shift) return
 		this.$undoGroup ++
 		var out = String.fromCharCode(k.char === 13?10:k.char)
 		// lets run over all our cursors
@@ -801,9 +800,6 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	//
 	
-	proto.onFingerForce = function(f){
-	}
-
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
