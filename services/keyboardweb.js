@@ -204,33 +204,6 @@ textarea:focus.makepad{\n\
 }"
 document.body.appendChild(style)
 
-// text area wrapper to add a bit of UI around it for touch devices
-/*
-var cliptextWrapper
-if(isTouchDevice){
-	cliptextWrapper = document.createElement('span')
-	cliptextWrapper.innerHTML = "Clipboard"
-	cliptextWrapper.style.display = 'flex'
-	cliptextWrapper.style.justifyContent = 'center'
-	cliptextWrapper.style.alignItems = 'flex-end'
-	cliptextWrapper.style.position = 'absolute'
-	cliptextWrapper.style.fontSize = 8
-	cliptextWrapper.style.color = 'white'
-	cliptextWrapper.style.textAlign = 'center'
-	cliptextWrapper.style.verticalAlign = 'bottom'
-	cliptextWrapper.style.borderRadius = '8px'
-	cliptextWrapper.style.padding = '4px'
-	cliptextWrapper.style.left = -100
-	cliptextWrapper.style.top = -100
-	cliptextWrapper.style.width = 40
-	cliptextWrapper.style.height = 30
-	cliptextWrapper.style.userSelect = 'none'
-	cliptextWrapper.style.webkitUserSelect = "none"
-	cliptextWrapper.style.MozUserSelect = "none"
-	cliptextWrapper.style.backgroundColor = "rgba(128,128,128,0.3)"
-	document.body.appendChild(cliptextWrapper)
-}
-*/
 if(!isTouchDevice){
 	cliptext.style.position = 'absolute'
 	cliptext.style.opacity = 0.
@@ -289,16 +262,17 @@ window.addEventListener('orientationchange', function(e){
 exports.onWindowResize = function(){
 	if(isTouchDevice){
 		if(window.innerHeight < defaultHeight){
-			defaultClipTextPos()
 			hasKeyboardFocus = true
 			bus.postMessage({
 				fn:'onKeyboardOpen'
 			})
 		}
 		else{
-			hideClipTextPos()
 			cliptext.blur()
 			hasKeyboardFocus = false
+			if(isTouchDevice){
+				cliptext.style.visibility = 'hidden'
+			}			
 			bus.postMessage({
 				fn:'onKeyboardClose'
 			})
@@ -578,7 +552,6 @@ exports.onTouchEnd = function(x, y, tapCount){
 				document.body.scrollLeft = 0
 			}
 		},16)
-		defaultClipTextPos()
 	}
 	// lets make the selection now
 	if(hasKeyboardFocus) finalizeSelection()
