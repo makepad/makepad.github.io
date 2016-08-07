@@ -2,8 +2,6 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.props = {
 		text:'Button',
-		//w:50,
-		//h:50
 	}
 
 	proto.inPlace = 1

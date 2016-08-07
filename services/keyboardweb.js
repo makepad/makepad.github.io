@@ -9,6 +9,7 @@ var services = service.others
 //
 
 // Type detection
+var isIPad = navigator.userAgent.match(/iPad/)
 var isIOSDevice = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/)
 var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints)
 
@@ -538,13 +539,19 @@ exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
 	if(isIOSDevice && tapCount === 1 && !hasKeyboardFocus){
 		ignoreFirstIosClipboard = true
-		document.body.scrollTop = document.body.offsetHeight 
+
+		var start = document.body.offsetHeight
+
+		document.body.scrollTop = start
 		cliptext.style.left = x - 10
 		cliptext.style.top = document.body.offsetHeight - 40// make sure we scroll
 		cliptext.focus()
+
 		var itvpoll = setInterval(function(){
 			var st = document.body.scrollTop
-			if(st!==document.body.offsetHeight){
+			// allright provide a little correction depending on what we are
+
+			if(st!==start){
 				clearInterval(itvpoll)
 				// lets clear the canvas
 				services.painter.resizeCanvas(st)

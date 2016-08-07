@@ -88,7 +88,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		code += indent + 'var $stampId = $view.$stampId++\n'
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
-		code += indent + 'if(!$stamp){\n'
+		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+'){\n'
 		code += indent + '	$stamp = $view.$stamps[$stampId] = Object.create(this._'+classname+'.prototype)\n'
 		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
@@ -193,4 +193,12 @@ module.exports = require('class').extend(function Stamp(proto){
 			this.redraw()	
 		}
 	})
+
+	proto.toolMacros = {
+		draw:function(overload){
+			this.$STYLESTAMP(overload)
+			this.$DRAWSTAMP()
+			return $stamp
+		}
+	}
 })

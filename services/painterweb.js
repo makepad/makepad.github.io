@@ -526,7 +526,8 @@ exports.onFingerMove = function(f){
 
 	// dont scroll
 	if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return	
-
+	if(todo.scrollMask >= 0 && f.pickId !== todo.scrollMask) return
+	
 	doScroll(todo, todo.xScroll + f.dx, todo.yScroll + f.dy)
 }
 
@@ -1570,6 +1571,7 @@ userfn.updateTodo = function(msg){
 	todo.ysScroll = msg.ysScroll
 	todo.scrollToSpeed = msg.scrollToSpeed || .5
 	todo.scrollMomentum = msg.scrollMomentum
+	todo.scrollMask = msg.scrollMask
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()

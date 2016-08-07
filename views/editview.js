@@ -59,7 +59,46 @@ module.exports = require('view').extend(function EditView(proto){
 				this.w += v*2.
 				this.shadowOffset = vec2(-v,v)*4.
 			}
-		})
+		})/*,
+		SelectHandle:require('stamp').extend(function SelectHandle(proto){
+
+			proto.props = {
+				text:'Button',
+			}
+			proto.inPlace = 1
+
+			proto.tools = {
+				Shape: require('shaders/rectshader').extend({
+					color:'red'
+				})
+			}
+
+			proto.states = {
+				default:{
+					Shape:{color:'gray'}
+				},
+				hover:{
+					Shape:{color:'red'},
+				}
+			}
+
+			proto.onFingerDown = function(){
+				this.state = this.states.hover
+			}
+
+			// we should drag the selection start
+			proto.onFingerMove = function(e){
+
+			}
+
+			proto.onFingerUp = function(){
+				this.state = this.states.default
+			}
+
+			proto.onDraw = function(){
+				this.drawShape(this)
+			}
+		})*/
 	}
 
 	//
@@ -75,7 +114,7 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$redoStack = []
 		this.$undoGroup = 0
 		this.text = ''
-		for(var i= 0 ;i <25;i++)
+		for(var i= 0 ;i <50;i++)
 			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
 	}
 
@@ -101,12 +140,6 @@ module.exports = require('view').extend(function EditView(proto){
 
 		this.drawSelect()
 
-		//var parser = require('jsparser/jsparser')
-		//js = require('shader').body.toString()
-		//require.perf()
-		//parser.parse(js)
-		//require.perf()
-
 		this.drawText({
 			wrapping:'line',
 			$editMode:true,
@@ -120,6 +153,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 				var t = this.cursorRect(cursor.end)
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
+
 				for(var j = 0; j < boxes.length;j++){
 					var box = boxes[j]
 					this.drawSelect({
@@ -130,6 +164,25 @@ module.exports = require('view').extend(function EditView(proto){
 					})
 					// lets tell the keyboard
 				}
+				/*
+				if(cursor.byFinger && boxes.length){
+					var box = boxes[0]
+					this.drawSelectHandle({
+						x:box.x-15,
+						y:box.y-15,
+						h:30,
+						w:30
+					})
+					var box = boxes[boxes.length-1]
+					this.drawSelectHandle({
+						x:box.x+box.w-15,
+						y:box.y+box.h-15,
+						h:30,
+						w:30
+					})
+
+				}*/
+
 				this.drawCursor({
 					x:t.x-1,
 					y:t.y,
@@ -517,6 +570,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	// serialize all selections, lazily
 	proto.cursorChanged = function(){
+
 		if(!this.$selChangeTimer) this.$selChangeTimer = setTimeout(function(){
 			this.$selChangeTimer = undefined
 
@@ -764,15 +818,17 @@ module.exports = require('view').extend(function EditView(proto){
 
 		var touchdy = f.touch?-20:0
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
-
+		
 
 		if(f.tapCount%3 === 1){ // select word under finger
 			var x = this.fingerCursor.end
 			this.fingerCursor.select(this.scanWordLeft(x), this.scanWordRight(x))
+			this.fingerCursor.byFinger = true
 		}
 		else if(f.tapCount%3 === 2){ // select line
 			var x = this.fingerCursor.end
 			this.fingerCursor.select(this.scanLineLeft(x), this.scanLineRight(x)+1)
+			this.fingerCursor.byFinger = true
 		}
 
 		this.redraw()
@@ -786,6 +842,7 @@ module.exports = require('view').extend(function EditView(proto){
 			//if(this.cs.cursors[0].hasSelection()) return
 			//return this.fingerCursor.moveTo(f.x, f.y+touchdy, false)
 		}
+		this.fingerCursor.byFinger = true
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, true)
 		this.redraw()
 	}

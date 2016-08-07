@@ -300,6 +300,7 @@ module.exports = require('class').extend(function View(proto){
 		}
 
 		// store the total and view heights for scrolling on the todo
+		this.todo.scrollMask = 0
 		this.todo.xTotal = tx2
 		this.todo.xView = tw
 		this.todo.yTotal = ty2

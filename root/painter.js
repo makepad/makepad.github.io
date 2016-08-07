@@ -130,7 +130,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 			ysScroll:this.ysScroll,
 			// momentum
 			scrollMomentum:this.scrollMomentum,
-			scrollToSpeed:this.scrollToSpeed
+			scrollToSpeed:this.scrollToSpeed,
+			scrollMask:this.scrollMask
 		}
 	}
 

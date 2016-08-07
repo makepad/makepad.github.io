@@ -17,11 +17,6 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		align: {styleLevel:2, value:[0,0]},
 		padding: {styleLevel:2, value:[0,0,0,0]},
 		margin: {styleLevel:1, value:[0,0,0,0]},
-		noBounds: {styleLevel:1, value:0},
-
-		lockScroll:{noTween:1, value:1.},
-		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
 		color: {pack:'float12', value:'gray'},
 

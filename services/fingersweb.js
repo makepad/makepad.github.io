@@ -91,19 +91,25 @@ function onFingerDown(fingers){
 		var f = fingers[i]
 
 		storeNewFinger(f)
+		var dt = Date.now()
+
+		// post it twice, first is the immediate message
+		f.fn = 'onImmediateFingerDown'
+		bus.postMessage(f)
 
 		services.painter.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
+	
 			// set the ID
 			f.fn = 'onFingerDown'
 			// store startx for delta
 			f.pickId = pick.pickId
 			f.todoId = pick.todoId
 			f.workerId = pick.workerId
-			f.lx = f.sx = f.x
-			f.ly = f.sy = f.y
+			f.sx = f.x
+			f.sy = f.y
 			f.dx = 0
 			f.dy = 0
-
+			f.move = 0
 			var oldf = tapmap[f.digit]
 			if(oldf){
 				var dx = f.x - oldf.x, dy = f.y - oldf.y
@@ -141,9 +147,9 @@ function onFingerMove(fingers){
 		}
 		f.sx = oldf.sx
 		f.sy = oldf.sy
-
-		oldf.dx = f.dx = oldf.lx - f.x
-		oldf.dy = f.dy = oldf.ly - f.y
+		oldf.dx = f.dx = isNaN(oldf.lx)?0:oldf.lx - f.x
+		oldf.dy = f.dy = isNaN(oldf.ly)?0:oldf.ly - f.y
+		oldf.move++
 		oldf.lx = f.x
 		oldf.ly = f.y
 		f.fn = 'onFingerMove'
@@ -184,8 +190,13 @@ function onFingerUp(fingers){
 		f.pickId = oldf.pickId
 		f.todoId = oldf.todoId
 		f.workerId = oldf.workerId
+
 		f.dx = oldf.dx
 		f.dy = oldf.dy
+		if(oldf.move === 1){
+			if(!f.dx) f.dx = (f.sx - f.x)/3
+			if(!f.dy) f.dy = (f.sy - f.y)/3
+		}
 
 		fingermap[oldf.digit] = undefined
 
