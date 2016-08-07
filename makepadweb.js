@@ -195,8 +195,16 @@
 
 		for(var i = serviceresources.length - 1; i >=0; i--){
 			var serviceresource = serviceresources[i]
-			var kernelfn = new Function("exports", "service", serviceresource.response+'\n//# sourceURL='+serviceresource.resourceurl+'\n')
-			
+			try{
+				var kernelfn = new Function("exports", "service", serviceresource.response+'\n//# sourceURL='+serviceresource.resourceurl+'\n')
+			}
+			catch(e){
+				var script = document.createElement('script')
+				script.type = 'text/javascript'
+				script.src = serviceresource.resourceurl
+				document.getElementsByTagName('head')[0].appendChild(script)
+			}
+
 			var servicename = parseFileName(serviceresource.resourceurl).slice(0,-3)
 
 			var kernelservice = {}

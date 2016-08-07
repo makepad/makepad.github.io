@@ -13,12 +13,13 @@ var isIPad = navigator.userAgent.match(/iPad/)
 var isIOSDevice = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/)
 var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints)
 
+
 // IOS uses a default selection and the rest does not
 var defaultStart = isIOSDevice?2:3
 var defaultEnd = 3
 // the magic data that goes into the textarea
-var magicClip = '\n\u00A0\u00A0\u00A1\n'
-var androidBackspace = '\n\u00A0\u00A1\n'
+var magicClip = '\n\u00A0\u00A0\u00B7\n'
+var androidBackspace = '\n\u00A0\u00B7\n'
 //
 //
 // Service API
@@ -66,8 +67,18 @@ var userMessage = {
 	},
 	setKeyboardFocus:function(msg){
 		hasKeyboardFocus = msg.focus
-		if(msg.focus) cliptext.focus()
-		else cliptext.blur()
+		if(msg.focus){
+			if(isTouchDevice){
+				cliptext.style.visibility = 'visible'
+			}
+			cliptext.focus()
+		}
+		else{
+			if(isTouchDevice){
+				cliptext.style.visibility = 'hidden'
+			}
+			cliptext.blur()
+		}
 	}
 
 }
@@ -81,22 +92,46 @@ function finalizeSelection(){
 	cliptext.selectionEnd = len - 2
 }
 
+var lastIdlePoll = Date.now()
+setInterval(function(){
+	var now = Date.now()	
+	if(now - lastIdlePoll > 500 ){
+		bus.postMessage({
+			fn:'onIdleResume'
+		})
+		if(hasKeyboardFocus){
+			hideClipTextPos()
+			hasKeyboardFocus = false
+			services.painter.resizeCanvas()
+			bus.postMessage({
+				fn:'onKeyboardClose'
+			})
+		}
+	}
+	lastIdlePoll = now
+}, 125)
+
 // poll for arrow keys on iOS. Yes this is horrible, but the only way
 // we watch how the selection changes in a time loop poll
 function arrowCursorPoll(){
+	if(!keyboardAnimPlaying && document.body.scrollTop)document.body.scrollTop = 0
 	if(ignoreCursorPoll) return
 	if((lastEnd !== cliptext.selectionEnd || lastStart !== cliptext.selectionStart)){
-		var dir = cliptext.selectionStart
 
-		//return
+		if(cliptext.value !== magicClip){
+			// reselect
+			lastStart = cliptext.selectionStart = 3 
+			lastEnd = cliptext.selectionEnd = cliptext.value.length - magicClip.length + 3
+			return
+		} 
+
 		var key = 0
-		if(dir == 0) key = 38
-		if(dir >= cliptext.value.length - 2) key = 40
-		if(dir == 3 && cliptext.value.length > 5) dir = 2
-		if(dir == 2) key = 37
-		if(dir == 3) key = 39
-
-		cliptext.value = magicClip
+		var dir = cliptext.selectionStart
+		if(dir == 0) key = 38 // up
+		if(dir == 5) key = 40 // down
+		if(dir == 2) key = 37 // left
+		if(dir == 4) key = 39 // right
+		// reset selection
 		lastStart = cliptext.selectionStart = defaultStart
 		lastEnd = cliptext.selectionEnd = defaultEnd
 
@@ -125,11 +160,10 @@ function arrowCursorPoll(){
 
 var cliptext = document.createElement('textarea')
 cliptext.className = "makepad"
-cliptext.style.left = -100
-cliptext.style.top = -100//window.innerWidth - 60
-cliptext.style.width = 80
-cliptext.style.height = 40
-cliptext.style.position = 'absolute'
+cliptext.style.position = 'relative'
+cliptext.style.top = -15
+cliptext.style.height = 15
+cliptext.style.width = 50
 cliptext.setAttribute('autocomplete','off')
 cliptext.setAttribute('autocorrect','off')
 cliptext.setAttribute('autocapitalize','off')
@@ -156,6 +190,7 @@ textarea.makepad{\n\
 	padding: 0 0px;\n\
 	margin: 0 -1px;\n\
 	text-indent: 0px;\n\
+	text-align: center ;\n\
 	-ms-user-select: text;\n\
 	-moz-user-select: text;\n\
 	-webkit-user-select: text;\n\
@@ -170,6 +205,7 @@ textarea:focus.makepad{\n\
 document.body.appendChild(style)
 
 // text area wrapper to add a bit of UI around it for touch devices
+/*
 var cliptextWrapper
 if(isTouchDevice){
 	cliptextWrapper = document.createElement('span')
@@ -194,18 +230,24 @@ if(isTouchDevice){
 	cliptextWrapper.style.backgroundColor = "rgba(128,128,128,0.3)"
 	document.body.appendChild(cliptextWrapper)
 }
-
+*/
 if(!isTouchDevice){
+	cliptext.style.position = 'absolute'
 	cliptext.style.opacity = 0.
 }
+else{
+	cliptext.style.visibility = 'hidden'
+}
+
 if(isIOSDevice){
+	cliptext.style.opacity = 0.5
 	cliptext.style.fontSize = 1
 }
 if(!isIOSDevice && isTouchDevice){
+	cliptext.style.opacity = 0.5
 	cliptext.style.fontSize = 12
 }
 
-//cliptext.focus()
 cliptext.value = magicClip
 cliptext.selectionStart = defaultStart
 cliptext.selectionEnd = defaultEnd
@@ -275,30 +317,7 @@ if(isIOSDevice){
 		})
 	})
 }
-//
-//
-// Text area position
-//
-//
 
-// moving the cliptext area
-function defaultClipTextPos(){
-	if(cliptextWrapper){
-		cliptextWrapper.style.left = window.innerWidth-60
-		cliptextWrapper.style.top = 10
-	}
-	cliptext.style.left = window.innerWidth-55
-	cliptext.style.top = 15
-}
-
-function hideClipTextPos(){
-	if(cliptextWrapper){
-		cliptextWrapper.style.left = -100
-		cliptextWrapper.style.top = -100
-	}
-	cliptext.style.left = -100
-	cliptext.style.top = -100
-}
 
 //
 //
@@ -343,7 +362,7 @@ function onKeyDown(e){
 
 	// move the text area for the character accent menu
 	if(!isTouchDevice && characterAccentMenuPos){
-		cliptext.style.left = characterAccentMenuPos.x + 10
+		cliptext.style.left = characterAccentMenuPos.x- 14
 		cliptext.style.top = characterAccentMenuPos.y + 12
 	}
 	//cliptext.focus()
@@ -430,7 +449,7 @@ function onSelect(e){
 function onInput(){
 	var value = cliptext.value
 	// we seem to have pressed backspace on android	
-	if(value.length === 4 && value === androidBackspace){// || lastClipboard && value === magicClip){
+	if(value.length === 4 && value === androidBackspace){
 		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
@@ -535,26 +554,21 @@ exports.onTouchStart = function(x, y){
 	return true
 }
 
+var keyboardAnimPlaying = false
+
 exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
 	if(isIOSDevice && tapCount === 1 && !hasKeyboardFocus){
 		ignoreFirstIosClipboard = true
-
-		var start = document.body.offsetHeight
-
-		document.body.scrollTop = start
-		cliptext.style.left = x - 10
-		cliptext.style.top = document.body.offsetHeight - 40// make sure we scroll
+		keyboardAnimPlaying = true
 		cliptext.focus()
-
 		var itvpoll = setInterval(function(){
 			var st = document.body.scrollTop
-			// allright provide a little correction depending on what we are
-
-			if(st!==start){
+			if(st!==0){
+				keyboardAnimPlaying = false
 				clearInterval(itvpoll)
 				// lets clear the canvas
-				services.painter.resizeCanvas(st)
+				services.painter.resizeCanvas(st - 15)
 				hasKeyboardFocus = true
 				bus.postMessage({
 					fn:'onKeyboardOpen'

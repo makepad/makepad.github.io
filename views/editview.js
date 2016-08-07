@@ -800,6 +800,9 @@ module.exports = require('view').extend(function EditView(proto){
 	// touch/mouse input
 	//
 	//
+	
+	proto.onFingerForce = function(f){
+	}
 
 	proto.onFingerDown = function(f){
 		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return

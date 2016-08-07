@@ -44,6 +44,9 @@ canvas.addEventListener('touchcancel', onTouchEnd)
 canvas.addEventListener('touchleave', onTouchEnd)
 canvas.addEventListener('wheel', onWheel)
 
+window.addEventListener('webkitmouseforcewillbegin', onCheckMacForce, false)
+window.addEventListener('webkitmouseforcechanged', onCheckMacForce, false)
+
 // 
 // 
 // Finger map query
@@ -236,6 +239,22 @@ function onFingerHover(fingers){
 	}
 }
 
+function onFingerForce(fingers){
+	if(!services.painter) return
+	for(var i = 0; i < fingers.length; i++){
+		var f = fingers[i]
+		var oldf = nearestFinger(f.x, f.y)
+
+		f.fn = 'onFingerForce'
+		f.digit = oldf.digit
+		f.pickId = oldf.pickId
+		f.todoId = oldf.todoId
+		f.workerId = oldf.workerId
+
+		bus.postMessage(f)
+	}
+}
+
 function onFingerWheel(fingers){
 	for(var i = 0; i < fingers.length; i++){
 		var f = fingers[i]
@@ -281,6 +300,7 @@ function touchToFinger(e){
 		f.push({
 			x:t.pageX,
 			y:t.pageY,
+			force:t.force,
 			button:1,
 			touch: true,
 			time:Date.now()
@@ -314,8 +334,32 @@ function onMouseMove(e){
 	}
 }
 
+// running every frame
+var touchPollEvent
+var touchPollRefs = 0
+var touchPollItv 
+
+function onForceInterval(){
+	onFingerForce(touchToFinger(touchPollEvent))
+}
+
+function onCheckMacForce(e){
+	// lets reuse our mouse
+	var fingers = touchToFinger(touchPollEvent)
+	for(var i = 0; i < fingers.length; i++){
+		fingers[i].force = e.webkitForce / 3.0
+	}
+	onFingerForce(fingers)
+}
+
 function onTouchStart(e){
 	e.preventDefault()
+	if(e.changedTouches[0].force !== undefined){
+		touchPollEvent = e
+		if(!touchPollRefs++){
+			touchPollItv = setInterval(onForceInterval,16)
+		}
+	}
 	services.keyboard.onTouchStart(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 	onFingerDown(touchToFinger(e))
 }
@@ -326,6 +370,11 @@ function onTouchMove(e){
 
 function onTouchEnd(e){
 	if(services.audio) services.audio.onTouchEnd()
+	if(touchPollRefs){
+		if(!--touchPollRefs){
+			clearInterval(touchPollItv)
+		}
+	}
 	e.preventDefault()
 	var tapCount = onFingerUp(touchToFinger(e))
 	services.keyboard.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY, tapCount)

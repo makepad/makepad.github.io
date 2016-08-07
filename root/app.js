@@ -93,6 +93,10 @@ module.exports = require('view').extend(function App(proto, base){
 			fingerMessage('onFingerUp', msg.todoId, msg.pickId, msg)
 		}
 
+		fingers.onFingerForce = function(msg){
+			fingerMessage('onFingerForce', msg.todoId, msg.pickId, msg)
+		}
+
 		var lastTodoId = 0
 		var lastPickId = 0
 		fingers.onFingerHover = function(msg){

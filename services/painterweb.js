@@ -1,7 +1,7 @@
 var canvas = service.canvas
 var args = service.args
 var bus = service.bus
-
+var services = service.others
 //
 //
 //  GL Context initialization
@@ -358,7 +358,6 @@ function renderColor(framebuffer){
 
 var repaintPending = false
 function repaint(time){
-
 	if(showAgain)canvas.style.visibility = 'visible'
 	showAgain = false
 
