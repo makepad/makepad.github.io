@@ -206,6 +206,8 @@ document.body.appendChild(style)
 
 if(!isTouchDevice){
 	cliptext.style.position = 'absolute'
+	cliptext.style.left = -100
+	cliptext.style.top = -100
 	cliptext.style.opacity = 0.
 }
 else{

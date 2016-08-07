@@ -1,18 +1,17 @@
 var App = require('app').extend(function(proto){
 
-	var Edit = require('views/editview')
+	var Code = require('views/codeview')
 
-	var extext = ''
-	for(var i= 0 ;i <25;i++)
-		extext += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
+require('stamps/buttonstamp')
 
 	proto.onCompose = function(){
 		return [
-			Edit({
-				text:extext,
+			Code({
+				text:"hello",
 				Text:{
-					fontSize:24,
-					font:require('fonts/ubuntu_medium_256.sdffont'),
+					fontSize:12,
+					boldness:.2,
+					font:require('fonts/ubuntu_monospace_256.sdffont'),
 				},
 				w:'100%',
 				h:'100%'

@@ -595,7 +595,7 @@
 			return t * t * (3 - 2 * t)
 		}
 		g.mix = function(a, b, f){
-			return a*(1.-f) + b*f
+			return a*(1. - f) + b * f
 		}
 	}
 
