@@ -69,13 +69,13 @@ var userMessage = {
 		hasKeyboardFocus = msg.focus
 		if(msg.focus){
 			if(isTouchDevice){
-				cliptext.style.visibility = 'visible'
+				cliptext.style.top = -15
 			}
 			cliptext.focus()
 		}
 		else{
 			if(isTouchDevice){
-				cliptext.style.visibility = 'hidden'
+				cliptext.style.top = 0
 			}
 			cliptext.blur()
 		}
@@ -161,7 +161,7 @@ function arrowCursorPoll(){
 var cliptext = document.createElement('textarea')
 cliptext.className = "makepad"
 cliptext.style.position = 'relative'
-cliptext.style.top = -15
+cliptext.style.top = 0//-15
 cliptext.style.height = 15
 cliptext.style.width = 50
 cliptext.setAttribute('autocomplete','off')
@@ -209,7 +209,7 @@ if(!isTouchDevice){
 	cliptext.style.opacity = 0.
 }
 else{
-	cliptext.style.visibility = 'hidden'
+	cliptext.style.top = 0
 }
 
 if(isIOSDevice){
@@ -271,7 +271,8 @@ exports.onWindowResize = function(){
 			cliptext.blur()
 			hasKeyboardFocus = false
 			if(isTouchDevice){
-				cliptext.style.visibility = 'hidden'
+				cliptext.style.top = 0
+				//cliptext.style.visibility = 'hidden'
 			}			
 			bus.postMessage({
 				fn:'onKeyboardClose'
@@ -284,7 +285,7 @@ if(isIOSDevice){
 	document.addEventListener('focusout', function(e) {
 		cliptext.blur()
 		hasKeyboardFocus = false
-		cliptext.style.visibility = 'hidden'
+		cliptext.style.top = 0
 		services.painter.resizeCanvas()
 		bus.postMessage({
 			fn:'onKeyboardClose'
@@ -485,7 +486,7 @@ function onTouchMove(e){
 
 function onBlur(){
 	if(isTouchDevice){
-		cliptext.style.visibility = 'hidden'
+		cliptext.style.top = 0
 	}
 }
 
