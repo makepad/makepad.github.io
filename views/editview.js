@@ -690,11 +690,13 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onKeyHome = function(k){
-		this.cs.moveHome(k.shift)
+		if(k.ctrl || k.alt) return this.cs.moveHome(k.shift)
+		return this.cs.moveLineLeft(k.shift)
 	}
 
 	proto.onKeyEnd = function(k){
-		this.cs.moveEnd(k.shift)
+		if(k.ctrl || k.alt) return this.cs.moveEnd(k.shift)
+		return this.cs.moveLineRight(k.shift)
 	}
 
 	proto.onKeyLeftArrow = function(k){
