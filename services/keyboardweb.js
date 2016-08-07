@@ -39,6 +39,7 @@ var characterAccentMenuPos
 var arrowCursorPollInterval
 var hasKeyboardFocus
 var ignoreFirstIosClipboard
+
 var userMessage = {
 	setClipboardText:function(msg){
 		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
@@ -100,7 +101,6 @@ setInterval(function(){
 			fn:'onIdleResume'
 		})
 		if(hasKeyboardFocus){
-			hideClipTextPos()
 			hasKeyboardFocus = false
 			services.painter.resizeCanvas()
 			bus.postMessage({
@@ -113,6 +113,8 @@ setInterval(function(){
 
 // poll for arrow keys on iOS. Yes this is horrible, but the only way
 // we watch how the selection changes in a time loop poll
+
+var keyboardAnimPlaying = false
 function arrowCursorPoll(){
 	if(!keyboardAnimPlaying && document.body.scrollTop)document.body.scrollTop = 0
 	if(ignoreCursorPoll) return
@@ -533,8 +535,6 @@ exports.onTouchStart = function(x, y){
 	ignoreCursorPoll = true
 	return true
 }
-
-var keyboardAnimPlaying = false
 
 exports.onTouchEnd = function(x, y, tapCount){
 	ignoreCursorPoll = false
