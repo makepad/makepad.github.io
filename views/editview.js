@@ -255,7 +255,9 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 		
 		proto.moveTo = function(x, y, onlyEnd){
-			this.end = this.editor.offsetFromPos(x, y)
+			var end = this.editor.offsetFromPos(x, y)
+			if(this.end === end) return
+			this.end = end
 			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0
 			if(!onlyEnd) this.start = this.end
@@ -831,7 +833,7 @@ module.exports = require('view').extend(function EditView(proto){
 			this.fingerCursor.byFinger = true
 		}
 
-		this.redraw()
+		//this.redraw()
 	}
 
 	proto.onFingerMove = function(f){
@@ -862,8 +864,6 @@ module.exports = require('view').extend(function EditView(proto){
 				this.fingerCursor.end = this.scanLineLeft(this.fingerCursor.end)
 			}
 		}
-
-		this.redraw()
 	}
 
 	proto.onFingerUp = function(f){
@@ -875,7 +875,7 @@ module.exports = require('view').extend(function EditView(proto){
 			cursor.moveTo(f.x, f.y+touchdy, false)
 			this.app.setKeyboardFocus(true)
 		}
-		this.redraw()
+		//this.redraw()
 	}
 
 })

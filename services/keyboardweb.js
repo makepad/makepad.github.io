@@ -430,7 +430,6 @@ function onInput(){
 	var value = cliptext.value
 	// we seem to have pressed backspace on android	
 	if(value.length === 4 && value === androidBackspace){
-		console.log("BACKSPACE?")
 		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
