@@ -819,13 +819,13 @@ module.exports = require('view').extend(function EditView(proto){
 		var touchdy = f.touch?-20:0
 		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
 		
-
-		if(f.tapCount%3 === 1){ // select word under finger
+		var tapDiv = f.touch?4:3, tapStart = f.touch?2:1
+		if(f.tapCount%tapDiv === tapStart+0){ // select word under finger
 			var x = this.fingerCursor.end
 			this.fingerCursor.select(this.scanWordLeft(x), this.scanWordRight(x))
 			this.fingerCursor.byFinger = true
 		}
-		else if(f.tapCount%3 === 2){ // select line
+		else if(f.tapCount%tapDiv === tapStart+1){ // select line
 			var x = this.fingerCursor.end
 			this.fingerCursor.select(this.scanLineLeft(x), this.scanLineRight(x)+1)
 			this.fingerCursor.byFinger = true
