@@ -425,6 +425,7 @@ function onInput(){
 	var value = cliptext.value
 	// we seem to have pressed backspace on android	
 	if(value.length === 4 && value === androidBackspace){
+		console.log("BACKSPACE?")
 		cliptext.value = magicClip
 		cliptext.selectionStart = defaultStart
 		cliptext.selectionEnd = defaultEnd
@@ -447,8 +448,8 @@ function onInput(){
 	if(value !== lastClipboard){
 		lastClipboard = ''
 		cliptext.value = magicClip
-		cliptext.selectionStart = defaultStart
-		cliptext.selectionEnd = defaultEnd
+		lastStart = cliptext.selectionStart = defaultStart
+		lastEnd = cliptext.selectionEnd = defaultEnd
 		// special character accent popup 
 		if(defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
 			bus.postMessage({
@@ -462,6 +463,7 @@ function onInput(){
 		// like swipe android keyboards 
 		else for(var i = 0, len = value.length - 2 - defaultStart; i < len; i++){
 			var charcode = value.charCodeAt(i + defaultStart)
+
 			var msg = {
 				fn:'onKeyPress',
 				char:charcode,
