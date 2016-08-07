@@ -30,21 +30,15 @@ var Scrollbars = require('canvas').extend({
 				borderWidth:1,
 			}
 		}),
-		Scroller:require('stamps/scrollbarstamp').extend({
-			ScrollBar:{
-				pixelStyle2:function(){
-					this.handlePos = (.5+.5*sin(2.*this.time+this.id*0.2))*(1.-this.handleSize)
-				}
-			}
-		}),
 		Rect:require('shaders/fastrectshader').extend({
 			borderRadius:8,
 		})
 	},
+	padding:10,
 	drawDiscard:'y',
 	onDraw:function(){
 		require.perf()
-		this.beginRect(this.viewGeom)
+		this.beginRect(this.viewBgProps)
 		
 		for(var i = 0; i < 1500; i++){
 			if(i%20 === 0){
@@ -60,14 +54,6 @@ var Scrollbars = require('canvas').extend({
 				color:'white',
 				text:(random()+'').slice(3,5)
 			})	
-			this.drawScroller({
-				id:i,
-				lockScroll:1.,
-				margin:1,
-				handleSize:0.2,
-				w:10,
-				h:50//'100%',
-			})
 		}
 		//this.drawRect({w:100,h:4000})
 		this.endRect()

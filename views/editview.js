@@ -24,9 +24,6 @@ module.exports = require('view').extend(function EditView(proto){
 		Text:require('shaders/sdffontshader').extend({
 			font:require('fonts/ubuntu_medium_256.sdffont'),
 			fontSize:24,
-			//duration:0.8,
-			//ease:[1,100,0,0],
-			//tween:2,
 			color:'#ccc'
 		}),
 		Select:require('shaders/rectshader').extend({
@@ -113,9 +110,6 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$undoStack = []
 		this.$redoStack = []
 		this.$undoGroup = 0
-		this.text = ''
-		for(var i= 0 ;i <50;i++)
-			this.text += i+": This editbox has working scroll-to, scrollbars, cursor jumping, undo redo, mobile keyboard input\n"
 	}
 
 	proto.onHasFocus = function(){
