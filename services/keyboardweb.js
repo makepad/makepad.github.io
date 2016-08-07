@@ -282,9 +282,9 @@ exports.onWindowResize = function(){
 
 if(isIOSDevice){
 	document.addEventListener('focusout', function(e) {
-		hideClipTextPos()
 		cliptext.blur()
 		hasKeyboardFocus = false
+		cliptext.style.visibility = 'hidden'
 		services.painter.resizeCanvas()
 		bus.postMessage({
 			fn:'onKeyboardClose'
@@ -485,7 +485,7 @@ function onTouchMove(e){
 
 function onBlur(){
 	if(isTouchDevice){
-		hideClipTextPos()
+		cliptext.style.visibility = 'hidden'
 	}
 }
 
