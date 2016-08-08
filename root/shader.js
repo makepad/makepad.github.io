@@ -741,7 +741,7 @@ module.exports = require('class').extend(function Shader(proto){
 		var code = ''
 		var info = this.$compileInfo
 	
-		code += indent +'var $props =  this.$shaders.'+classname+'.$props\n'
+		code += indent +'var $props = this.$shaders.'+classname+'.$props\n'
 		code += indent +'var $a = $props.array\n'
 
 		return code

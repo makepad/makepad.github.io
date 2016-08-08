@@ -166,7 +166,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	proto.toolMacros = {
 		$readOffset:function(o){
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
-			
+			if(!this.$shaders.NAME) return {}
 			this.$READBEGIN()
 			var len = this.$PROPLEN()
 			if(o < 0 || o >= len) return
@@ -188,6 +188,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		},
 		$seekPos:function(x, y, box){
 			// lets find where we are inbetween
+			if(!this.$shaders.NAME) return {}
 			var len = this.$PROPLEN() - 1
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
@@ -207,6 +208,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			return -2
 		},
 		$boundRects:function(start, end){
+			if(!this.$shaders.NAME) return {}
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			this.$READBEGIN()
@@ -330,14 +332,17 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				}
 			}
 		},
-		$drawFast:function(txt, style){
+		fast:function(txt, style){
+			this.fastNAMEOutput += txt
 			var len = txt.length
 			var turtle = this.turtle
 			this.$ALLOCDRAW(len, true)
-			var posx = turtle._x
-			var posy = turtle._y
+			var margin = style.margin
+			var lineSpacing = this._NAME.prototype.lineSpacing
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var fontSize = style.fontSize
+			var posx = turtle.wx + margin[3] * fontSize
+			var posy = turtle.wy + margin[0] * fontSize
 			for(var i = 0; i < len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode]
@@ -373,13 +378,18 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					unicode: unicode
 				})
 				posx += g.advance * fontSize
+				var nh = fontSize * lineSpacing
+				if(nh > turtle.mh) turtle.mh = nh
 				if(unicode === 10){
+					turtle.mh = 0
 					if(posx>turtle.x2) turtle.x2 = posx
-					posx = 0, posy += fontSize * this._NAME.prototype.lineSpacing
+					posx = turtle.sx, posy += fontSize * lineSpacing
+					turtle.wy += fontSize * lineSpacing
 				}
 			}
-			posy += fontSize * this._NAME.prototype.lineSpacing
+			posy += fontSize * lineSpacing
 			if(posy>turtle.y2) turtle.y2 = posy
+			turtle.wx = posx + margin[1]* fontSize
 		}
 	}
 

@@ -101,6 +101,14 @@ module.exports = function(proto){
 		return shader
 	}
 
+	proto.parseColor = function(str, alpha){
+		var out = []
+		if(!types.colorFromString(str, alpha, out, 0)){
+			console.log("Cannot parse color" + str)
+		}
+		return out
+	}
+
 	proto.$parseColor = function(str, alpha, a, o){
 		if(!types.colorFromString(str, alpha, a, o)){
 			console.log("Cannot parse color "+str)

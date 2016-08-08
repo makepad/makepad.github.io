@@ -171,10 +171,10 @@ cliptext.setAttribute('autocapitalize','off')
 cliptext.setAttribute('spellcheck','false')
 
 cliptext.style.zIndex = 100000
+//::selection { background:transparent; color:transparent; }\n\
 
 var style = document.createElement('style')
 style.innerHTML = "\n\
-::selection2 { background:transparent; color:transparent; }\n\
 textarea.makepad{\n\
 	opacity: 0;\n\
 	border-radius:4px;\n\

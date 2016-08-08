@@ -66,6 +66,8 @@ module.exports = {
 	ForOfStatement:{left:1, right:1, body:1},
 	WhileStatement:{body:1, test:1},
 	DoWhileStatement:{body:1, test:1},
+	BreakStatement:{label:1},
+	ContinueStatement:{label:1},
 
 	// switch
 	SwitchStatement:{discriminant:1, cases:2},

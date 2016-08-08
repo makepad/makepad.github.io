@@ -28,11 +28,11 @@ module.exports = require('view').extend(function EditView(proto){
 			color:'#ccc'
 		}),
 		Select:require('shaders/rectshader').extend({
-			color:'#87543a',
+			color:'#458',
 			//duration:0.2,
 			borderWidth:1,
 			borderRadius:3,
-			borderColor:['#87543aff',1.2],
+			borderColor:['#458',1.2],
 			//ease:[1,100,0,0],
 			//tween:2,
 			vertexStyle:function(){
@@ -583,6 +583,7 @@ module.exports = require('view').extend(function EditView(proto){
 				var cursor = this.cs.cursors[i]
 				txt += this.text.slice(cursor.lo(), cursor.hi())
 			}
+
 			this.app.setClipboardText(txt)
 
 			this.showLastCursor()
