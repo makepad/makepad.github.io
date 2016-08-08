@@ -13,7 +13,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 
 	proto.tools = {
-		Block:require('shaders/rectshader').extend({
+		Block:require('shaders/fastrectshader').extend({
 			borderRadius:5,
 			vertexStyle2:function(){
 				var dx = .5

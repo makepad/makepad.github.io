@@ -340,7 +340,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		},
 		fast:function(txt, style){
 			var out = this.fastNAMEOutput
-
+			
 			var len = txt.length
 			var turtle = this.turtle
 			this.$ALLOCDRAW(len, true)
@@ -351,19 +351,14 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var posx = turtle.wx + margin[3] * fontSize
 			var posy = turtle.wy + margin[0] * fontSize
 
-			if(out !== undefined){
-				out.text += txt
-				var ann = out.ann
-				var sx = turtle.sx
-				for(var i = 0; i < len; i++){
-					unicode = txt.charCodeAt(i)
-					ann.push(unicode, sx, style)
-				}
-			}
-
+			out.text += txt
+			var sx = turtle.sx
+			var ann = out.ann
 			for(var i = 0; i < len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode]
+				ann.push(unicode, sx, style)
+
 				this.$WRITEPROPS({
 					$fastWrite:true,
 					visible:1,
