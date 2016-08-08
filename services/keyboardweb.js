@@ -339,7 +339,7 @@ function onKeyDown(e){
 
 	// move the text area for the character accent menu
 	if(!isTouchDevice && characterAccentMenuPos){
-		cliptext.style.left = characterAccentMenuPos.x- 16
+		cliptext.style.left = characterAccentMenuPos.x +6
 		var p = Math.min(document.body.offsetHeight -  cliptext.offsetHeight, characterAccentMenuPos.y + 4)
 		cliptext.style.top = p
 	}
