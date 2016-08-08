@@ -335,8 +335,12 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				}
 			}
 		},
+		$annotated:function(annotated, style){
+
+		},
 		fast:function(txt, style){
-			this.fastNAMEOutput += txt
+			var out = this.fastNAMEOutput
+
 			var len = txt.length
 			var turtle = this.turtle
 			this.$ALLOCDRAW(len, true)
@@ -346,6 +350,17 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var fontSize = style.fontSize
 			var posx = turtle.wx + margin[3] * fontSize
 			var posy = turtle.wy + margin[0] * fontSize
+
+			if(out !== undefined){
+				out.text += txt
+				var ann = out.ann
+				var sx = turtle.sx
+				for(var i = 0; i < len; i++){
+					unicode = txt.charCodeAt(i)
+					ann.push(unicode, sx, style)
+				}
+			}
+
 			for(var i = 0; i < len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode]

@@ -5,7 +5,7 @@ var App = require('app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			Code({
-				text:require('stamps/buttonstamp').body.toString(),
+				text:require('shader').body.toString(),
 				Text:{
 					fontSize:12,
 					boldness:0.1,

@@ -1,6 +1,15 @@
-module.exports = require('views/editview').extend(function CodeView(proto){
+module.exports = require('views/editview').extend(function CodeView(proto, base){
 	
 	var parser = require('jsparser/jsparser')
+
+	proto.onInit = function(){
+		base.onInit.call(this)
+
+		this.fastTextOutput = {
+			text:'',
+			ann:[]
+		}
+	}
 
 
 	proto.tools = {
@@ -26,25 +35,30 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		this.drawSelect()
 
 		// ok lets parse the code
+		require.perf()
 		try{
-			var ast = parser.parse(this.text)
 
+			var ast = parser.parse(this.text)
 
 			// first we format the code
 			this.indent = 0
 			// the indent size
 			this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * this.style.fontSize * 3
 			this.lineHeight = this.style.fontSize
-			this.fastTextOutput = ''
+			var out = this.fastTextOutput
+			out.text = ''
+			out.ann.length = 0
 
 			this[ast.type](ast, null)
 
-			this.text = this.fastTextOutput
+			this.text = out.text
+			this.ann = out.ann
 			// end with a space
 			this.fastText(' ', this.style)
 
 		}
 		catch(e){ // uhoh.. we need to fall back to textmode
+			//console.log(e)
 			this.fastText(this.text, this.style)
 			// OR we do use tabs but
 			// we dont use spaces.
@@ -52,6 +66,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 			// which will be the same everywhere
 			// problem is we cant vertically align objects
 		}
+		require.perf()
 
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
@@ -101,6 +116,27 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		this.endBg()
 	}
 
+	// make the edit control operate on both
+	// we operate on both because otherwise the parser would
+	// have to serialize the array which costs time
+
+	proto.insertText = function(offset, text){
+		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
+
+		this.redraw()
+	}
+
+	proto.removeText = function(start, end){
+		this.text = this.text.slice(0, start) + this.text.slice(end)
+
+		this.redraw()
+	}
+
+	proto.serializeSlice = function(start, end){
+		return this.text.slice(start, end)
+	}
+
+
 	Object.defineProperty(proto,'styles',{
 		get:function(){ return this.style },
 		set:function(inStyles){
@@ -114,7 +150,9 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		1:'#463b',
 		2:'#574b',
 		3:'#685b',
-		4:'#795b'
+		4:'#796b',
+		5:'#8a7b',
+		6:'#9b8b'
 	}
 
 	var arrayBlockColor = {
@@ -122,7 +160,29 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		1:'#446b',
 		2:'#557b',
 		3:'#668b',
-		4:'#779b'
+		4:'#779b',
+		5:'#88ab',
+		6:'#99bb'
+	}
+
+	var forBlockColor = {
+		0:'#515b',
+		1:'#626b',
+		2:'#737b',
+		3:'#848b',
+		4:'#959b',
+		5:'#a6ab',
+		6:'#b7bb'
+	}
+	
+	var ifBlockColor = {
+		0:'#514b',
+		1:'#612b',
+		2:'#713b',
+		3:'#814b',
+		4:'#915b',
+		5:'#a16b',
+		6:'#bb7b'
 	}
 
 	var objectBlockColor = {
@@ -130,7 +190,9 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		1:'#643b',
 		2:'#754b',
 		3:'#865b',
-		4:'#975b'
+		4:'#976b',
+		5:'#a87b',
+		6:'#b98b',
 	}
 
 	// nice cascading high perf styles for the text
@@ -159,14 +221,20 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		Paren:{
 			boldness:0.,
 			FunctionDeclaration:{},
-			CallExpression:{}
+			CallExpression:{},
+			NewExpression:{},
+			ParenthesizedExpression:{},
+			IfStatement:{},
+			ForStatement:{}
 		},
 		Comma:{
 			FunctionDeclaration:{},
 			CallExpression:{},
 			ArrayExpression:{},
 			ObjectExpression:{},
-			VariableDeclaration:{}
+			VariableDeclaration:{},
+			SequenceExpression:{},
+			NewExpression:{}
 		},
 		Curly:{
 			BlockStatement:{},
@@ -175,17 +243,23 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		Dot:{
 			MemberExpression:{}
 		},
+		SemiColon:{
+			ForStatement:{}
+		},
 		Bracket:{
 			MemberExpression:{},
 			ArrayExpression:{
 				boldness:0.
 			}
 		},
+		QuestionMark:{
+		},
 		Colon:{
 			ObjectExpression:{
 				boldness:0.,
 				color:'#fff'
-			}
+			},
+			ConditionalExpression:{}
 		},
 
 		Program:{},
@@ -219,6 +293,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 			},
 			boolean:{},
 			regexp:{},
+			object:{}
 		},
 		ThisExpression:{
 			boldness:0.3,
@@ -268,8 +343,13 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		UnaryExpression:{},
 
 		// if and for
-		IfStatement:{},
-		ForStatement:{},
+		IfStatement:{
+			if:{},
+			else:{}
+		},
+		ForStatement:{
+			in:{}
+		},
 		ForInStatement:{},
 		ForOfStatement:{},
 		WhileStatement:{},
@@ -328,10 +408,10 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		this.fastText('\n', this.styles)
 	}
 
-	proto.BlockStatement = function(node){
+	proto.BlockStatement = function(node, colorScheme){
 		// store the startx/y position
 		var turtle = this.turtle
-
+		if(!colorScheme) colorScheme = indentBlockColor
 		var startx = turtle.sx, starty = turtle.wy
 		this.fastText('{', this.styles.Curly.BlockStatement)
 		var endx = turtle.wx, lineh = turtle.mh
@@ -354,13 +434,13 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 		// lets draw a block with this information
 		this.drawBlock({
-			color:indentBlockColor[this.indent],
+			color:colorScheme[this.indent],
 			x:startx, y:starty,
 			w:endx - startx, h:lineh
 		})
 
 		this.drawBlock({
-			color:indentBlockColor[this.indent],
+			color:colorScheme[this.indent],
 			x:startx, y:starty+lineh-1,
 			w:this.indentSize, h:blockh - starty+1
 		})
@@ -374,17 +454,26 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 	//ExpressionStatement:{expression:1},
 	proto.ExpressionStatement = function(node){
 		var exp = node.expression
-		this[exp.type](exp, node)
+		this[exp.type](exp)
 	}
 
 	//SequenceExpression:{expressions:2}
 	proto.SequenceExpression = function(node){
-		logNonexisting(node)
+
+		var exps = node.expressions
+		for(var i = 0; i < exps.length; i++){
+			var exp = exps[i]
+			if(i) this.fastText(',', this.styles.Comma.SequenceExpression)
+			if(exp)this[exp.type](exp)
+		}
 	}
 
 	//ParenthesizedExpression:{expression:1}
 	proto.ParenthesizedExpression = function(node){
-		logNonexisting(node)
+		this.fastText('(', this.style.Paren.ParenthesizedExpression)
+		var exp = node.expression
+		this[exp.type](exp)
+		this.fastText(')', this.style.Paren.ParenthesizedExpression)
 	}
 
 	//Literal:{raw:0, value:0},
@@ -405,7 +494,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 	//MemberExpression:{object:1, property:1, computed:0},
 	proto.MemberExpression = function(node){
 		var obj = node.object
-		this[obj.type](obj, node)
+		this[obj.type](obj)
 		var prop = node.property
 		if(node.computed){
 			this.fastText('[', this.style.Bracket.MemberExpression)
@@ -427,9 +516,24 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		for(var i = 0; i < args.length;i++){
 			var arg = args[i]
 			if(i) this.fastText(',', this.style.Comma.CallExpression)
-			this[arg.type](arg, node)
+			this[arg.type](arg)
 		}
 		this.fastText(')', this.style.Paren.CallExpression)
+	}
+
+	//NewExpression:{callee:1, arguments:2},
+	proto.NewExpression = function(node){
+		var callee = node.callee
+		var args = node.arguments
+		this.fastText('new ', this.style.NewExpression)
+		this[callee.type](callee, node)
+		this.fastText('(', this.style.Paren.NewExpression)
+		for(var i = 0; i < args.length;i++){
+			var arg = args[i]
+			if(i) this.fastText(',', this.style.Comma.NewExpression)
+			this[arg.type](arg)
+		}
+		this.fastText(')', this.style.Paren.NewExpression)
 	}
 
 	//ReturnStatement:{argument:1},
@@ -466,13 +570,13 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		for(var i =0 ; i < params.length; i++){
 			var param = params[i]
 			if(i) this.fastText(',', this.styles.Comma.FunctionDeclaration)
-			this[param.type](param, node)
+			this[param.type](param)
 
 		}
 		this.fastText(')', this.styles.Paren.FunctionDeclaration)
 
 		var body = node.body
-		this[body.type](body, node)
+		this[body.type](body)
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
@@ -482,7 +586,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		var declslen = decls.length - 1
 		for(var i = 0; i <= declslen; i++){
 			var decl = decls[i]
-			this[decl.type](decl, node)
+			this[decl.type](decl)
 			if(i !== declslen) this.fastText(',', this.styles.Comma.VariableDeclaration)
 		}
 	}
@@ -494,63 +598,155 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		var init = node.init
 		if(init){
 			this.fastText('=', this.styles.AssignmentExpression['='])
-			this[init.type](init, node)
+			this[init.type](init)
 		}
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
 	proto.LogicalExpression = function(node){
-		logNonexisting(node)
+		var left = node.left
+		var right = node.right
+		this[left.type](left)
+		this.fastText(node.operator, this.style.LogicalExpression[node.operator] || this.style.LogicalExpression)
+		this[right.type](right)
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
 	proto.BinaryExpression = function(node){
-		logNonexisting(node)
+		var left = node.left
+		var right = node.right
+		this[left.type](left)
+		this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
+		this[right.type](right)
 	}
 
 	//AssignmentExpression: {left:1, operator:0, right:1},
 	proto.AssignmentExpression = function(node){
 		var left = node.left
 		var right = node.right
-		this[left.type](left, node)
-		var opstyle = 
-		this.fastText('=', this.style.AssignmentExpression[node.operator] || this.style.AssignmentExpression)
-		this[right.type](right, node)
+		this[left.type](left)
+		this.fastText(node.operator, this.style.AssignmentExpression[node.operator] || this.style.AssignmentExpression)
+		this[right.type](right)
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
 	proto.ConditionalExpression = function(node){
-		logNonexisting(node)
+		var test = node.test
+		this[test.type](test)
+		this.fastText('?', this.style.QuestionMark)
+		var cq = node.consequent
+		this[cq.type](cq)
+		this.fastText(':', this.style.Colon.ConditionalExpression)
+		var alt = node.alternate
+		this[alt.type](alt)
 	}
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
 	proto.UpdateExpression = function(node){
-		logNonexisting(node)
+		if(node.prefix){
+			var op = node.operator
+			this.fastText(op, this.style.UpdateExpression[op] || this.style.UpdateExpression)
+			var arg = node.argument
+			this[arg.type](arg)
+		}
+		else{
+			var arg = node.argument
+			this[arg.type](arg)
+			var op = node.operator
+			this.fastText(op, this.style.UpdateExpression[op] || this.style.UpdateExpression)
+		}
  	}
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
 	proto.UnaryExpression = function(node){
-		logNonexisting(node)
+		if(node.prefix){
+			var op = node.operator
+			this.fastText(op, this.style.UnaryExpression[op] || this.style.UnaryExpression)
+			var arg = node.argument
+			this[arg.type](arg)
+		}
+		else{
+			var arg = node.argument
+			this[arg.type](arg)
+			var op = node.operator
+			this.fastText(op, this.style.UnaryExpression[op] || this.style.UnaryExpression)
+		}
  	}
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	proto.IfStatement = function(node){
-		logNonexisting(node)
+		this.fastText('if', this.style.IfStatement.if)
+		this.fastText('(', this.style.Paren.IfStatement)
+		var test = node.test
+		this[test.type](test)
+		this.fastText(')', this.style.Paren.IfStatement)
+		var cq = node.consequent
+		this[cq.type](cq, ifBlockColor)
+		var alt = node.alternate
+		if(alt){
+			this.fastText('\nelse ', this.style.IfStatement.else)
+			this[alt.type](alt, ifBlockColor)
+		}
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
 	proto.ForStatement = function(node){
+		this.fastText('for', this.style.ForStatement)
+		this.fastText('(', this.style.Paren.ForStatement)
+		var init = node.init
+		this[init.type](init)
+		this.fastText(';', this.style.SemiColon.ForStatement)
+		var test = node.test
+		this[test.type](test)
+		this.fastText(';', this.style.SemiColon.ForStatement)
+		var update = node.update
+		this[update.type](update)
+		this.fastText(')', this.style.Paren.ForStatement)
+		var body = node.body
+		this[body.type](body, forBlockColor)
+	}
+
+	//ForInStatement:{left:1, right:1, body:1},
+	proto.ForInStatement = function(node){
+		this.fastText('for', this.style.ForStatement)
+		this.fastText('(', this.style.Paren.ForStatement)
+		var left = node.left
+		this[left.type](left)
+		this.fastText(' in ', this.style.ForStatement.in)
+		var right = node.right
+		this[right.type](right)
+		this.fastText(')', this.style.Paren.ForStatement)
+		var body = node.body
+		this[body.type](body, forBlockColor)
+	}
+
+	//ForOfStatement:{left:1, right:1, body:1},
+	proto.ForOfStatement = function(node){
 		logNonexisting(node)
 	}
 
 	//BreakStatement:{label:1},
 	proto.BreakStatement = function(node){
-		logNonexisting(node)
+		if(node.label){
+			var label = node.label
+			this.fastText('break ', this.style.BreakStatement)
+			this[label.type](label)
+		}
+		else{
+			this.fastText('break', this.style.BreakStatement)
+		}
 	}
 
 	//ContinueStatement:{label:1},
 	proto.ContinueStatement = function(node){
-		logNonexisting(node)
+		if(node.label){
+			var label = node.label
+			this.fastText('continue ', this.style.ContinueStatement)
+			this[label.type](label)
+		}
+		else{
+			this.fastText('continue', this.style.ContinueStatement)
+		}
 	}
 
 
@@ -569,7 +765,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		for(var i = 0; i < elems.length; i++){
 			var elem = elems[i]
 			if(i) this.fastText(',', this.styles.Comma.ArrayExpression)
-			if(elem)this[elem.type](elem, node)
+			if(elem)this[elem.type](elem)
 		}
 
 		this.indent --
@@ -608,10 +804,11 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		var propslen= props.length - 1
 		for(var i = 0; i <= propslen; i++){
 			var prop = props[i]
-			this.fastText(prop.key.name, this.styles.Identifier.ObjectExpression)
+			var key = prop.key
+			this[key.type](key)
 			this.fastText(':', this.styles.Colon.ObjectExpression)
 			var value = prop.value
-			this[value.type](value, node)
+			this[value.type](value)
 			if(i !== propslen){
 				this.fastText(',', this.styles.Comma.ObjectExpression)
 				this.newLine()
@@ -645,7 +842,14 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 	
 	//ThrowStatement:{argument:1},
 	proto.ThrowStatement = function(node){
-		logNonexisting(node)
+		var arg = node.argument
+		if(arg){
+			this.fastText('throw ', this.styles.ThrowStatement)
+			this[arg.type](arg, node)
+		}
+		else{
+			this.fastText('throw', this.styles.ThrowStatement)
+		}
 	}
 
 	//TryStatement:{block:1, handler:1, finalizer:1},
@@ -673,10 +877,6 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		logNonexisting(node)
 	}
 
-	//NewExpression:{callee:1, arguments:2},
-	proto.NewExpression = function(node){
-		logNonexisting(node)
-	}
 
 	//ObjectPattern:{properties:3},
 	proto.ObjectPattern = function(node){
@@ -688,15 +888,6 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		logNonexisting(node)
 	}
 
-	//ForInStatement:{left:1, right:1, body:1},
-	proto.ForInStatement = function(node){
-		logNonexisting(node)
-	}
-
-	//ForOfStatement:{left:1, right:1, body:1},
-	proto.ForOfStatement = function(node){
-		logNonexisting(node)
-	}
 
 	//WhileStatement:{body:1, test:1},
 	proto.WhileStatement = function(node){

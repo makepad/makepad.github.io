@@ -494,16 +494,25 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 	}
 
-	proto.textLength = function(){
-		return this.text.length
-	}
 
 	proto.offsetFromPos = function(x, y){
 		var t = this.$seekPosText(x, y)
 
 		if(t === -1) t = 0
-		else if(t === -2) t = this.text.length 
+		else if(t === -2) t = this.textLength() 
 		return t
+	}
+
+	proto.textLength = function(){
+		return this.text.length
+	}
+
+	proto.charAt = function(offset){
+		return this.text.charAt(offset)
+	}
+
+	proto.charCodeAt = function(offset){
+		return this.text.charCodeAt(offset)
 	}
 
 	proto.insertText = function(offset, text){
@@ -516,6 +525,10 @@ module.exports = require('view').extend(function EditView(proto){
 		this.redraw()
 	}
 
+	proto.serializeSlice = function(start, end){
+		return this.text.slice(start, end)
+	}
+
 	function charType(char){
 		if(char.match(/\w/))return 1
 		if(char.match(/\s/))return 2
@@ -525,29 +538,29 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.scanWordLeft = function(start){
 		if(start == 0) return 0
 		var i = start - 1, type = 2
-		while(i>= 0 && type === 2) type = charType(this.text.charAt(i--))
-		while(i>= 0 && type === charType(this.text.charAt(i))) i--
+		while(i>= 0 && type === 2) type = charType(this.charAt(i--))
+		while(i>= 0 && type === charType(this.charAt(i))) i--
 		return i + 1
 	}
 
 	proto.scanWordRight = function(start){
-		var i = start, type = 2
+		var i = start, type = 2, len = this.textLength()
 		if(this.text.charCodeAt(start) === 10) return start
-		while(i < this.text.length && type === 2) type = charType(this.text.charAt(i++))
-		while(i < this.text.length && type === charType(this.text.charAt(i))) i++
+		while(i < len && type === 2) type = charType(this.charAt(i++))
+		while(i < len && type === charType(this.charAt(i))) i++
 		return i
 	}
 
 	proto.scanLineLeft = function(start){
 		for(var i = start - 1; i >= 0; i--){
-			if(this.text.charCodeAt(i) === 10) break
+			if(this.charCodeAt(i) === 10) break
 		}
 		return i + 1
 	}
 
 	proto.scanLineRight = function(start){
 		for(var i = start; i < this.text.length; i++){
-			if(this.text.charCodeAt(i) === 10) break
+			if(this.charCodeAt(i) === 10) break
 		}
 		return i
 	}
@@ -612,7 +625,7 @@ module.exports = require('view').extend(function EditView(proto){
 			group: this.$undoGroup,
 			type:'insert',
 			start:start,
-			data: this.text.slice(start, end),
+			data: this.serializeSlice(start, end),
 			cursors: this.cs.serializeToArray()
 		})
 	}
