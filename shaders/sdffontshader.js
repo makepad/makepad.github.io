@@ -237,6 +237,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			}
 			return boxes
 		},
+		$resetBuffer:function(){
+			this.$PROPLEN() = 0
+		},
 		draw:function(overload){
 			var turtle = this.turtle
 			this.$STYLEPROPS(overload, 1)

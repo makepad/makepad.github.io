@@ -35,6 +35,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 		}
 		catch(e){ // uhoh.. we need to fall back to textmode
+			console.log(e)
 			this.fastText(this.text, this.style)
 			// OR we do use tabs but
 			// we dont use spaces.
@@ -510,7 +511,7 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		for(var i = 0; i < elems.length; i++){
 			var elem = elems[i]
 			if(i) this.fastText(',', this.styles.Comma.ArrayExpression)
-			this[elem.type](elem, node)
+			if(elem)this[elem.type](elem, node)
 		}
 
 		this.indent --
