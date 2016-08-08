@@ -2,18 +2,26 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 	
 	var parser = require('jsparser/jsparser')
 
-	Object.defineProperty(proto,'styles',{
-		get:function(){ return this.style },
-		set:function(inStyles){
-			this._protoStyles = protoInherit(this._protoStyles, inStyles)
-			this.style = protoFlatten({}, this._protoStyles)
-		}
-	})
 
+	proto.tools = {
+		Block:require('shaders/rectshader').extend({
+			borderRadius:5,
+			vertexStyle2:function(){
+				var dx = .5
+				//this.x -= dx
+				this.y -= dx
+				//this.w += 2.*dx
+				this.h += 2.*dx
+			}
+
+		})
+	}
 
 	proto.onDraw = function(){
 
 		this.beginBg(this.viewBgProps)
+
+		this.drawBlock()
 
 		this.drawSelect()
 
@@ -32,10 +40,11 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 			this[ast.type](ast, null)
 
 			this.text = this.fastTextOutput
+			// end with a space
+			this.fastText(' ', this.style)
 
 		}
 		catch(e){ // uhoh.. we need to fall back to textmode
-			console.log(e)
 			this.fastText(this.text, this.style)
 			// OR we do use tabs but
 			// we dont use spaces.
@@ -92,8 +101,36 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		this.endBg()
 	}
 
-	proto.tools = {
+	Object.defineProperty(proto,'styles',{
+		get:function(){ return this.style },
+		set:function(inStyles){
+			this._protoStyles = protoInherit(this._protoStyles, inStyles)
+			this.style = protoFlatten({}, this._protoStyles)
+		}
+	})
 
+	var indentBlockColor = {
+		0:'#352b',
+		1:'#463b',
+		2:'#574b',
+		3:'#685b',
+		4:'#795b'
+	}
+
+	var arrayBlockColor = {
+		0:'#335b',
+		1:'#446b',
+		2:'#557b',
+		3:'#668b',
+		4:'#779b'
+	}
+
+	var objectBlockColor = {
+		0:'#532b',
+		1:'#643b',
+		2:'#754b',
+		3:'#865b',
+		4:'#975b'
 	}
 
 	// nice cascading high perf styles for the text
@@ -292,9 +329,13 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 	}
 
 	proto.BlockStatement = function(node){
-		this.fastText('{', this.styles.Curly.BlockStatement)
-		// lets indent
+		// store the startx/y position
 		var turtle = this.turtle
+
+		var startx = turtle.sx, starty = turtle.wy
+		this.fastText('{', this.styles.Curly.BlockStatement)
+		var endx = turtle.wx, lineh = turtle.mh
+		// lets indent
 		this.indent++
 		this.newLine()
 
@@ -307,9 +348,22 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		}
 		this.indent --
 		this.newLine()
+		// store endx endy
+		var blockh = turtle.wy
 		this.fastText('}', this.styles.Curly.BlockStatement)
-		// lets draw a block with this information
 
+		// lets draw a block with this information
+		this.drawBlock({
+			color:indentBlockColor[this.indent],
+			x:startx, y:starty,
+			w:endx - startx, h:lineh
+		})
+
+		this.drawBlock({
+			color:indentBlockColor[this.indent],
+			x:startx, y:starty+lineh-1,
+			w:this.indentSize, h:blockh - starty+1
+		})
 	}
 
 	//EmptyStatement:{}
@@ -499,11 +553,15 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 		logNonexisting(node)
 	}
 
+
 	//ArrayExpression:{elements:2},
 	proto.ArrayExpression = function(node){
-		this.fastText('[', this.styles.Bracket.ArrayExpression)
-		// lets indent
 		var turtle = this.turtle
+
+		var startx = turtle.sx, starty = turtle.wy
+		this.fastText('[', this.styles.Bracket.ArrayExpression)
+		var endx = turtle.wx, lineh = turtle.mh
+		// lets indent
 		this.indent++
 		this.newLine()
 
@@ -516,12 +574,31 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 		this.indent --
 		this.newLine()
+		var blockh = turtle.wy
 		this.fastText(']', this.styles.Bracket.ArrayExpression)
+
+		// lets draw a block with this information
+		this.drawBlock({
+			color:arrayBlockColor[this.indent],
+			x:startx, y:starty,
+			w:endx - startx, h:lineh
+		})
+
+		this.drawBlock({
+			color:arrayBlockColor[this.indent],
+			x:startx, y:starty+lineh-1,
+			w:this.indentSize, h:blockh - starty+1
+		})
 	}
 
 	//ObjectExpression:{properties:3},
 	proto.ObjectExpression = function(node){
+		var turtle = this.turtle
+
+		var startx = turtle.sx, starty = turtle.wy
 		this.fastText('{', this.styles.Curly.ObjectExpression)
+		var endx = turtle.wx, lineh = turtle.mh
+
 		// lets indent
 		var turtle = this.turtle
 		this.indent++
@@ -543,7 +620,22 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 		this.indent --
 		this.newLine()
+		var blockh = turtle.wy
+
 		this.fastText('}', this.styles.Curly.ObjectExpression)
+
+		// lets draw a block with this information
+		this.drawBlock({
+			color:objectBlockColor[this.indent],
+			x:startx, y:starty,
+			w:endx - startx, h:lineh
+		})
+
+		this.drawBlock({
+			color:objectBlockColor[this.indent],
+			x:startx, y:starty+lineh-1,
+			w:this.indentSize, h:blockh - starty+1
+		})
 	}
 
 	//YieldExpression:{argument:1, delegate:0}

@@ -331,7 +331,7 @@ types.colorFromStringPacked = function(str, alpha, ar, o){
 			var b = hex[str.charCodeAt(3)]
 			var t = hex[str.charCodeAt(4)]
 			ar[o] = ((r|r<<4)*alpha<<16) + (((g|g<<4))*alpha<<4)
-			ar[o+1] = ((b|b<<4)*alpha<<16) + (((a|a<<4))<<4)
+			ar[o+1] = ((b|b<<4)*alpha<<16) + (((t|t<<4))<<4)
 			return true
 		}
 		else if(str.length === 7){
