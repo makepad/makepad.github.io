@@ -336,6 +336,7 @@ function onKeyDown(e){
 	if(code === 65 && (e.metaKey || e.ctrlKey))keyboardSelectAll = true	 // all (select all)	
 	if(code === 90 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
 	if(code === 89 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
+	if(code === 83 && (e.metaKey || e.ctrlKey))e.preventDefault() // ctrl s
 
 	// move the text area for the character accent menu
 	if(!isTouchDevice && characterAccentMenuPos){

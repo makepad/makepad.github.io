@@ -177,8 +177,8 @@ module.exports = require('class').extend(function View(proto){
 	var zeroMargin = [0,0,0,0]
 	var identityMat4 = mat4.create()
 
-	proto.$scrollBarSize = 20
-	proto.$scrollBarRadius = 8
+	proto.$scrollBarSize = 10
+	proto.$scrollBarRadius = 4
 
 	proto.scrollIntoView = function(x, y, w, h){
 		// we figure out the scroll-to we need
@@ -312,10 +312,10 @@ module.exports = require('class').extend(function View(proto){
 				lockScroll:0,
 				isHorizontal:1.,
 				x:0,
-				y:this.$hDraw - this.$scrollBarSize / painter.pixelRatio,
+				y:this.$hDraw - this.$scrollBarSize,// / painter.pixelRatio,
 				w:tw,
-				h:this.$scrollBarSize / painter.pixelRatio,
-				borderRadius:this.$scrollBarRadius / painter.pixelRatio
+				h:this.$scrollBarSize,// / painter.pixelRatio,
+				borderRadius:this.$scrollBarRadius// / painter.pixelRatio
 			})
 
 			this.todo.xScrollId = this.$xScroll.$stampId
@@ -326,11 +326,11 @@ module.exports = require('class').extend(function View(proto){
 			this.$yScroll = this.drawScrollBar({
 				lockScroll:0,
 				isHorizontal:0.,
-				x:this.$wDraw - this.$scrollBarSize / painter.pixelRatio,
+				x:this.$wDraw - this.$scrollBarSize, /// painter.pixelRatio,
 				y:0,
-				w:this.$scrollBarSize / painter.pixelRatio,
+				w:this.$scrollBarSize,// / painter.pixelRatio,
 				h:th,
-				borderRadius:this.$scrollBarRadius / painter.pixelRatio
+				borderRadius:this.$scrollBarRadius// / painter.pixelRatio
 			})
 
 			this.todo.yScrollId = this.$yScroll.$stampId
@@ -415,12 +415,12 @@ module.exports = require('class').extend(function View(proto){
 					vertexStyle:function(){$ // bypass the worker roundtrip :)
 						var pos = vec2()
 						if(this.isHorizontal > .5){
-							this.y += 1./this.pixelRatio
+							this.y += 1.///this.pixelRatio
 							this.handleSize = this.viewSpace.x / this.viewSpace.z
 							this.handlePos = this.viewScroll.x / this.viewSpace.z
 						}
 						else{
-							this.x += 1./this.pixelRatio
+							this.x += 1.///this.pixelRatio
 							this.handleSize = this.viewSpace.y / this.viewSpace.w
 							this.handlePos = this.viewScroll.y / this.viewSpace.w
 						}
