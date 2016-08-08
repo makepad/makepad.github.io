@@ -13,7 +13,6 @@ var isIPad = navigator.userAgent.match(/iPad/)
 var isIOSDevice = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/)
 var isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints)
 
-
 // IOS uses a default selection and the rest does not
 var defaultStart = isIOSDevice?2:3
 var defaultEnd = 3
@@ -175,7 +174,7 @@ cliptext.style.zIndex = 100000
 
 var style = document.createElement('style')
 style.innerHTML = "\n\
-::selection { background:transparent; color:transparent; }\n\
+::selection2 { background:transparent; color:transparent; }\n\
 textarea.makepad{\n\
 	opacity: 0;\n\
 	border-radius:4px;\n\
@@ -192,7 +191,6 @@ textarea.makepad{\n\
 	padding: 0 0px;\n\
 	margin: 0 -1px;\n\
 	text-indent: 0px;\n\
-	text-align: center ;\n\
 	-ms-user-select: text;\n\
 	-moz-user-select: text;\n\
 	-webkit-user-select: text;\n\
@@ -217,12 +215,12 @@ else{
 }
 
 if(isIOSDevice){
+	cliptext.style.textAlign = 'center'
 	cliptext.style.opacity = 0.5
 	cliptext.style.fontSize = 1
 }
 if(!isIOSDevice && isTouchDevice){
 	cliptext.style.opacity = 0.5
-	cliptext.style.fontSize = 12
 }
 
 cliptext.value = magicClip
@@ -503,6 +501,12 @@ function onBlur(){
 //
 
 exports.onMouseDown = function(e){
+	if(isTouchDevice){
+		cliptext.style.position = 'absolute'
+		cliptext.style.left = -100
+		finalizeSelection()
+		//console.log(cliptext.style.left)
+	}
 	if(e.button !==2){ // defocus the text input for a sec to hide character popup menu
 		cliptext.blur()
 		cliptext.focus()
@@ -511,8 +515,14 @@ exports.onMouseDown = function(e){
 	cliptext.style.left = e.pageX - 10
 	cliptext.style.top = e.pageY  - 10
 	setTimeout(function(){
-		cliptext.style.left =  -20
-		cliptext.style.top =  -20
+		if(isTouchDevice){
+			cliptext.style.position = 'relative'
+			cliptext.style.top = 0
+		}
+		else{
+			cliptext.style.left =  -20
+			cliptext.style.top =  -20
+		}
 	}, 0)
 	return true
 }
@@ -536,6 +546,12 @@ exports.onTouchStart = function(x, y){
 }
 
 exports.onTouchEnd = function(x, y, tapCount){
+	if(isTouchDevice && tapCount === 1){
+		cliptext.style.position = 'relative'
+		cliptext.style.left = 0
+		cliptext.style.top = -15
+	}
+
 	ignoreCursorPoll = false
 	if(isIOSDevice && tapCount === 1 && !hasKeyboardFocus){
 		ignoreFirstIosClipboard = true

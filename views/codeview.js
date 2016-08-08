@@ -9,8 +9,11 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 		// ok lets parse the code
 		
-
-
+		// then lets format display it
+		
+		// what would be wise
+		
+		// 
 
 		this.drawText({
 			wrapping:'line',
