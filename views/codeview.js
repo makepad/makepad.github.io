@@ -127,7 +127,8 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 			FunctionDeclaration:{},
 			CallExpression:{},
 			ArrayExpression:{},
-			ObjectExpression:{}
+			ObjectExpression:{},
+			VariableDeclaration:{}
 		},
 		Curly:{
 			BlockStatement:{},
@@ -421,12 +422,25 @@ module.exports = require('views/editview').extend(function CodeView(proto){
 
 	//VariableDeclaration:{declarations:2, kind:0},
 	proto.VariableDeclaration = function(node){
-		logNonexisting(node)
+		this.fastText('var ', this.styles.VariableDeclaration)
+		var decls = node.declarations
+		var declslen = decls.length - 1
+		for(var i = 0; i <= declslen; i++){
+			var decl = decls[i]
+			this[decl.type](decl, node)
+			if(i !== declslen) this.fastText(',', this.styles.Comma.VariableDeclaration)
+		}
 	}
 
 	//VariableDeclarator:{id:1, init:1},
 	proto.VariableDeclarator = function(node){
-		logNonexisting(node)
+		var id = node.id
+		this[id.type](id, node)
+		var init = node.init
+		if(init){
+			this.fastText('=', this.styles.AssignmentExpression['='])
+			this[init.type](init, node)
+		}
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
