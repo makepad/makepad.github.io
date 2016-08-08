@@ -1082,7 +1082,6 @@ todofn[4] = function instances(i32, f32, o){
 		end = Math.min(end, len)
 		offset = start 
 		len = end - start
-		console.log(offset, len)
 	}
 
 	currentShader.instlength = len
