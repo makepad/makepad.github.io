@@ -329,17 +329,25 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		VariableDeclarator:{},
 
 		// a+b
-		LogicalExpression:{},
-		BinaryExpression:{},
+		LogicalExpression:{
+			margin:[0,.5,0,.5]
+		},
+		BinaryExpression:{
+			margin:[0,.5,0,.5]
+		},
 		AssignmentExpression:{
 			boldness:0.3,
+			margin:[0,.5,0,.5],
 			'=':{
-				color:'#ff9f00',
-				margin:[0,.5,0,.5]
+				color:'#ff9f00'
 			}
 		},
-		ConditionalExpression:{},
-		UpdateExpression:{},
+		ConditionalExpression:{
+			margin:[0,.5,0,.5]
+		},
+		UpdateExpression:{
+			margin:[0,.5,0,.5]
+		},
 		UnaryExpression:{},
 
 		// if and for
