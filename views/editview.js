@@ -25,7 +25,8 @@ module.exports = require('view').extend(function EditView(proto){
 		Text:require('shaders/sdffontshader').extend({
 			font:require('fonts/ubuntu_medium_256.sdffont'),
 			fontSize:24,
-			color:'#ccc'
+			color:'#ccc',
+			drawDiscard:'y'
 		}),
 		Select:require('shaders/rectshader').extend({
 			color:'#458',
@@ -33,6 +34,7 @@ module.exports = require('view').extend(function EditView(proto){
 			borderWidth:1,
 			borderRadius:3,
 			borderColor:['#458',1.2],
+			drawDiscard:'y',
 			//ease:[1,100,0,0],
 			//tween:2,
 			vertexStyle:function(){
