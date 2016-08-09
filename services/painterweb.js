@@ -174,7 +174,7 @@ exports.pickFinger = function pick(digit, x, y, immediate){
 	pick.x = x
 	pick.y = y
 
-	if(pickPromises[digit]) pickPromises[digit].reject()
+	if(pickPromises[digit]) pickPromises[digit].resolve()
 	
 	if(immediate){
 		pick.resolve(renderPickWindow(digit, pick.x, pick.y))

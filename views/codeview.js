@@ -56,6 +56,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.fastText(' ', this.style)
 			}
 			catch(e){ // uhoh.. we need to fall back to textmode
+				console.log(e)
 				var ann = this.fastTextOutput.ann
 				var out = this.fastTextOutput 
 				this.fastTextOutput = null
@@ -1040,6 +1041,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		logNonexisting(node)
 	}
 
+	//TryStatement:{block:1, handler:1, finalizer:1},
+	proto.SpreadElement = function(node){
+		logNonexisting(node)
+	}
 
 	// creates a prototypical inheritance overload from an object
 	function protoInherit(oldobj, newobj){

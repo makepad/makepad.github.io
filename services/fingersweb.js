@@ -105,7 +105,7 @@ function onFingerDown(fingers){
 		bus.postMessage(f)
 
 		services.painter.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
-	
+			if(!pick) return
 			// set the ID
 			f.fn = 'onFingerDown'
 			// store startx for delta
@@ -137,7 +137,7 @@ function onFingerDown(fingers){
 					bus.postMessage(q)
 				}
 			}
-		}.bind(null, f), function(){})
+		}.bind(null, f))
 	}
 }
 
@@ -233,13 +233,14 @@ function onFingerHover(fingers){
 		var f = fingers[i]
 
 		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
+			if(!pick) return
 			f.pickId = pick.pickId
 			f.todoId = pick.todoId
 			f.workerId = pick.workerId
 			f.fn = 'onFingerHover'
 			services.painter.onFingerHover(f)
 			bus.postMessage(f)
-		}.bind(null, f), function(){})
+		}.bind(null, f))
 	}
 }
 

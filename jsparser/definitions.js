@@ -83,7 +83,8 @@ module.exports = {
 	ClassExpression:{id:1,superClass:1},
 	ClassBody:{body:2},
 	MethodDefinition:{value:1, kind:0, static:0},
-	
+
+
 	// modules
 	ExportAllDeclaration:{source:1},
 	ExportDefaultDeclaration:{declaration:1},
@@ -96,6 +97,7 @@ module.exports = {
 
 	// other
 	DebuggerStatement:{},
+	SpreadElement:{argument:1},
 	LabeledStatement:{label:1, body:1},
 	WithStatement:{object:1, body:1}
 }
