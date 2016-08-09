@@ -2,7 +2,6 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 
 	var types = require('types')
 	var painter = require('painter')
-	var fontloader = require('loaders/fontloader')
 
 	// special
 	proto.props = {
@@ -32,8 +31,6 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 
-	proto.lineSpacing = 1.3
-
 	proto.mesh = painter.Mesh(types.vec3).pushQuad(
 		0,0, 1,
 		1,0, 1,
@@ -41,79 +38,12 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 		1, 1, 1
 	)
 
-	proto.vertexStyle = function(){$
-	}
-
-	proto.pixelStyle = function(){$
-	}
-
-	proto.vertex = function(){$
-		this.vertexStyle()
-
-		if(this.visible < 0.5){
-			return vec4(0.)
-		}
-
-		// ref it otherwise it doesnt get written
-		this.unicode
-
-		var minPos = vec2(
-			this.x + this.fontSize * this.x1,
-			this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
-		)
-		var maxPos = vec2(
-			this.x + this.fontSize * this.x2 ,
-			this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
-		)
-
-		// clip the rect
-		var shift = vec2(-this.viewScroll.x*this.lockScroll, -this.viewScroll.y*this.lockScroll)
-
-		if(this.mesh.z < 0.5){
-			shift += this.shadowOffset.xy
-		}
-
-		// clip mesh
-		this.mesh.xy = (clamp(
-			mix(minPos, maxPos, this.mesh.xy) + shift, 
-			max(this.turtleClip.xy, this.viewClip.xy),
-			min(this.turtleClip.zw, this.viewClip.zw)
-		) - minPos - shift) / (maxPos - minPos)
-		
-		// compute position
-		var pos = mix(
-			minPos,
-			maxPos,
-			this.mesh.xy
-		) + shift
-
-		// we cant clip italic. ahwell
-		pos.x += mix(0.,this.fontSize * this.italic,this.mesh.y)
-
-		// shadow
-		if(this.mesh.z < 0.5){
-			if(abs(this.shadowOffset.x)<0.001 && abs(this.shadowOffset.y)<0.001 && this.shadowBlur<2.0){
-				return vec4(0)
-			}
-			var meshmz = this.mesh.xy *2. - 1.
-			//pos.xy += this.shadowOffset.xy// + vec2(this.shadowSpread , -this.shadowSpread) * meshmz
-		}
-
-		this.textureCoords = mix(
-			vec2(this.tx1, this.ty1), 
-			vec2(this.tx2, this.ty2), 
-			this.mesh.xy
-		)
-
-		return vec4(pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
-	}
-
 	proto.toolMacros = {
 		$annotated:function(annotated, style){
-
+			// ok so we draw from the annotated array
+			
 		},
 		fast:function(txt, style){
-			DUMP
 			var out = this.fastNAMEOutput			
 			var len = txt.length
 			var turtle = this.turtle
@@ -124,7 +54,6 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 			var fontSize = style.fontSize
 			var posx = turtle.wx + margin[3] * fontSize
 			var posy = turtle.wy + margin[0] * fontSize
-
 			out.text += txt
 			var sx = turtle.sx
 			var ann = out.ann

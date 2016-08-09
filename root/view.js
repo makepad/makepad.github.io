@@ -288,6 +288,8 @@ module.exports = require('class').extend(function View(proto){
 		var th = this.$hDraw = turtle._h
 		var tx2 = this.turtle.x2
 		var ty2 = this.turtle.y2
+		this.$x2Old = tx2
+		this.$y2Old = ty2
 		
 		// lets compute if we need scrollbars
 		if(ty2 > th){
@@ -350,6 +352,11 @@ module.exports = require('class').extend(function View(proto){
 				pickSampler: pass.pick
 			})
 		}
+	}
+
+	proto.reuseDrawSize = function(){
+		this.turtle.x2 = this.$x2Old
+		this.turtle.y2 = this.$y2Old
 	}
 
 	proto.recompose = function(){

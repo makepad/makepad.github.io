@@ -616,8 +616,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent+'var $proto = this._' + classname +'.prototype\n'
 		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
+		code += indent+'	$props.oldLength = $props.length\n'
 		code += indent+'	$props.length = 0\n'
-		code += indent+'	$props.changed = false\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
 		code += indent+'	var $todo = $view.todo\n'
@@ -1080,6 +1080,18 @@ module.exports = require('class').extend(function Shader(proto){
 			for(var key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
+
+	proto.toolMacros = {
+		reuse:function(){
+			// make sure we are drawn
+			this.$ALLOCDRAW()
+			var $props = this.$shaders.NAME.$props
+			if($props.oldLength !== undefined){
+				$props.length = $props.oldLength
+				$props.dirty = false
+			}
+		}
+	}
 
 	proto.tweenSimple = function(tween, time, easex, easey, easez, easew){
 		if(tween == 1.) return time

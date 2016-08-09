@@ -353,10 +353,16 @@
 		}
 
 		var perf
+		var perfNow = typeof performance !== 'undefined'?performance:Date
+
 		require.perf = function(id){
-			var t = typeof performance !== 'undefined'?performance.now():Date.now()
+			var t = perfNow.now()
 			if(!perf) perf = {}
-			if(perf[id]) worker.postMessage({$:'debug', msg:'Perf: '+(t-perf[id])}), perf[id] = undefined
+			if(perf[id]){
+				console.log('Perf: '+(t-perf[id]))
+				//worker.postMessage({$:'debug', msg:'Perf: '+(t-perf[id])})
+				perf[id] = undefined
+			}
 			else perf[id] = t
 		}
 

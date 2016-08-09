@@ -565,7 +565,7 @@ exports.onFingerWheel = function(f){
 }
 
 bus.onMessage = function(msg){
-	userfn[msg.fn](msg)
+	if(msg) userfn[msg.fn](msg)
 }
 
 

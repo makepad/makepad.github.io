@@ -25,49 +25,54 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		})
 	}
-
+	
 	proto.onDraw = function(){
 
 		this.beginBg(this.viewBgProps)
-
-		this.drawBlock()
 
 		this.drawSelect()
 
 		// ok lets parse the code
 		require.perf()
-		try{
+		if(this.$oldText != this.text){
+			this.$oldText = this.text
+			this.drawBlock()
+			try{
+				var ast = parser.parse(this.text)
 
-			var ast = parser.parse(this.text)
+				// first we format the code
+				this.indent = 0
+				// the indent size
+				this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * this.style.fontSize * 3
+				this.lineHeight = this.style.fontSize
+				var out = this.fastTextOutput
+				out.text = ''
+				out.ann.length = 0
 
-			// first we format the code
-			this.indent = 0
-			// the indent size
-			this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * this.style.fontSize * 3
-			this.lineHeight = this.style.fontSize
-			var out = this.fastTextOutput
-			out.text = ''
-			out.ann.length = 0
+				this[ast.type](ast, null)
 
-			this[ast.type](ast, null)
-
-			this.text = out.text
-			this.ann = out.ann
-			// end with a space
-			this.fastText(' ', this.style)
-
+				this.text = out.text
+				this.ann = out.ann
+				// end with a space
+				this.fastText(' ', this.style)
+			}
+			catch(e){ // uhoh.. we need to fall back to textmode
+				//console.log(e)
+			//	this.fastText(this.text, this.style)
+				// OR we do use tabs but
+				// we dont use spaces.
+				// yea we can use special character margins
+				// which will be the same everywhere
+				// problem is we cant vertically align objects
+			}
 		}
-		catch(e){ // uhoh.. we need to fall back to textmode
-			//console.log(e)
-			this.fastText(this.text, this.style)
-			// OR we do use tabs but
-			// we dont use spaces.
-			// yea we can use special character margins
-			// which will be the same everywhere
-			// problem is we cant vertically align objects
+		else{
+			this.reuseDrawSize()
+			this.reuseBlock()
+			this.reuseText()
 		}
 		require.perf()
-
+		//console.log("HERE")
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
 			for(var i = 0; i < cursors.length; i++){
@@ -200,24 +205,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		fontSize:12,
 		boldness:0.,
 		color:'white',
-
-		outlineColor:[0,0,0,0],
-
-		shadowblur:0,
-		shadowSpread:0,
-		shadowOffset:[0,0],
-		shadowColor:[0,0,0,0],
-
 		italic:0,
-		outlineWidth:0,
-		lockScroll:1,
-
-		ease:[0,0,0,0],
-		duration:0.,
-		tween:0.,
-
 		margin:[0,0,0,0],
-
+		//outlineColor:[0,0,0,0],
+		//shadowblur:0,
+		//shadowSpread:0,
+		//shadowOffset:[0,0],
+		//shadowColor:[0,0,0,0],
+		//outlineWidth:0,
+		//lockScroll:1,
+		//ease:[0,0,0,0],
+		//duration:0.,
+		//tween:0.,
 		Paren:{
 			boldness:0.,
 			FunctionDeclaration:{},

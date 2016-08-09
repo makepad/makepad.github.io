@@ -202,8 +202,8 @@ painter.Todo = require('class').extend(function Todo(proto){
 		if((this.length += 7) > this.allocated) this.resize()
 		var i32 = this.i32
 		// use the mesh message for lazy serialization
+
 		if(mesh.dirty){
-			mesh.dirty = false
 			bus.batchMessage(mesh)
 		}
 
@@ -224,7 +224,6 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
-			mesh.dirty = false
 			bus.batchMessage(mesh)
 		}
 		i32[o+0] = 4
@@ -245,7 +244,6 @@ painter.Todo = require('class').extend(function Todo(proto){
 
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
-			mesh.dirty = false
 			bus.batchMessage(mesh)
 		}
 
@@ -680,6 +678,11 @@ var meshIds = {}
 painter.Mesh = require('class').extend(function Mesh(proto){
 
 	proto.toMessage = function(){
+
+		if(!this.dirty){
+			return null
+		}
+		this.dirty = false
 		return {
 			fn:'updateMesh',
 			meshId:this.meshId,
@@ -691,10 +694,6 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			wOffset:this.wOffset,
 			hOffset:this.hOffset
 		}
-	}
-
-	proto.updateMesh = function(){
-		bus.batchMessage(this)
 	}
 
 	proto.onConstruct = function(type, initalloc){
@@ -723,6 +722,7 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		this.meshId = meshId
 		this.array = undefined
 		this.length = 0
+		this.dirty = true
 		if(initalloc){
 			this.allocated = initalloc
 			this.array = new this.arraytype(initalloc * this.slots)
@@ -742,6 +742,7 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			newarray[i] = oldarray[i]
 		}
 		this.array = newarray
+		this.dirty = true
 	}
 
 	proto.push = function(){
