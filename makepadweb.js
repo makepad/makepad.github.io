@@ -611,7 +611,7 @@
 			// do something with data
 			location.href = location.href
 		})
-		req.open("GET", "/$watch")
+		req.open("GET", "/$watch?"+(''+Math.random()).slice(2))
 		req.send()
 	}
 

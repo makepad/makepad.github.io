@@ -40,7 +40,8 @@ canvas.addEventListener('contextmenu',function(e){
 	e.preventDefault()
 	return false
 })
-canvas.addEventListener('touchstart', onTouchStart)
+window.addEventListener('touchstart', onTouchStart)
+//canvas.addEventListener('touchstart', onTouchStart)
 window.addEventListener('touchmove',onTouchMove)
 window.addEventListener('touchend', onTouchEnd, false)
 canvas.addEventListener('touchcancel', onTouchEnd)

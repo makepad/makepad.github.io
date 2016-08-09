@@ -413,11 +413,12 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// how do we order these dependencies so they happen top down
 		var vfunc = ''
-		for(var key in vtx.genFunctions){
-			var fn = vtx.genFunctions[key]
+		for(var i = 0; i < vtx.genFunctions.length; i++){//key in vtx.genFunctions){
+			var fn =  vtx.genFunctions[i].value
 			vfunc = '\n'+fn.code + '\n' + vfunc
 		}
 
+		/*
 		if(vtx.genFunctions.this_DOT_vertex_T.return.type !== types.vec4){
 			vtx.mapException({
 				state:{
@@ -427,7 +428,7 @@ module.exports = require('class').extend(function Shader(proto){
 				message:'vertex function not returning a vec4',
 				node:vtx.genFunctions.this_DOT_vertex_T.ast
 			})
-		}
+		}*/
 
 		var vertex = vhead 
 		vertex += vfunc
@@ -438,8 +439,8 @@ module.exports = require('class').extend(function Shader(proto){
 		vertex += '}\n'
 
 		var pfunc = ''
-		for(var key in pix.genFunctions){
-			var fn = pix.genFunctions[key]
+		for(var i = 0; i < pix.genFunctions.length; i++){//key in pix.genFunctions){
+			var fn = pix.genFunctions[i].value
 			pfunc = '\n'+fn.code + '\n' + pfunc
 		}
 		var pixel = phead

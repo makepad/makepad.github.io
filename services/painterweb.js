@@ -862,13 +862,31 @@ var slotsTable = {
 	'vec4':4,
 }
 
+function logShaderError(){
+	var args = arguments
+	for(var i =0 ; i < args.length; i++){
+		var s = '' + args[i]
+		if(s.length > 1024){
+			out = ''
+			var a = s.split('\n')
+			for(j = 0; j < a.length; j++){
+				out += a[j] + '\n'
+				if(out.length>512){
+					console.log(out)
+					out = ''
+				}
+			}
+		}
+		else console.log(s)
+	}
+}
 
 function compileShader(vertexcode, pixelcode){
 	var vertexshader = gl.createShader(gl.VERTEX_SHADER)
 	gl.shaderSource(vertexshader, vertexcode)
 	gl.compileShader(vertexshader)
 	if (!gl.getShaderParameter(vertexshader, gl.COMPILE_STATUS)){
-		return console.error(gl.getShaderInfoLog(vertexshader), addLineNumbers(vertexcode))
+		return logShaderError(gl.getShaderInfoLog(vertexshader), addLineNumbers(vertexcode))
 	}
 	
 	// compile pixelshader
@@ -876,7 +894,7 @@ function compileShader(vertexcode, pixelcode){
 	gl.shaderSource(pixelshader, pixelcode)
 	gl.compileShader(pixelshader)
 	if (!gl.getShaderParameter(pixelshader, gl.COMPILE_STATUS)){
-		return console.error(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
+		return logShaderError(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
 	}
 
 	shader = gl.createProgram()
@@ -884,7 +902,7 @@ function compileShader(vertexcode, pixelcode){
 	gl.attachShader(shader, pixelshader)
 	gl.linkProgram(shader)
 	if(!gl.getProgramParameter(shader, gl.LINK_STATUS)){
-		return console.error(
+		return logShaderError(
 			gl.getProgramInfoLog(shader),
 			addLineNumbers(vertexcode), 
 			addLineNumbers(pixelcode)

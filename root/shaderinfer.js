@@ -33,7 +33,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		gen.outputs = {}
 
 		// functions generated
-		gen.genFunctions = {}
+		gen.genFunctions = []
 
 		// the function object info of the current function
 		var source = fn.toString()
@@ -684,10 +684,26 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 	}
 
 	function recursiveDependencyUpdate(genfn, dep, key){
-		delete genfn[key]
-		genfn[key] = dep
+		for(var i = 0; i < genfn.length; i++){
+			if(genfn[i].key === key) break
+		}
+		// remove it
+		genfn.splice(i, 1)
+		// add it to the end
+		genfn.push({
+			key:key,
+			value:dep
+		})
+	
 		for(var key in dep.deps){
 			recursiveDependencyUpdate(genfn, dep.deps[key], key)
+		}
+	}
+
+	function lookupGenFunction(genfn, key){
+		for(var i = 0; i < genfn.length; i++){
+			var item = genfn[i]
+			if(item.key === key) return item.value
 		}
 	}
 
@@ -781,7 +797,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
 			}
 
-			var prevfunction = this.genFunctions[fnname]
+			var prevfunction = lookupGenFunction(this.genFunctions, fnname)//this.genFunctions[fnname]
 
 			if(prevfunction){
 				// store dependency
@@ -807,7 +823,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 				}
 				return fnname + '(' + realargs.join(', ') + ')'
 			}
-			var subfunction = this.genFunctions[fnname] = {
+			var subfunction = {
 				scope:{},
 				inout:{},
 				deps:{},
@@ -820,6 +836,10 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					type:types.void
 				}
 			}
+			this.genFunctions.push({
+				key:fnname,
+				value:subfunction
+			})
 			this.curFunction.deps[fnname] = subfunction
 
 			var sub = Object.create(this)
