@@ -166,10 +166,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				else{ // end is in the next one
 					for(; i < len; i+=3){
 						var txt = ann[i]
-						var idx = end - (pos - txt.length)
 						pos += txt.length
 						if(end<pos){
-							ann[i] += txt.slice(0,idx-1)
+							var idx = end - (pos - txt.length)
+							ann[i] = txt.slice(idx)
 							break
 						}
 						else ann[i] = ''
