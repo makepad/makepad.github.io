@@ -56,12 +56,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.fastText(' ', this.style)
 			}
 			catch(e){ // uhoh.. we need to fall back to textmode
-				//console.log(e)
 				var ann = this.fastTextOutput.ann
+				var out = this.fastTextOutput 
+				this.fastTextOutput = null
 				for(var i = 0, len = ann.length; i < len; i+=3){
 					this.turtle.sx = ann[i+2]
 					this.fastText(ann[i], ann[i+1])
 				}
+				this.fastTextOutput = out
 			}
 		}
 		else{
