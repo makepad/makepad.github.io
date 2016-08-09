@@ -30,13 +30,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.beginBg(this.viewBgProps)
 
-		this.drawSelect()
-
 		// ok lets parse the code
-		require.perf()
+		//require.perf()
 		if(this.$oldText != this.text){
 			this.$oldText = this.text
 			this.drawBlock()
+			this.drawSelect()
 			try{
 				var ast = parser.parse(this.text)
 
@@ -58,20 +57,20 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 			catch(e){ // uhoh.. we need to fall back to textmode
 				//console.log(e)
-			//	this.fastText(this.text, this.style)
-				// OR we do use tabs but
-				// we dont use spaces.
-				// yea we can use special character margins
-				// which will be the same everywhere
-				// problem is we cant vertically align objects
+				var ann = this.fastTextOutput.ann
+				for(var i = 0, len = ann.length; i < len; i+=3){
+					this.turtle.sx = ann[i+2]
+					this.fastText(ann[i], ann[i+1])
+				}
 			}
 		}
 		else{
 			this.reuseDrawSize()
 			this.reuseBlock()
+			this.drawSelect()
 			this.reuseText()
 		}
-		require.perf()
+		//require.perf()
 		//console.log("HERE")
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
@@ -127,13 +126,55 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
-
+		// alright lets find the insertion spot in ann
+		var ann = this.fastTextOutput.ann
+		// ok lets just iterate untill we are at offset
+		// then, we just splice the array items
+		// and add a new one in the middle
+		var pos = 0
+		for(var i = 0, len = ann.length; i < len; i+=3){
+			var txt = ann[i]
+			pos += txt.length
+			if(offset<=pos){
+				var idx = offset - (pos - txt.length)
+				ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
+				break
+			}
+		}
 		this.redraw()
 	}
 
 	proto.removeText = function(start, end){
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 
+		// process a remove from the annotated array
+		var ann = this.fastTextOutput.ann
+		var pos = 0
+		for(var i = 0, len = ann.length; i < len; i+=3){
+			var txt = ann[i]
+			pos += txt.length
+			if(start<pos){
+				var idx = start - (pos - txt.length)
+				ann[i] = txt.slice(0, idx)
+				if(end<=pos){
+					var idx = end - (pos - txt.length)
+					ann[i] += txt.slice(idx)
+				}
+				else{ // end is in the next one
+					for(; i < len; i+=3){
+						var txt = ann[i]
+						var idx = end - (pos - txt.length)
+						pos += txt.length
+						if(end<pos){
+							ann[i] += txt.slice(0,idx-1)
+							break
+						}
+						else ann[i] = ''
+					}
+				}
+				break
+			}
+		}
 		this.redraw()
 	}
 

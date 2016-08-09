@@ -12,7 +12,7 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 		outlineColor:{kind:'uniform', value:'white'},
 		shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
 		fontSize:12,
-		italic:0.,
+		italic:{notween:1,value:0.},
 		baseLine:{kind:'uniform', value:1.},
 		shadowBlur:{kind:'uniform',value:1.0},
 		shadowSpread:{kind:'uniform',value:-1.},
@@ -39,49 +39,37 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 	)
 
 	proto.toolMacros = {
-		$annotated:function(annotated, style){
-			// ok so we draw from the annotated array
-			
-		},
 		fast:function(txt, style){
 			var out = this.fastNAMEOutput			
 			var len = txt.length
 			var turtle = this.turtle
+
 			this.$ALLOCDRAW(len, true)
+
 			var margin = style.margin
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var fontSize = style.fontSize
 			var posx = turtle.wx + margin[3] * fontSize
 			var posy = turtle.wy + margin[0] * fontSize
-			out.text += txt
+			if(out){
+				out.text += txt
+				out.ann.push(txt, style, turtle.sx)
+			}
 			var sx = turtle.sx
-			var ann = out.ann
 			for(var i = 0; i < len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode]
-				ann.push(unicode, sx, style)
 
 				this.$WRITEPROPS({
 					$fastWrite:true,
 					visible:1,
 					x:posx,
 					y:posy,
-					ease:style.ease,
-					duration:style.duration,
-					tween:style.tween,
 					color: style.color,
-					outlineColor: style.outlineColor,
-					shadowColor: style.shadowColor,
 					fontSize:fontSize,
 					italic:style.italic,
-					shadowBlur:style.shadowBlur,
-					shadowSpread:style.shadowSpread,
-					outlineWidth:style.outlineWidth,
 					boldness:style.boldness, 
-					shadowOffset:style.shadowOffset,
-					lockScroll:style.lockScroll,
-					turtleClip:turtle._turtleClip,
 					unicode:unicode,
 					tx1: g.tx1,
 					ty1: g.ty1,
