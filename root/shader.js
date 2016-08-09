@@ -562,23 +562,24 @@ module.exports = require('class').extend(function Shader(proto){
 		code += stylePropCode('	', '$p2', styleProps, styleLevel)
 		code += '}\n'
 
-		code += 'var $p3 = this.$stampArgs\n'
-		code += 'if($p3){\n'
-		code += styleTweenCode('	', '$p3')
-		code += '}\n'
+		if(styleProps.this_DOT_tween){
+			code += 'var $p3 = this.$stampArgs\n'
+			code += 'if($p3){\n'
+			code += styleTweenCode('	', '$p3')
+			code += '}\n'
 
-		code += 'var $p4 = this.$outerState\n'
-		code += 'if($p4){\n'
-		code += styleTweenCode('	', '$p4')
-		code += '}\n'
+			code += 'var $p4 = this.$outerState\n'
+			code += 'if($p4){\n'
+			code += styleTweenCode('	', '$p4')
+			code += '}\n'
 
-		code += 'var $p5 = this._state\n'
-		code += 'if($p5){\n'
-		code += styleTweenCode('	', '$p5')
-		code += '}\n'
+			code += 'var $p5 = this._state\n'
+			code += 'if($p5){\n'
+			code += styleTweenCode('	', '$p5')
+			code += '}\n'
 
-		code += styleTweenCode('', 'this')
-
+			code += styleTweenCode('', 'this')
+		}
 		// last one is the class
 		code += 'var $p9 = this._'+classname+'.prototype\n'
 		code += stylePropCode('', '$p9', styleProps, styleLevel)
