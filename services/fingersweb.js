@@ -265,13 +265,14 @@ function onFingerWheel(fingers){
 		var f = fingers[i]
 
 		services.painter.pickFinger(0, f.x, f.y).then(function(f, pick){
+			if(!pick) return
 			f.pickId = pick.pickId
 			f.todoId = pick.todoId
 			f.workerId = pick.workerId
 			f.fn = 'onFingerWheel'
 			services.painter.onFingerWheel(f)
 			bus.postMessage(f)
-		}.bind(null, f), function(){})
+		}.bind(null, f))
 	}
 }
 
