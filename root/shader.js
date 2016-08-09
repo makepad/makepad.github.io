@@ -758,18 +758,30 @@ module.exports = require('class').extend(function Shader(proto){
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){
 		var code = ''
-		code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
-		code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-		code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-		code += indent + 'if($tween > 0 && $view._time < $tweenStart + $duration){\n'
-		code += indent + '	var $time = $proto.tweenTime('
-		code += '$a[$o + ' + instanceProps.this_DOT_tween.offset +']'
-		code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
-		code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
-		code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
-		code += ')\n'
+		if(!instanceProps.this_DOT_tween){
+			code += indent + 'var $tween = $proto.tween\n'
+			code += indent + 'var $ease = $proto.ease\n'
+			code += indent + 'var $duration = $proto.duration\n'
+			code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + 'if($tween > 0 && $view._time < $tweenStart + $duration){\n'
+			code += indent + '	var $time = $proto.tweenTime($tween'
+			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
+			code += ',ease[0],ease[1],ease[2],ease[3]'
+			code += ')\n'
+		}
+		else{
+			code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+			code += indent + 'var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+			code += indent + 'var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + 'if($tween > 0 && $view._time < $tweenStart + $duration){\n'
+			code += indent + '	var $time = $proto.tweenTime($tween'
+			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
+			code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
+			code += ')\n'
+		}
 		code += indent + tweencode 
 		code += indent + '}'
 		return code

@@ -129,6 +129,7 @@ module.exports = function(proto){
 	var argSplitRx = new RegExp(/[^,\s]+/g)
 	var nameRx = new RegExp(/NAME/g)
 	var fnnameRx = new RegExp(/^function\s*\(/)
+	var dumpRx = new RegExp(/DUMP/g)
 
 	var fnCache = {}
 	// can we reasonably cache these?
@@ -160,6 +161,12 @@ module.exports = function(proto){
 				return sourceProto[fnname](target, className, macroArgs, mainargs, indent)
 			})
 			code = code.replace(nameRx,className)
+
+			var outcode = code.replace(dumpRx,'')
+			if(outcode !== code){
+				code = outcode
+				console.log(outcode)
+			}
 
 			var methodName = macroName + className
 			code = code.replace(fnnameRx, function(){

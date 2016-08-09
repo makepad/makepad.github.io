@@ -22,7 +22,7 @@ module.exports = require('view').extend(function EditView(proto){
 			borderWidth:1,
 			borderColor:'red'
 		}),
-		Text:require('shaders/sdffontshader').extend({
+		Text:require('shaders/fastfontshader').extend({
 			font:require('fonts/ubuntu_medium_256.sdffont'),
 			fontSize:24,
 			color:'#ccc',
