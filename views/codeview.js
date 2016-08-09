@@ -49,6 +49,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				out.ann.length = 0
 
 				this[ast.type](ast, null)
+				// we need to process the changes by the reformat
+				// as an undo entry, if any
 
 				this.text = out.text
 				this.ann = out.ann
@@ -131,9 +133,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 		// alright lets find the insertion spot in ann
 		var ann = this.fastTextOutput.ann
-		// ok lets just iterate untill we are at offset
-		// then, we just splice the array items
-		// and add a new one in the middle
+		// process insert into annotated array
 		var pos = 0
 		for(var i = 0, len = ann.length; i < len; i+=3){
 			var txt = ann[i]
@@ -857,9 +857,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			var prop = props[i]
 			var key = prop.key
 			this[key.type](key)
-			this.fastText(':', this.styles.Colon.ObjectExpression)
-			var value = prop.value
-			this[value.type](value)
+			if(!prop.shorthand){
+				this.fastText(':', this.styles.Colon.ObjectExpression)
+				var value = prop.value
+				this[value.type](value)
+			}
 			if(i !== propslen){
 				this.fastText(',', this.styles.Comma.ObjectExpression)
 				this.newLine()

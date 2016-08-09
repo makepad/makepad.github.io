@@ -1,7 +1,7 @@
 module.exports = require('stamp').extend(function ButtonStamp(proto){
 
 	proto.props = {
-		text:'Button',
+		text:'Button'
 	}
 
 	proto.inPlace = 1
@@ -21,7 +21,7 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 			Bg:{color:'gray'}
 		},
 		hover:{
-			Bg:{color:'red'},
+			Bg:{color:'red'}
 		}
 	}
 
