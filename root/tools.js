@@ -28,6 +28,10 @@ module.exports = function(proto){
 			if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
 			for(var key in tools){
 				var cls =  tools[key]
+				if(cls && cls.constructor === Object){ // subclass it
+					this[key] = cls
+					continue
+				}
 				this._tools[key] = true
 				this['_' + key] = cls
 				defineToolGetterSetter(this, key)

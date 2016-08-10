@@ -1,5 +1,5 @@
 var App = require('app').extend(function(proto){
-
+/*
 	proto.tools = {
 		Vierkant:require('shaders/rectshader').extend({
 		}),
@@ -30,9 +30,7 @@ var App = require('app').extend(function(proto){
 			this.endVierkant()
 		}
 	}
-})()
-
-/*
+*/
 	proto.tools = {
 		Button:require('stamps/buttonstamp').extend({
 			inPlace:0,
@@ -59,8 +57,6 @@ var App = require('app').extend(function(proto){
 		Bg:require('shaders/rectshader')
 	}
 
-	var rnd = Math.random
-	*.)
 	proto.onDraw = function(){
 		for(var i = 0; i < 500; i++){
 			this.drawButton({
@@ -68,4 +64,5 @@ var App = require('app').extend(function(proto){
 			})
 			if(i && !(i%20)) this.turtle.lineBreak()
 		}
-	}*/
+	}
+})()
