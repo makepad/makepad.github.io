@@ -59,7 +59,7 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 			var sx = turtle.sx
 			for(var i = 0; i < len; i++){
 				var unicode = txt.charCodeAt(i)
-				var g = glyphs[unicode]
+				var g = glyphs[unicode] || glyphs[63]
 
 				this.$WRITEPROPS({
 					$fastWrite:true,

@@ -261,7 +261,8 @@
 
 			modules[code.resourceurl] = last = {
 				require: createRequire(rooturl, code.resourceurl, modules, binarylut, worker, userbusses, userargs),
-				factory: factory
+				factory: factory,
+				source: code.response
 			}
 		}
 
@@ -359,11 +360,19 @@
 			var t = perfNow.now()
 			if(!perf) perf = {}
 			if(perf[id]){
-				console.log('Perf: '+(t-perf[id]))
+				console.log('Perf: ' + (t - perf[id]))
+				// 
 				//worker.postMessage({$:'debug', msg:'Perf: '+(t-perf[id])})
 				perf[id] = undefined
 			}
 			else perf[id] = t
+		}
+
+		require.module = function(exports){
+			// lets find the module
+			for(var key in modules){
+				if(modules[key].exports === exports) return modules[key]
+			}
 		}
 
 		return require

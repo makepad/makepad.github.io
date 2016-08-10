@@ -19,7 +19,9 @@ pp.parseTopLevel = function(node) {
 	var first = true
 	if (!node.body) node.body = []
 	while (this.type !== tt.eof) {
+		if(this.storeComments) var above = this.commentBegin()
 		var stmt = this.parseStatement(true, true)
+		if(this.storeComments) this.commentEnd(stmt, above, tt.braceR)
 		node.body.push(stmt)
 		if (first) {
 			if (this.isUseStrict(stmt)) this.setStrict(true)
@@ -30,6 +32,7 @@ pp.parseTopLevel = function(node) {
 	if (this.options.ecmaVersion >= 6) {
 		node.sourceType = this.options.sourceType
 	}
+	if(this.storeComments) node.below = this.commentBegin()
 	return this.finishNode(node, "Program")
 }
 

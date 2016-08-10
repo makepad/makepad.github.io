@@ -109,8 +109,11 @@ pp.skipBlockComment = function() {
 	var start = this.pos, end = this.input.indexOf("*/", this.pos += 2)
 	if (end === -1) this.raise(this.pos - 2, "Unterminated comment")
 	this.pos = end + 2
-	if (this.options.onComment)
-		this.options.onComment(true, this.input.slice(start + 2, end), start, this.pos)
+	if(this.storeComments){
+		this.storeComments.push(this.input.slice(start, end+2))
+	}
+	//if (this.options.onComment)
+	//	this.options.onComment(true, this.input.slice(start + 2, end), start, this.pos)
 }
 
 pp.skipLineComment = function(startSkip) {
@@ -120,8 +123,11 @@ pp.skipLineComment = function(startSkip) {
 		++this.pos
 		ch = this.input.charCodeAt(this.pos)
 	}
-	if (this.options.onComment)
-		this.options.onComment(false, this.input.slice(start + startSkip, this.pos), start, this.pos)
+	if(this.storeComments){
+		this.storeComments.push(this.input.slice(start, this.pos))
+	}
+	//if (this.options.onComment)
+	//	this.options.onComment(false, this.input.slice(start + startSkip, this.pos), start, this.pos)
 }
 
 // Called at the start of the parse and after every token. Skips
@@ -140,6 +146,9 @@ pp.skipSpace = function() {
 				}
 			case 10: case 8232: case 8233:
 				++this.pos
+				if(this.storeComments){
+					this.storeComments.push(1)
+				}
 				break
 			case 47: // '/'
 				switch (this.input.charCodeAt(this.pos + 1)) {
@@ -173,7 +182,7 @@ pp.finishToken = function(type, val) {
 	var prevType = this.type
 	this.type = type
 	this.value = val
-
+	if(this.storeComments) this.storeComments.push(type)
 	this.updateContext(prevType)
 }
 

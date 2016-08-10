@@ -64,6 +64,8 @@ var defaultOptions = exports.defaultOptions = {
 	// This value, if given, is stored in every node, whether
 	// `locations` is on or off.
 	directSourceFile: null,
+	// keep track of the stored comments using this array
+	storeComments:null,
 	// When enabled, parenthesized expressions are represented by
 	// (non-standard) ParenthesizedExpression nodes
 	preserveParens: true,
@@ -79,14 +81,14 @@ exports.getOptions = function(opts) {
 	if (options.allowReserved == null)
 		options.allowReserved = options.ecmaVersion < 5
 
-	if (isArray(options.onToken)) {
-		var tokens = options.onToken
-		options.onToken = function(token){
-			tokens.push(token)
-		}
-	}
-	if (isArray(options.onComment))
-		options.onComment = pushComment(options, options.onComment)
+	//if (isArray(options.onToken)) {
+	//	var tokens = options.onToken
+	//	options.onToken = function(token){
+	//		tokens.push(token)
+	//	}
+	//}
+	//if (isArray(options.onComment))
+	//	options.onComment = pushComment(options, options.onComment)
 
 	return options
 }

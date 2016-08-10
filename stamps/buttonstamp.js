@@ -5,8 +5,8 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 	}
 
 	proto.inPlace = 1
-
-	proto.tools = {
+	// i haz comment!
+proto.tools = {
 		Bg: require('shaders/rectshader').extend({
 			color:'gray',
 			padding:[10,10,10,10]

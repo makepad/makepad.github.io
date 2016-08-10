@@ -26,39 +26,71 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		})
 	}
 	
+	proto.parseText = function(){
+		var ast 
+		try{
+			ast = parser.parse(this.text,{
+				storeComments:[]
+			})
+		}
+		catch(e){
+		}
+		return ast
+	}
+
 	proto.onDraw = function(){
 
 		this.beginBg(this.viewBgProps)
 
 		// ok lets parse the code
 		//require.perf()
-		if(this.$oldText != this.text){
-			this.$oldText = this.text
+		if(!this.textClean){
+			this.textClean = true
 			this.drawBlock()
 			this.drawSelect()
-			try{
-				var ast = parser.parse(this.text)
 
+			var ast = this.parseText()
+			if(ast){
 				// first we format the code
 				this.indent = 0
 				// the indent size
 				this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * this.style.fontSize * 3
 				this.lineHeight = this.style.fontSize
+
+				// the side-output of fastText
 				var out = this.fastTextOutput
 				out.text = ''
 				out.ann.length = 0
 
+				// run the AST formatter
 				this[ast.type](ast, null)
-				// we need to process the changes by the reformat
-				// as an undo entry, if any
 
+				// make undo operation for reformat
+				var oldtext = this.text
+				var newtext = out.text
+				var oldlen = oldtext.length
+				var newlen = newtext.length
+				for(var start = 0; start < oldlen && start < newlen; start++){
+					if(oldtext.charCodeAt(start) !== newtext.charCodeAt(start))break
+				}
+				for(var oldend = oldlen-1, newend = newlen-1; oldend > start && newend > start; oldend--, newend--){
+					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)) break
+				}
+				if(start !== newlen){
+					// this gets tacked onto the undo with the same group
+					this.addUndoInsert(start, oldlen)
+					this.addUndoDelete(start, newlen)
+				}
+				this.cs.clampCursor(0, newlen)
+
+				// replace current state
 				this.text = out.text
 				this.ann = out.ann
+
 				// end with a space
 				this.fastText(' ', this.style)
 			}
-			catch(e){ // uhoh.. we need to fall back to textmode
-				console.log(e)
+			else{
 				var ann = this.fastTextOutput.ann
 				var out = this.fastTextOutput 
 				this.fastTextOutput = null
@@ -75,8 +107,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.drawSelect()
 			this.reuseText()
 		}
-		//require.perf()
-		//console.log("HERE")
+
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
 			for(var i = 0; i < cursors.length; i++){
@@ -130,7 +161,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	// have to serialize the array which costs time
 
 	proto.insertText = function(offset, text){
+		this.textClean = false
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
+
 		// alright lets find the insertion spot in ann
 		var ann = this.fastTextOutput.ann
 		// process insert into annotated array
@@ -148,6 +181,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	proto.removeText = function(start, end){
+		this.textClean = false
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 
 		// process a remove from the annotated array
@@ -261,6 +295,15 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		//ease:[0,0,0,0],
 		//duration:0.,
 		//tween:0.,
+		Comment:{
+			boldness:0.3,
+			color:'#0083f8',
+			side:{
+				margin:[0,0,0,0.5]
+			},
+			above:{
+			}
+		},
 		Paren:{
 			boldness:0.,
 			FunctionDeclaration:{},
@@ -449,8 +492,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var body = node.body
 		for(var i = 0; i < body.length; i++){
 			var statement = body[i]
+			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement, node)
+			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 		}
+		if(node.below) this.fastText(node.below, this.styles.Comment)
 	}
 
 	//BlockStatement:{body:2},
@@ -474,8 +520,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var bodylen = body.length - 1
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
+			// the above
+
+			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement, node)
-			if(i < bodylen) this.newLine()
+			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
+			// lets output the 
+			//if(i < bodylen) this.newLine()
 		}
 		this.indent --
 		this.newLine()
@@ -800,7 +851,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 	}
 
-
 	//ArrayExpression:{elements:2},
 	proto.ArrayExpression = function(node){
 		var turtle = this.turtle
@@ -940,7 +990,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.ArrowFunctionExpression = function(node){
 		logNonexisting(node)
 	}
-
 
 	//WhileStatement:{body:1, test:1},
 	proto.WhileStatement = function(node){

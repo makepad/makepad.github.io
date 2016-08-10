@@ -24,6 +24,7 @@ var Parser = require('./state').Parser
 // mixin the other files onto parser
 require('./parseutil')
 require('./statement')
+require('./comments')
 require('./lval')
 require('./expression')
 require('./location')

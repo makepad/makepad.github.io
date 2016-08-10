@@ -377,6 +377,11 @@ module.exports = require('view').extend(function EditView(proto){
 			this.end = end
 			this.editor.cursorChanged()
 		}
+
+		proto.clampCursor = function(mi, ma){
+			this.start = clamp(this.start, mi, ma)
+			this.end = clamp(this.end, mi, ma)
+		}
 	})
 
 	var CursorSet = require('class').extend(function CursorSet(proto){
@@ -496,12 +501,11 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 	}
 
-
 	proto.offsetFromPos = function(x, y){
 		var t = this.$seekPosText(x, y)
 
 		if(t === -1) t = 0
-		else if(t === -2) t = this.textLength() 
+		else if(t === -2) t = this.textLength()
 		return t
 	}
 
@@ -766,7 +770,7 @@ module.exports = require('view').extend(function EditView(proto){
 	proto.onKeyX = function(k){
 		if(!k.ctrl && !k.meta) return
 		this.$undoGroup++
-		this.cs.delete()		
+		this.cs.delete()
 	}
 
 	proto.onKeyA = function(k){
@@ -803,11 +807,11 @@ module.exports = require('view').extend(function EditView(proto){
 	
 	proto.onKeyPress = function(k){
 		this.$undoGroup ++
-		var out = String.fromCharCode(k.char === 13?10:k.char)
+		var out = String.fromCharCode(k.char === 13? 10: k.char)
 		// lets run over all our cursors
 		// if repeat is -1 we have to replace last char
 		if(k.special){
-			this.cs.backSpace()			
+			this.cs.backSpace()
 		}
 		this.cs.insertText(out)
 		this.cs.moveDelta(1)
@@ -820,10 +824,10 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	
 	proto.onFingerDown = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
+		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0) return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
 
-		this.setFocus() 
+		this.setFocus()
 
 		if(f.meta){
 			this.fingerCursor = this.cs.addCursor()
@@ -835,20 +839,21 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 
 		var touchdy = 0//f.touch?-20:0
-		this.fingerCursor.moveTo(f.x, f.y+touchdy, f.shift)	
+		this.fingerCursor.moveTo(f.x, f.y + touchdy, f.shift)
 		
-		var tapDiv = f.touch?4:3, tapStart = f.touch?2:1
-		if(f.tapCount%tapDiv === tapStart+0){ // select word under finger
+		var tapDiv = f.touch? 4: 3
+		var tapStart = f.touch? 2: 1
+		if(f.tapCount % tapDiv === tapStart+0){ // select word under finger
 			var x = this.fingerCursor.end
-			this.fingerCursor.select(this.scanWordLeft(x), this.scanWordRight(x))
+			this.fingerCursor.select(this.scanWordLeft(x+1), this.scanWordRight(x))
 			this.fingerCursor.byFinger = true
 		}
-		else if(f.tapCount%tapDiv === tapStart+1){ // select line
+		else if(f.tapCount % tapDiv === tapStart+1){ // select line
 			var x = this.fingerCursor.end
-			this.fingerCursor.select(this.scanLineLeft(x), this.scanLineRight(x)+1)
+			this.fingerCursor.select(this.scanLineLeft(x+1), this.scanLineRight(x)+1)
 			this.fingerCursor.byFinger = true
 		}
-
+		// 
 		//this.redraw()
 	}
 

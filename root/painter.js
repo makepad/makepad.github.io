@@ -696,6 +696,10 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 		}
 	}
 
+	proto.updateMesh = function(){
+		bus.batchMessage(this)
+	}
+
 	proto.onConstruct = function(type, initalloc){
 		var slots = 0
 		if(typeof type === 'number'){
