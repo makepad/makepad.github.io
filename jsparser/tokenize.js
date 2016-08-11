@@ -110,7 +110,9 @@ pp.skipBlockComment = function() {
 	if (end === -1) this.raise(this.pos - 2, "Unterminated comment")
 	this.pos = end + 2
 	if(this.storeComments){
-		this.storeComments.push(this.input.slice(start, end+2))
+		var cmt = this.input.slice(start, end+2)
+		this.storeComments.push(cmt)
+		if(this.debugStream) this.debugStream.push(cmt)
 	}
 	//if (this.options.onComment)
 	//	this.options.onComment(true, this.input.slice(start + 2, end), start, this.pos)
@@ -124,7 +126,9 @@ pp.skipLineComment = function(startSkip) {
 		ch = this.input.charCodeAt(this.pos)
 	}
 	if(this.storeComments){
-		this.storeComments.push(this.input.slice(start, this.pos))
+		var cmt = this.input.slice(start, this.pos)
+		this.storeComments.push(cmt)
+		if(this.debugStream) this.debugStream.push(cmt)
 	}
 	//if (this.options.onComment)
 	//	this.options.onComment(false, this.input.slice(start + startSkip, this.pos), start, this.pos)
@@ -148,6 +152,7 @@ pp.skipSpace = function() {
 				++this.pos
 				if(this.storeComments){
 					this.storeComments.push(1)
+					if(this.debugStream) this.debugStream.push(1)
 				}
 				break
 			case 47: // '/'
@@ -183,6 +188,7 @@ pp.finishToken = function(type, val) {
 	this.type = type
 	this.value = val
 	if(this.storeComments) this.storeComments.push(type)
+	if(this.debugStream) this.debugStream.push(type.label)
 	this.updateContext(prevType)
 }
 

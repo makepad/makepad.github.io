@@ -11,14 +11,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 	}
 
-
 	proto.tools = {
-		Text:{
+		Text:require('shaders/codefontshader').extend({
 			displace:{
 				0:{x:0,y:0.08},
 				42:{x:0,y:-0.08} // * 
 			}
-		},
+		}),
 		Block:require('shaders/fastrectshader').extend({
 			borderRadius:5,
 			vertexStyle2:function(){
@@ -29,9 +28,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.h += 2.*dx
 			}
 		}),
-		Marker:require('shaders/fastmarkershader').extend({
+		Marker:require('shaders/codemarkershader').extend({
 		}),
-		ErrorMarker:require('shaders/fastmarkershader').extend({
+		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
 			opMargin:1,
 			colorStyles:function(){$
@@ -54,23 +53,21 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 	
 	proto.parseText = function(){
-		var ast 
+		this.ast = undefined
 		try{
-			ast = parser.parse(this.text,{
+			this.ast = parser.parse(this.text,{
 				storeComments:[]
 			})
 		}
 		catch(e){
 			this.error = e
 		}
-		return ast
+		return this.ast
 	}
 
 	proto.onDraw = function(){
 
 		this.beginBg(this.viewBgProps)
-
-
 		// ok lets parse the code
 		//require.perf()
 		if(this.textClean){
@@ -78,16 +75,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.reuseBlock()
 			this.reuseMarker()
 			this.reuseErrorMarker()
-			this.drawSelect()
+			this.orderSelect()
 			this.reuseText()
 			if(this.error) this.reuseErrorText()
 		}
 		else{
 			this.textClean = true
-			this.drawBlock()
-			this.drawMarker()
-			this.drawErrorMarker()
-			this.drawSelect()
+			this.orderBlock()
+			this.orderMarker()
+			this.orderErrorMarker()
+			this.orderSelect()
 			this.error = undefined
 			var ast = this.parseText()
 			if(ast){
@@ -154,7 +151,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.drawErrorText({
 					text:this.error.msg
 				})
-
 			}
 		}
 		
@@ -163,8 +159,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			var cursors = this.cs.cursors
 			for(var i = 0; i < cursors.length; i++){
 				var cursor = cursors[i]
-
 				var t = this.cursorRect(cursor.end)
+				if(cursor.max < 0) cursor.max = t.x
+
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
 
 				for(var j = 0; j < boxes.length;j++){
@@ -175,27 +172,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 						w:box.w,
 						h:box.h
 					})
-					// lets tell the keyboard
 				}
-				/*
-				if(cursor.byFinger && boxes.length){
-					var box = boxes[0]
-					this.drawSelectHandle({
-						x:box.x-15,
-						y:box.y-15,
-						h:30,
-						w:30
-					})
-					var box = boxes[boxes.length-1]
-					this.drawSelectHandle({
-						x:box.x+box.w-15,
-						y:box.y+box.h-15,
-						h:30,
-						w:30
-					})
-
-				}*/
-
 				this.drawCursor({
 					x:t.x-1,
 					y:t.y,
@@ -207,68 +184,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.endBg()
 	}
 
-	// make the edit control operate on both
-	// we operate on both because otherwise the parser would
-	// have to serialize the array which costs time
-
-	proto.insertText = function(offset, text){
-		this.textClean = false
-		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
-
-		// alright lets find the insertion spot in ann
-		var ann = this.fastTextOutput.ann
-		// process insert into annotated array
-		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=3){
-			var txt = ann[i]
-			pos += txt.length
-			if(offset<=pos){
-				var idx = offset - (pos - txt.length)
-				ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
-				break
-			}
-		}
-		this.redraw()
-	}
-
-	proto.removeText = function(start, end){
-		this.textClean = false
-		this.text = this.text.slice(0, start) + this.text.slice(end)
-
-		// process a remove from the annotated array
-		var ann = this.fastTextOutput.ann
-		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=3){
-			var txt = ann[i]
-			pos += txt.length
-			if(start<pos){
-				var idx = start - (pos - txt.length)
-				ann[i] = txt.slice(0, idx)
-				if(end<=pos){
-					var idx = end - (pos - txt.length)
-					ann[i] += txt.slice(idx)
-				}
-				else{ // end is in the next one
-					for(; i < len; i+=3){
-						var txt = ann[i]
-						pos += txt.length
-						if(end<pos){
-							var idx = end - (pos - txt.length)
-							ann[i] = txt.slice(idx)
-							break
-						}
-						else ann[i] = ''
-					}
-				}
-				break
-			}
-		}
-		this.redraw()
-	}
-
-	proto.serializeSlice = function(start, end){
-		return this.text.slice(start, end)
-	}
 
 
 	Object.defineProperty(proto,'styles',{
@@ -343,16 +258,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderColor:'gray',
 			borderWidth:1.,
 			'+':{
-				bgColor:'#373a'
+				bgColor:'#373'
 			},
 			'-':{
-				bgColor:'#722a'
+				bgColor:'#077'
 			},
 			'/':{
-				bgColor:'#737a'
+				bgColor:'#737'
 			},
 			'*':{
-				bgColor:'#333a'
+				bgColor:'#333'
 			}
 		},
 		Comment:{
@@ -361,8 +276,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			side:{
 				head:0.5
 			},
-			above:{
-			}
+			above:{},
+			top:{},
+			bottom:{}
 		},
 		Paren:{
 			boldness:0.,
@@ -567,13 +483,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 		}
-		if(node.below) this.fastText(node.below, this.styles.Comment)
+		if(node.bottom) this.fastText(node.bottom, this.styles.Comment)
 	}
 
 	//BlockStatement:{body:2},
-	proto.newLine = function(){
+	proto.doIndent = function(delta){
+		this.indent += delta
 		this.turtle.sx = this.indent * this.indentSize
-		this.fastText('\n', this.styles)
 	}
 
 	proto.BlockStatement = function(node, colorScheme){
@@ -584,9 +500,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('{', this.styles.Curly.BlockStatement)
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
-		this.indent++
-		this.newLine()
-
+		this.doIndent(1)
+		//this.newLine()
+		if(node.top) this.fastText(node.top, this.styles.Comment.top)
 		var body = node.body
 		var bodylen = body.length - 1
 		for(var i = 0; i <= bodylen; i++){
@@ -599,11 +515,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			// lets output the 
 			//if(i < bodylen) this.newLine()
 		}
-		this.indent --
-		this.newLine()
+		if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
+		this.doIndent(-1)
 		// store endx endy
 		var blockh = turtle.wy
-		this.fastText('}', this.styles.Curly.BlockStatement)
+		this.fastText('\n}', this.styles.Curly.BlockStatement)
 
 		// lets draw a block with this information
 		this.drawBlock({
@@ -879,13 +795,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('for', this.style.ForStatement)
 		this.fastText('(', this.style.Paren.ForStatement.left)
 		var init = node.init
-		this[init.type](init)
+		this[init.type](init, 1)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var test = node.test
-		this[test.type](test)
+		this[test.type](test, 1)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var update = node.update
-		this[update.type](update)
+		this[update.type](update, 1)
 		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
 		this[body.type](body, forBlockColor)
@@ -1178,6 +1094,65 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//TryStatement:{block:1, handler:1, finalizer:1},
 	proto.SpreadElement = function(node){
 		logNonexisting(node)
+	}
+
+	proto.insertText = function(offset, text){
+		this.textClean = false
+		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
+
+		// alright lets find the insertion spot in ann
+		var ann = this.fastTextOutput.ann
+		// process insert into annotated array
+		var pos = 0
+		for(var i = 0, len = ann.length; i < len; i+=3){
+			var txt = ann[i]
+			pos += txt.length
+			if(offset<=pos){
+				var idx = offset - (pos - txt.length)
+				ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
+				break
+			}
+		}
+		this.redraw()
+	}
+
+	proto.removeText = function(start, end){
+		this.textClean = false
+		this.text = this.text.slice(0, start) + this.text.slice(end)
+
+		// process a remove from the annotated array
+		var ann = this.fastTextOutput.ann
+		var pos = 0
+		for(var i = 0, len = ann.length; i < len; i+=3){
+			var txt = ann[i]
+			pos += txt.length
+			if(start<pos){
+				var idx = start - (pos - txt.length)
+				ann[i] = txt.slice(0, idx)
+				if(end<=pos){
+					var idx = end - (pos - txt.length)
+					ann[i] += txt.slice(idx)
+				}
+				else{ // end is in the next one
+					for(; i < len; i+=3){
+						var txt = ann[i]
+						pos += txt.length
+						if(end<pos){
+							var idx = end - (pos - txt.length)
+							ann[i] = txt.slice(idx)
+							break
+						}
+						else ann[i] = ''
+					}
+				}
+				break
+			}
+		}
+		this.redraw()
+	}
+
+	proto.serializeSlice = function(start, end){
+		return this.text.slice(start, end)
 	}
 
 	// creates a prototypical inheritance overload from an object

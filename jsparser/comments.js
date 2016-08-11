@@ -49,3 +49,47 @@ pp.commentEnd = function(node, above, tail){
 	if(side.length) node.side = side
 	comments.length = 0
 }
+
+// called on the head of a block
+pp.commentTop = function(node){
+	var out = ''
+	var comments = this.storeComments
+	for(var i = 0, l = comments.length; i < l; i++){
+		var item = comments[i]
+		if(typeof item != 'object'){
+			if(item === 1){
+				out += '\n'
+				comments.splice(0, i + 1)
+				break
+			}
+			out += item
+		}
+	}
+	if(out.length){
+	 	node.top = out
+	 }
+}
+// this is called at a } we run to it then splice and leave that for the next layer up
+pp.commentBottom = function(node, tail){
+	var out = ''
+	var comments = this.storeComments
+	//console.log('tail',cmt.join(','))
+	for(var i = 0, l = comments.length;i < l; i++){
+		var item = comments[i]
+		if(item === tail){
+			comments.splice(0, i + 1)
+			break
+		}
+		if(typeof item !== 'object'){
+			if(item === 1){
+				if(comments[i+1] !== tail)
+					out += '\n'
+			}
+			else out += item
+		}
+	}
+	if(i==l){
+		comments.length = 0
+	}
+	if(out.length) node.bottom = out
+}

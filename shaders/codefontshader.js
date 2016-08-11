@@ -1,4 +1,4 @@
-module.exports = require('shaders/sdffontshader').extend(function FastFontShader(proto, base){
+module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 
 	var types = require('types')
 	var painter = require('painter')

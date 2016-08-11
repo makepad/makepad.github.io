@@ -22,7 +22,7 @@ module.exports = require('view').extend(function EditView(proto){
 			borderWidth:1,
 			borderColor:'red'
 		}),
-		Text:require('shaders/fastfontshader').extend({
+		Text:require('shaders/sdffontshader').extend({
 			font:require('fonts/ubuntu_medium_256.sdffont'),
 			fontSize:24,
 			color:'#ccc',
@@ -150,7 +150,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 				var t = this.cursorRect(cursor.end)
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
-
+				if(cursor.max < 0) cursor.max = t.x
 				for(var j = 0; j < boxes.length;j++){
 					var box = boxes[j]
 					this.drawSelect({
@@ -310,6 +310,7 @@ module.exports = require('view').extend(function EditView(proto){
 				this.editor.addUndoDelete(lo, lo +len)
 			}
 			this.start = this.end = lo
+			this.max = this.editor.cursorRect(this.end).x
 			this.editor.cursorChanged(this)
 		}
 
@@ -381,6 +382,9 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.clampCursor = function(mi, ma){
 			this.start = clamp(this.start, mi, ma)
 			this.end = clamp(this.end, mi, ma)
+		}
+		proto.invalidateMax = function(){
+			this.max = -1
 		}
 	})
 
@@ -803,6 +807,7 @@ module.exports = require('view').extend(function EditView(proto){
 		this.$undoGroup ++
 		this.cs.insertText(k.text)
 		this.cs.moveDelta(k.text.length)
+		this.cs.invalidateMax()
 	}
 	
 	proto.onKeyPress = function(k){
@@ -815,6 +820,7 @@ module.exports = require('view').extend(function EditView(proto){
 		}
 		this.cs.insertText(out)
 		this.cs.moveDelta(1)
+		this.cs.invalidateMax()
 	}
 
 	//

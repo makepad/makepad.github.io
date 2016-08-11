@@ -95,6 +95,7 @@ module.exports = function(proto){
 		var info = proto.$compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
+		props.name = classname
 		props.xOffset = info.instanceProps.this_DOT_x.offset
 		props.yOffset = info.instanceProps.this_DOT_y.offset
 		var wProp = info.instanceProps.this_DOT_w

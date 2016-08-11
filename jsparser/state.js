@@ -76,7 +76,8 @@ exports.Parser = function Parser(options, input, startPos) {
 	// stored comment array
 	this.storeComments = options.storeComments
 	//console.log(this.storeComments)
-
+	this.debugStream = options.debugStream
+	
 	// If enabled, skip leading hashbang line.
 	if (this.pos === 0 && options.allowHashBang && this.input.slice(0, 2) === '#!')
 		this.skipLineComment(2)

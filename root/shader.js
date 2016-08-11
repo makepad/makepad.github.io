@@ -1090,9 +1090,12 @@ module.exports = require('class').extend(function Shader(proto){
 	})
 
 	proto.toolMacros = {
+		order:function(){
+			this.$ALLOCDRAW()
+		},
 		reuse:function(){
 			// make sure we are drawn
-			this.$ALLOCDRAW()
+			this.orderNAME()
 			var $props = this.$shaders.NAME.$props
 			if($props.oldLength !== undefined){
 				$props.length = $props.oldLength

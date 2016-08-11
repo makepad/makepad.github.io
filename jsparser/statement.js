@@ -32,7 +32,7 @@ pp.parseTopLevel = function(node) {
 	if (this.options.ecmaVersion >= 6) {
 		node.sourceType = this.options.sourceType
 	}
-	if(this.storeComments) node.below = this.commentBegin()
+	if(this.storeComments) this.commentBottom(node)
 	return this.finishNode(node, "Program")
 }
 
@@ -356,8 +356,11 @@ pp.parseBlock = function(allowStrict) {
 	var node = this.startNode(), first = true, oldStrict
 	node.body = []
 	this.expect(tt.braceL)
-	while (!this.eat(tt.braceR)) {
 
+	if(this.storeComments) this.commentTop(node)
+
+	while (!this.eat(tt.braceR)) {
+		
 		if(this.storeComments) var above = this.commentBegin()
 		var stmt = this.parseStatement(true)
 		if(this.storeComments) this.commentEnd(stmt, above, tt.braceR)
@@ -370,7 +373,9 @@ pp.parseBlock = function(allowStrict) {
 		first = false
 	}
 	if (oldStrict === false) this.setStrict(false)
-	if(this.storeComments) node.below = this.commentBegin()
+
+	if(this.storeComments) this.commentBottom(node, tt.braceR)
+	
 	return this.finishNode(node, "BlockStatement")
 }
 

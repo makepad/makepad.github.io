@@ -1,4 +1,4 @@
-module.exports = require('shaders/quadshader').extend(function FastMarkerShader(proto){
+module.exports = require('shaders/quadshader').extend(function(proto){
 
 	var types = require('types')
 	var painter = require('painter')
@@ -27,10 +27,12 @@ module.exports = require('shaders/quadshader').extend(function FastMarkerShader(
 		delay: {styleLevel:1, value:0.},
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
+
 	proto.colorStyles = function(){$
 		this.opColor = this.bgColor*1.1
 		this.borderColor = this.bgColor*1.1
 	}
+
 	proto.vertexStyle = function(){$
 		this.y += this.level*1.
 		this.h -= this.level*2.
@@ -39,7 +41,6 @@ module.exports = require('shaders/quadshader').extend(function FastMarkerShader(
 		this.x3 -= this.x1
 		this.w = this.x4 - this.x1// + 4.
 		this.colorStyles()
-		// if our chain does not have focus, we dont show?
 	}
 
 	proto.pixel = function(){$

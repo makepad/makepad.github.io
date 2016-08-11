@@ -66,6 +66,8 @@ var defaultOptions = exports.defaultOptions = {
 	directSourceFile: null,
 	// keep track of the stored comments using this array
 	storeComments:null,
+	// token/comment/newline debugstream
+	debugStream:null,
 	// When enabled, parenthesized expressions are represented by
 	// (non-standard) ParenthesizedExpression nodes
 	preserveParens: true,
