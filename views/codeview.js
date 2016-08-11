@@ -294,7 +294,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 	// nice cascading high perf styles for the text
 	proto.styles = {
-		fontSize:24,
+		fontSize:14,
 		boldness:0.,
 		color:'white',
 		italic:0,
@@ -313,6 +313,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Marker:{
 			borderRadius:3,
 			opColor:'gray',
+			bgColor:'gray',
 			borderColor:'gray',
 			borderWidth:1.,
 			'+':{
@@ -609,10 +610,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	//ParenthesizedExpression:{expression:1}
-	proto.ParenthesizedExpression = function(node){
+	proto.ParenthesizedExpression = function(node, level){
+		if(!level) level = 0
 		this.fastText('(', this.style.Paren.ParenthesizedExpression)
 		var exp = node.expression
-		this[exp.type](exp)
+		this[exp.type](exp, level+1)
 		this.fastText(')', this.style.Paren.ParenthesizedExpression)
 	}
 
