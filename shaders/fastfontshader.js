@@ -5,7 +5,7 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 
 	// special
 	proto.props = {
-		visible:{kind:'uniform',noTween:1, value:1.},
+		//visible:{kind:'uniform',noTween:1, value:1.},
 		x:{noInPlace:1, value:NaN},
 		y:{noInPlace:1, value:NaN},
 		color:{pack:'float12', value:'black'},
@@ -22,7 +22,6 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 		unicode:{noStyle:1, value:0},
 		noBounds: {kind:'uniform',value:0},
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-
 		tween: {kind:'uniform', value:0.},
 		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
 		duration: {kind:'uniform', value:0.},

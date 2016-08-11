@@ -16,10 +16,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Text:{
 			displace:{
 				0:{x:0,y:0.08},
-				43:{x:0,y:0.08}, // +
-				45:{x:0,y:0.08}, // -
-				47:{x:0,y:0.08}, // /
-				42:{x:0,y:-0.08}, // * 
+				42:{x:0,y:-0.08} // * 
 			}
 		},
 		Block:require('shaders/fastrectshader').extend({
@@ -31,10 +28,28 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				//this.w += 2.*dx
 				this.h += 2.*dx
 			}
-
 		}),
 		Marker:require('shaders/fastmarkershader').extend({
-
+		}),
+		ErrorMarker:require('shaders/fastmarkershader').extend({
+			bgColor:'#522',
+			opMargin:1,
+			colorStyles:function(){$
+				this.x2 -= 2.
+				this.x3 += 2.
+				this.opColor = this.bgColor*2.3
+				this.borderColor = this.bgColor*1.4
+			}
+		}),
+		ErrorText:require('shaders/sdffontshader').extend({
+			font:require('fonts/ubuntu_medium_256.sdffont'),
+			color:'red',
+			outlineColor:'black',
+			outlineWidth:1,
+			lockScroll:0.,
+			fontSize:16,
+			y:2,
+			x:'$15'
 		})
 	}
 	
@@ -46,6 +61,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			})
 		}
 		catch(e){
+			this.error = e
 		}
 		return ast
 	}
@@ -54,21 +70,25 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.beginBg(this.viewBgProps)
 
+
 		// ok lets parse the code
 		//require.perf()
 		if(this.textClean){
 			this.reuseDrawSize()
-			this.reuseMarker()
 			this.reuseBlock()
+			this.reuseMarker()
+			this.reuseErrorMarker()
 			this.drawSelect()
 			this.reuseText()
+			if(this.error) this.reuseErrorText()
 		}
 		else{
 			this.textClean = true
 			this.drawBlock()
 			this.drawMarker()
+			this.drawErrorMarker()
 			this.drawSelect()
-
+			this.error = undefined
 			var ast = this.parseText()
 			if(ast){
 				// first we format the code
@@ -119,6 +139,22 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.fastText(ann[i], ann[i+1])
 				}
 				this.fastTextOutput = out
+				// lets query the geometry for the error pos
+				var rd = this.$readOffsetText(this.error.pos)
+
+				this.drawErrorMarker({
+					x1:0,
+					x2:rd.x,
+					x3:rd.x + rd.w,
+					x4:100000,
+					y:rd.y,
+					h:rd.fontSize * rd.lineSpacing
+				})
+				// lets draw the error
+				this.drawErrorText({
+					text:this.error.msg
+				})
+
 			}
 		}
 		
@@ -294,22 +330,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 	// nice cascading high perf styles for the text
 	proto.styles = {
-		fontSize:14,
+		fontSize:12,
 		boldness:0.,
 		color:'white',
 		italic:0,
 		head:0,
 		tail:0,
-		//outlineColor:[0,0,0,0],
-		//shadowblur:0,
-		//shadowSpread:0,
-		//shadowOffset:[0,0],
-		//shadowColor:[0,0,0,0],
-		//outlineWidth:0,
-		//lockScroll:1,
-		//ease:[0,0,0,0],
-		//duration:0.,
-		//tween:0.,
 		Marker:{
 			borderRadius:3,
 			opColor:'gray',
@@ -344,8 +370,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			CallExpression:{},
 			NewExpression:{},
 			ParenthesizedExpression:{},
-			IfStatement:{},
-			ForStatement:{}
+			IfStatement:{
+				left:{},
+				right:{tail:0.5}
+			},
+			ForStatement:{
+				left:{},
+				right:{tail:0.5}
+			}
 		},
 		Comma:{
 			FunctionDeclaration:{},
@@ -364,7 +396,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			MemberExpression:{}
 		},
 		SemiColon:{
-			ForStatement:{}
+			ForStatement:{tail:0.5}
 		},
 		Bracket:{
 			MemberExpression:{},
@@ -451,11 +483,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// a+b
 		LogicalExpression:{
 			head:0.5,
-			tail:0.5
+			tail:0.5,
+			color:'#ff9f00'
 		},
 		BinaryExpression:{
 			head:0.5,
-			tail:0.5
+			tail:0.5,
+			color:'#ff9f00'
 		},
 		AssignmentExpression:{
 			boldness:0.3,
@@ -470,8 +504,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			tail:0.5
 		},
 		UpdateExpression:{
-			head:0.5,
-			tail:0.5
 		},
 		UnaryExpression:{},
 
@@ -829,10 +861,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	proto.IfStatement = function(node){
 		this.fastText('if', this.style.IfStatement.if)
-		this.fastText('(', this.style.Paren.IfStatement)
+		this.fastText('(', this.style.Paren.IfStatement.left)
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this.style.Paren.IfStatement)
+		this.fastText(')', this.style.Paren.IfStatement.right)
 		var cq = node.consequent
 		this[cq.type](cq, ifBlockColor)
 		var alt = node.alternate
@@ -845,7 +877,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//ForStatement:{init:1, test:1, update:1, body:1},
 	proto.ForStatement = function(node){
 		this.fastText('for', this.style.ForStatement)
-		this.fastText('(', this.style.Paren.ForStatement)
+		this.fastText('(', this.style.Paren.ForStatement.left)
 		var init = node.init
 		this[init.type](init)
 		this.fastText(';', this.style.SemiColon.ForStatement)
@@ -854,7 +886,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var update = node.update
 		this[update.type](update)
-		this.fastText(')', this.style.Paren.ForStatement)
+		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
 		this[body.type](body, forBlockColor)
 	}
@@ -862,13 +894,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//ForInStatement:{left:1, right:1, body:1},
 	proto.ForInStatement = function(node){
 		this.fastText('for', this.style.ForStatement)
-		this.fastText('(', this.style.Paren.ForStatement)
+		this.fastText('(', this.style.Paren.ForStatement.left)
 		var left = node.left
 		this[left.type](left)
 		this.fastText(' in ', this.style.ForStatement.in)
 		var right = node.right
 		this[right.type](right)
-		this.fastText(')', this.style.Paren.ForStatement)
+		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
 		this[body.type](body, forBlockColor)
 	}

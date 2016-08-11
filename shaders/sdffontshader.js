@@ -3,10 +3,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	var types = require('types')
 	var painter = require('painter')
 	var fontloader = require('loaders/fontloader')
-
 	// special
 	proto.props = {
-		visible:{noTween:1, value:1.},
+		//visible:{noTween:1, value:1.},
 		x:{noInPlace:1, value:NaN},
 		y:{noInPlace:1, value:NaN},
 
@@ -29,13 +28,13 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		unicode:{noStyle:1, value:0},
 		
 		// character head/tail margin and advance
-		advance:{noStyle:1, value:0},
-		head:{noStyle:1, value:0},
-		tail:{noStyle:1, value:0},
+		advance:{noStyle:1, noTween:1, value:0},
+		head:{noStyle:1, noTween:1, value:0},
+		tail:{noStyle:1, noTween:1, value:0},
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
-		wrapping:{styleLevel:1, value:'word'},
+		wrapping:{styleLevel:1, value:'line'},
 		margin:{styleLevel:1, value:[0,0,0,0]},
 		noBounds: {styleLevel:1, value:0},
 		text:{styleLevel:1, value:''},
@@ -73,6 +72,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.vertex = function(){$
+		this.visible = 1.0
+
 		this.vertexStyle()
 
 		if(this.visible < 0.5){
@@ -186,7 +187,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				fontSize:this.$PROP(o, 'fontSize'),
 				italic:this.$PROP(o, 'italic')
 			}
-			read.w = (read.head + read.advance + read.tail) * read.fs
+			read.w = (read.head + read.advance + read.tail) * read.fontSize
 			read.lineSpacing = this._NAME.prototype.lineSpacing
 			read.baseLine = this._NAME.prototype.baseLine
 
@@ -257,7 +258,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var turtle = this.turtle
 			this.$STYLEPROPS(overload, 1)
 
-			var abspos = !isNaN(turtle._x) && !isNaN(turtle._y)
+			var absx = turtle._x !== undefined
+			var absy = turtle._y !== undefined
+
 			var txt = turtle._text
 			var elen = txt.length
 			var len = overload.$editMode?elen + 1:elen
@@ -317,11 +320,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				if(width){
 					// run the turtle
 					turtle._w = width
-					if(!abspos){
-						turtle._x = NaN
-						turtle._y = NaN
-					}
-					else abspos = false
+					if(!absx) turtle._x = NaN
+					if(!absy) turtle._y = NaN
+					absx = absy = false
 					//console.log("MARK")
 					turtle.walk()
 					//console.log("END")
@@ -330,6 +331,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 						var unicode = i === elen? 32: txt.charCodeAt(i)
 						var g = glyphs[unicode] || glyphs[63]
 						this.$WRITEPROPS({
+							advance:g.advance,
+							head:0.,
 							tx1: g.tx1,
 							ty1: g.ty1,
 							tx2: g.tx2,
