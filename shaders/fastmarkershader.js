@@ -27,8 +27,8 @@ module.exports = require('shaders/quadshader').extend(function FastMarkerShader(
 	}
 
 	proto.vertexStyle = function(){$
-		this.y += this.level*.5
-		this.h -= this.level*1.
+		this.y += this.level*1.
+		this.h -= this.level*2.
 		this.x = this.x1 //- 2.
 		this.x2 -= this.x1
 		this.x3 -= this.x1
