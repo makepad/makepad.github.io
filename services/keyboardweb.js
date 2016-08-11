@@ -100,7 +100,7 @@ setInterval(function(){
 			fn:'onIdleResume'
 		})
 		// fix ios bug
-		if(hasKeyboardFocus || isIOSdevice) services.painter.resizeCanvas()
+		if(hasKeyboardFocus || isIOSDevice) services.painter.resizeCanvas()
 		if(hasKeyboardFocus){
 			hasKeyboardFocus = false
 			bus.postMessage({

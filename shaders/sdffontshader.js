@@ -27,6 +27,11 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		shadowOffset: {pack:'int12', value:[0., 0.]},
 
 		unicode:{noStyle:1, value:0},
+		
+		// character head/tail margin and advance
+		advance:{noStyle:1, value:0},
+		head:{noStyle:1, value:0},
+		tail:{noStyle:1, value:0},
 
 		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
@@ -74,15 +79,16 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			return vec4(0.)
 		}
 
-		// ref it otherwise it doesnt get written
-		this.unicode
+		// ref these for characters with margins (prefix->advance)
+		this.advance
+		this.tail
 
 		var minPos = vec2(
-			this.x + this.fontSize * this.x1,
+			this.x + this.fontSize * (this.x1 + this.head),
 			this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
 		)
 		var maxPos = vec2(
-			this.x + this.fontSize * this.x2 ,
+			this.x + this.fontSize * (this.x2 + this.head),
 			this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
 		)
 
@@ -167,41 +173,49 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		$readOffset:function(o){
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			if(!this.$shaders.NAME) return {}
-			this.$READBEGIN()
+			this.$PROPVARDEF()
 			var len = this.$PROPLEN()
 			if(o < 0 || o >= len) return
 
 			var read = {
-				x:this.$READPROP(o, 'x'),
-				y:this.$READPROP(o, 'y'),
-				unicode:this.$READPROP(o, 'unicode'),
-				fontSize:this.$READPROP(o, 'fontSize'),
-				italic:this.$READPROP(o, 'italic')
+				x:this.$PROP(o, 'x'),
+				y:this.$PROP(o, 'y'),
+				head:this.$PROP(o, 'head'),
+				advance:this.$PROP(o, 'advance'),
+				tail:this.$PROP(o, 'head'),
+				fontSize:this.$PROP(o, 'fontSize'),
+				italic:this.$PROP(o, 'italic')
 			}
-
+			read.w = (read.head + read.advance + read.tail) * read.fs
 			read.lineSpacing = this._NAME.prototype.lineSpacing
 			read.baseLine = this._NAME.prototype.baseLine
-			read.advance = (glyphs[read.unicode] || glyphs[63]).advance
 
 			// write the bounding box
 			return read
 		},
-		$seekPos:function(x, y, box){
+		$seekPos:function(x, y){
 			// lets find where we are inbetween
 			if(!this.$shaders.NAME) return {}
 			var len = this.$PROPLEN() - 1
-			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
-			this.$READBEGIN()
+			this.$PROPVARDEF()
+
 			for(var i = 0; i < len; i++){
-				var tx = this.$READPROP(i, 'x')
-				var ty = this.$READPROP(i, 'y')
-				var fs = this.$READPROP(i, 'fontSize')
-				var unicode = this.$READPROP(i, 'unicode')
-				var advance = (glyphs[unicode] || glyphs[63]).advance
+				var tx = this.$PROP(i, 'x')
+				var ty = this.$PROP(i, 'y')
+				var fs = this.$PROP(i, 'fontSize')
+				var total = this.$PROP(i, 'advance') + this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+
+				var xw = total * fs
+				if(ty >= y){//} && ty !== this.$READPROP(i-1, 'y')){
+					return i - 1
+				}
 				if(y<ty) return -1
-				if(y >= ty && (unicode === 10 || x <= tx + advance * fs) && y <= ty + fs * lineSpacing){
-					if(unicode !== 10 && !box && x > tx + advance * fs * 0.5) return i + 1
+				if(y >= ty &&  x <= tx + xw && y <= ty + fs * lineSpacing){
+					if(x > tx + xw * 0.5){
+						if(ty !== this.$PROP(i+1, 'y')) return i
+						return i + 1
+					}
 					return i
 				}
 			}
@@ -211,16 +225,15 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			if(!this.$shaders.NAME) return {}
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var lineSpacing = this._NAME.prototype.lineSpacing
-			this.$READBEGIN()
+			this.$PROPVARDEF()
 			var boxes = []
 			var curBox
 			var lty, ltx, lfs, lad
 			for(var i = start; i < end; i++){
-				var tx = this.$READPROP(i, 'x')
-				var ty = this.$READPROP(i, 'y')
-				var fs = this.$READPROP(i, 'fontSize')
-				var unicode = this.$READPROP(i, 'unicode')
-				var advance = (glyphs[unicode] || glyphs[63]).advance
+				var tx = this.$PROP(i, 'x')
+				var ty = this.$PROP(i, 'y')
+				var fs = this.$PROP(i, 'fontSize')
+				var total = this.$PROP(i, 'advance') +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
 
 				if(curBox && lty && lty !== ty){
 					curBox.w = (ltx + lfs * lad) - curBox.x
@@ -229,11 +242,11 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				if(!curBox){
 					boxes.push(curBox = {fontSize:fs, x:tx, y:ty, h:fs * lineSpacing})
 				}
-				if(unicode === 10 || i === end-1){ // end current box
-					curBox.w = (tx + fs * advance) - curBox.x
+				if(i === end-1){ // end current box
+					curBox.w = (tx + fs * total) - curBox.x
 					curBox = undefined
 				}
-				lty = ty, ltx = tx, lfs = fs, lad = advance
+				lty = ty, ltx = tx, lfs = fs, lad = total
 			}
 			return boxes
 		},

@@ -30,7 +30,11 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 		//tweenStart: {kind:'uniform', value:1.0},
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
-
+	proto.displace = {
+		0:{
+			x:0,y:0
+		}
+	}
 	proto.mesh = painter.Mesh(types.vec3).pushQuad(
 		0,0, 1,
 		1,0, 1,
@@ -41,26 +45,32 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 	proto.toolMacros = {
 		fast:function(txt, style){
 			var out = this.fastNAMEOutput			
-			var len = txt.length
+			var len = txt.length - 1
 			var turtle = this.turtle
 
-			this.$ALLOCDRAW(len, true)
+			this.$ALLOCDRAW(len + 1, true)
 
 			var margin = style.margin
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var displace = this._NAME.prototype.displace
 			var fontSize = style.fontSize
-			var posx = turtle.wx + margin[3] * fontSize
-			var posy = turtle.wy + margin[0] * fontSize
+			var posx = turtle.wx// + margin[3] * fontSize
+			var posy = turtle.wy// + margin[0] * fontSize
+
 			if(out){
 				out.text += txt
 				out.ann.push(txt, style, turtle.sx)
 			}
 			var sx = turtle.sx
-			for(var i = 0; i < len; i++){
+			var advance = 0
+			var head = style.head, tail = 0
+			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode] || glyphs[63]
-
+				var d = displace[unicode] || displace[0]
+				if(i ===len) tail = style.tail
+				var advance = g.advance
 				this.$WRITEPROPS({
 					$fastWrite:true,
 					visible:1,
@@ -71,18 +81,23 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 					italic:style.italic,
 					boldness:style.boldness, 
 					unicode:unicode,
+					head:head,
+					advance:advance,
+					tail:tail,
 					tx1: g.tx1,
 					ty1: g.ty1,
 					tx2: g.tx2,
 					ty2: g.ty2,
-					x1: g.x1,
-					y1: g.y1,
-					x2: g.x2,
-					y2: g.y2,
+					x1: g.x1 + d.x,
+					y1: g.y1 + d.y,
+					x2: g.x2 + d.x,
+					y2: g.y2 + d.y,
 					unicode: unicode
 				})
-				posx += g.advance * fontSize
+				posx += (head + advance + tail) * fontSize
+
 				var nh = fontSize * lineSpacing
+				head = 0
 				if(nh > turtle.mh) turtle.mh = nh
 				if(unicode === 10){
 					turtle.mh = 0
@@ -93,7 +108,7 @@ module.exports = require('shaders/sdffontshader').extend(function FastFontShader
 			}
 			posy += fontSize * lineSpacing
 			if(posy>turtle.y2) turtle.y2 = posy
-			turtle.wx = posx + margin[1]* fontSize
+			turtle.wx = posx// + margin[1]* fontSize
 		}
 	}
 })

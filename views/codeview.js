@@ -13,6 +13,15 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 
 	proto.tools = {
+		Text:{
+			displace:{
+				0:{x:0,y:0.08},
+				43:{x:0,y:0.08}, // +
+				45:{x:0,y:0.08}, // -
+				47:{x:0,y:0.08}, // /
+				42:{x:0,y:-0.08}, // * 
+			}
+		},
 		Block:require('shaders/fastrectshader').extend({
 			borderRadius:5,
 			vertexStyle2:function(){
@@ -22,6 +31,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				//this.w += 2.*dx
 				this.h += 2.*dx
 			}
+
+		}),
+		Marker:require('shaders/fastmarkershader').extend({
 
 		})
 	}
@@ -44,9 +56,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// ok lets parse the code
 		//require.perf()
-		if(!this.textClean){
+		if(this.textClean){
+			this.reuseDrawSize()
+			this.reuseMarker()
+			this.reuseBlock()
+			this.drawSelect()
+			this.reuseText()
+		}
+		else{
 			this.textClean = true
 			this.drawBlock()
+			this.drawMarker()
 			this.drawSelect()
 
 			var ast = this.parseText()
@@ -101,12 +121,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.fastTextOutput = out
 			}
 		}
-		else{
-			this.reuseDrawSize()
-			this.reuseBlock()
-			this.drawSelect()
-			this.reuseText()
-		}
+		
 
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
@@ -277,14 +292,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		5:'#a87b',
 		6:'#b98b',
 	}
-
 	// nice cascading high perf styles for the text
 	proto.styles = {
-		fontSize:12,
+		fontSize:24,
 		boldness:0.,
 		color:'white',
 		italic:0,
-		margin:[0,0,0,0],
+		head:0,
+		tail:0,
 		//outlineColor:[0,0,0,0],
 		//shadowblur:0,
 		//shadowSpread:0,
@@ -295,11 +310,29 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		//ease:[0,0,0,0],
 		//duration:0.,
 		//tween:0.,
+		Marker:{
+			borderRadius:3,
+			opColor:'gray',
+			borderColor:'gray',
+			borderWidth:1.,
+			'+':{
+				bgColor:'#373a'
+			},
+			'-':{
+				bgColor:'#722a'
+			},
+			'/':{
+				bgColor:'#737a'
+			},
+			'*':{
+				bgColor:'#333a'
+			}
+		},
 		Comment:{
 			boldness:0.3,
 			color:'#0083f8',
 			side:{
-				margin:[0,0,0,0.5]
+				head:0.5
 			},
 			above:{
 			}
@@ -375,7 +408,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			},
 			num:{
 				boldness:0.4,
-				color:'#77f'
+				color:'#bbf'
 			},
 			boolean:{},
 			regexp:{},
@@ -416,23 +449,28 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// a+b
 		LogicalExpression:{
-			margin:[0,.5,0,.5]
+			head:0.5,
+			tail:0.5
 		},
 		BinaryExpression:{
-			margin:[0,.5,0,.5]
+			head:0.5,
+			tail:0.5
 		},
 		AssignmentExpression:{
 			boldness:0.3,
-			margin:[0,.5,0,.5],
+			head:0.5,
+			tail:0.5,
 			'=':{
 				color:'#ff9f00'
 			}
 		},
 		ConditionalExpression:{
-			margin:[0,.5,0,.5]
+			head:0.5,
+			tail:0.5
 		},
 		UpdateExpression:{
-			margin:[0,.5,0,.5]
+			head:0.5,
+			tail:0.5
 		},
 		UnaryExpression:{},
 
@@ -714,12 +752,23 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
-	proto.BinaryExpression = function(node){
+	proto.BinaryExpression = function(node, level){
+		level = level || 0
 		var left = node.left
 		var right = node.right
-		this[left.type](left)
+		var turtle = this.turtle
+		// draw a marker
+		var m = this.startMarker(turtle.wy, level, this.style.Marker[node.operator] || this.style.Marker)
+		// we have to draw a backdrop 
+		var x1 = turtle.wx 
+		this[left.type](left, level+1)
+		var x2 = turtle.wx 
 		this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
-		this[right.type](right)
+		var x3 = turtle.wx 
+		this[right.type](right, level+1)
+		var x4 = turtle.wx
+		var h = turtle.mh
+		this.stopMarker(m, x1,x2,x3,x4,h)
 	}
 
 	//AssignmentExpression: {left:1, operator:0, right:1},
@@ -1116,7 +1165,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 			else{
 				if(typeof item === 'string'){
-					item = proto.parseColor(item)
+					item = proto.parseColor(item,1)
 				}
 				outobj[key] = item
 			}

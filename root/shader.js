@@ -737,7 +737,7 @@ module.exports = require('class').extend(function Shader(proto){
 		return 'this.$shaders.'+classname+'.$props.length'
 	}
 
-	proto.$READBEGIN = function(target, classname, macroargs, mainargs, indent){
+	proto.$PROPVARDEF = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -748,12 +748,21 @@ module.exports = require('class').extend(function Shader(proto){
 		return code
 	}
 
-	proto.$READPROP = function(target, classname, macroargs, mainargs, indent){
+	proto.$PROP = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
 		var prop = info.instanceProps['this_DOT_'+macroargs[1].slice(1,-1)]
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
+	}
+
+	proto.$PREV = function(target, classname, macroargs, mainargs, indent){
+		if(!this.$compileInfo) return ''
+		var code = ''
+		var info = this.$compileInfo
+		if(info.noTween) throw new Error('Property ' + macroargs[1] + ' does not tween')
+		var prop = info.instanceProps['this_DOT_'+macroargs[1].slice(1,-1)]
+		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
 	proto.$TWEENJS = function(indent, tweencode, instanceProps){

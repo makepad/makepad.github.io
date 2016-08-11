@@ -156,7 +156,10 @@ module.exports = require('shader').extend(function RectShader(proto){
 					p.ay = p.by - (p.cy - p.by)
 				}
 				else{
-					this.$PREVPROPS({dx:p.cx, dy:p.cy})
+					var offset = this.$PROPLEN()
+					this.$PROPVARDEF()
+					this.$PROP(offset - 1, 'dx') = p.cx
+					this.$PROP(offset - 1, 'dy') = p.cy
 				}
 			}
 			else{
