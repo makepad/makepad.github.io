@@ -88,7 +88,7 @@ module.exports = function(font){
 		ty1:0,
 		tx2:0,
 		ty2:0,
-		advance: 0.5
+		advance: -0.5
 	}
 	map.glyphs[9] = { // tab
 		x1: 0,

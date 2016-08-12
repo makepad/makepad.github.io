@@ -127,19 +127,27 @@ pp.parseBindingAtom = function() {
 	}
 }
 
-pp.parseBindingList = function(close, allowEmpty, allowTrailingComma, allowNonIdent) {
+pp.parseBindingList = function(close, allowEmpty, allowTrailingComma, allowNonIdent, node) {
+	if(this.storeComments && node) this.commentTop(node)
+
 	var elts = [], first = true
 	while (!this.eat(close)) {
 		if (first) first = false
 		else this.expect(tt.comma)
+
+		if(this.storeComments){
+			if(elem)this.commentEnd(elem, above, close)
+			if(this.storeComments) var above = this.commentBegin()
+		}
+
 		if (allowEmpty && this.type === tt.comma) {
 			elts.push(null)
 		} else if (allowTrailingComma && this.afterTrailingComma(close)) {
 			break
 		} else if (this.type === tt.ellipsis) {
-			var rest = this.parseRest(allowNonIdent)
-			this.parseBindingListItem(rest)
-			elts.push(rest)
+			var elem = this.parseRest(allowNonIdent)
+			this.parseBindingListItem(elem)
+			elts.push(elem)
 			if (this.type === tt.comma) this.raise(this.start, "Comma is not permitted after the rest element")
 			this.expect(close)
 			break
@@ -149,6 +157,9 @@ pp.parseBindingList = function(close, allowEmpty, allowTrailingComma, allowNonId
 			elts.push(elem)
 		}
 	}
+
+	if(this.storeComments && node) this.commentBottom(close, node)
+
 	return elts
 }
 

@@ -32,7 +32,7 @@ pp.parseTopLevel = function(node) {
 	if (this.options.ecmaVersion >= 6) {
 		node.sourceType = this.options.sourceType
 	}
-	if(this.storeComments) this.commentBottom(node)
+	if(this.storeComments) this.commentBottom(tt.eof, node)
 	return this.finishNode(node, "Program")
 }
 
@@ -207,7 +207,11 @@ pp.parseIfStatement = function(node) {
 	this.next()
 	node.test = this.parseParenExpression()
 	node.consequent = this.parseStatement(false)
-	node.alternate = this.eat(tt._else) ? this.parseStatement(false) : null
+	// lets remove the newline from the comment
+	if(this.eat(tt._else)){
+		if(this.storeComments) this.commentBegin()
+		node.alternate = this.parseStatement(false)
+	}
 	return this.finishNode(node, "IfStatement")
 }
 
@@ -361,9 +365,9 @@ pp.parseBlock = function(allowStrict) {
 
 	while (!this.eat(tt.braceR)) {
 		
-		if(this.storeComments) var above = this.commentBegin()
+		if(this.storeComments) var begin = this.commentBegin()
 		var stmt = this.parseStatement(true)
-		if(this.storeComments) this.commentEnd(stmt, above, tt.braceR)
+		if(this.storeComments) this.commentEnd(stmt, begin, tt.braceR)
 
 		node.body.push(stmt)
 		if (first && allowStrict && this.isUseStrict(stmt)) {
@@ -374,7 +378,7 @@ pp.parseBlock = function(allowStrict) {
 	}
 	if (oldStrict === false) this.setStrict(false)
 
-	if(this.storeComments) this.commentBottom(node, tt.braceR)
+	if(this.storeComments) this.commentBottom(tt.braceR, node)
 	
 	return this.finishNode(node, "BlockStatement")
 }
@@ -456,7 +460,7 @@ pp.parseFunction = function(node, isStatement, allowExpressionBody) {
 
 pp.parseFunctionParams = function(node) {
 	this.expect(tt.parenL)
-	node.params = this.parseBindingList(tt.parenR, false, false, true)
+	node.params = this.parseBindingList(tt.parenR, false, false, true, node)
 }
 
 // Parse a class declaration or literal (depending on the

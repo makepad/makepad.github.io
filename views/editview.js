@@ -227,7 +227,7 @@ module.exports = require('view').extend(function EditView(proto){
 			if(!onlyEnd){
 				this.start = this.end
 			}
-			var rect = this.editor.textRect(this.end)
+			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
@@ -235,7 +235,7 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.moveHome = function(onlyEnd){
 			this.end = 0
 			if(!onlyEnd) this.start = this.end
-			var rect = this.editor.textRect(this.end)
+			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
@@ -243,13 +243,13 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.moveEnd = function(onlyEnd){
 			this.end = this.editor.textLength()
 			if(!onlyEnd) this.start = this.end
-			var rect = this.editor.textRect(this.end)
+			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
 
 		proto.moveLine = function(lines, onlyEnd){
-			var rect = this.editor.textRect(this.end)
+			var rect = this.editor.cursorRect(this.end)
 			this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
 			if(this.end < 0) this.end = 0
 			if(!onlyEnd) this.start = this.end
@@ -482,21 +482,30 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	//
 
-	proto.textRect = function(offset){
+	proto.cursorRect = function(offset, loop){
 		var rd = this.$readOffsetText(offset)
-		if(!rd) return
-		return {
-			x:rd.x,
-			y:rd.y,
-			w:rd.advance * rd.fontSize,
-			h:rd.fontSize * rd.lineSpacing
+		
+		if(!rd){
+			if(loop){
+				console.log("WHUT", offset)
+				return
+			}
+			if(offset < 0) return this.cursorRect(0, 1)
+			var last = this.$readLengthText() - 1//this.text.length - 1
+			var cr = this.cursorRect(last, 1)
+			if(this.text.charCodeAt(last) === 10){
+				cr.y += cr.fontSize * cr.lineSpacing
+				cr.x = 0
+			}
+			else{
+				cr.x += cr.advance * cr.fontSize
+			}
+			cr.advance = 0
+			return cr
 		}
-	}
 
-	proto.cursorRect = function(offset){
-		var rd = this.$readOffsetText(offset)
-		if(!rd) return
 		return {
+			lineSpacing: rd.lineSpacing,
 			fontSize:rd.fontSize,
 			advance:rd.advance,
 			x:rd.x, //+ t.fontSize * t.x1,
@@ -535,7 +544,7 @@ module.exports = require('view').extend(function EditView(proto){
 		this.redraw()
 	}
 
-	proto.serializeSlice = function(start, end){
+	proto.serializeSlice = function(start, end, arg){
 		return this.text.slice(start, end)
 	}
 
@@ -621,7 +630,7 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	//
 
-	proto.addUndoInsert = function(start, end, stack){
+	proto.addUndoInsert = function(start, end, stack, slicesrc){
 		if(!stack) stack = this.$undoStack
 		var last = stack[stack.length - 1]
 		if(last && last.type === 'insert' && last.start == end){
@@ -635,7 +644,7 @@ module.exports = require('view').extend(function EditView(proto){
 			group: this.$undoGroup,
 			type:'insert',
 			start:start,
-			data: this.serializeSlice(start, end),
+			data: this.serializeSlice(start, end, slicesrc),
 			cursors: this.cs.serializeToArray()
 		})
 	}

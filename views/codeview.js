@@ -5,10 +5,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.onInit = function(){
 		base.onInit.call(this)
 
-		this.fastTextOutput = {
-			text:'',
-			ann:[]
-		}
+		this.fastTextOutput = this
+		this.ann = []
 	}
 
 	proto.tools = {
@@ -94,17 +92,15 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * this.style.fontSize * 3
 				this.lineHeight = this.style.fontSize
 
-				// the side-output of fastText
-				var out = this.fastTextOutput
-				out.text = ''
-				out.ann.length = 0
+				var oldtext = this.text
+				this.text = ''
+				this.ann.length = 0
 
 				// run the AST formatter
 				this[ast.type](ast, null)
 
 				// make undo operation for reformat
-				var oldtext = this.text
-				var newtext = out.text
+				var newtext = this.text
 				var oldlen = oldtext.length
 				var newlen = newtext.length
 				for(var start = 0; start < oldlen && start < newlen; start++){
@@ -115,29 +111,23 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				}
 				if(start !== newlen){
 					// this gets tacked onto the undo with the same group
-					this.addUndoInsert(start, oldlen)
+					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext)
 					this.addUndoDelete(start, newlen)
 				}
 				this.cs.clampCursor(0, newlen)
-
-				// replace current state
-				this.text = out.text
-				this.ann = out.ann
-
-				// end with a space
-				this.fastText(' ', this.style)
 			}
 			else{
-				var ann = this.fastTextOutput.ann
-				var out = this.fastTextOutput 
+				var ann = this.ann
+
 				this.fastTextOutput = null
 				for(var i = 0, len = ann.length; i < len; i+=3){
 					this.turtle.sx = ann[i+2]
 					this.fastText(ann[i], ann[i+1])
 				}
-				this.fastTextOutput = out
+				this.fastTextOutput = this
 				// lets query the geometry for the error pos
-				var rd = this.$readOffsetText(this.error.pos)
+				var epos = clamp(this.error.pos, 0, this.$readLengthText()-1)
+				var rd = this.$readOffsetText(epos)
 
 				this.drawErrorMarker({
 					x1:0,
@@ -153,7 +143,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				})
 			}
 		}
-		
 
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
@@ -181,6 +170,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				})
 			}
 		}
+		//require.perf()
 		this.endBg()
 	}
 
@@ -277,8 +267,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				head:0.5
 			},
 			above:{},
-			top:{},
-			bottom:{}
+			top:{head:0.5},
+			bottom:{head:0.5},
+			around:{}
 		},
 		Paren:{
 			boldness:0.,
@@ -296,13 +287,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		Comma:{
-			FunctionDeclaration:{},
-			CallExpression:{},
+			FunctionDeclaration:{tail:0.5},
+			CallExpression:{tail:0.5},
 			ArrayExpression:{},
+			ObjectExpressionSingle:{tail:0.5},
 			ObjectExpression:{},
 			VariableDeclaration:{},
 			SequenceExpression:{},
-			NewExpression:{}
+			NewExpression:{tail:0.5}
 		},
 		Curly:{
 			BlockStatement:{},
@@ -379,7 +371,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// Objects and arrays
 		ArrayExpression:{},
 		ObjectExpression:{
-			key:{}
+			key:{
+				boldness:0.2,
+				color:'#eecc00'
+			}
 		},
 		ObjectPattern:{},
 		MemberExpression:{},
@@ -483,6 +478,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 		}
+
 		if(node.bottom) this.fastText(node.bottom, this.styles.Comment)
 	}
 
@@ -490,6 +486,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.doIndent = function(delta){
 		this.indent += delta
 		this.turtle.sx = this.indent * this.indentSize
+		// check if our last newline needs reindenting
+		if(this.text.charCodeAt(this.text.length - 1) === 10){
+			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
+		}
 	}
 
 	proto.BlockStatement = function(node, colorScheme){
@@ -519,7 +519,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.doIndent(-1)
 		// store endx endy
 		var blockh = turtle.wy
-		this.fastText('\n}', this.styles.Curly.BlockStatement)
+		this.fastText('}', this.styles.Curly.BlockStatement)
 
 		// lets draw a block with this information
 		this.drawBlock({
@@ -550,10 +550,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.SequenceExpression = function(node){
 
 		var exps = node.expressions
-		for(var i = 0; i < exps.length; i++){
+		var expslength = exps.length - 1
+		for(var i = 0; i <= expslength; i++){
 			var exp = exps[i]
-			if(i) this.fastText(',', this.styles.Comma.SequenceExpression)
 			if(exp)this[exp.type](exp)
+			if(i < expslength) this.fastText(',', this.styles.Comma.SequenceExpression)
 		}
 	}
 
@@ -561,8 +562,19 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.ParenthesizedExpression = function(node, level){
 		if(!level) level = 0
 		this.fastText('(', this.style.Paren.ParenthesizedExpression)
+		// check if we need to indent
+		if(node.top){
+			this.fastText(node.top, this.style.Comment.top)
+			this.doIndent(1)
+		}
+
 		var exp = node.expression
 		this[exp.type](exp, level+1)
+		if(node.top){
+			if(node.bottom) this.fastText(node.bottom, this.style.Comment.bottom)
+			else this.fastText('\n', this.style.Comment.bottom)
+			this.doIndent(-1)
+		}
 		this.fastText(')', this.style.Paren.ParenthesizedExpression)
 	}
 
@@ -602,12 +614,34 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var callee = node.callee
 		var args = node.arguments
 		this[callee.type](callee, node)
+
 		this.fastText('(', this.style.Paren.CallExpression)
-		for(var i = 0; i < args.length;i++){
-			var arg = args[i]
-			if(i) this.fastText(',', this.style.Comma.CallExpression)
-			this[arg.type](arg)
+
+		if(node.top){
+			this.fastText(node.top, this.styles.Comment.top)
+			this.doIndent(1)
 		}
+		var argslen = args.length - 1
+		for(var i = 0; i <= argslen;i++){
+			var arg = args[i]
+			if(node.top && arg.above) this.fastText(arg.above, this.styles.Comment.above)
+			this[arg.type](arg)
+			if(i < argslen) this.fastText(',', this.style.Comma.CallExpression)
+			if(node.top){
+				if(arg.side) this.fastText(arg.side, this.styles.Comment.side)
+				else if(i < argslen)this.fastText('\n', this.styles.Comment.side)
+			}
+		}
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			this.doIndent(-1)
+		}
+
 		this.fastText(')', this.style.Paren.CallExpression)
 	}
 
@@ -656,13 +690,35 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 
 		this.fastText('(', this.styles.Paren.FunctionDeclaration)
-		var params = node.params
-		for(var i =0 ; i < params.length; i++){
-			var param = params[i]
-			if(i) this.fastText(',', this.styles.Comma.FunctionDeclaration)
-			this[param.type](param)
 
+		if(node.top) this.fastText(node.top, this.styles.Comment.top)
+		this.doIndent(1)
+
+		var params = node.params
+		var paramslen = params.length - 1
+		for(var i =0 ; i <= paramslen; i++){
+			var param = params[i]
+
+			if(node.top && param.above) this.fastText(param.above, this.styles.Comment.above)
+			this[param.type](param)
+			if(i < paramslen) this.fastText(',', this.styles.Comma.FunctionDeclaration)
+			if(node.top){
+				if(param.side) this.fastText(param.side, this.styles.Comment.side)
+				else if(i !== paramslen)this.fastText('\n', this.styles.Comment.side)
+			}
 		}
+
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+		}
+
+		this.doIndent(-1)
+
 		this.fastText(')', this.styles.Paren.FunctionDeclaration)
 
 		var body = node.body
@@ -696,9 +752,19 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.LogicalExpression = function(node){
 		var left = node.left
 		var right = node.right
+
 		this[left.type](left)
+
+		if(node.around1) this.fastText(node.around1, this.style.Comment.around)
+		this.doIndent(1)
+
 		this.fastText(node.operator, this.style.LogicalExpression[node.operator] || this.style.LogicalExpression)
+
+		if(node.around2) this.fastText(node.around2, this.style.Comment.around)
+
 		this[right.type](right)
+
+		this.doIndent(-1)
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
@@ -711,14 +777,23 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var m = this.startMarker(turtle.wy, level, this.style.Marker[node.operator] || this.style.Marker)
 		// we have to draw a backdrop 
 		var x1 = turtle.wx 
+		var ys = turtle.wy
 		this[left.type](left, level+1)
+
+		if(node.around1) this.fastText(node.around1, this.style.Comment.around)
+		this.doIndent(1)
+
 		var x2 = turtle.wx 
 		this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
 		var x3 = turtle.wx 
+
+		if(node.around2) this.fastText(node.around2, this.style.Comment.around)
+
 		this[right.type](right, level+1)
-		var x4 = turtle.wx
-		var h = turtle.mh
-		this.stopMarker(m, x1,x2,x3,x4,h)
+		this.doIndent(-1)
+
+		if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
+		else this.stopMarker(m, 0,0,0,0,0)
 	}
 
 	//AssignmentExpression: {left:1, operator:0, right:1},
@@ -858,33 +933,54 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('[', this.styles.Bracket.ArrayExpression)
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
-		this.indent++
-		this.newLine()
-
+		if(node.top){
+			this.fastText(node.top, this.styles.Comment.top)
+			this.doIndent(1)
+		}
 		var elems = node.elements
-		for(var i = 0; i < elems.length; i++){
+		var elemslen = elems.length - 1
+		for(var i = 0; i <= elemslen; i++){
 			var elem = elems[i]
-			if(i) this.fastText(',', this.styles.Comma.ArrayExpression)
-			if(elem)this[elem.type](elem)
+
+			if(elem){
+				if(node.top && elem.above) this.fastText(elem.above, this.styles.Comment.above)
+				this[elem.type](elem)
+			}
+			if(i < elemslen) this.fastText(',', this.styles.Comma.ArrayExpression)
+
+			if(elem && node.top){
+				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
+				else if(i !== elemslen)this.fastText('\n', this.styles.Comment.side)
+			}
 		}
 
-		this.indent --
-		this.newLine()
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			this.doIndent(-1)
+		}
+
 		var blockh = turtle.wy
 		this.fastText(']', this.styles.Bracket.ArrayExpression)
 
-		// lets draw a block with this information
-		this.drawBlock({
-			color:arrayBlockColor[this.indent],
-			x:startx, y:starty,
-			w:endx - startx, h:lineh
-		})
+		if(node.top){
+			// lets draw a block with this information
+			this.drawBlock({
+				color:arrayBlockColor[this.indent],
+				x:startx, y:starty,
+				w:endx - startx, h:lineh
+			})
 
-		this.drawBlock({
-			color:arrayBlockColor[this.indent],
-			x:startx, y:starty+lineh-1,
-			w:this.indentSize, h:blockh - starty+1
-		})
+			this.drawBlock({
+				color:arrayBlockColor[this.indent],
+				x:startx, y:starty+lineh-1,
+				w:this.indentSize, h:blockh - starty+1
+			})
+		}
 	}
 
 	//ObjectExpression:{properties:3},
@@ -897,44 +993,62 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// lets indent
 		var turtle = this.turtle
-		this.indent++
-		this.newLine()
+		//this.newLine()
+		if(node.top){
+			this.fastText(node.top, this.styles.Comment.top)
+			this.doIndent(1)
+		}
 
 		var props = node.properties
-		var propslen= props.length - 1
+		var propslen = props.length - 1
 		for(var i = 0; i <= propslen; i++){
 			var prop = props[i]
+			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
 			var key = prop.key
-			this[key.type](key)
+			if(key.type === 'Identifier'){
+				this.fastText(key.name, this.styles.ObjectExpression.key)
+			}
+			else this[key.type](key)
 			if(!prop.shorthand){
 				this.fastText(':', this.styles.Colon.ObjectExpression)
 				var value = prop.value
 				this[value.type](value)
 			}
-			if(i !== propslen){
-				this.fastText(',', this.styles.Comma.ObjectExpression)
-				this.newLine()
+			if(i < propslen){
+				this.fastText(',', node.top?this.styles.Comma.ObjectExpression:this.styles.Comma.ObjectExpressionSingle)
+			}
+			if(node.top){
+				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
+				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
 			}
 		}
-
-		this.indent --
-		this.newLine()
+		//this.newLine()
 		var blockh = turtle.wy
-
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			this.doIndent(-1)
+		}
 		this.fastText('}', this.styles.Curly.ObjectExpression)
 
-		// lets draw a block with this information
-		this.drawBlock({
-			color:objectBlockColor[this.indent],
-			x:startx, y:starty,
-			w:endx - startx, h:lineh
-		})
+		if(node.top){
+			// lets draw a block with this information
+			this.drawBlock({
+				color:objectBlockColor[this.indent],
+				x:startx, y:starty,
+				w:endx - startx, h:lineh
+			})
 
-		this.drawBlock({
-			color:objectBlockColor[this.indent],
-			x:startx, y:starty+lineh-1,
-			w:this.indentSize, h:blockh - starty+1
-		})
+			this.drawBlock({
+				color:objectBlockColor[this.indent],
+				x:startx, y:starty+lineh-1,
+				w:this.indentSize, h:blockh - starty+1
+			})
+		}
 	}
 
 	//YieldExpression:{argument:1, delegate:0}
@@ -1084,7 +1198,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 	//LabeledStatement:{label:1, body:1},
 	proto.LabeledStatement = function(node){
-		logNonexisting(node)
+		var label = node.label
+		this[label.type](label)
+		this.fastText(':', this.styles.LabeledStatement)
+		var body = node.body
+		this[body.type](body)
 	}
 	// WithStatement:{object:1, body:1}
 	proto.WithStatement = function(node){
@@ -1151,7 +1269,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.redraw()
 	}
 
-	proto.serializeSlice = function(start, end){
+	proto.serializeSlice = function(start, end, arg){
+		if(arg) return arg.slice(start, end)
 		return this.text.slice(start, end)
 	}
 

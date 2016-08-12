@@ -81,7 +81,10 @@ pp.parseExpression = function(noIn, refDestructuringErrors) {
 	if (this.type === tt.comma) {
 		var node = this.startNodeAt(startPos)
 		node.expressions = [expr]
-		while (this.eat(tt.comma)) node.expressions.push(this.parseMaybeAssign(noIn, refDestructuringErrors))
+		while (this.eat(tt.comma)){
+			node.expressions.push(this.parseMaybeAssign(noIn, refDestructuringErrors))
+		}
+
 		return this.finishNode(node, "SequenceExpression")
 	}
 	return expr
@@ -101,7 +104,9 @@ pp.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
 	var startPos = this.start
 	if (this.type == tt.parenL || this.type == tt.name)
 		this.potentialArrowAt = this.start
+
 	var left = this.parseMaybeConditional(noIn, refDestructuringErrors)
+
 	if (afterLeftParse) left = afterLeftParse.call(this, left, startPos)
 	if (this.type.isAssign) {
 		this.checkPatternErrors(refDestructuringErrors, true)
@@ -111,6 +116,12 @@ pp.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
 		node.left = this.type === tt.eq ? this.toAssignable(left) : left
 		refDestructuringErrors.shorthandAssign = 0 // reset because shorthand default was used correctly
 		this.checkLVal(left)
+
+		// ok we should store comments
+		if(this.storeComments){
+			this.commentAround(node, this.type)
+		}
+
 		this.next()
 		node.right = this.parseMaybeAssign(noIn)
 		return this.finishNode(node, "AssignmentExpression")
@@ -156,13 +167,23 @@ pp.parseExprOp = function(left, leftStartPos, minPrec, noIn) {
 	var prec = this.type.binop
 	if (prec != null && (!noIn || this.type !== tt._in)) {
 		if (prec > minPrec) {
+			var node = this.startNodeAt(leftStartPos)
+
 			var logical = this.type === tt.logicalOR || this.type === tt.logicalAND
-			var op = this.value
+			node.operator = this.value
+
+			node.left = left
+			var type = this.type
+
 			this.next()
-			var startPos = this.start
-			var right = this.parseExprOp(this.parseMaybeUnary(null, false), leftStartPos, prec, noIn)
-			var node = this.buildBinary(leftStartPos, left, right, op, logical)
-			return this.parseExprOp(node, leftStartPos, minPrec, noIn)
+
+			if(this.storeComments){
+				this.commentAround(node, type)
+			}
+			
+			node.right = this.parseExprOp(this.parseMaybeUnary(null, false), leftStartPos, prec, noIn)
+
+			return this.parseExprOp(this.finishNode(node, logical ? "LogicalExpression" : "BinaryExpression"), leftStartPos, minPrec, noIn)
 		}
 	}
 	return left
@@ -241,7 +262,7 @@ pp.parseSubscripts = function(base, startPos, noCalls) {
 		} else if (!noCalls && this.eat(tt.parenL)) {
 			var node = this.startNodeAt(startPos)
 			node.callee = base
-			node.arguments = this.parseExprList(tt.parenR, false)
+			node.arguments = this.parseExprList(tt.parenR, false, false, false, node)
 			base = this.finishNode(node, "CallExpression")
 		} else if (this.type === tt.backQuote) {
 			var node = this.startNodeAt(startPos)
@@ -302,7 +323,7 @@ pp.parseExprAtom = function(refDestructuringErrors) {
 	case tt.bracketL:
 		node = this.startNode()
 		this.next()
-		node.elements = this.parseExprList(tt.bracketR, true, true, refDestructuringErrors)
+		node.elements = this.parseExprList(tt.bracketR, true, true, refDestructuringErrors, node)
 		return this.finishNode(node, "ArrayExpression")
 
 	case tt.braceL:
@@ -340,7 +361,7 @@ pp.parseLiteral = function(value) {
 	return this.finishNode(node, "Literal")
 }
 
-pp.parseParenExpression = function() {
+pp.parseParenExpression = function(preserveParens) {
 	this.expect(tt.parenL)
 	var val = this.parseExpression()
 	this.expect(tt.parenR)
@@ -349,8 +370,14 @@ pp.parseParenExpression = function() {
 
 pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 	var startPos = this.start,  val
+	var top, bottom
 	if (this.options.ecmaVersion >= 6) {
+
 		this.next()
+
+		if(this.storeComments){
+			top = this.commentTop()
+		}
 
 		var innerStartPos = this.start
 		var exprList = [], first = true
@@ -369,6 +396,11 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 			}
 		}
 		var innerEndPos = this.start
+
+		if(this.storeComments){
+			bottom = this.commentBottom()
+		}
+
 		this.expect(tt.parenR)
 
 		if (canBeArrow && !this.canInsertSemicolon() && this.eat(tt.arrow)) {
@@ -395,6 +427,7 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 	if (this.options.preserveParens) {
 		var par = this.startNodeAt(startPos)
 		par.expression = val
+		if(top && top.length) par.top = top
 		return this.finishNode(par, "ParenthesizedExpression")
 	} else {
 		return val
@@ -471,12 +504,19 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 	var node = this.startNode(), first = true, propHash = {}
 	node.properties = []
 	this.next()
+
+	if(this.storeComments) this.commentTop(node)
+
 	while (!this.eat(tt.braceR)) {
+
 		if (!first) {
 			this.expect(tt.comma)
 			if (this.afterTrailingComma(tt.braceR)) break
 		} else first = false
-
+		if(this.storeComments){
+			if(prop)this.commentEnd(prop, above, tt.braceR)
+			if(this.storeComments) var above = this.commentBegin()
+		}
 		var prop = this.startNode(), isGenerator, startPos
 		if (this.options.ecmaVersion >= 6) {
 			prop.method = false
@@ -490,8 +530,11 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 		this.parsePropertyName(prop)
 		this.parsePropertyValue(prop, isPattern, isGenerator, startPos, refDestructuringErrors)
 		this.checkPropClash(prop, propHash)
+
+		if(this.storeComments) this.commentEnd(prop, above, tt.braceR)
 		node.properties.push(this.finishNode(prop, "Property"))
 	}
+	if(this.storeComments) this.commentBottom(tt.braceR, node)
 	return this.finishNode(node, isPattern ? "ObjectPattern" : "ObjectExpression")
 }
 
@@ -643,13 +686,21 @@ pp.checkParams = function(node, useStrict) {
 // nothing in between them to be parsed as `null` (which is needed
 // for array literals).
 
-pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructuringErrors) {
+pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructuringErrors, node) {
+
+	if(this.storeComments && node) this.commentTop(node)
+
 	var elts = [], first = true
 	while (!this.eat(close)) {
 		if (!first) {
 			this.expect(tt.comma)
 			if (allowTrailingComma && this.afterTrailingComma(close)) break
 		} else first = false
+
+		if(this.storeComments){
+			if(elt)this.commentEnd(elt, above, close)
+			if(this.storeComments) var above = this.commentBegin()
+		}
 
 		var elt
 		if (allowEmpty && this.type === tt.comma)
@@ -663,6 +714,8 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 			elt = this.parseMaybeAssign(false, refDestructuringErrors)
 		elts.push(elt)
 	}
+	if(this.storeComments && node) this.commentBottom(close, node)
+
 	return elts
 }
 

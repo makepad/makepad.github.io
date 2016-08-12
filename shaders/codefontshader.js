@@ -40,6 +40,22 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 		0, 1, 1,
 		1, 1, 1
 	)
+	
+	proto.pixel = function(){$
+		//if(this.unicode == 10.) return 'red'
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.006) / adjust * 1.4 
+		this.field = field
+
+		this.pixelStyle()
+
+		field = this.field - this.boldness
+
+		if(this.mesh.z < 0.5){
+			return this.drawShadow(field)
+		}
+		return this.drawField(field)
+	}
 
 	proto.toolMacros = {
 		fast:function(txt, style){

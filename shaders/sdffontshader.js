@@ -171,13 +171,15 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.toolMacros = {
+		$readLength:function(){
+			return this.$PROPLEN()
+		},
 		$readOffset:function(o){
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			if(!this.$shaders.NAME) return {}
 			this.$PROPVARDEF()
 			var len = this.$PROPLEN()
 			if(o < 0 || o >= len) return
-
 			var read = {
 				x:this.$PROP(o, 'x'),
 				y:this.$PROP(o, 'y'),
@@ -190,14 +192,13 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			read.w = (read.head + read.advance + read.tail) * read.fontSize
 			read.lineSpacing = this._NAME.prototype.lineSpacing
 			read.baseLine = this._NAME.prototype.baseLine
-
 			// write the bounding box
 			return read
 		},
 		$seekPos:function(x, y){
 			// lets find where we are inbetween
 			if(!this.$shaders.NAME) return {}
-			var len = this.$PROPLEN() - 1
+			var len = this.$PROPLEN()
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			this.$PROPVARDEF()
 
@@ -208,7 +209,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				var total = this.$PROP(i, 'advance') + this.$PROP(i, 'head') + this.$PROP(i, 'tail')
 
 				var xw = total * fs
-				if(ty >= y){//} && ty !== this.$READPROP(i-1, 'y')){
+				if(ty >= y){
 					return i - 1
 				}
 				if(y<ty) return -1
@@ -220,7 +221,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					return i
 				}
 			}
-			return -2
+			if(this.$PROP(i-1, 'advance') < 0 && y <= ty + fs * lineSpacing) return len - 1
+			return len
 		},
 		$boundRects:function(start, end){
 			if(!this.$shaders.NAME) return {}
@@ -234,9 +236,9 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				var tx = this.$PROP(i, 'x')
 				var ty = this.$PROP(i, 'y')
 				var fs = this.$PROP(i, 'fontSize')
-				var total = this.$PROP(i, 'advance') +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
-
-				if(curBox && lty && lty !== ty){
+				var advance = this.$PROP(i, 'advance')
+				var total = abs(advance) +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+				if(curBox && lty !== undefined && lty !== ty){
 					curBox.w = (ltx + lfs * lad) - curBox.x
 					curBox = undefined
 				}
@@ -262,8 +264,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var absy = turtle._y !== undefined
 
 			var txt = turtle._text
-			var elen = txt.length
-			var len = overload.$editMode?elen + 1:elen
+			var len = txt.length
 	
 			this.$ALLOCDRAW(len)
 
@@ -282,7 +283,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				// compute size of next chunk
 				if(!wrapping){
 					for(var b = off; b < len; b++){
-						var unicode = b === elen? 32: txt.charCodeAt(b)
+						var unicode = txt.charCodeAt(b)
 						var g = glyphs[unicode] || glyphs[63]
 						width += g.advance * fontSize
 					}
@@ -290,7 +291,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				}
 				else if(wrapping === 'line'){
 					for(var b = off; b < len; b++){
-						var unicode = b === elen? 32: txt.charCodeAt(b)
+						var unicode = txt.charCodeAt(b)
 						var g = glyphs[unicode] || glyphs[63]
 						width += g.advance * fontSize
 						if(b >= off && unicode===10){
@@ -301,13 +302,13 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					off = b
 				}
 				else if(wrapping === 'char'){
-					var g = glyphs[off === elen? 32: txt.charCodeAt(off)] || glyphs[63]
+					var g = glyphs[txt.charCodeAt(off)] || glyphs[63]
 					if(g) width += g.advance * fontSize
 					off++
 				}
 				else{ // wrapping === 'word'
 					for(var b = off; b < len; b++){
-						var unicode = b === elen? 32: txt.charCodeAt(b)
+						var unicode = txt.charCodeAt(b)
 						var g = glyphs[unicode] || glyphs[63]
 						width += g.advance * fontSize
 						if(b >= off && (unicode === 32||unicode===9||unicode===10)){
@@ -328,7 +329,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					//console.log("END")
 					// output
 					for(var i = start; i < off; i++){
-						var unicode = i === elen? 32: txt.charCodeAt(i)
+						var unicode = txt.charCodeAt(i)
 						var g = glyphs[unicode] || glyphs[63]
 						this.$WRITEPROPS({
 							advance:g.advance,
