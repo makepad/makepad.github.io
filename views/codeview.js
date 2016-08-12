@@ -1010,14 +1010,15 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// lets indent
 		var turtle = this.turtle
+		var props = node.properties
+		var propslen = props.length - 1
+
 		//this.newLine()
 		if(node.top){
 			var maxlen = 0
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
 			// compute the max key size
-			var props = node.properties
-			var propslen = props.length - 1
 			for(var i = 0; i <= propslen; i++){
 				var key = props[i].key
 				if(key.type === 'Identifier'){
