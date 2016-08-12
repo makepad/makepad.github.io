@@ -383,6 +383,33 @@ module.exports = require('view').extend(function EditView(proto){
 			this.start = clamp(this.start, mi, ma)
 			this.end = clamp(this.end, mi, ma)
 		}
+
+		proto.scanChange = function(pos, oldText, newText){
+			if(this.start !== this.end) return
+			if(pos < this.end){
+				// now we have to scan forward 
+				// from pos to found our charcode
+				if(oldText.length > newText.length){
+					var oldCode = newText.charCodeAt(this.end-1)
+					for(var i = pos; i >= 0; i--){
+						if(newText.charCodeAt(i) === oldCode){
+							this.start = this.end = i
+							return
+						}
+					}
+				}
+				else{
+					var oldCode = oldText.charCodeAt(this.end-1)
+					for(var i = pos; i < newText.length; i++){
+						if(newText.charCodeAt(i) === oldCode){
+							this.start = this.end = i + 1
+							return
+						}
+					}
+				}
+			}
+		}
+
 		proto.invalidateMax = function(){
 			this.max = -1
 		}

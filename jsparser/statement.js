@@ -421,7 +421,12 @@ pp.parseVar = function(node, isFor, kind) {
 	for (;;) {
 		var decl = this.startNode()
 		this.parseVarId(decl)
+
 		if (this.eat(tt.eq)) {
+			// ok we should store comments
+			if(this.storeComments){
+				this.commentAround(decl, tt.eq)
+			}
 			decl.init = this.parseMaybeAssign(isFor)
 		} else if (kind === "const" && !(this.type === tt._in || (this.options.ecmaVersion >= 6 && this.isContextual("of")))) {
 			this.unexpected()

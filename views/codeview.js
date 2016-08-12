@@ -110,6 +110,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)) break
 				}
 				if(start !== newlen){
+					// if something changed before our cursor, we have to scan
+					// forward for our old char
+					this.cs.scanChange(start, oldtext, newtext)
+
 					// this gets tacked onto the undo with the same group
 					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext)
 					this.addUndoDelete(start, newlen)
@@ -388,7 +392,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		},
 
 		// variable declarations
-		VariableDeclaration:{},
+		VariableDeclaration:{
+			boldness:0.2,
+			color:'#ffdf00'
+		},
 		VariableDeclarator:{},
 
 		// a+b
@@ -743,7 +750,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this[id.type](id, node)
 		var init = node.init
 		if(init){
+			if(node.around1) this.fastText(node.around1, this.style.Comment.around)
+
 			this.fastText('=', this.styles.AssignmentExpression['='])
+		
+			if(node.around2) this.fastText(node.around2, this.style.Comment.around)
+
 			this[init.type](init)
 		}
 	}
@@ -1000,19 +1012,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var turtle = this.turtle
 		//this.newLine()
 		if(node.top){
+			var maxlen = 0
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
-		}
-
-
-		var props = node.properties
-		var propslen = props.length - 1
-		var maxlen = 0
-		for(var i = 0; i <= propslen; i++){
-			var key = props[i].key
-			if(key.type === 'Identifier'){
-				var keylen = key.name.length
-				if(keylen > maxlen) maxlen = keylen
+			// compute the max key size
+			var props = node.properties
+			var propslen = props.length - 1
+			for(var i = 0; i <= propslen; i++){
+				var key = props[i].key
+				if(key.type === 'Identifier'){
+					var keylen = key.name.length
+					if(keylen > maxlen) maxlen = keylen
+				}
 			}
 		}
 
@@ -1033,7 +1044,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var value = prop.value
 				this[value.type](value)
 			}
-			if(i < propslen){
+			if(node.trail || i < propslen){
 				this.fastText(',', node.top?this.styles.Comma.ObjectExpression:this.styles.Comma.ObjectExpressionSingle)
 			}
 			if(node.top){

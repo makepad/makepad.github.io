@@ -70,11 +70,10 @@ pp.semicolon = function() {
 
 pp.afterTrailingComma = function(tokType) {
 	if (this.type == tokType) {
-		this.unexpected()
 		//if (this.options.onTrailingComma)
 		//	this.options.onTrailingComma(this.lastTokStart)
-		//this.next()
-		//return true
+		this.next()
+		return true
 	}
 }
 

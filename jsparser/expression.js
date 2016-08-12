@@ -513,8 +513,19 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 	while (!this.eat(tt.braceR)) {
 
 		if (!first) {
-			this.expect(tt.comma)
-			if (this.afterTrailingComma(tt.braceR)) break
+			// if we dont get a comma, see if we can insert one
+			// how do we check our last newline?
+			if(!this.eat(tt.comma)){
+				if(!this.insertCommas || !this.skippedNewlines){ // insert a comma?
+					this.unexpected()
+				}
+			}
+			//this.expect(tt.comma)
+
+			if (this.afterTrailingComma(tt.braceR)){
+				node.trail = true
+				break
+			}
 		} else first = false
 		if(this.storeComments){
 			if(prop)this.commentEnd(prop, above, tt.braceR)

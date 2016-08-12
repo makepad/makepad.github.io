@@ -71,6 +71,7 @@ var defaultOptions = exports.defaultOptions = {
 	// When enabled, parenthesized expressions are represented by
 	// (non-standard) ParenthesizedExpression nodes
 	preserveParens: true,
+	insertCommas: true,
 	plugins: {}
 }
 

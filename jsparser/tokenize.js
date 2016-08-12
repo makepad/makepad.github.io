@@ -112,7 +112,6 @@ pp.skipBlockComment = function() {
 	if(this.storeComments){
 		var cmt = this.input.slice(start, end+2)
 		this.storeComments.push(cmt)
-		if(this.debugStream) this.debugStream.push(cmt)
 	}
 	//if (this.options.onComment)
 	//	this.options.onComment(true, this.input.slice(start + 2, end), start, this.pos)
@@ -128,7 +127,6 @@ pp.skipLineComment = function(startSkip) {
 	if(this.storeComments){
 		var cmt = this.input.slice(start, this.pos)
 		this.storeComments.push(cmt)
-		if(this.debugStream) this.debugStream.push(cmt)
 	}
 	//if (this.options.onComment)
 	//	this.options.onComment(false, this.input.slice(start + startSkip, this.pos), start, this.pos)
@@ -138,6 +136,7 @@ pp.skipLineComment = function(startSkip) {
 // whitespace and comments, and.
 
 pp.skipSpace = function() {
+	this.skippedNewlines = 0
 	loop: while (this.pos < this.input.length) {
 		var ch = this.input.charCodeAt(this.pos)
 		switch (ch) {
@@ -150,9 +149,9 @@ pp.skipSpace = function() {
 				}
 			case 10: case 8232: case 8233:
 				++this.pos
+				this.skippedNewlines++
 				if(this.storeComments){
 					this.storeComments.push(1)
-					if(this.debugStream) this.debugStream.push(1)
 				}
 				break
 			case 47: // '/'
@@ -188,7 +187,6 @@ pp.finishToken = function(type, val) {
 	this.type = type
 	this.value = val
 	if(this.storeComments) this.storeComments.push(type)
-	if(this.debugStream) this.debugStream.push(type.label)
 	this.updateContext(prevType)
 }
 
