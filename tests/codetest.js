@@ -5,7 +5,7 @@ var App = require('app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			Code({
-				text:require.module(require('shader')).source,
+				text:require.module(require('view')).source,
 				Text:{
 					color:'white',
 					font:require('fonts/ubuntu_monospace_256.sdffont'),
