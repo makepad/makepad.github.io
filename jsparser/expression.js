@@ -531,6 +531,9 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 			if(prop)this.commentEnd(prop, above, tt.braceR)
 			if(this.storeComments) var above = this.commentBegin()
 		}
+
+		if(this.type === tt.comma) this.eat(tt.comma)
+
 		var prop = this.startNode(), isGenerator, startPos
 		if (this.options.ecmaVersion >= 6) {
 			prop.method = false
