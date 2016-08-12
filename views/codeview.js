@@ -1053,7 +1053,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		}
 		//this.newLine()
-		var blockh = turtle.wy
 		if(node.top){
 			if(!node.bottom){
 				if(this.text.charCodeAt(this.text.length -1) !== 10){
@@ -1064,6 +1063,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.doIndent(-1)
 		}
 		this.fastText('}', this.styles.Curly.ObjectExpression)
+
+		var blockh = turtle.wy
 
 		if(node.top){
 			// lets draw a block with this information
