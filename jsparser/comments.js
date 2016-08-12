@@ -114,10 +114,10 @@ pp.commentsDump = function(){
 
 pp.commentAround = function(node, token){
 	var comments = this.storeComments
-
-	for(var i = comments.length - 1;i>=0;i--){
+	for(var i = 0,l = comments.length;i < l; i++){
 		if(comments[i] == token){
 			var out = ''
+
 			// scan backwards for the comments before
 			for(var j = i - 1;j>=0;j--){
 				var item = comments[j]

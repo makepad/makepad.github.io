@@ -75,7 +75,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 
 			if(out){
 				out.text += txt
-				out.ann.push(txt, style, turtle.sx)
+				out.ann.push(txt, style, turtle.sx, head)
 			}
 			var sx = turtle.sx
 			var advance = 0

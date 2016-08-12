@@ -116,13 +116,16 @@ pp.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
 		node.left = this.type === tt.eq ? this.toAssignable(left) : left
 		refDestructuringErrors.shorthandAssign = 0 // reset because shorthand default was used correctly
 		this.checkLVal(left)
+		
+		var type = this.type
+
+		this.next()
 
 		// ok we should store comments
 		if(this.storeComments){
-			this.commentAround(node, this.type)
+			this.commentAround(node, type)
 		}
 
-		this.next()
 		node.right = this.parseMaybeAssign(noIn)
 		return this.finishNode(node, "AssignmentExpression")
 	} else {

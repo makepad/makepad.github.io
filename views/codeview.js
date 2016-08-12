@@ -120,9 +120,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var ann = this.ann
 
 				this.fastTextOutput = null
-				for(var i = 0, len = ann.length; i < len; i+=3){
+				for(var i = 0, len = ann.length; i < len; i+=4){
 					this.turtle.sx = ann[i+2]
-					this.fastText(ann[i], ann[i+1])
+					this.fastText(ann[i], ann[i+1],ann[i+3])
 				}
 				this.fastTextOutput = this
 				// lets query the geometry for the error pos
@@ -488,7 +488,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.turtle.sx = this.indent * this.indentSize
 		// check if our last newline needs reindenting
 		if(this.text.charCodeAt(this.text.length - 1) === 10){
-			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
+			this.ann[this.ann.length - 2] = this.turtle.wx = this.turtle.sx
 		}
 	}
 
@@ -801,7 +801,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var left = node.left
 		var right = node.right
 		this[left.type](left)
+		if(node.around1) this.fastText(node.around1, this.style.Comment.around)
+
 		this.fastText(node.operator, this.style.AssignmentExpression[node.operator] || this.style.AssignmentExpression)
+
+		if(node.around2) this.fastText(node.around2, this.style.Comment.around)
+
 		this[right.type](right)
 	}
 
@@ -1236,7 +1241,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var ann = this.fastTextOutput.ann
 		// process insert into annotated array
 		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=3){
+		for(var i = 0, len = ann.length; i < len; i+=4){
 			var txt = ann[i]
 			pos += txt.length
 			if(offset<=pos){
@@ -1255,7 +1260,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// process a remove from the annotated array
 		var ann = this.fastTextOutput.ann
 		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=3){
+		for(var i = 0, len = ann.length; i < len; i+=4){
 			var txt = ann[i]
 			pos += txt.length
 			if(start<pos){
@@ -1266,7 +1271,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					ann[i] += txt.slice(idx)
 				}
 				else{ // end is in the next one
-					for(; i < len; i+=3){
+					for(; i < len; i+=4){
 						var txt = ann[i]
 						pos += txt.length
 						if(end<pos){

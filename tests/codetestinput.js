@@ -1,5 +1,3 @@
-var bla = {}
-if(bla){
-}
-else{
-}
+var x
+x =
+20
