@@ -999,18 +999,32 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.doIndent(1)
 		}
 
+
 		var props = node.properties
 		var propslen = props.length - 1
+		var maxlen = 0
+		for(var i = 0; i <= propslen; i++){
+			var key = props[i].key
+			if(key.type === 'Identifier'){
+				var keylen = key.name.length
+				if(keylen > maxlen) maxlen = keylen
+			}
+		}
+
 		for(var i = 0; i <= propslen; i++){
 			var prop = props[i]
 			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
 			var key = prop.key
+
+			var keypos = undefined
 			if(key.type === 'Identifier'){
 				this.fastText(key.name, this.styles.ObjectExpression.key)
+				if(node.top) keypos = key.name.length
 			}
 			else this[key.type](key)
+
 			if(!prop.shorthand){
-				this.fastText(':', this.styles.Colon.ObjectExpression)
+				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*.5:0)
 				var value = prop.value
 				this[value.type](value)
 			}

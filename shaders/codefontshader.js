@@ -58,7 +58,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 	}
 
 	proto.toolMacros = {
-		fast:function(txt, style){
+		fast:function(txt, style, head){
 			var out = this.fastNAMEOutput			
 			var len = txt.length - 1
 			var turtle = this.turtle
@@ -79,7 +79,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			}
 			var sx = turtle.sx
 			var advance = 0
-			var head = style.head, tail = 0
+			var head = head || style.head, tail = 0
 			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
 				var g = glyphs[unicode] || glyphs[63]
