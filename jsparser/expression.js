@@ -527,12 +527,17 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 				break
 			}
 		} else first = false
+		if(this.type === tt.comma){
+			this.commentBegin()
+			this.eat(tt.comma)
+		}
+		
 		if(this.storeComments){
 			if(prop)this.commentEnd(prop, above, tt.braceR)
 			if(this.storeComments) var above = this.commentBegin()
 		}
 
-		if(this.type === tt.comma) this.eat(tt.comma)
+		
 
 		var prop = this.startNode(), isGenerator, startPos
 		if (this.options.ecmaVersion >= 6) {
