@@ -5,7 +5,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.onInit = function(){
 		base.onInit.call(this)
 
-		this.fastTextOutput = this
+		this.$fastTextOutput = this
 		this.ann = []
 		this.oldText = ''
 	}
@@ -93,6 +93,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.orderErrorMarker()
 			this.orderSelect()
 			this.error = undefined
+
+			// signal the delta
+			if(abs(this.changeDelta)>1){
+				this.$fastTextDelta = 0
+				this.$fastTextDelay = -10000
+			}
+			else{
+				this.$fastTextDelay = 0
+				this.$fastTextDelta = this.changeDelta
+			}
+			this.$fastTextOffset = this.changeOffset
+
 			var ast = this.parseText()
 			if(ast){
 				// first we format the code
@@ -104,7 +116,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var oldtext = this.text
 				this.text = ''
 				this.ann.length = 0
-				this.fastTextWrite = true
+				this.$fastTextWrite = true
 
 				// run the AST formatter
 				this[ast.type](ast, null)
@@ -134,7 +146,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else{
 				var ann = this.ann
 
-				this.fastTextWrite = false
+				this.$fastTextWrite = false
 				this.text = ''
 				for(var i = 0, len = ann.length; i < len; i+=4){
 					this.turtle.sx = ann[i+2]
@@ -157,7 +169,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			this.oldText = this.text
+			this.changeDelta = 0
 		}
 
 		if(this.hasFocus){
@@ -1016,12 +1028,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var keyStyle = this.styles.ObjectExpression.key
 
 		var startx = turtle.sx, starty = turtle.wy
-		if(node.top){
-			this.fastText('{', this.styles.Curly.ObjectExpression)
-		}
-		else{
-			this.fastText('{ ', this.styles.Curly.ObjectExpression)
-		}
+
+		this.fastText('{', this.styles.Curly.ObjectExpression)
+
 		var endx = turtle.wx, lineh = turtle.mh
 
 		// lets indent
@@ -1268,6 +1277,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	proto.insertText = function(offset, text){
+
+		this.changeDelta += text.length
+		this.changeOffset = offset + 1
+		
 		this.textClean = false
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 
@@ -1290,6 +1303,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.removeText = function(start, end){
 		this.textClean = false
 		this.text = this.text.slice(0, start) + this.text.slice(end)
+		
+		this.changeDelta -= (end - start)
+		this.changeOffset = start
 
 		// process a remove from the annotated array
 		var ann = this.ann

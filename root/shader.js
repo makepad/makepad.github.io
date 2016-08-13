@@ -773,7 +773,7 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent + '	var $timeMax = $view._time + $proto.duration\n'
 			code += indent + '	$props.oldTimeMax = $timeMax\n'
 			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-			code += indent + '	if($view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + $proto.duration){\n'
+			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + $proto.duration){\n'
 			code += indent + '	var $ease = $proto.ease\n'
 			code += indent + '	var $time = $proto.tweenTime($proto.$tween'
 			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/$proto.duration))'
@@ -810,6 +810,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 		var fastWrite = typeof macroargs[0] === 'object'?macroargs[0].$fastWrite:false
 
+		var hasTweenDelta = macroargs[0].$tweenDelta
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 		var code = ''
@@ -825,16 +826,18 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 
-		if(macroargs[0].$tweenDelta){
-			code += indent +'var $oTween = $o + ' + info.propSlots +'\n'
-			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ')*' + info.propSlots+'\n'
+		if(hasTweenDelta){
+			code += indent +'var $fwdTween = $o + ' + info.propSlots +'\n'
+			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ')\n'
 		}
 		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
 		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
 
 		var propcode = ''
-
+		var deltafwd = ''
+		var copyfwd = ''
+		var copyprev = ''
 		// lets generate the tween
 		for(var key in instanceProps){
 			var prop = instanceProps[key]
@@ -844,7 +847,6 @@ module.exports = require('class').extend(function Shader(proto){
 			var noInPlace = fastWrite?false:prop.config.noInPlace
 		
 			propcode += '\n'+indent+'// '+key + '\n'
-
 			// generate the code to tween.
 			if(!notween){
 				// new, old
@@ -862,13 +864,11 @@ module.exports = require('class').extend(function Shader(proto){
 							'$cf * Math.floor(_upn/4096)) << 12) + ' + 
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
-						if(macroargs[0].$tweenDelta){
-							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+' + ($tweenDelta<0?('+slots+'):$tweenDelta)]\n'
-							propcode += indent + '$a[$oTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						if(hasTweenDelta){
+							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i + info.propSlots)+']\n'
+							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
-						else{
-							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-						}
+						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				else{
@@ -876,13 +876,11 @@ module.exports = require('class').extend(function Shader(proto){
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
 							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
 							'$f * $a[$o+'+(o +i)+']\n'
-						if(macroargs[0].$tweenDelta){
-							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+' + ($tweenDelta<0?('+slots+'):$tweenDelta)]\n'
-							propcode += indent + '$a[$oTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						if(hasTweenDelta){
+							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i + info.propSlots)+']\n'
+							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
-						else{
-							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-						}
+						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				if(noInPlace) tweencode += indent + '}\n'
@@ -1014,15 +1012,25 @@ module.exports = require('class').extend(function Shader(proto){
 				propcode += indent+'}\n'
 			}			
 		}
-		//if(!fastWrite){
+
 		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
-		//}
+
+		if(hasTweenDelta){
+			code += 'if($tweenDelta>0){\n'
+			code += deltafwd
+			code += '}\n'
+			code += 'else if($tweenDelta == 0){\n'
+			code += copyprev
+			code += '}\n'
+			code += copyfwd
+		}
+		else{
+			code += copyprev
+		}
 		code += propcode
-		//code += 'if(!$changed) $a[$o+'+instanceProps.this_DOT_tweenStart.offset+'] = 0\n'
-		//code += 'else $props.changed = true\n'
+
 		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
-		// lets generate the write-out
-		//console.log(code)
+
 		return code
 	}
 

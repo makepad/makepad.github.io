@@ -41,6 +41,8 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 		1, 1, 1
 	)
 	
+	proto.noInterrupt = 1
+
 	proto.pixel = function(){$
 		//if(this.unicode == 10.) return 'red'
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
@@ -59,7 +61,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 
 	proto.toolMacros = {
 		fast:function(txt, style, head){
-			var out = this.fastNAMEOutput			
+			var out = this.$fastNAMEOutput			
 			var len = txt.length - 1
 			var turtle = this.turtle
 
@@ -73,45 +75,37 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var posx = turtle.wx// + margin[3] * fontSize
 			var posy = turtle.wy// + margin[0] * fontSize
 
-			turtle._delay = 0
-			var oldoff = out.text.length 
-			var oldtxt = out.oldText
+			
+			var base = out.text.length 
 			out.text += txt
-			var newtxt = out.text
-			if(this.fastNAMEWrite){
+
+			if(this.$fastNAMEWrite){
 				out.ann.push(txt, style, turtle.sx, head)
 			}
+
+			var changeOffset = this.$fastNAMEOffset
+			var changeDelta = this.$fastNAMEDelta
 
 			var sx = turtle.sx
 			var advance = 0
 			var head = head || style.head, tail = 0
-			var tweenDelta = 0
+			var tweenDelta = base >= changeOffset?-changeDelta:0
+
+			turtle._delay = this.$fastNAMEDelay
+				
 			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
-				var oldUnicode = oldtxt.charCodeAt(oldoff+i)
 
-				tweenDelta = 0
-				if(unicode !== oldUnicode){
-					// lets do a 2 character match
-					if(unicode === oldtxt.charCodeAt(oldoff + i - 1)){
-						tweenDelta = -1
-						if(unicode === oldtxt.charCodeAt(oldoff + i + 1)){
-							// we match both lookahead and lookbehind. lets do an extra character match
-							if(oldtxt.charCodeAt(oldoff+i-2) !== newtxt.charCodeAt(oldoff+i-1)){
-								tweenDelta = 1
-							}
-						}
-					}
-					else if(unicode === oldtxt.charCodeAt(oldoff + i + 1)){
-						tweenDelta = 1
-					}
+				if(base + i == changeOffset){
+					tweenDelta = -changeDelta
 				}
-			
 
 				var g = glyphs[unicode] || glyphs[63]
 				var d = displace[unicode] || displace[0]
+
 				if(i ===len) tail = style.tail
 				var advance = g.advance
+
 				this.$WRITEPROPS({
 					$fastWrite:true,
 					$tweenDelta:tweenDelta,
@@ -136,6 +130,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 					y2: g.y2 + d.y,
 					unicode: unicode
 				})
+
 				posx += (head + advance + tail) * fontSize
 
 				var nh = fontSize * lineSpacing
