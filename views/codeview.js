@@ -340,8 +340,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			},
 			ConditionalExpression:{}
 		},
-
-
 		Program:{},
 		EmptyStatement:{},
 		ExpressionStatement:{},
@@ -661,7 +659,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var argslen = args.length - 1
 
 		var dy = 0
-		if(this.$readLengthText() === this.$fastTextOffset){
+		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
 			dy = this.$fastTextDelta
 			this.$fastTextDelta += argslen * dy
 		}
@@ -992,8 +990,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var elems = node.elements
 		var elemslen = elems.length - 1
 
-		if(this.$readLengthText() === this.$fastTextOffset){
-			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
+		var dy = 0
+		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
+			dy = this.$fastTextDelta
+			this.$fastTextDelta += elemslen*this.$fastTextDelta
 		}
 
 		var endx = turtle.wx, lineh = turtle.mh
@@ -1029,6 +1029,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 
 		var blockh = turtle.wy
+
+		this.$fastTextDelta += dy
 		this.fastText(']', this.styles.Bracket.ArrayExpression)
 
 		if(node.top){
@@ -1064,7 +1066,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// make space for our expanded or collapsed view
 		var dy = 0
-		if(this.$readLengthText() === this.$fastTextOffset){
+		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
 			dy = this.$fastTextDelta
 			this.$fastTextDelta += dy * propslen
 		}
@@ -1312,7 +1314,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
 		this.$fastTextStart = offset + text.length 
-		this.$fastTextAdd = text
+
+		if(text === '\n') this.wasNewlineChange = 1
+		else this.wasNewlineChange = 0
+
 		this.textClean = false
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 
@@ -1334,9 +1339,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.removeText = function(start, end){
 		this.textClean = false
+
+		if(this.text.slice(start, end) === '\n') this.wasNewlineChange = true
+		else this.wasNewlineChange = 0
+
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 
-		this.$fastTextAdd = ''
 		this.$fastTextDelta -= (end - start)
 		this.$fastTextStart = 
 		this.$fastTextOffset = start
