@@ -385,7 +385,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// new and call
 		MetaProperty:{},
-		NewExpression:{},
+		NewExpression:{
+			boldness:0.2,
+			color:'#ffdf00'
+		},
 		CallExpression:{},
 
 		// Objects and arrays
@@ -626,7 +629,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		if(node.computed){
 			this.fastText('[', this.style.Bracket.MemberExpression)
+
 			this[prop.type](prop, node)
+
 			this.fastText(']', this.style.Bracket.MemberExpression)
 		}
 		else{
@@ -655,8 +660,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// now the question is if it was inserting or removing the top node
 		var argslen = args.length - 1
 
+		var dy = 0
 		if(this.$readLengthText() === this.$fastTextOffset){
-			this.$fastTextDelta += (argslen+1)*this.$fastTextDelta
+			dy = this.$fastTextDelta
+			this.$fastTextDelta += argslen * dy
 		}
 
 		if(node.top){
@@ -685,7 +692,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else this.fastText(node.bottom, this.styles.Comment.bottom)
 			this.doIndent(-1)
 		}
-
+		this.$fastTextDelta += dy
 		this.fastText(')', this.style.Paren.CallExpression)
 	}
 
@@ -1056,8 +1063,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var propslen = props.length - 1
 
 		// make space for our expanded or collapsed view
+		var dy = 0
 		if(this.$readLengthText() === this.$fastTextOffset){
-			this.$fastTextDelta += this.$fastTextDelta * (propslen+1)
+			dy = this.$fastTextDelta
+			this.$fastTextDelta += dy * propslen
 		}
 
 		//this.newLine()
@@ -1114,6 +1123,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else this.fastText(node.bottom, this.styles.Comment.bottom)
 			this.doIndent(-1)
 		}
+		this.$fastTextDelta += dy
 		this.fastText('}', this.styles.Curly.ObjectExpression)
 
 		var blockh = turtle.wy
