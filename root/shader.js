@@ -828,7 +828,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 		if(hasTweenDelta){
 			code += indent +'var $fwdTween = $o + ' + info.propSlots +'\n'
-			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ')\n'
+			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ') * '+info.propSlots+'\n'
 		}
 		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
@@ -865,7 +865,7 @@ module.exports = require('class').extend(function Shader(proto){
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
 						if(hasTweenDelta){
-							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i + info.propSlots)+']\n'
+							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
 							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
 						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
@@ -877,7 +877,7 @@ module.exports = require('class').extend(function Shader(proto){
 							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
 							'$f * $a[$o+'+(o +i)+']\n'
 						if(hasTweenDelta){
-							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i + info.propSlots)+']\n'
+							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
 							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
 						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'

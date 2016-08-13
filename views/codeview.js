@@ -95,7 +95,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.error = undefined
 
 			// signal the delta
-			if(abs(this.changeDelta)>1){
+			if((this.changeDelta)>1){
 				this.$fastTextDelta = 0
 				this.$fastTextDelay = -10000
 			}
@@ -1070,7 +1070,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var value = prop.value
 				this[value.type](value)
 			}
-			if(true || i < propslen){
+			if(node.tail || i < propslen){
 				if(node.top){
 					this.fastText(',', this.styles.Comma.ObjectExpression)
 				}
