@@ -309,8 +309,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			FunctionDeclaration:{tail:0.5},
 			CallExpression:{tail:0.5},
 			ArrayExpression:{},
-			ObjectExpressionSingle:{tail:0.5},
-			ObjectExpression:{},
+			ObjectExpression:{tail:0.5},
 			VariableDeclaration:{},
 			SequenceExpression:{},
 			NewExpression:{tail:0.5}
@@ -340,6 +339,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			},
 			ConditionalExpression:{}
 		},
+
 
 		Program:{},
 		EmptyStatement:{},
@@ -642,6 +642,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.fastText('(', this.style.Paren.CallExpression)
 
+		// someone typed at the top.
+		// now the question is if it was inserting or removing the top node
+		var dy = 0
+		if(this.$readLengthText() === this.$fastTextOffset){
+			dy = this.$fastTextDelta
+		}
+
 		if(node.top){
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
@@ -652,16 +659,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(node.top && arg.above) this.fastText(arg.above, this.styles.Comment.above)
 			this[arg.type](arg)
 			if(i < argslen) {
-				if(node.top){
-					this.fastText(',', this.style.Comma.CallExpression)
-				}
-				else{
-					this.fastText(', ', this.style.Comma)
-				}
+				this.fastText(',', this.style.Comma.CallExpression)
 			}
-			else if(!node.top){
-				this.fastText(' ', this.style.Comma)
-			}
+			this.$fastTextDelta += dy 
 			if(node.top){
 				if(arg.side) this.fastText(arg.side, this.styles.Comment.side)
 				else if(i < argslen)this.fastText('\n', this.styles.Comment.side)
@@ -972,6 +972,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		var startx = turtle.sx, starty = turtle.wy
 		this.fastText('[', this.styles.Bracket.ArrayExpression)
+
+
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
 		if(node.top){
@@ -1031,6 +1033,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var startx = turtle.sx, starty = turtle.wy
 
 		this.fastText('{', this.styles.Curly.ObjectExpression)
+		
+		var dy = 0
+		if(this.$readLengthText() === this.$fastTextOffset){
+			dy = this.$fastTextDelta
+		}
 
 		var endx = turtle.wx, lineh = turtle.mh
 
@@ -1055,6 +1062,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 
 		for(var i = 0; i <= propslen; i++){
+			this.$fastTextDelta += dy 
+
 			var prop = props[i]
 			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
 			var key = prop.key
@@ -1071,18 +1080,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var value = prop.value
 				this[value.type](value)
 			}
+
 			if(node.tail || i < propslen){
-				if(node.top){
-					this.fastText(',', this.styles.Comma.ObjectExpression)
-				}
-				else{
-					this.fastText(', ', this.styles.Comma.ObjectExpression)
-				}
+				this.fastText(',', this.styles.Comma.ObjectExpression)
 			}
+
 			if(node.top){
 				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
 				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
 			}
+
 		}
 
 		if(node.top){
@@ -1282,7 +1289,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
 		this.$fastTextStart = offset + text.length 
-		
+		this.$fastTextAdd = text
 		this.textClean = false
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 
@@ -1305,7 +1312,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.removeText = function(start, end){
 		this.textClean = false
 		this.text = this.text.slice(0, start) + this.text.slice(end)
-		
+
+		this.$fastTextAdd = ''
 		this.$fastTextDelta -= (end - start)
 		this.$fastTextStart = 
 		this.$fastTextOffset = start
