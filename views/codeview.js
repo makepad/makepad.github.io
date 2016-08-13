@@ -644,16 +644,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		// someone typed at the top.
 		// now the question is if it was inserting or removing the top node
-		var dy = 0
+		var argslen = args.length - 1
+
 		if(this.$readLengthText() === this.$fastTextOffset){
-			dy = this.$fastTextDelta
+			this.$fastTextDelta += (argslen+1)*this.$fastTextDelta
 		}
 
 		if(node.top){
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
 		}
-		var argslen = args.length - 1
+		
 		for(var i = 0; i <= argslen;i++){
 			var arg = args[i]
 			if(node.top && arg.above) this.fastText(arg.above, this.styles.Comment.above)
@@ -661,7 +662,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(i < argslen) {
 				this.fastText(',', this.style.Comma.CallExpression)
 			}
-			this.$fastTextDelta += dy 
 			if(node.top){
 				if(arg.side) this.fastText(arg.side, this.styles.Comment.side)
 				else if(i < argslen)this.fastText('\n', this.styles.Comment.side)
@@ -1034,17 +1034,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.fastText('{', this.styles.Curly.ObjectExpression)
 		
-		var dy = 0
-		if(this.$readLengthText() === this.$fastTextOffset){
-			dy = this.$fastTextDelta
-		}
-
 		var endx = turtle.wx, lineh = turtle.mh
 
 		// lets indent
 		var turtle = this.turtle
 		var props = node.properties
 		var propslen = props.length - 1
+
+		// make space for our expanded or collapsed view
+		if(this.$readLengthText() === this.$fastTextOffset){
+			this.$fastTextDelta += this.$fastTextDelta * (propslen+1)
+		}
 
 		//this.newLine()
 		if(node.top){
@@ -1059,9 +1059,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					if(keylen > maxlen) maxlen = keylen
 				}
 			}
-		}
-
-		this.$fastTextDelta += dy * (propslen+1)
+		}		
 
 		for(var i = 0; i <= propslen; i++){
 
