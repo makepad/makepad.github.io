@@ -250,6 +250,9 @@ pp.parseExprSubscripts = function(refDestructuringErrors) {
 pp.parseSubscripts = function(base, startPos, noCalls) {
 	for (;;) {
 		if (this.eat(tt.dot)) {
+			if(this.storeComments){
+				//this.dumpComment()
+			}
 			var node = this.startNodeAt(startPos)
 			node.object = base
 			node.property = this.parseIdent(true)
@@ -455,7 +458,11 @@ const empty = []
 
 pp.parseNew = function() {
 	var node = this.startNode()
+	// store newline after new?
 	var meta = this.parseIdent(true)
+	
+	this.commentAround(node, tt._new)
+	
 	if (this.options.ecmaVersion >= 6 && this.eat(tt.dot)) {
 		node.meta = meta
 		node.property = this.parseIdent(true)
@@ -467,7 +474,7 @@ pp.parseNew = function() {
 	}
 	var startPos = this.start
 	node.callee = this.parseSubscripts(this.parseExprAtom(), startPos, true)
-	if (this.eat(tt.parenL)) node.arguments = this.parseExprList(tt.parenR, false)
+	if (this.eat(tt.parenL)) node.arguments = this.parseExprList(tt.parenR, false,false,false, node)
 	else node.arguments = empty
 	return this.finishNode(node, "NewExpression")
 }
@@ -531,11 +538,11 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 		if(this.storeComments){
 			if(prop)this.commentEnd(prop, above, tt.braceR)
 			if(this.storeComments) var above = this.commentBegin()
-		}
 
-		if(this.type === tt.comma){
-			this.eat(tt.comma)
-			if(this.storeComments) above = this.commentBegin()
+			if(this.type === tt.comma){
+				this.eat(tt.comma)
+				above = this.commentBegin()
+			}
 		}
 	
 		var prop = this.startNode(), isGenerator, startPos

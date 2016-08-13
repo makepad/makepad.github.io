@@ -106,6 +106,7 @@ var currentTodo
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
 	if(!todo) return false
+
 	var lastTodo = currentTodo
 	currentTodo = todo
 	// set todoId
@@ -127,7 +128,6 @@ function runTodo(todo){
 		if(ret) repaint = true
 	}
 	currentTodo = lastTodo
-
 	if(!pickPass && processScrollState(todo))return true
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
@@ -1590,6 +1590,7 @@ userfn.updateTodo = function(msg){
 	todo.scrollToSpeed = msg.scrollToSpeed || .5
 	todo.scrollMomentum = msg.scrollMomentum
 	todo.scrollMask = msg.scrollMask
+
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()

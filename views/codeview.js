@@ -26,6 +26,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.h += 2.*dx
 			}
 		}),
+
 		Marker:require('shaders/codemarkershader').extend({
 		}),
 		ErrorMarker:require('shaders/codemarkershader').extend({
@@ -240,7 +241,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	// nice cascading high perf styles for the text
 	proto.styles = {
 		fontSize:12,
-		boldness:0.,
+		boldness:0.2,
 		color:'white',
 		italic:0,
 		head:0,
@@ -376,6 +377,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		ArrayExpression:{},
 		ObjectExpression:{
 			key:{
+				alignLeft:0.25,
+				alignRight:0.25,
 				boldness:0.2,
 				color:'#eecc00'
 			}
@@ -605,6 +608,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var obj = node.object
 		this[obj.type](obj)
 		var prop = node.property
+
 		if(node.computed){
 			this.fastText('[', this.style.Bracket.MemberExpression)
 			this[prop.type](prop, node)
@@ -657,14 +661,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var callee = node.callee
 		var args = node.arguments
 		this.fastText('new ', this.style.NewExpression)
-		this[callee.type](callee, node)
-		this.fastText('(', this.style.Paren.NewExpression)
-		for(var i = 0; i < args.length;i++){
-			var arg = args[i]
-			if(i) this.fastText(',', this.style.Comma.NewExpression)
-			this[arg.type](arg)
-		}
-		this.fastText(')', this.style.Paren.NewExpression)
+		// check newline/whitespace
+		if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+		this.CallExpression(node)
+
 	}
 
 	//ReturnStatement:{argument:1},
@@ -999,13 +999,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			})
 		}
 	}
-
 	//ObjectExpression:{properties:3},
 	proto.ObjectExpression = function(node){
 		var turtle = this.turtle
+		var keyStyle = this.styles.ObjectExpression.key
 
 		var startx = turtle.sx, starty = turtle.wy
-		this.fastText('{', this.styles.Curly.ObjectExpression)
+		if(node.top){
+			this.fastText('{', this.styles.Curly.ObjectExpression)
+		}
+		else{
+			this.fastText('{ ', this.styles.Curly.ObjectExpression)
+		}
 		var endx = turtle.wx, lineh = turtle.mh
 
 		// lets indent
@@ -1035,25 +1040,30 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 			var keypos = undefined
 			if(key.type === 'Identifier'){
-				this.fastText(key.name, this.styles.ObjectExpression.key)
 				if(node.top) keypos = key.name.length
+				this.fastText(key.name, keyStyle,keypos?(maxlen - keypos)*keyStyle.alignLeft:0)
 			}
 			else this[key.type](key)
 
 			if(!prop.shorthand){
-				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*.5:0)
+				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
 				var value = prop.value
 				this[value.type](value)
 			}
-			if(node.trail || i < propslen){
-				this.fastText(',', node.top?this.styles.Comma.ObjectExpression:this.styles.Comma.ObjectExpressionSingle)
+			if(true || i < propslen){
+				if(node.top){
+					this.fastText(',', this.styles.Comma.ObjectExpression)
+				}
+				else{
+					this.fastText(', ', this.styles.Comma.ObjectExpression)
+				}
 			}
 			if(node.top){
 				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
 				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
 			}
 		}
-		//this.newLine()
+
 		if(node.top){
 			if(!node.bottom){
 				if(this.text.charCodeAt(this.text.length -1) !== 10){

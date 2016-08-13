@@ -22,9 +22,9 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 		unicode:{noStyle:1, value:0},
 		noBounds: {kind:'uniform',value:0},
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-		tween: {kind:'uniform', value:0.},
-		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
-		duration: {kind:'uniform', value:0.},
+		tween: {kind:'uniform', value:2.},
+		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
+		duration: {kind:'uniform', value:0.3},
 		delay: {styleLevel:1, value:0.},
 		//tweenStart: {kind:'uniform', value:1.0},
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
@@ -74,14 +74,18 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var posy = turtle.wy// + margin[0] * fontSize
 
 			if(out){
+				turtle._delay = 0
 				out.text += txt
 				out.ann.push(txt, style, turtle.sx, head)
 			}
+
 			var sx = turtle.sx
 			var advance = 0
 			var head = head || style.head, tail = 0
 			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
+				// if old code and newcode are the same, lets tween
+				// 
 				var g = glyphs[unicode] || glyphs[63]
 				var d = displace[unicode] || displace[0]
 				if(i ===len) tail = style.tail

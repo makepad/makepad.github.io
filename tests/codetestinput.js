@@ -1,3 +1,2 @@
-var x
-x =
-20
+function t(){}
+var x = new t()
