@@ -824,6 +824,11 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		code += indent +'var $a = $props.array\n'
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+
+		if(macroargs[0].$tweenDelta){
+			code += indent +'var $oTween = $o + ' + info.propSlots +'\n'
+			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ')*' + info.propSlots+'\n'
+		}
 		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
 		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
@@ -857,8 +862,13 @@ module.exports = require('class').extend(function Shader(proto){
 							'$cf * Math.floor(_upn/4096)) << 12) + ' + 
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
-
-						propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						if(macroargs[0].$tweenDelta){
+							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+' + ($tweenDelta<0?('+slots+'):$tweenDelta)]\n'
+							propcode += indent + '$a[$oTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						}
+						else{
+							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						}
 					}
 				}
 				else{
@@ -866,7 +876,13 @@ module.exports = require('class').extend(function Shader(proto){
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
 							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
 							'$f * $a[$o+'+(o +i)+']\n'
-						propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						if(macroargs[0].$tweenDelta){
+							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+' + ($tweenDelta<0?('+slots+'):$tweenDelta)]\n'
+							propcode += indent + '$a[$oTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						}
+						else{
+							propcode += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
+						}
 					}
 				}
 				if(noInPlace) tweencode += indent + '}\n'

@@ -7,10 +7,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.fastTextOutput = this
 		this.ann = []
+		this.oldText = ''
 	}
 
 	proto.tools = {
 		Text:require('shaders/codefontshader').extend({
+			tween:2.,
+			ease: [0,10,1.0,1.0],
 			displace:{
 				0:{x:0,y:0.08},
 				42:{x:0,y:-0.08} // * 
@@ -18,6 +21,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}),
 		Block:require('shaders/fastrectshader').extend({
 			borderRadius:5,
+			tween:2.,
+			ease: [0,10,1.0,1.0],
+			duration:0.3,
 			vertexStyle2:function(){
 				var dx = .5
 				//this.x -= dx
@@ -26,8 +32,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.h += 2.*dx
 			}
 		}),
-
 		Marker:require('shaders/codemarkershader').extend({
+			tween:2.,
+			ease: [0,10,1.0,1.0],			
+			duration:0.3,
 		}),
 		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
@@ -68,7 +76,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.beginBg(this.viewBgProps)
 		// ok lets parse the code
-		//require.perf()
+		require.perf()
 		if(this.textClean){
 			this.reuseDrawSize()
 			this.reuseBlock()
@@ -96,6 +104,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var oldtext = this.text
 				this.text = ''
 				this.ann.length = 0
+				this.fastTextWrite = true
 
 				// run the AST formatter
 				this[ast.type](ast, null)
@@ -120,16 +129,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.addUndoDelete(start, newlen)
 				}
 				this.cs.clampCursor(0, newlen)
+				
 			}
 			else{
 				var ann = this.ann
 
-				this.fastTextOutput = null
+				this.fastTextWrite = false
+				this.text = ''
 				for(var i = 0, len = ann.length; i < len; i+=4){
 					this.turtle.sx = ann[i+2]
 					this.fastText(ann[i], ann[i+1],ann[i+3])
 				}
-				this.fastTextOutput = this
 				// lets query the geometry for the error pos
 				var epos = clamp(this.error.pos, 0, this.$readLengthText()-1)
 				var rd = this.$readOffsetText(epos)
@@ -147,6 +157,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
+			this.oldText = this.text
 		}
 
 		if(this.hasFocus){
@@ -175,7 +186,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				})
 			}
 		}
-		//require.perf()
+		require.perf()
 		this.endBg()
 	}
 
@@ -1077,7 +1088,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		var blockh = turtle.wy
 
-		if(node.top){
+		//if(node.top){
 			// lets draw a block with this information
 			this.drawBlock({
 				color:objectBlockColor[this.indent],
@@ -1090,7 +1101,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				x:startx, y:starty+lineh-1,
 				w:this.indentSize, h:blockh - starty+1
 			})
-		}
+		//}
 	}
 
 	//YieldExpression:{argument:1, delegate:0}
@@ -1261,7 +1272,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 
 		// alright lets find the insertion spot in ann
-		var ann = this.fastTextOutput.ann
+		var ann = this.ann
 		// process insert into annotated array
 		var pos = 0
 		for(var i = 0, len = ann.length; i < len; i+=4){
@@ -1281,7 +1292,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 
 		// process a remove from the annotated array
-		var ann = this.fastTextOutput.ann
+		var ann = this.ann
 		var pos = 0
 		for(var i = 0, len = ann.length; i < len; i+=4){
 			var txt = ann[i]
