@@ -84,20 +84,34 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			}
 
 			var changeOffset = this.$fastNAMEOffset
+			var changeStart = this.$fastNAMEStart
 			var changeDelta = this.$fastNAMEDelta
 
 			var sx = turtle.sx
 			var advance = 0
 			var head = head || style.head, tail = 0
-			var tweenDelta = base >= changeOffset?-changeDelta:0
-
-			turtle._delay = this.$fastNAMEDelay
-				
+			var tweenDelta
+			if(base >= changeOffset){
+				tweenDelta = -changeDelta
+			}
+			else{
+				tweenDelta = 0
+			}
+			if(base >= changeStart){
+				turtle._delay = this.$fastNAMEDelay
+			}
+			else{
+				turtle._delay = -100000
+			}
+			
 			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
-
-				if(base + i == changeOffset){
+				var basei = base + i
+				if(basei == changeOffset){
 					tweenDelta = -changeDelta
+				}
+				if(basei == changeStart){
+					turtle._delay = this.$fastNAMEDelay
 				}
 
 				var g = glyphs[unicode] || glyphs[63]

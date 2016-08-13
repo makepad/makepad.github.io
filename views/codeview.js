@@ -76,7 +76,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.beginBg(this.viewBgProps)
 		// ok lets parse the code
-		require.perf()
+		//require.perf()
 		if(this.textClean){
 			this.reuseDrawSize()
 			this.reuseBlock()
@@ -94,16 +94,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.orderSelect()
 			this.error = undefined
 
-			// signal the delta
-			if((this.changeDelta)>1){
-				this.$fastTextDelta = 0
-				this.$fastTextDelay = -10000
-			}
-			else{
-				this.$fastTextDelay = 0
-				this.$fastTextDelta = this.changeDelta
-			}
-			this.$fastTextOffset = this.changeOffset
+			this.$fastTextDelay = 0
 
 			var ast = this.parseText()
 			if(ast){
@@ -169,7 +160,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			this.changeDelta = 0
+			this.$fastTextDelta = 0
 		}
 
 		if(this.hasFocus){
@@ -198,7 +189,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				})
 			}
 		}
-		require.perf()
+		//require.perf()
 		this.endBg()
 	}
 
@@ -660,7 +651,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			var arg = args[i]
 			if(node.top && arg.above) this.fastText(arg.above, this.styles.Comment.above)
 			this[arg.type](arg)
-			if(i < argslen) this.fastText(',', this.style.Comma.CallExpression)
+			if(i < argslen) {
+				if(node.top){
+					this.fastText(',', this.style.Comma.CallExpression)
+				}
+				else{
+					this.fastText(', ', this.style.Comma)
+				}
+			}
+			else if(!node.top){
+				this.fastText(' ', this.style.Comma)
+			}
 			if(node.top){
 				if(arg.side) this.fastText(arg.side, this.styles.Comment.side)
 				else if(i < argslen)this.fastText('\n', this.styles.Comment.side)
@@ -1278,8 +1279,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 
-		this.changeDelta += text.length
-		this.changeOffset = offset + 1
+		this.$fastTextDelta += text.length
+		this.$fastTextOffset = offset 
+		this.$fastTextStart = offset + text.length 
 		
 		this.textClean = false
 		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
@@ -1304,8 +1306,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.textClean = false
 		this.text = this.text.slice(0, start) + this.text.slice(end)
 		
-		this.changeDelta -= (end - start)
-		this.changeOffset = start
+		this.$fastTextDelta -= (end - start)
+		this.$fastTextStart = 
+		this.$fastTextOffset = start
 
 		// process a remove from the annotated array
 		var ann = this.ann

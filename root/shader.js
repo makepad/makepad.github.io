@@ -827,8 +827,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
 
 		if(hasTweenDelta){
-			code += indent +'var $fwdTween = $o + ' + info.propSlots +'\n'
 			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ') * '+info.propSlots+'\n'
+			code += indent +'var $fwdTween =  $o - $tweenDelta\n'
 		}
 		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
@@ -1021,8 +1021,9 @@ module.exports = require('class').extend(function Shader(proto){
 			code += '}\n'
 			code += 'else if($tweenDelta == 0){\n'
 			code += copyprev
-			code += '}\n'
+			code += '}else{\n'
 			code += copyfwd
+			code += '}'
 		}
 		else{
 			code += copyprev
