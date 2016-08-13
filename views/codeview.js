@@ -1061,8 +1061,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		}
 
+		this.$fastTextDelta += dy * (propslen+1)
+
 		for(var i = 0; i <= propslen; i++){
-			this.$fastTextDelta += dy 
 
 			var prop = props[i]
 			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
