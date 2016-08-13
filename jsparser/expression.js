@@ -250,10 +250,10 @@ pp.parseExprSubscripts = function(refDestructuringErrors) {
 pp.parseSubscripts = function(base, startPos, noCalls) {
 	for (;;) {
 		if (this.eat(tt.dot)) {
-			if(this.storeComments){
-				//this.dumpComment()
-			}
 			var node = this.startNodeAt(startPos)
+			if(this.storeComments){
+				this.commentAround(node, tt.dot)
+			}
 			node.object = base
 			node.property = this.parseIdent(true)
 			node.computed = false

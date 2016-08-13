@@ -14,6 +14,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Text:require('shaders/codefontshader').extend({
 			tween:2.,
 			ease: [0,10,1.0,1.0],
+			duration:0.3,
 			displace:{
 				0:{x:0,y:0.08},
 				42:{x:0,y:-0.08} // * 
@@ -132,7 +133,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.addUndoDelete(start, newlen)
 				}
 				this.cs.clampCursor(0, newlen)
-				
+				console.log				
 			}
 			else{
 				var ann = this.ann
@@ -629,8 +630,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.fastText(']', this.style.Bracket.MemberExpression)
 		}
 		else{
+			if(node.around1){
+				this.fastText(node.around1, this.style.Comment.around)
+			}
+			this.doIndent(1)
 			this.fastText('.', this.style.Dot.MemberExpression)
+			if(node.around2){
+				this.fastText(node.around2, this.style.Comment.around)
+			}
 			this[prop.type](prop, node)
+			this.doIndent(-1)
 		}
 	}
 
@@ -973,6 +982,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var startx = turtle.sx, starty = turtle.wy
 		this.fastText('[', this.styles.Bracket.ArrayExpression)
 
+		var elems = node.elements
+		var elemslen = elems.length - 1
+
+		if(this.$readLengthText() === this.$fastTextOffset){
+			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
+		}
 
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
@@ -980,8 +995,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
 		}
-		var elems = node.elements
-		var elemslen = elems.length - 1
+
 		for(var i = 0; i <= elemslen; i++){
 			var elem = elems[i]
 
