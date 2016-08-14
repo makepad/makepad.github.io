@@ -235,24 +235,30 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderRadius:7.5,
 			FunctionDeclaration:{
 				bgColor:'#363b',
-				open:1
+				open:{open:1},
+				close:{open:0},
 			},
 			IfStatement:{
 				bgColor:'#335b',
-				open:1,
 				if:{
+					open:{open:1},
+					close:{open:0},
 				},
 				else:{
 					bgColor:'#535b',
+					open:{open:1},
+					close:{open:0},
 				}
 			},
 			ForStatement:{
 				bgColor:'#550b',
-				open:1
+				open:{open:1},
+				close:{open:0},
 			},
 			BlockStatement:{
 				bgColor:'#533b',
-				open:1
+				open:{open:1},
+				close:{open:0},
 			},
 			ArrayExpression:{
 				bgColor:'#353b',
@@ -272,16 +278,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			bgColor:'#7778',
 			borderWidth:1.,
 			'+':{
-				bgColor:'#373'
+				bgColor:'#3739'
 			},
 			'-':{
-				bgColor:'#077'
+				bgColor:'#0779'
 			},
 			'/':{
-				bgColor:'#737'
+				bgColor:'#7379'
 			},
 			'*':{
-				bgColor:'#337'
+				bgColor:'#3379'
 			}
 		},
 		Comment:{
@@ -343,6 +349,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Colon:{
 			ObjectExpression:{
 				boldness:0.,
+				tail:0.5,
 				color:'#fff'
 			},
 			ConditionalExpression:{}
@@ -562,7 +569,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.indentSize,
 			blockh - starty,
 			this.indent,
-			 colorScheme || this.styles.Block.BlockStatement
+			starty !== blockh?
+				(colorScheme||this.styles.Block.BlockStatement).open:
+				(colorScheme||this.styles.Block.BlockStatement).close
 		)
 	}
 

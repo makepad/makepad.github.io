@@ -122,7 +122,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 
 		var botNudgeL = 12.
 		var botNudgeR = 16.
-		var botNudgeH = 7.5
+		var botNudgeH = 6.25
 		var botNudgeB = 0.
 		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y-botNudgeB))
 		var botPos = vec2(botNudgeL, this.h-botNudgeH)
@@ -137,7 +137,15 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		//grabField *= 0.3
 		// ok lets add the bottom field
 		var gloop = 4.
+
+		var df = (1.-this.open)
+		sideField += df*8.
+		grabField += df*8.
+		topField += pow(df,4.) * abs(p.x)// - this.topSize.x)
+		botField += pow(df,4.) * abs(p.y)// - this.bottomSize.y)
+
 		var field = this.blend(this.blend(this.blend(topField,botField, .5), sideField, gloop),grabField,gloop)
+
 
 		// operator field
 		//var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
@@ -146,7 +154,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		// mix the fields
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(field*antialias+1.,0.,1.))
 		var finalBorder = mix(this.bgColor, finalBg, clamp((field+this.borderWidth) * antialias + 1., 0., 1.))
-		finalBorder.a *= this.open
+
 		return finalBorder
 		//return mix(this.opColor, finalBorder, clamp(opField * antialias + 1., 0., 1.))
 	}
