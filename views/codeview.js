@@ -638,7 +638,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.indent += delta
 		this.turtle.sx = this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
-		if(this.text.charCodeAt(this.text.length - 1) === 10){
+		var text = this.ann[this.ann.length - 4]
+		if(text.charCodeAt(text.length - 1) === 10){
 			this.ann[this.ann.length - 2] = this.turtle.wx = this.turtle.sx
 		}
 	}
@@ -659,6 +660,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
+			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$') this.scope.$ = 1
 			if(statement.type === 'FunctionDeclaration'){
 				this.scope[statement.id.name] = 1
 			}
@@ -914,17 +916,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
-		if(node.name === 'undefined')console.log(node.name)
 		var style
 		var name = node.name
 		var where
-		if(name === '$'){
-			this.scope.$ = 1
-		}
-		if(this.scope.$ && this.glslGlobals[name]){
-			style = this.style.Identifier.glsl
-		}
-		else if(where = this.scope[name]){
+		if(where = this.scope[name]){
 			if(this.scope.hasOwnProperty(name)){
 				if(where === 1) style = this.style.Identifier.local
 				else if(where === 2) style = this.style.Identifier.localArg
@@ -934,6 +929,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				if(where === 1) style = this.style.Identifier.closure
 				else style = this.style.Identifier.closureArg
 			}
+		}
+		else if(this.scope.$ && this.glslGlobals[name]){
+			style = this.style.Identifier.glsl
 		}
 		else style = this.style.Identifier.unknown
 		this.fastText(node.name, style)
@@ -1232,6 +1230,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.UnaryExpression = function(node){
 		if(node.prefix){
 			var op = node.operator
+			if(op.length > 1) op = op + ' '
 			this.fastText(op, this.style.UnaryExpression[op] || this.style.UnaryExpression)
 			var arg = node.argument
 			this[arg.type](arg)
