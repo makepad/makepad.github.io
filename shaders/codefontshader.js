@@ -6,27 +6,28 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 	// special
 	proto.props = {
 		//visible:{kind:'uniform',noTween:1, value:1.},
-		x:{noInPlace:1, value:NaN},
-		y:{noInPlace:1, value:NaN},
+		x:NaN,
+		y:NaN,
 		color:{pack:'float12', value:'black'},
+		fontSize:12,
+		boldness:0, 
+		unicode:{noStyle:1, value:0},
+		italic:{notween:1,value:0.},
+
 		outlineColor:{kind:'uniform', value:'white'},
 		shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
-		fontSize:12,
-		italic:{notween:1,value:0.},
 		baseLine:{kind:'uniform', value:1.},
+		shadowOffset: {kind:'uniform', value:[0., 0.]},
 		shadowBlur:{kind:'uniform',value:1.0},
 		shadowSpread:{kind:'uniform',value:-1.},
 		outlineWidth:{kind:'uniform', value:0.},
-		boldness:0, 
-		shadowOffset: {kind:'uniform', value:[0., 0.]},
-		unicode:{noStyle:1, value:0},
-		noBounds: {kind:'uniform',value:0},
+
+		// make these uniforms now
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
 		tween: {kind:'uniform', value:0.},
 		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
 		duration: {kind:'uniform', value:0.3},
 		delay: {styleLevel:1, value:0.},
-		//tweenStart: {kind:'uniform', value:1.0},
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 	proto.displace = {
@@ -75,7 +76,6 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var posx = turtle.wx// + margin[3] * fontSize
 			var posy = turtle.wy// + margin[0] * fontSize
 
-			
 			var base = out.text.length 
 			out.text += txt
 

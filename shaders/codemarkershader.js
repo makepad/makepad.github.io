@@ -48,20 +48,16 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 		
 		// background field
-		var bBg = this.borderRadius
-		var hBg = vec2(.5*this.w, .5*this.h)
-		var fBg = length(max(abs(p-hBg) - (hBg - vec2(bBg)), 0.)) - bBg
-
+		var bgSize = vec2(.5*this.w, .5*this.h)
+		var bgField = length(max(abs(p-bgSize) - (bgSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 		// operator field
-		var bHan = this.borderRadius
-		var pHan = p - vec2(this.x2+this.opMargin, this.opMargin)
-		var hHan = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
-		var fHan = length(max(abs(pHan-hHan) - (hHan - vec2(bHan)), 0.)) - bHan
+		var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
+		var opField = length(max(abs(p - vec2(this.x2+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		// mix the fields
-		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(fBg*antialias+1.,0.,1.))
-		var finalBorder = mix(this.bgColor, finalBg, clamp((fBg+this.borderWidth) * antialias + 1., 0., 1.))
-		return mix(this.opColor, finalBorder, clamp(fHan * antialias + 1., 0., 1.))
+		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(bgField*antialias+1.,0.,1.))
+		var finalBorder = mix(this.bgColor, finalBg, clamp((bgField+this.borderWidth) * antialias + 1., 0., 1.))
+		return mix(this.opColor, finalBorder, clamp(opField * antialias + 1., 0., 1.))
 	}
 
 	proto.toolMacros = {

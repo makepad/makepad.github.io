@@ -9,7 +9,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.ann = []
 		this.oldText = ''
 	}
-
+	proto.padding = [0,0,0,4]
+	proto.indentShift = 0.
 	proto.tools = {
 		Text:require('shaders/codefontshader').extend({
 			tween:2.,
@@ -20,22 +21,23 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				42:{x:0,y:-0.08} // * 
 			}
 		}),
-		Block:require('shaders/fastrectshader').extend({
+		Block:require('shaders/codeblockshader').extend({
 			borderRadius:5,
 			tween:2.,
 			ease: [0,10,1.0,1.0],
 			duration:0.3,
-			vertexStyle2:function(){
-				var dx = .5
-				//this.x -= dx
-				this.y -= dx
-				//this.w += 2.*dx
-				this.h += 2.*dx
+			vertexStyle:function(){
+				this.x -=2.
+				this.w += 3.
+				this.w += 10.
+				//this.w2 += 5.
+				this.bgColor.rgb += vec3(this.indent*0.05)
+				this.borderColor = this.bgColor * 1.2
 			}
 		}),
 		Marker:require('shaders/codemarkershader').extend({
 			tween:2.,
-			ease: [0,10,1.0,1.0],			
+			ease: [0,10,1.0,1.0],
 			duration:0.3,
 		}),
 		ErrorMarker:require('shaders/codemarkershader').extend({
@@ -261,6 +263,29 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		italic:0,
 		head:0,
 		tail:0,
+		
+		Block:{
+			borderColor:'white',
+			bgColor:'red',
+			borderWidth:1,
+			borderRadius:4,
+			BlockStatement:{
+				bgColor:'#533',
+				open:{open:1},
+				close:{open:0},
+			},
+			ArrayExpression:{
+				bgColor:'#353',
+				open:{open:1},
+				close:{open:0},
+			},
+			ObjectExpression:{
+				bgColor:'#335',
+				open:{open:1},
+				close:{open:0}
+			}
+		},
+
 		Marker:{
 			borderRadius:3,
 			opColor:'gray',
@@ -511,7 +536,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//BlockStatement:{body:2},
 	proto.doIndent = function(delta){
 		this.indent += delta
-		this.turtle.sx = this.indent * this.indentSize
+		this.turtle.sx = this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.text.charCodeAt(this.text.length - 1) === 10){
 			this.ann[this.ann.length - 2] = this.turtle.wx = this.turtle.sx
@@ -547,18 +572,183 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var blockh = turtle.wy
 		this.fastText('}', this.styles.Curly.BlockStatement)
 
-		// lets draw a block with this information
-		this.drawBlock({
-			color:colorScheme[this.indent],
-			x:startx, y:starty,
-			w:endx - startx, h:lineh
-		})
+		this.fastBlock(
+			startx,
+			starty,
+			endx-startx, 
+			lineh,
+			this.indentSize,
+			blockh - starty,
+			this.indent,
+			node.top?
+				this.styles.Block.BlockStatement.open:
+				this.styles.Block.BlockStatement.close
+			)
+	}
 
-		this.drawBlock({
-			color:colorScheme[this.indent],
-			x:startx, y:starty+lineh-1,
-			w:this.indentSize, h:blockh - starty+1
-		})
+	//ArrayExpression:{elements:2},
+	proto.ArrayExpression = function(node){
+		var turtle = this.turtle
+
+		var startx = turtle.sx, starty = turtle.wy
+		this.fastText('[', this.styles.Bracket.ArrayExpression)
+
+		var elems = node.elements
+		var elemslen = elems.length - 1
+
+		//var dy = 0
+		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
+		//	dy = this.$fastTextDelta
+			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
+		}
+
+		var endx = turtle.wx, lineh = turtle.mh
+		// lets indent
+		if(node.top){
+			this.fastText(node.top, this.styles.Comment.top)
+			this.doIndent(1)
+		}
+
+		for(var i = 0; i <= elemslen; i++){
+			var elem = elems[i]
+
+			if(elem){
+				if(node.top && elem.above) this.fastText(elem.above, this.styles.Comment.above)
+				this[elem.type](elem)
+			}
+			if(i < elemslen) this.fastText(',', this.styles.Comma.ArrayExpression)
+
+			if(elem && node.top){
+				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
+				else if(i !== elemslen)this.fastText('\n', this.styles.Comment.side)
+			}
+		}
+
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			this.doIndent(-1)
+		}
+
+		var blockh = turtle.wy
+
+		//this.$fastTextDelta += dy
+		this.fastText(']', this.styles.Bracket.ArrayExpression)
+
+		// lets draw a block with this information
+		this.fastBlock(
+			startx,
+			starty,
+			endx-startx, 
+			lineh,
+			this.indentSize,
+			blockh - starty,
+			this.indent,
+			node.top?
+				this.styles.Block.ArrayExpression.open:
+				this.styles.Block.ArrayExpression.close
+			)
+	}
+
+	//ObjectExpression:{properties:3},
+	proto.ObjectExpression = function(node){
+		var turtle = this.turtle
+		var keyStyle = this.styles.ObjectExpression.key
+
+		var startx = turtle.sx, starty = turtle.wy
+
+		this.fastText('{', this.styles.Curly.ObjectExpression)
+		
+		var endx = turtle.wx, lineh = turtle.mh
+
+		// lets indent
+		var turtle = this.turtle
+		var props = node.properties
+		var propslen = props.length - 1
+
+		// make space for our expanded or collapsed view
+		//var dy = 0
+		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
+			//dy = this.$fastTextDelta
+			this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
+		}
+
+		//this.newLine()
+		if(node.top){
+			var maxlen = 0
+			this.fastText(node.top, this.styles.Comment.top)
+			this.doIndent(1)
+			// compute the max key size
+			for(var i = 0; i <= propslen; i++){
+				var key = props[i].key
+				if(key.type === 'Identifier'){
+					var keylen = key.name.length
+					if(keylen > maxlen) maxlen = keylen
+				}
+			}
+		}		
+
+		for(var i = 0; i <= propslen; i++){
+
+			var prop = props[i]
+			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
+			var key = prop.key
+
+			var keypos = undefined
+			if(key.type === 'Identifier'){
+				if(node.top) keypos = key.name.length
+				this.fastText(key.name, keyStyle,keypos?(maxlen - keypos)*keyStyle.alignLeft:0)
+			}
+			else this[key.type](key)
+
+			if(!prop.shorthand){
+				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
+				var value = prop.value
+				this[value.type](value)
+			}
+
+			if(node.tail || i < propslen){
+				this.fastText(',', this.styles.Comma.ObjectExpression)
+			}
+
+			if(node.top){
+				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
+				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
+			}
+
+		}
+
+		if(node.top){
+			if(!node.bottom){
+				if(this.text.charCodeAt(this.text.length -1) !== 10){
+					this.fastText('\n', this.styles.Comment.bottom)
+				}
+			}
+			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			this.doIndent(-1)
+		}
+		//this.$fastTextDelta += dy
+		this.fastText('}', this.styles.Curly.ObjectExpression)
+
+		var blockh = turtle.wy
+
+		// lets draw a block with this information
+		this.fastBlock(
+			startx,
+			starty,
+			endx-startx, 
+			lineh,
+			this.indentSize,
+			blockh - starty,
+			this.indent,
+			node.top?
+				this.styles.Block.ObjectExpression.open:
+				this.styles.Block.ObjectExpression.close
+			)
 	}
 
 	//EmptyStatement:{}
@@ -980,171 +1170,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 	}
 
-	//ArrayExpression:{elements:2},
-	proto.ArrayExpression = function(node){
-		var turtle = this.turtle
-
-		var startx = turtle.sx, starty = turtle.wy
-		this.fastText('[', this.styles.Bracket.ArrayExpression)
-
-		var elems = node.elements
-		var elemslen = elems.length - 1
-
-		var dy = 0
-		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
-			dy = this.$fastTextDelta
-			this.$fastTextDelta += elemslen*this.$fastTextDelta
-		}
-
-		var endx = turtle.wx, lineh = turtle.mh
-		// lets indent
-		if(node.top){
-			this.fastText(node.top, this.styles.Comment.top)
-			this.doIndent(1)
-		}
-
-		for(var i = 0; i <= elemslen; i++){
-			var elem = elems[i]
-
-			if(elem){
-				if(node.top && elem.above) this.fastText(elem.above, this.styles.Comment.above)
-				this[elem.type](elem)
-			}
-			if(i < elemslen) this.fastText(',', this.styles.Comma.ArrayExpression)
-
-			if(elem && node.top){
-				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
-				else if(i !== elemslen)this.fastText('\n', this.styles.Comment.side)
-			}
-		}
-
-		if(node.top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
-					this.fastText('\n', this.styles.Comment.bottom)
-				}
-			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
-			this.doIndent(-1)
-		}
-
-		var blockh = turtle.wy
-
-		this.$fastTextDelta += dy
-		this.fastText(']', this.styles.Bracket.ArrayExpression)
-
-		if(node.top){
-			// lets draw a block with this information
-			this.drawBlock({
-				color:arrayBlockColor[this.indent],
-				x:startx, y:starty,
-				w:endx - startx, h:lineh
-			})
-
-			this.drawBlock({
-				color:arrayBlockColor[this.indent],
-				x:startx, y:starty+lineh-1,
-				w:this.indentSize, h:blockh - starty+1
-			})
-		}
-	}
-	//ObjectExpression:{properties:3},
-	proto.ObjectExpression = function(node){
-		var turtle = this.turtle
-		var keyStyle = this.styles.ObjectExpression.key
-
-		var startx = turtle.sx, starty = turtle.wy
-
-		this.fastText('{', this.styles.Curly.ObjectExpression)
-		
-		var endx = turtle.wx, lineh = turtle.mh
-
-		// lets indent
-		var turtle = this.turtle
-		var props = node.properties
-		var propslen = props.length - 1
-
-		// make space for our expanded or collapsed view
-		var dy = 0
-		if(this.$readLengthText() === this.$fastTextOffset && this.wasNewlineChange){
-			dy = this.$fastTextDelta
-			this.$fastTextDelta += dy * propslen
-		}
-
-		//this.newLine()
-		if(node.top){
-			var maxlen = 0
-			this.fastText(node.top, this.styles.Comment.top)
-			this.doIndent(1)
-			// compute the max key size
-			for(var i = 0; i <= propslen; i++){
-				var key = props[i].key
-				if(key.type === 'Identifier'){
-					var keylen = key.name.length
-					if(keylen > maxlen) maxlen = keylen
-				}
-			}
-		}		
-
-		for(var i = 0; i <= propslen; i++){
-
-			var prop = props[i]
-			if(node.top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
-			var key = prop.key
-
-			var keypos = undefined
-			if(key.type === 'Identifier'){
-				if(node.top) keypos = key.name.length
-				this.fastText(key.name, keyStyle,keypos?(maxlen - keypos)*keyStyle.alignLeft:0)
-			}
-			else this[key.type](key)
-
-			if(!prop.shorthand){
-				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
-				var value = prop.value
-				this[value.type](value)
-			}
-
-			if(node.tail || i < propslen){
-				this.fastText(',', this.styles.Comma.ObjectExpression)
-			}
-
-			if(node.top){
-				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
-				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
-			}
-
-		}
-
-		if(node.top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
-					this.fastText('\n', this.styles.Comment.bottom)
-				}
-			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
-			this.doIndent(-1)
-		}
-		this.$fastTextDelta += dy
-		this.fastText('}', this.styles.Curly.ObjectExpression)
-
-		var blockh = turtle.wy
-
-		//if(node.top){
-			// lets draw a block with this information
-			this.drawBlock({
-				color:objectBlockColor[this.indent],
-				x:startx, y:starty,
-				w:endx - startx, h:lineh
-			})
-
-			this.drawBlock({
-				color:objectBlockColor[this.indent],
-				x:startx, y:starty+lineh-1,
-				w:this.indentSize, h:blockh - starty+1
-			})
-		//}
-	}
 
 	//YieldExpression:{argument:1, delegate:0}
 	proto.YieldExpression = function(node){
