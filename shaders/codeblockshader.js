@@ -107,8 +107,9 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var topNudgeT = 13.5
 		var topNudgeB = 13.5
 		var topNudgeW = 6.
-		var topSize = vec2(.5*(this.topSize.x-topNudgeW), .5*(this.topSize.y-topNudgeB))
-		var topPos = vec2(0.,topNudgeT)
+		var topNudgeL = 3.
+		var topSize = vec2(.5*(this.topSize.x-topNudgeW-topNudgeL), .5*(this.topSize.y-topNudgeB))
+		var topPos = vec2(topNudgeL,topNudgeT)
 		var topField = length(max(abs(p-topPos-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		// top right
