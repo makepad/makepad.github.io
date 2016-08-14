@@ -106,13 +106,24 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 		
 		// background field
-		var topSize = vec2(.5*this.topSize.x, .5*this.topSize.y)
-		var topField = length(max(abs(p-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var topNudgeT = 13.
+		var topNudgeB = 13.
+		var topSize = vec2(.5*this.topSize.x, .5*(this.topSize.y-topNudgeB))
+		var topPos = vec2(0.,topNudgeT)
+		var topField = length(max(abs(p-topPos-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+
+		// top right
+		var sideNudgeL = this.topSize.x - 18.
+		var sideNudgeR = this.topSize.x - 18.
+		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y))
+		var sidePos = vec2(sideNudgeR,0.)
+		var sideField = length(max(abs(p-sidePos-sideSize) - (sideSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		var botNudgeL = 12.
 		var botNudgeR = 16.
-		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y+10.))
-		var botPos = vec2(botNudgeL, this.h-10.)
+		var botNudgeH = 4.
+		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y-botNudgeH))
+		var botPos = vec2(botNudgeL, this.h-botNudgeH)
 		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		//botField *= 0.2
@@ -122,7 +133,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 		//grabField *= 0.3
 		// ok lets add the bottom field
-		var field = this.blend(this.blend(topField, botField, this.gloop),grabField,this.gloop)
+		var field = this.blend(this.blend(this.blend(topField,sideField, this.gloop), botField, this.gloop),grabField,this.gloop)
 
 		// operator field
 		//var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
