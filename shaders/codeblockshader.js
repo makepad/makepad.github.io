@@ -106,8 +106,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 		
 		// background field
-		var topNudgeT = 13.
-		var topNudgeB = 13.
+		var topNudgeT = 13.5
+		var topNudgeB = 13.5
 		var topSize = vec2(.5*this.topSize.x, .5*(this.topSize.y-topNudgeB))
 		var topPos = vec2(0.,topNudgeT)
 		var topField = length(max(abs(p-topPos-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
