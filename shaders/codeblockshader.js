@@ -109,16 +109,18 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var topSize = vec2(.5*this.topSize.x, .5*this.topSize.y)
 		var topField = length(max(abs(p-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
-		var botSize = vec2(.5*(this.bottomSize.x-6.), .5*(this.bottomSize.y+10.))
-		var botPos = vec2(0, this.h-10.)
+		var botNudgeL = 12.
+		var botNudgeR = 16.
+		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y+10.))
+		var botPos = vec2(botNudgeL, this.h-10.)
 		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
-		botField *= 0.2
+		//botField *= 0.2
 		var grabScale = 0.9
 		var grabSize = vec2(.5*(this.bottomSize.x), .5*(this.h*grabScale))
 		var grabPos = vec2(0., this.h2 + (1.-grabScale)*this.h)
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
-		grabField *= 0.3
+		//grabField *= 0.3
 		// ok lets add the bottom field
 		var field = this.blend(this.blend(topField, botField, this.gloop),grabField,this.gloop)
 

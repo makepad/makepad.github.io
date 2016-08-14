@@ -385,8 +385,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		ArrayExpression:{},
 		ObjectExpression:{
 			key:{
-				alignLeft:0.25,
-				alignRight:0.25,
+				alignLeft:0.,
+				alignRight:0.5,
 				boldness:0.2,
 				color:'#eecc00'
 			}
