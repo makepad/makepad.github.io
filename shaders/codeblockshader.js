@@ -129,8 +129,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 
 		//botField *= 0.2
 		var grabScale = 1.
-		var grabSize = vec2(.5*(this.bottomSize.x), .5*(this.h*grabScale))
-		var grabPos = vec2(0., this.h2 + (1.-grabScale)*this.h)
+		var grabSize = vec2(.5*(this.bottomSize.x), .5*(this.h3*grabScale))
+		var grabPos = vec2(0., this.h2 - this.h3+this.h)
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 		//grabField *= 0.3
 		// ok lets add the bottom field
