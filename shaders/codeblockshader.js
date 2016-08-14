@@ -91,8 +91,6 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	proto.gloop = 8
-
 	proto.blend = function(a, b, k){
 	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
 	    return mix(b, a, h) - k * h * (1.0 - h)
@@ -115,25 +113,27 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		// top right
 		var sideNudgeL = this.topSize.x - 18.
 		var sideNudgeR = this.topSize.x - 18.
-		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y))
+		var sideNudgeT = 4.
+		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y - sideNudgeT))
 		var sidePos = vec2(sideNudgeR,0.)
 		var sideField = length(max(abs(p-sidePos-sideSize) - (sideSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		var botNudgeL = 12.
 		var botNudgeR = 16.
-		var botNudgeH = 4.
+		var botNudgeH = -1.
 		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y-botNudgeH))
 		var botPos = vec2(botNudgeL, this.h-botNudgeH)
 		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		//botField *= 0.2
-		var grabScale = 0.9
+		var grabScale = 1.
 		var grabSize = vec2(.5*(this.bottomSize.x), .5*(this.h*grabScale))
 		var grabPos = vec2(0., this.h2 + (1.-grabScale)*this.h)
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 		//grabField *= 0.3
 		// ok lets add the bottom field
-		var field = this.blend(this.blend(this.blend(topField,sideField, this.gloop), botField, this.gloop),grabField,this.gloop)
+		var gloop = 10.
+		var field = this.blend(this.blend(this.blend(topField,sideField, gloop), botField, gloop),grabField,gloop)
 
 		// operator field
 		//var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
