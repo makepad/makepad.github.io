@@ -136,7 +136,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		step:1,
 		smoothstep:1,
 		mix:1,
-		console:1
+		console:1,
+		arguments:2,
+		'undefined':2
 	}
 
 	proto.onDraw = function(){
@@ -446,22 +448,28 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Identifier:{
 			color:'#eee',
 			glsl:{
-				color:'#b0f'
+				color:'#3c9'
 			},
 			local:{
 				color:'#ccc'
 			},
 			closure:{
+				boldness:0.3,
 				color:'#ff9'
 			},
 			localArg:{
 				color:'#f70'
 			},
+			iterator:{
+				color:'#faf'
+			},
 			closureArg:{
+				boldness:0.3,
 				color:'#f70'
 			},
 			unknown:{
-				color:'#b33'
+				boldness:0.3,
+				color:'#f33'
 			},
 			ObjectExpression:{
 				color:'#f77'
@@ -900,6 +908,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
+		if(node.name === 'undefined')console.log(node.name)
 		var style
 		var name = node.name
 		var where
@@ -912,7 +921,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		else if(where = this.scope[name]){
 			if(this.scope.hasOwnProperty(name)){
 				if(where === 1) style = this.style.Identifier.local
-				else style = this.style.Identifier.localArg
+				else if(where === 2) style = this.style.Identifier.localArg
+				else style = this.style.Identifier.iterator
 			}
 			else{
 				if(where === 1) style = this.style.Identifier.closure
@@ -1091,22 +1101,22 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
-	proto.VariableDeclaration = function(node){
+	proto.VariableDeclaration = function(node, level, scopeId){
 		this.fastText('var ', this.styles.VariableDeclaration)
 		var decls = node.declarations
 		var declslen = decls.length - 1
 		for(var i = 0; i <= declslen; i++){
 			var decl = decls[i]
-			this[decl.type](decl)
+			this[decl.type](decl, scopeId)
 			if(i !== declslen) this.fastText(',', this.styles.Comma.VariableDeclaration)
 		}
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	proto.VariableDeclarator = function(node){
+	proto.VariableDeclarator = function(node, scopeId){
 		var id = node.id
 		if(id.type === 'Identifier'){
-			this.scope[id.name] = 1
+			this.scope[id.name] = scopeId || 1
 		}
 		this[id.type](id, node)
 		var init = node.init
@@ -1249,7 +1259,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('for', this.style.ForStatement)
 		this.fastText('(', this.style.Paren.ForStatement.left)
 		var init = node.init
-		if(init)this[init.type](init, 1)
+		if(init)this[init.type](init, 1, 3)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var test = node.test
 		if(test)this[test.type](test, 1)
