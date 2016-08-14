@@ -32,7 +32,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.w += 10.
 				//this.w2 += 5.
 				this.bgColor.rgb += vec3(this.indent*0.05)
-				this.borderColor = this.bgColor * 1.2
+				this.borderColor = this.bgColor //* 1.2
 			}
 		}),
 		Marker:require('shaders/codemarkershader').extend({
@@ -206,55 +206,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 	})
 
-	var indentBlockColor = {
-		0:'#352b',
-		1:'#463b',
-		2:'#574b',
-		3:'#685b',
-		4:'#796b',
-		5:'#8a7b',
-		6:'#9b8b'
-	}
-
-	var arrayBlockColor = {
-		0:'#335b',
-		1:'#446b',
-		2:'#557b',
-		3:'#668b',
-		4:'#779b',
-		5:'#88ab',
-		6:'#99bb'
-	}
-
-	var forBlockColor = {
-		0:'#515b',
-		1:'#626b',
-		2:'#737b',
-		3:'#848b',
-		4:'#959b',
-		5:'#a6ab',
-		6:'#b7bb'
-	}
-	
-	var ifBlockColor = {
-		0:'#514b',
-		1:'#612b',
-		2:'#713b',
-		3:'#814b',
-		4:'#915b',
-		5:'#a16b',
-		6:'#bb7b'
-	}
-
-	var objectBlockColor = {
-		0:'#532b',
-		1:'#643b',
-		2:'#754b',
-		3:'#865b',
-		4:'#976b',
-		5:'#a87b',
-		6:'#b98b',
-	}
 	// nice cascading high perf styles for the text
 	proto.styles = {
 		fontSize:12,
@@ -269,18 +220,34 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			bgColor:'red',
 			borderWidth:1,
 			borderRadius:4,
+			FunctionDeclaration:{
+				bgColor:'#363b',
+				open:1
+			},
+			IfStatement:{
+				bgColor:'#335b',
+				open:1,
+				if:{
+				},
+				else:{
+					bgColor:'#535b',
+				}
+			},
+			ForStatement:{
+				bgColor:'#550b',
+				open:1
+			},
 			BlockStatement:{
-				bgColor:'#533',
-				open:{open:1},
-				close:{open:0},
+				bgColor:'#533b',
+				open:1
 			},
 			ArrayExpression:{
-				bgColor:'#353',
+				bgColor:'#353b',
 				open:{open:1},
 				close:{open:0},
 			},
 			ObjectExpression:{
-				bgColor:'#335',
+				bgColor:'#335b',
 				open:{open:1},
 				close:{open:0}
 			}
@@ -546,7 +513,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.BlockStatement = function(node, colorScheme){
 		// store the startx/y position
 		var turtle = this.turtle
-		if(!colorScheme) colorScheme = indentBlockColor
+
 		var startx = turtle.sx, starty = turtle.wy
 		this.fastText('{', this.styles.Curly.BlockStatement)
 		var endx = turtle.wx, lineh = turtle.mh
@@ -580,10 +547,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.indentSize,
 			blockh - starty,
 			this.indent,
-			node.top?
-				this.styles.Block.BlockStatement.open:
-				this.styles.Block.BlockStatement.close
-			)
+			 colorScheme || this.styles.Block.BlockStatement
+		)
 	}
 
 	//ArrayExpression:{elements:2},
@@ -957,7 +922,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText(')', this.styles.Paren.FunctionDeclaration)
 
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.Block.FunctionDeclaration)
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
@@ -1102,11 +1067,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this[test.type](test)
 		this.fastText(')', this.style.Paren.IfStatement.right)
 		var cq = node.consequent
-		this[cq.type](cq, ifBlockColor)
+		this[cq.type](cq, this.style.Block.IfStatement.if)
 		var alt = node.alternate
 		if(alt){
 			this.fastText('\nelse ', this.style.IfStatement.else)
-			this[alt.type](alt, ifBlockColor)
+			this[alt.type](alt, this.style.Block.IfStatement.else)
 		}
 	}
 
@@ -1124,7 +1089,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this[update.type](update, 1)
 		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
-		this[body.type](body, forBlockColor)
+		this[body.type](body, this.style.Block.ForStatement)
 	}
 
 	//ForInStatement:{left:1, right:1, body:1},
@@ -1138,7 +1103,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this[right.type](right)
 		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
-		this[body.type](body, forBlockColor)
+		this[body.type](body, this.style.Block.ForStatement)
 	}
 
 	//ForOfStatement:{left:1, right:1, body:1},
