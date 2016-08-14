@@ -337,6 +337,8 @@ pp.parseExprAtom = function(refDestructuringErrors) {
 
 	case tt._function:
 		node = this.startNode()
+		if(this.input.charCodeAt(this.pos) === 32)node.space = ' ' 
+		else node.space = ''
 		this.next()
 		return this.parseFunction(node, false)
 

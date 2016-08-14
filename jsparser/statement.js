@@ -199,6 +199,8 @@ pp.parseForStatement = function(node) {
 }
 
 pp.parseFunctionStatement = function(node) {
+	if(this.input.charCodeAt(this.pos) === 32)node.space = ' ' 
+	else node.space = ''
 	this.next()
 	return this.parseFunction(node, true)
 }
@@ -218,6 +220,11 @@ pp.parseIfStatement = function(node) {
 pp.parseReturnStatement = function(node) {
 	if (!this.inFunction && !this.options.allowReturnOutsideFunction)
 		this.raise(this.start, "'return' outside of function")
+
+	// lets peek in the current character
+	if(this.input.charCodeAt(this.pos) === 32)node.space = ' ' 
+	else node.space = ''
+
 	this.next()
 
 	// In `return` (and `break`/`continue`), the keywords with

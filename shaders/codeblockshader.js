@@ -28,7 +28,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 
 		tween: {kind:'uniform', value:0.},
 		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
-		duration: {kind:'uniform', value:0.3},
+		duration: {noTween:1., value:0.3},
 		delay: {styleLevel:1, value:0.},
 		mesh:{kind:'geometry', type:types.vec3},
 	}
@@ -99,7 +99,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 	proto.pixel = function(){$
 
 		// ok lets draw things
-		var p = this.p//mesh.xy * vec2(this.w, this.h)
+		var p = this.p
 
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 		
@@ -119,9 +119,9 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var sideNudgeT = 0.
 		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y - sideNudgeT))
 		var sidePos = vec2(sideNudgeR,0.)
-
 		var sideField = length(max(abs(p-sidePos-sideSize) - (sideSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
+		// bottom
 		var botNudgeL = 12.
 		var botNudgeR = 16.
 		var botNudgeH = 1.
@@ -130,14 +130,12 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var botPos = vec2(botNudgeL, this.h-botNudgeH)
 		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(lineRadius)), 0.)) - lineRadius
 
-		//botField *= 0.2
-		var grabScale = 1.
+		// the bottom grabber
 		var h3 = this.h*1.0
-		var grabSize = vec2(.5*(this.bottomSize.x), .5*(h3*grabScale))
+		var grabSize = vec2(.5*(this.bottomSize.x), .5*(h3))
 		var grabPos = vec2(0., this.h2-2.)
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
-		//grabField *= 0.3
-		// ok lets add the bottom field
+
 		var gloop = 4.
 
 		// open animation
@@ -147,14 +145,10 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		topField += pow(df,4.) * abs(p.x)// - this.topSize.x)
 		botField += pow(df,4.) * abs(p.y)// - this.bottomSize.y)
 
+		// blend the fields
 		var field = this.blend(this.blend(this.blend(topField,botField, .5), sideField, gloop),grabField,gloop)
 
-
-		// operator field
-		//var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
-		//var opField = length(max(abs(p - vec2(this.x2+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
-
-		// mix the fields
+		// compute color
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(field*antialias+1.,0.,1.))
 		var finalBorder = mix(this.bgColor, finalBg, clamp((field+this.borderWidth) * antialias + 1., 0., 1.))
 
@@ -163,13 +157,28 @@ module.exports = require('shader').extend(function QuadShader(proto){
 	}
 
 	proto.toolMacros = {
+		$readLength:function(){
+			return this.$PROPLEN()
+		},
+		// only set close to 0, everything else gets copied
+		animateClose:function(o){
+			DUMP
+			this.$WRITEPROPS({
+				$offset:o,
+				$animate:true,
+				duration:5.,
+				open:0
+			})
+		},
 		fast:function(x, y, w, h, w2, h2, indent, style){
 			this.$ALLOCDRAW(1, true)
 			var tweenDelta = 0
+
 			this.$WRITEPROPS({
 				$fastWrite:true,
 				$tweenDelta:tweenDelta,
 				visible:1,
+				duration:$proto.duration,
 				x: x,
 				y: y,
 				w: w,

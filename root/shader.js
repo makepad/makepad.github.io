@@ -765,42 +765,8 @@ module.exports = require('class').extend(function Shader(proto){
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
-	proto.$TWEENJS = function(indent, tweencode, instanceProps){
-		var code = ''
-		// if we dont have per instance tweening
-		if(!instanceProps.this_DOT_tween){
-			code += indent + 'if($proto.tween > 0){'
-			code += indent + '	var $timeMax = $view._time + $proto.duration\n'
-			code += indent + '	$props.oldTimeMax = $timeMax\n'
-			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + $proto.duration){\n'
-			code += indent + '	var $ease = $proto.ease\n'
-			code += indent + '	var $time = $proto.tweenTime($proto.$tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/$proto.duration))'
-			code += ',$ease[0],$ease[1],$ease[2],$ease[3]'
-			code += ')\n'
-		}
-		else{ // we do have per instance tweening
-			code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
-			code += indent + 'if($tween > 0 || $turtle._tween > 0){\n'
-			code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
-			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
-			code += indent + '	$props.oldTimeMax = $timeMax\n'
-			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-			code += indent + '	if($view._time < $tweenStart + $duration){\n'
-			code += indent + '		var $time = $proto.tweenTime($tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
-			code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
-			code += ')\n'
-		}
-		code += indent + tweencode 
-		code += indent + '	}\n'
-		code += indent + '}'
-
+	proto.$TWEENJS = function(indent, tweencode, instanceProps, macroargs){
+		
 		return code
 	}
 
@@ -823,8 +789,14 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent +'var $shader = this.$shaders.'+classname+'\n'
 			code += indent +'var $props = $shader.$props\n'
 		}
+		code += indent + '$props.dirty = true\n'
 		code += indent +'var $a = $props.array\n'
-		code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+		if(macroargs[0].$offset){
+			code += indent +'var $o = ('+macroargs[0].$offset+') * ' + info.propSlots +'\n'
+		}
+		else{
+			code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+		}
 
 		if(hasTweenDelta){
 			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ') * '+info.propSlots+'\n'
@@ -833,6 +805,8 @@ module.exports = require('class').extend(function Shader(proto){
 		//code += indent +'var $changed = false\n'
 		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
 		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
+		
+		var isAnimate = macroargs[0].$animate
 
 		var propcode = ''
 		var deltafwd = ''
@@ -845,7 +819,6 @@ module.exports = require('class').extend(function Shader(proto){
 			var o = prop.offset
 			var notween =  prop.config.noTween
 			var noInPlace = fastWrite?false:prop.config.noInPlace
-		
 			propcode += '\n'+indent+'// '+key + '\n'
 			// generate the code to tween.
 			if(!notween){
@@ -886,9 +859,6 @@ module.exports = require('class').extend(function Shader(proto){
 				if(noInPlace) tweencode += indent + '}\n'
 			}
 
-			if(noInPlace){
-				propcode += indent + 'if(!$inPlace){\n'
-			}
 			// assign properties
 			// check if we are a vec4 and typeof string
 
@@ -901,6 +871,14 @@ module.exports = require('class').extend(function Shader(proto){
 				var marg = macroargs[0][prop.name]
 				if(marg) propsource = marg
 				else if(prop.name !== 'tweenStart' && fastWrite) continue
+			}
+
+			if(isAnimate && !(prop.name in macroargs[0]) && prop.name !== 'tweenStart'){
+				continue
+			}
+
+			if(noInPlace){
+				propcode += indent + 'if(!$inPlace){\n'
 			}
 
 			if(prop.type.name === 'vec4'){
@@ -1013,7 +991,42 @@ module.exports = require('class').extend(function Shader(proto){
 			}			
 		}
 
-		code += '\n'+this.$TWEENJS(indent, tweencode, instanceProps) +'\n'
+		// if we dont have per instance tweening
+		if(!instanceProps.this_DOT_tween){
+			var duration = macroargs[0].duration?macroargs[0].duration:'$proto.duration'
+			var ease = macroargs[0].ease?macroargs[0].ease:'$proto.ease'
+
+			code += indent + 'if($proto.tween > 0){'
+			code += indent + '	var $timeMax = $view._time + '+duration+'\n'
+			code += indent + '	$props.oldTimeMax = $timeMax\n'
+			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + '+duration+'){\n'
+			code += indent + '	var $ease = '+ease+'\n'
+			code += indent + '	var $time = $proto.tweenTime($proto.$tween'
+			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/'+duration+'))'
+			code += ',$ease[0],$ease[1],$ease[2],$ease[3]'
+			code += ')\n'
+		}
+		else{ // we do have per instance tweening
+			code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+			code += indent + 'if($tween > 0 || $turtle._tween > 0){\n'
+			code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
+			code += indent + '	$props.oldTimeMax = $timeMax\n'
+			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+			code += indent + '	if($view._time < $tweenStart + $duration){\n'
+			code += indent + '		var $time = $proto.tweenTime($tween'
+			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
+			code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
+			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
+			code += ')\n'
+		}
+		code += indent + tweencode 
+		code += indent + '	}\n'
+		code += indent + '}'
 
 		if(hasTweenDelta){
 			code += 'if($tweenDelta>0){\n'
@@ -1028,6 +1041,7 @@ module.exports = require('class').extend(function Shader(proto){
 		else{
 			code += copyprev
 		}
+
 		code += propcode
 
 		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'

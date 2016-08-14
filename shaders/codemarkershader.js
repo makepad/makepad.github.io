@@ -12,7 +12,8 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		level:0.,
 		borderRadius:4.,
 		borderWidth:1.,
-
+		closed:0,
+		
 		bgColor: {pack:'float12', value:'gray'},
 		opColor: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'gray'},
@@ -21,9 +22,9 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		noBounds: {kind:'uniform',value:0},
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
 		visible:{kind:'uniform',noTween:1, value:1.},
-		tween: {kind:'uniform', value:0.},
+		tween: {kind:'uniform', value:2.},
 		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
-		duration: {kind:'uniform', value:0.},
+		duration: {noTween:1., value:0.},
 		delay: {styleLevel:1, value:0.},
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
@@ -66,14 +67,29 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		// operator field
 		var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
 		var opField = length(max(abs(p - vec2(this.x2-this.x1+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(opBorderRadius)), 0.)) - opBorderRadius
-
+		
+		var rip = 1.5+.5*sin(p.x*.5)
+		bgField += this.closed*rip*10.
+		opField += this.closed*rip*10.
 		// mix the fields
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(bgField*antialias+1.,0.,1.))
 		var finalBorder = mix(this.bgColor, finalBg, clamp((bgField+this.borderWidth) * antialias + 1., 0., 1.))
+
 		return mix(this.opColor, finalBorder, clamp(opField * antialias + 1., 0., 1.))
 	}
 
 	proto.toolMacros = {
+		$readLength:function(){
+			return this.$PROPLEN()
+		},
+		animateClose:function(o){
+			this.$WRITEPROPS({
+				$offset:o,
+				$animate:true,
+				duration:5.,
+				closed:1
+			})
+		},	
 		stop:function(o, x1, x2, x3, x4, h){
 			this.$PROPVARDEF()
 			this.$PROP(o,'x1') = x1
@@ -85,8 +101,10 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		start:function(y, level, style){
 			this.$ALLOCDRAW(1, true)
 			this.$WRITEPROPS({
+				duration:$proto.duration,
 				$fastWrite:true,
 				y:y,
+				closed:0,
 				level:level,
 				borderRadius:style.borderRadius,
 				bgColor:style.bgColor,

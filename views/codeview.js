@@ -94,7 +94,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.beginBg(this.viewBgProps)
 		// ok lets parse the code
-		//require.perf()
+		require.perf()
 		if(this.textClean){
 			this.reuseDrawSize()
 			this.reuseBlock()
@@ -155,6 +155,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else{
 				var ann = this.ann
 
+				this.reuseBlock()
+				for(var i =0, l = this.$readLengthBlock(); i < l; i++){
+					this.animateCloseBlock(i)
+				}
+				this.reuseMarker()
+				for(var i =0, l = this.$readLengthMarker(); i < l; i++){
+					this.animateCloseMarker(i)
+				}
+
+
 				this.$fastTextWrite = false
 				this.text = ''
 				for(var i = 0, len = ann.length; i < len; i+=4){
@@ -213,7 +223,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				})
 			}
 		}
-		//require.perf()
+		require.perf()
 		this.endBg()
 	}
 
@@ -907,7 +917,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this[arg.type](arg, node)
 		}
 		else{
-			this.fastText('return', this.styles.ReturnStatement)
+			this.fastText('return'+node.space, this.styles.ReturnStatement)
 		}
 	}
 
@@ -925,7 +935,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.fastText(id.name, this.styles.Identifier.FunctionDeclaration)
 		}
 		else{
-			this.fastText('function', this.styles.FunctionDeclaration)
+			this.fastText('function' + node.space, this.styles.FunctionDeclaration)
 		}
 
 		this.fastText('(', this.styles.Paren.FunctionDeclaration.left)
@@ -1120,13 +1130,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('for', this.style.ForStatement)
 		this.fastText('(', this.style.Paren.ForStatement.left)
 		var init = node.init
-		this[init.type](init, 1)
+		if(init)this[init.type](init, 1)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var test = node.test
-		this[test.type](test, 1)
+		if(test)this[test.type](test, 1)
 		this.fastText(';', this.style.SemiColon.ForStatement)
 		var update = node.update
-		this[update.type](update, 1)
+		if(update)this[update.type](update, 1)
 		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
 		this[body.type](body, this.style.Block.ForStatement)
