@@ -162,7 +162,6 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		},
 		// only set close to 0, everything else gets copied
 		animateClose:function(o){
-			DUMP
 			this.$WRITEPROPS({
 				$offset:o,
 				$animate:true,

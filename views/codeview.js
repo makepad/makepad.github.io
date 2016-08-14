@@ -461,7 +461,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				color:'#f70'
 			},
 			iterator:{
-				color:'#faf'
+				color:'#bb0'
 			},
 			closureArg:{
 				boldness:0.3,
@@ -526,7 +526,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		ArrowFunctionExpression:{},
 		FunctionDeclaration:{
 			boldness:0.1,
-			color:'#ffdf00'
+			color:'#797'
+		//	color:'#ffdf00'
 		},
 
 		// variable declarations
@@ -560,15 +561,20 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			tail:0.5
 		},
 		UpdateExpression:{
+			color:'#ff9f00'
 		},
-		UnaryExpression:{},
+		UnaryExpression:{
+			color:'#ff9f00'
+		},
+
 
 		// if and for
 		IfStatement:{
-			if:{},
-			else:{}
+			if:{color:'#779'},
+			else:{color:'#979'}
 		},
 		ForStatement:{
+			color:'#bb0',
 			in:{}
 		},
 		ForInStatement:{},
