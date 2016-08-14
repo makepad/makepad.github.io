@@ -17,7 +17,7 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		opColor: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'gray'},
 
-		opMargin:{kind:'uniform', value:3},
+		opMargin:{kind:'uniform', value:2},
 		noBounds: {kind:'uniform',value:0},
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
 		visible:{kind:'uniform',noTween:1, value:1.},
@@ -52,7 +52,6 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 			0., 
 			1.
 		)
-
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
@@ -63,9 +62,10 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		// background field
 		var bgSize = vec2(.5*this.w, .5*this.h)
 		var bgField = length(max(abs(p-bgSize) - (bgSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var opBorderRadius = max(this.borderRadius -2.,0.)
 		// operator field
 		var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
-		var opField = length(max(abs(p - vec2(this.x2-this.x1+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var opField = length(max(abs(p - vec2(this.x2-this.x1+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(opBorderRadius)), 0.)) - opBorderRadius
 
 		// mix the fields
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(bgField*antialias+1.,0.,1.))

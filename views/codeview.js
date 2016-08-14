@@ -50,6 +50,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.w += 4.
 				this.y += this.level*1.
 				this.h -= this.level*2.
+				this.borderRadius -= this.level
 			}
 		}),
 		ErrorMarker:require('shaders/codemarkershader').extend({
@@ -296,7 +297,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		},
 		Paren:{
 			boldness:0.,
-			FunctionDeclaration:{},
+			FunctionDeclaration:{
+				left:{},
+				right:{tail:0.5}
+			},
 			CallExpression:{},
 			NewExpression:{},
 			ParenthesizedExpression:{},
@@ -900,7 +904,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.fastText('function', this.styles.FunctionDeclaration)
 		}
 
-		this.fastText('(', this.styles.Paren.FunctionDeclaration)
+		this.fastText('(', this.styles.Paren.FunctionDeclaration.left)
 
 		if(node.top) this.fastText(node.top, this.styles.Comment.top)
 		this.doIndent(1)
@@ -930,7 +934,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		this.doIndent(-1)
 
-		this.fastText(')', this.styles.Paren.FunctionDeclaration)
+		this.fastText(')', this.styles.Paren.FunctionDeclaration.right)
 
 		var body = node.body
 		this[body.type](body, this.styles.Block.FunctionDeclaration)
@@ -965,11 +969,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
-	proto.LogicalExpression = function(node){
+	proto.LogicalExpression = function(node, level){
+		level = level || 0
 		var left = node.left
 		var right = node.right
 
-		this[left.type](left)
+		this[left.type](left,level + 1)
 
 		if(node.around1) this.fastText(node.around1, this.style.Comment.around)
 		this.doIndent(1)
@@ -978,7 +983,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		if(node.around2) this.fastText(node.around2, this.style.Comment.around)
 
-		this[right.type](right)
+		this[right.type](right,level + 1)
 
 		this.doIndent(-1)
 	}
@@ -1075,7 +1080,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText('if', this.style.IfStatement.if)
 		this.fastText('(', this.style.Paren.IfStatement.left)
 		var test = node.test
-		this[test.type](test)
+		this[test.type](test,1)
 		this.fastText(')', this.style.Paren.IfStatement.right)
 		var cq = node.consequent
 		this[cq.type](cq, this.style.Block.IfStatement.if)
