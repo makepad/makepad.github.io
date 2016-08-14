@@ -17,7 +17,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		z: 0,
 		indent:0,
 		borderWidth: 1,
-		borderRadius: 4,
+		borderRadius: 8,
 
 		bgColor: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'gray'},
@@ -111,16 +111,17 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var topField = length(max(abs(p-topPos-topSize) - (topSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		// top right
-		var sideNudgeL = this.topSize.x - 18.
-		var sideNudgeR = this.topSize.x - 18.
-		var sideNudgeT = 4.
+		var sideNudgeL = this.topSize.x - 20.
+		var sideNudgeR = this.topSize.x - 20.
+		var sideNudgeT = 0.
 		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y - sideNudgeT))
 		var sidePos = vec2(sideNudgeR,0.)
+
 		var sideField = length(max(abs(p-sidePos-sideSize) - (sideSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		var botNudgeL = 12.
 		var botNudgeR = 16.
-		var botNudgeH = -1.
+		var botNudgeH = 2.
 		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y-botNudgeH))
 		var botPos = vec2(botNudgeL, this.h-botNudgeH)
 		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(this.borderRadius)), 0.)) - this.borderRadius

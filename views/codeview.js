@@ -27,7 +27,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			ease: [0,10,1.0,1.0],
 			duration:0.3,
 			vertexStyle:function(){
-				this.x -=2.
+				this.x -=6.
 				this.w += 3.
 				this.w += 10.
 				//this.w2 += 5.
@@ -230,7 +230,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderColor:'white',
 			bgColor:'red',
 			borderWidth:1,
-			borderRadius:4,
+			borderRadius:10,
 			FunctionDeclaration:{
 				bgColor:'#363b',
 				open:1
