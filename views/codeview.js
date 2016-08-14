@@ -377,7 +377,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		},
 		ThisExpression:{
 			boldness:0.1,
-			color:'#f9f'
+			color:'#797'
 		},
 		Super:{},
 		// await
