@@ -38,7 +38,6 @@ module.exports = require('shader').extend(function QuadShader(proto){
 			return vec4(0.)
 		}
 
-		// vertexshader clipping!
 		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
 		var size = vec2(this.w, this.h)
 
@@ -53,8 +52,6 @@ module.exports = require('shader').extend(function QuadShader(proto){
 			0., 
 			1.
 		)
-
-		this.vertexPost()
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}

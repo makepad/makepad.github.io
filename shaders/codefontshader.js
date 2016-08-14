@@ -52,7 +52,8 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 
 		this.pixelStyle()
 
-		field = this.field - this.boldness
+		field = this.field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.2
+
 
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)

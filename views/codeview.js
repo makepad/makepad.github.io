@@ -39,6 +39,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			tween:2.,
 			ease: [0,10,1.0,1.0],
 			duration:0.3,
+			vertexStyle:function(){$
+				this.opColor = this.bgColor*1.1
+				this.borderColor = this.bgColor//*1.1
+				//this.bgColor = vec4(0.)
+				this.x -= 2.
+				this.x2 += 2.
+				this.x3 += 2.
+				this.w += 4.
+				this.y += this.level*1.
+				this.h -= this.level*2.
+			}
 		}),
 		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
@@ -209,7 +220,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	// nice cascading high perf styles for the text
 	proto.styles = {
 		fontSize:12,
-		boldness:0.2,
+		boldness:0.,
 		color:'white',
 		italic:0,
 		head:0,
@@ -247,17 +258,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				close:{open:0},
 			},
 			ObjectExpression:{
-				bgColor:'#335b',
+				bgColor:'#537b',
 				open:{open:1},
 				close:{open:0}
 			}
 		},
-
 		Marker:{
 			borderRadius:3,
 			opColor:'gray',
-			bgColor:'gray',
 			borderColor:'gray',
+			bgColor:'#7778',
 			borderWidth:1.,
 			'+':{
 				bgColor:'#373'
@@ -273,7 +283,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		Comment:{
-			boldness:0.3,
+			boldness:0.1,
 			color:'#0083f8',
 			side:{
 				head:0.5
@@ -358,7 +368,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				color:'#0f0'
 			},
 			num:{
-				boldness:0.4,
+				boldness:0.1,
 				color:'#bbf'
 			},
 			boolean:{},
@@ -366,7 +376,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			object:{}
 		},
 		ThisExpression:{
-			boldness:0.3,
+			boldness:0.1,
 			color:'#f9f'
 		},
 		Super:{},
@@ -376,7 +386,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// new and call
 		MetaProperty:{},
 		NewExpression:{
-			boldness:0.2,
+			boldness:0.1,
 			color:'#ffdf00'
 		},
 		CallExpression:{},
@@ -387,8 +397,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			key:{
 				alignLeft:0.,
 				alignRight:0.5,
-				boldness:0.2,
-				color:'#eecc00'
+				boldness:0.1,
+				color:'#bac'
 			}
 		},
 		ObjectPattern:{},
@@ -398,13 +408,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		FunctionExpression:{},
 		ArrowFunctionExpression:{},
 		FunctionDeclaration:{
-			boldness:0.2,
+			boldness:0.1,
 			color:'#ffdf00'
 		},
 
 		// variable declarations
 		VariableDeclaration:{
-			boldness:0.2,
+			boldness:0.1,
 			color:'#ffdf00'
 		},
 		VariableDeclarator:{},
@@ -421,7 +431,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			color:'#ff9f00'
 		},
 		AssignmentExpression:{
-			boldness:0.3,
+			boldness:0.1,
 			head:0.5,
 			tail:0.5,
 			'=':{

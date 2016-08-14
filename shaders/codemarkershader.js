@@ -28,19 +28,32 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		lockScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 
-	proto.colorStyles = function(){$
-		this.opColor = this.bgColor*1.1
-		this.borderColor = this.bgColor*1.1
-	}
+	proto.vertex = function(){$
+		this.x = this.x1
+		this.w = this.x4 - this.x1
 
-	proto.vertexStyle = function(){$
-		this.y += this.level*1.
-		this.h -= this.level*2.
-		this.x = this.x1 //- 2.
-		this.x2 -= this.x1
-		this.x3 -= this.x1
-		this.w = this.x4 - this.x1// + 4.
-		this.colorStyles()
+		this.vertexStyle()
+
+		if(this.visible < 0.5){
+			return vec4(0.)
+		}
+
+		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
+		var size = vec2(this.w, this.h)
+
+		this.mesh.xy = (clamp(
+			this.mesh.xy * size + shift, 
+			max(this.turtleClip.xy, this.viewClip.xy),
+			min(this.turtleClip.zw, this.viewClip.zw)
+		) - shift) / size
+
+		var pos = vec4(
+			this.mesh.xy * size + shift, 
+			0., 
+			1.
+		)
+
+		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	proto.pixel = function(){$
@@ -52,7 +65,7 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		var bgField = length(max(abs(p-bgSize) - (bgSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 		// operator field
 		var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
-		var opField = length(max(abs(p - vec2(this.x2+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var opField = length(max(abs(p - vec2(this.x2-this.x1+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		// mix the fields
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(bgField*antialias+1.,0.,1.))
