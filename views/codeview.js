@@ -33,6 +33,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.h2 += 2.
 				//this.w2 += 5.
 				this.bgColor.rgb += vec3(this.indent*0.05)
+				// the alpha is wether we are in focus
+
 				this.borderColor = this.bgColor //* 1.2
 			}
 		}),
@@ -56,7 +58,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
 			opMargin:1,
-			colorStyles:function(){$
+			vertexStyle:function(){$
 				this.x2 -= 2.
 				this.x3 += 2.
 				this.opColor = this.bgColor*2.3
@@ -98,7 +100,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.reuseBlock()
 			this.reuseMarker()
 			this.reuseErrorMarker()
-			this.orderSelect()
+			this.orderSelection()
 			this.reuseText()
 			if(this.error) this.reuseErrorText()
 		}
@@ -107,7 +109,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.orderBlock()
 			this.orderMarker()
 			this.orderErrorMarker()
-			this.orderSelect()
+			this.orderSelection()
 			this.error = undefined
 
 			this.$fastTextDelay = 0
@@ -190,12 +192,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 				for(var j = 0; j < boxes.length;j++){
 					var box = boxes[j]
-					this.drawSelect({
-						x:box.x,
-						y:box.y,
-						w:box.w,
-						h:box.h
-					})
+					var pbox = boxes[j-1]
+					var nbox = boxes[j+1]
+					this.fastSelection(
+						box.x,
+						box.y,
+						box.w,
+						box.h,
+						pbox?pbox.x:-1,
+						pbox?pbox.w:-1,
+						nbox?nbox.x:-1,
+						nbox?nbox.w:-1
+					)
 				}
 				this.drawCursor({
 					x:t.x-1,
@@ -322,8 +330,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		Comma:{
 			FunctionDeclaration:{tail:0.5},
 			CallExpression:{tail:0.5},
-			ArrayExpression:{},
-			ObjectExpression:{tail:0.5},
+			ArrayExpression:{
+				open:{tail:0.},
+				close:{tail:0.5},
+			},
+			ObjectExpression:{
+				open:{tail:0.},
+				close:{tail:0.5},
+			},
 			VariableDeclaration:{},
 			SequenceExpression:{},
 			NewExpression:{tail:0.5}
@@ -597,6 +611,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.fastText(node.top, this.styles.Comment.top)
 			this.doIndent(1)
 		}
+		var commaStyle = node.top?this.styles.Comma.ArrayExpression.open:this.styles.Comma.ArrayExpression.close
 
 		for(var i = 0; i <= elemslen; i++){
 			var elem = elems[i]
@@ -605,7 +620,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				if(node.top && elem.above) this.fastText(elem.above, this.styles.Comment.above)
 				this[elem.type](elem)
 			}
-			if(i < elemslen) this.fastText(',', this.styles.Comma.ArrayExpression)
+			if(i < elemslen) this.fastText(',', commaStyle)
 
 			if(elem && node.top){
 				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
@@ -680,7 +695,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				}
 			}
 		}		
-
+		var commaStyle = node.top?this.styles.Comma.ObjectExpression.open:this.styles.Comma.ObjectExpression.close
 		for(var i = 0; i <= propslen; i++){
 
 			var prop = props[i]
@@ -701,7 +716,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 
 			if(node.tail || i < propslen){
-				this.fastText(',', this.styles.Comma.ObjectExpression)
+				this.fastText(',', commaStyle)
 			}
 
 			if(node.top){

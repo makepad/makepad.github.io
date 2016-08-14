@@ -138,6 +138,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		// ok lets add the bottom field
 		var gloop = 4.
 
+		// open animation
 		var df = (1.-this.open)
 		sideField += df*8.
 		grabField += df*8.
@@ -167,12 +168,12 @@ module.exports = require('shader').extend(function QuadShader(proto){
 				$fastWrite:true,
 				$tweenDelta:tweenDelta,
 				visible:1,
-				x:x,
-				y:y,
-				w:w,
-				h:h,
-				w2:w2,
-				h2:h2,
+				x: x,
+				y: y,
+				w: w,
+				h: h,
+				w2: w2,
+				h2: h2,
 				indent:indent,
 				open:style.open,
 				borderWidth: style.borderWidth,

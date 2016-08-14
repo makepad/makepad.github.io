@@ -355,14 +355,21 @@ painter.Todo = require('class').extend(function Todo(proto){
 		var o = (this.last = this.length)
 		if((this.length += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
-
 		i32[o+0] = 14
 		i32[o+1] = 5
 		i32[o+2] = nameId
-		f32[o+3] = v[0]
-		f32[o+4] = v[1]
-		f32[o+5] = v[2]
-		f32[o+6] = v[3]
+		if(typeof v === 'string'){
+			types.colorFromString(v, 1, f32, o+3)
+		}
+		else if(v.length === 2){
+			types.colorFromString(v[0], v[1], f32, o+3)
+		} 
+		else {
+			f32[o+3] = v[0]
+			f32[o+4] = v[1]
+			f32[o+5] = v[2]
+			f32[o+6] = v[3]
+		}
 	}
 
 	proto.mat4Uniform = function(nameId, m){

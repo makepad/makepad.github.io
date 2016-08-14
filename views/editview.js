@@ -28,23 +28,27 @@ module.exports = require('view').extend(function EditView(proto){
 			color:'#ccc',
 			drawDiscard:'y'
 		}),
-		Select:require('shaders/rectshader').extend({
-			color:'#458',
-			//duration:0.2,
-			borderWidth:1,
-			borderRadius:3,
-			borderColor:['#458',1.2],
+		Selection:require('shaders/selectionshader').extend({
+			bgColor:'#458',
+			fieldPush:0.8,
+			borderWidth:0,//0.25,
+			gloop:6,
+			borderRadius:6,
+			borderColor:'#458',
 			drawDiscard:'y',
-			//ease:[1,100,0,0],
-			//tween:2,
 			vertexStyle:function(){
-				var dx = 0.75
+				var dx = 2.
+				var dy = 0.75
+				this.xp -= dx
+				this.xn -= dx
 				this.x -= dx
-				this.y -= dx
+				this.y -= dy
 				this.w += 2.*dx
-				this.h += 2.*dx
+				this.wp += 2.*dx
+				this.wn += 2.*dx
+				this.h += 2.*dy
 			}
-		}),		
+		}),
 		Cursor:require('shaders/rectshader').extend({
 			duration:0.15,
 			ease:[1,100,0,0],
@@ -135,7 +139,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 		this.beginBg(this.viewBgProps)
 
-		this.drawSelect()
+		this.drawSelection()
 
 		this.drawText({
 			wrapping:'line',
@@ -153,12 +157,18 @@ module.exports = require('view').extend(function EditView(proto){
 				if(cursor.max < 0) cursor.max = t.x
 				for(var j = 0; j < boxes.length;j++){
 					var box = boxes[j]
-					this.drawSelect({
-						x:box.x,
-						y:box.y,
-						w:box.w,
-						h:box.h
-					})
+					var pbox = boxes[j-1]
+					var nbox = boxes[j+1]
+					this.fastSelection(
+						box.x,
+						box.y,
+						box.w,
+						box.h,
+						pbox?pbox.x:-1,
+						pbox?pbox.w:-1,
+						nbox?nbox.x:-1,
+						nbox?nbox.w:-1
+					)
 					// lets tell the keyboard
 				}
 				/*
