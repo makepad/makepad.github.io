@@ -46,7 +46,7 @@ module.exports = require('view').extend(function EditView(proto){
 			}
 		}),		
 		Cursor:require('shaders/rectshader').extend({
-			duration:0.2,
+			duration:0.15,
 			ease:[1,100,0,0],
 			tween:2,
 			color:'#fff',
