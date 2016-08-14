@@ -58,6 +58,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
 			opMargin:1,
+			duration:0.3,
+			tween:2,
+			ease:[0,10,0,0],
+			closed:0,
 			vertexStyle:function(){$
 				this.x2 -= 2.
 				this.x3 += 2.
@@ -67,9 +71,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}),
 		ErrorText:require('shaders/sdffontshader').extend({
 			font:require('fonts/ubuntu_medium_256.sdffont'),
-			color:'red',
-			outlineColor:'black',
-			outlineWidth:1,
+			color:'#cbb',
+			//outlineColor:'black',
+			//outlineWidth:1,
+			boldness: -.5,
 			lockScroll:0.,
 			fontSize:16,
 			y:2,
@@ -202,7 +207,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.addUndoDelete(start, newlen)
 				}
 				this.cs.clampCursor(0, newlen)
-				console.log				
+				if(this.$errorMarker){
+					this.$errorMarker.closed = 1
+					this.drawErrorMarker(this.$errorMarker)
+				}
 			}
 			else{
 				var ann = this.ann
@@ -227,15 +235,19 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var epos = clamp(this.error.pos, 0, this.$readLengthText()-1)
 				var rd = this.$readOffsetText(epos)
 
-				this.drawErrorMarker({
+				this.$errorMarker = {
 					x1:0,
 					x2:rd.x,
 					x3:rd.x + rd.w,
 					x4:100000,
 					y:rd.y,
 					h:rd.fontSize * rd.lineSpacing
-				})
+				}
+				this.$errorMarker.closed = 0
+				this.drawErrorMarker(this.$errorMarker)
+
 				// lets draw the error
+				this.begin
 				this.drawErrorText({
 					text:this.error.msg
 				})
@@ -480,7 +492,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		},
 		Literal:{
 			string:{
-				color:'#0f0'
+				color:'#0d0'
 			},
 			num:{
 				boldness:0.1,

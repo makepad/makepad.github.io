@@ -140,8 +140,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 
 		// open animation
 		var df = (1.-this.open)
-		sideField += df*8.
-		grabField += df*8.
+		sideField += df*14.
+		grabField += df*14.
 		topField += pow(df,4.) * abs(p.x)// - this.topSize.x)
 		botField += pow(df,4.) * abs(p.y)// - this.bottomSize.y)
 

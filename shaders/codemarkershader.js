@@ -68,9 +68,10 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		var opSize = vec2(.5*(this.x3-this.x2- this.opMargin*2.), .5*(this.h - this.opMargin*2.))
 		var opField = length(max(abs(p - vec2(this.x2-this.x1+this.opMargin, this.opMargin)-opSize) - (opSize - vec2(opBorderRadius)), 0.)) - opBorderRadius
 		
-		var rip = 1.5+.5*sin(p.x*.5)
+		var rip = 1.5+.5*sin(p.x*.4)+p.x
 		bgField += this.closed*rip*10.
 		opField += this.closed*rip*10.
+
 		// mix the fields
 		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(bgField*antialias+1.,0.,1.))
 		var finalBorder = mix(this.bgColor, finalBg, clamp((bgField+this.borderWidth) * antialias + 1., 0., 1.))

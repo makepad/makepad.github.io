@@ -765,11 +765,6 @@ module.exports = require('class').extend(function Shader(proto){
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
-	proto.$TWEENJS = function(indent, tweencode, instanceProps, macroargs){
-		
-		return code
-	}
-
 	proto.$WRITEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// load the turtle
@@ -1061,6 +1056,12 @@ module.exports = require('class').extend(function Shader(proto){
 				var config = props[key]
 				if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
 					config = {value:config}
+				}
+				var old = this._props[key]
+				if(old && !('value' in config)){
+					for(var key in old) if(!(key in config)){
+						config[key] = old[key]
+					}
 				}
 				this._props[key] = config
 				if(config.value !== undefined) this[key] = config.value
