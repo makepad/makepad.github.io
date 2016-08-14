@@ -231,7 +231,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderColor:'white',
 			bgColor:'red',
 			borderWidth:1,
-			borderRadius:9,
+			borderRadius:7.5,
 			FunctionDeclaration:{
 				bgColor:'#363b',
 				open:1
@@ -280,7 +280,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				bgColor:'#737'
 			},
 			'*':{
-				bgColor:'#333'
+				bgColor:'#337'
 			}
 		},
 		Comment:{
