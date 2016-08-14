@@ -26,7 +26,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			tween:2.,
 			ease: [0,10,1.0,1.0],
 			duration:0.3,
-			vertexStyle:function(){
+			vertexStyle:function(){$
 				this.x -=6.
 				this.w += 3.
 				this.w += 10.
@@ -90,6 +90,55 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		return this.ast
 	}
 
+	proto.defaultScope = {
+		String:1,
+		Object:1,
+		Date:1,
+		Number:1,
+		Array:1,
+		require:1,
+		exports:1,
+		module:1,
+		E:1,
+		E:1,
+		LN10:1,
+		LN2:1,
+		LOG10E:1,
+		LOG10:1,
+		PI:1,
+		SQRT2:1,
+		SQRT1_2:1,
+		random:1,
+		radians:1,
+		degrees:1,
+		sin:1,
+		cos:1,
+		tan:1,
+		asin:1,
+		acos:1,
+		atan:1,
+		pow:1,
+		exp:1,
+		log:1,
+		exp2:1,
+		log2:1,
+		sqrt:1,
+		inversesqrt:1,
+		abs:1,
+		sign:1,
+		floor:1,
+		ceil:1,
+		fract:1,
+		mod:1,
+		min:1,
+		max:1,
+		clamp:1,
+		step:1,
+		smoothstep:1,
+		mix:1,
+		console:1
+	}
+
 	proto.onDraw = function(){
 
 		this.beginBg(this.viewBgProps)
@@ -127,6 +176,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.ann.length = 0
 				this.$fastTextWrite = true
 
+				this.scope = Object.create(this.defaultScope)
 				// run the AST formatter
 				this[ast.type](ast, null)
 
@@ -325,7 +375,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				left:{},
 				right:{tail:0.5}
 			},
-			CallExpression:{},
+			CallExpression:{
+				color:'#f70',
+				boldness:0.3,
+			},
 			NewExpression:{},
 			ParenthesizedExpression:{},
 			IfStatement:{
@@ -354,7 +407,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		},
 		Curly:{
 			BlockStatement:{},
-			ObjectExpression:{}
+			ObjectExpression:{color:'#bac'}
 		},
 		Dot:{
 			MemberExpression:{}
@@ -392,6 +445,24 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// simple bits
 		Identifier:{
 			color:'#eee',
+			glsl:{
+				color:'#b0f'
+			},
+			local:{
+				color:'#ccc'
+			},
+			closure:{
+				color:'#ff9'
+			},
+			localArg:{
+				color:'#f70'
+			},
+			closureArg:{
+				color:'#f70'
+			},
+			unknown:{
+				color:'#b33'
+			},
 			ObjectExpression:{
 				color:'#f77'
 			},
@@ -438,7 +509,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		ObjectPattern:{},
-		MemberExpression:{},
+		MemberExpression:{
+			color:'#eeb'
+		},
 
 		// functions
 		FunctionExpression:{},
@@ -569,6 +642,14 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(node.top) this.fastText(node.top, this.styles.Comment.top)
 		var body = node.body
 		var bodylen = body.length - 1
+
+		for(var i = 0; i <= bodylen; i++){
+			var statement = body[i]
+			if(statement.type === 'FunctionDeclaration'){
+				this.scope[statement.id.name] = 1
+			}
+		}
+
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
 			// the above
@@ -813,9 +894,33 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.fastText(node.raw, this.style.Literal[node.kind])
 	}
 
+	proto.glslGlobals = {$:1}
+	for(var glslKey in require('shaderinfer').prototype.glsltypes) proto.glslGlobals[glslKey] = 1
+	for(var glslKey in require('shaderinfer').prototype.glslfunctions) proto.glslGlobals[glslKey] = 1
+
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
-		this.fastText(node.name, this.style.Identifier)
+		var style
+		var name = node.name
+		var where
+		if(name === '$'){
+			this.scope.$ = 1
+		}
+		if(this.scope.$ && this.glslGlobals[name]){
+			style = this.style.Identifier.glsl
+		}
+		else if(where = this.scope[name]){
+			if(this.scope.hasOwnProperty(name)){
+				if(where === 1) style = this.style.Identifier.local
+				else style = this.style.Identifier.localArg
+			}
+			else{
+				if(where === 1) style = this.style.Identifier.closure
+				else style = this.style.Identifier.closureArg
+			}
+		}
+		else style = this.style.Identifier.unknown
+		this.fastText(node.name, style)
 	}
 
 	//ThisExpression:{},
@@ -845,7 +950,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(node.around2){
 				this.fastText(node.around2, this.style.Comment.around)
 			}
-			this[prop.type](prop, node)
+			if(prop.type !== 'Identifier') this[prop.type](prop, node)
+			else this.fastText(prop.name, this.style.MemberExpression)
 			this.doIndent(-1)
 		}
 	}
@@ -943,13 +1049,21 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(node.top) this.fastText(node.top, this.styles.Comment.top)
 		this.doIndent(1)
 
+		var oldscope = this.scope
+		this.scope = Object.create(this.scope)
 		var params = node.params
 		var paramslen = params.length - 1
 		for(var i =0 ; i <= paramslen; i++){
 			var param = params[i]
 
 			if(node.top && param.above) this.fastText(param.above, this.styles.Comment.above)
+	
+			if(param.type === 'Identifier'){
+				this.scope[param.name] = 2
+			}
+
 			this[param.type](param)
+			
 			if(i < paramslen) this.fastText(',', this.styles.Comma.FunctionDeclaration)
 			if(node.top){
 				if(param.side) this.fastText(param.side, this.styles.Comment.side)
@@ -972,6 +1086,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		var body = node.body
 		this[body.type](body, this.styles.Block.FunctionDeclaration)
+
+		this.scope = oldscope
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
@@ -989,6 +1105,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//VariableDeclarator:{id:1, init:1},
 	proto.VariableDeclarator = function(node){
 		var id = node.id
+		if(id.type === 'Identifier'){
+			this.scope[id.name] = 1
+		}
 		this[id.type](id, node)
 		var init = node.init
 		if(init){
