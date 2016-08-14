@@ -265,7 +265,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		Marker:{
-			borderRadius:3,
+			borderRadius:7,
 			opColor:'gray',
 			borderColor:'gray',
 			bgColor:'#7778',
