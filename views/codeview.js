@@ -232,7 +232,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderColor:'white',
 			bgColor:'red',
 			borderWidth:1,
-			borderRadius:10,
+			borderRadius:9,
 			FunctionDeclaration:{
 				bgColor:'#363b',
 				open:1
