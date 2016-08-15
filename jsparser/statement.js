@@ -307,7 +307,14 @@ pp.parseTryStatement = function(node) {
 }
 
 pp.parseVarStatement = function(node, kind) {
+	// process newlines 
+	var hasSpace
+	if(this.input.charCodeAt(this.pos) === 32) hasSpace = 1
 	this.next()
+	if(this.storeComments && this.storeComments[0] === 1){
+		this.storeComments.shift()
+		node.space = hasSpace?' ':''
+	}
 	this.parseVar(node, false, kind)
 	this.semicolon()
 	return this.finishNode(node, "VariableDeclaration")

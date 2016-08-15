@@ -396,8 +396,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 		proto.scanChange = function(pos, oldText, newText){
 			if(this.start !== this.end) return
-			console.log(pos, this.end)
-			if(pos < this.end - 1){
+			if(pos < this.end){
 				// now we have to scan forward 
 				// from pos to found our charcode
 				if(oldText.length > newText.length){
@@ -411,7 +410,7 @@ module.exports = require('view').extend(function EditView(proto){
 				}
 				else{
 					var oldCode = oldText.charCodeAt(this.end-1)
-					for(var i = pos; i < newText.length; i++){
+					for(var i = pos-2; i < newText.length; i++){
 						if(newText.charCodeAt(i) === oldCode){
 							this.start = this.end = i + 1
 							return
@@ -529,7 +528,7 @@ module.exports = require('view').extend(function EditView(proto){
 				return
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
-			var last = this.$readLengthText() - 1//this.text.length - 1
+			var last = this.$lengthText() - 1//this.text.length - 1
 			var cr = this.cursorRect(last, 1)
 			if(this.text.charCodeAt(last) === 10){
 				cr.y += cr.fontSize * cr.lineSpacing
@@ -877,7 +876,7 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	
 	proto.onFingerDown = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0) return
+		if(f.digit!== 1 || f.button !== 1 && f.pickId < this.$scrollPickIds) return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
 
 		this.setFocus()
@@ -911,7 +910,7 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onFingerMove = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
+		if(f.digit!== 1 || f.button !== 1 && f.pickId < this.$scrollPickIds || !this.fingerCursor)return
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount < 1){
 			return
@@ -941,7 +940,7 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.onFingerUp = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId !== 0)return
+		if(f.digit!== 1 || f.button !== 1 && f.pickId < this.$scrollPickIds|| !this.fingerCursor)return
 		this.fingerCursor = undefined
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){

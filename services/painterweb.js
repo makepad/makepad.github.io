@@ -505,6 +505,7 @@ exports.onFingerDown = function(f){
 }
 
 exports.onFingerMove = function(f){
+
 	// store finger pos
 	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
@@ -550,7 +551,7 @@ exports.onFingerUp = function(f){
 }
 
 exports.onFingerHover = function(f){
-	var o = f.digit * 4
+	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
 	fingerInfo[o+2] = -(f.workerId*256 + f.todoId)

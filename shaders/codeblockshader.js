@@ -18,7 +18,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		indent:0,
 		borderWidth: 1,
 		borderRadius: 8,
-
+		fontSize:12.,
 		bgColor: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'gray'},
 
@@ -85,9 +85,14 @@ module.exports = require('shader').extend(function QuadShader(proto){
 			1.
 		)
 		this.p = this.mesh.xy * size
+
 		if(this.mesh.z > .5){
 			this.p.y += this.h
 		}
+		else{
+			this.pickId = 0.
+		}
+
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
@@ -102,7 +107,15 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var p = this.p
 
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
-		
+		// mini view
+		if(this.fontSize < 6.){
+			if(this.open < 0.5) return vec4(0.)
+			if(this.mesh.z > .5){
+				return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.x)
+			}
+			return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.y)
+		}
+
 		// background field
 		var lineRadius = 1.
 		var topNudgeT = 13.5
@@ -169,7 +182,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 				open:0
 			})
 		},
-		fast:function(x, y, w, h, w2, h2, indent, style){
+		fast:function(x, y, w, h, w2, h2, indent, pickId, style){
 			this.$ALLOCDRAW(1, true)
 			var tweenDelta = 0
 
@@ -177,6 +190,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 				$fastWrite:true,
 				$tweenDelta:tweenDelta,
 				visible:1,
+				fontSize:this.$fastTextFontSize,
 				duration:$proto.duration,
 				x: x,
 				y: y,
@@ -185,6 +199,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 				w2: w2,
 				h2: h2,
 				indent:indent,
+				pickId:pickId,
 				open:style.open,
 				borderWidth: style.borderWidth,
 				borderRadius: style.borderRadius,

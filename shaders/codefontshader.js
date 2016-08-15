@@ -73,7 +73,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			var glyphs = this._NAME.prototype.font.fontmap.glyphs
 			var displace = this._NAME.prototype.displace
-			var fontSize = style.fontSize
+			var fontSize = this.$fastNAMEFontSize//style.fontSize
 			var posx = turtle.wx// + margin[3] * fontSize
 			var posy = turtle.wy// + margin[0] * fontSize
 
@@ -81,7 +81,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			out.text += txt
 
 			if(this.$fastNAMEWrite){
-				out.ann.push(txt, style, turtle.sx, head)
+				out.ann.push(txt, style, turtle.sx, head, this.$fastNAMEFontSize)
 			}
 
 			var changeOffset = this.$fastNAMEOffset
@@ -151,7 +151,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 				var nh = fontSize * lineSpacing
 				head = 0
 				if(nh > turtle.mh) turtle.mh = nh
-				if(unicode === 10){
+				if(unicode === 10 || unicode ===13){
 					turtle.mh = 0
 					if(posx>turtle.x2) turtle.x2 = posx
 					posx = turtle.sx, posy += fontSize * lineSpacing

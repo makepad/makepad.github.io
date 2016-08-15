@@ -723,8 +723,15 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 	var elts = [], first = true
 	while (!this.eat(close)) {
 		if (!first) {
-			this.expect(tt.comma)
-			if (allowTrailingComma && this.afterTrailingComma(close)) break
+			if(!this.eat(tt.comma)){
+				if(!this.insertCommas || !this.skippedNewlines){ // insert a comma?
+					this.unexpected()
+				}
+			}
+			if (allowTrailingComma && this.afterTrailingComma(close)){
+				node.trail = true
+				break
+			}
 		} else first = false
 
 		if(this.storeComments){

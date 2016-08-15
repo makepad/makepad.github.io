@@ -171,7 +171,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 	}
 
 	proto.toolMacros = {
-		$readLength:function(){
+		$length:function(){
 			return this.$PROPLEN()
 		},
 		$readOffset:function(o){

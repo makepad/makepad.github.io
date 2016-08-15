@@ -79,6 +79,7 @@ module.exports = function(font){
 		advance: 0.5
 	}
 
+	map.glyphs[13] = 
 	map.glyphs[10] = { // newline
 		x1: 0,
 		y1: -0.3,

@@ -179,6 +179,7 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.$scrollBarSize = 10
 	proto.$scrollBarRadius = 4
+	proto.$scrollPickIds = 65533
 
 	proto.scrollIntoView = function(x, y, w, h){
 		// we figure out the scroll-to we need
@@ -309,6 +310,9 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.yView = th
 		this.todo.scrollMomentum = 0.92
 		this.todo.scrollToSpeed = 0.5
+
+		// use the last 2 stampIds for the scroller
+		this.$stampId = this.$scrollPickIds
 		if(th < this.$hDraw){
 			this.$xScroll = this.drawScrollBar({
 				lockScroll:0,
