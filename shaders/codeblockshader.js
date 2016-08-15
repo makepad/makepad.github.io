@@ -115,6 +115,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 		// mini view
 		if(this.fontSize < 6.){
+			if(this.errorTime<0.5) return vec4(0.)
 			if(this.open < 0.5) return vec4(0.)
 			if(this.mesh.z > .5){
 				return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.x)

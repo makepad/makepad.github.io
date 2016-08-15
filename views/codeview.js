@@ -58,6 +58,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.borderRadius -= this.level
 			}
 		}),
+
 		ErrorMarker:require('shaders/codemarkershader').extend({
 			bgColor:'#522',
 			opMargin:1,
@@ -292,7 +293,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(node){
 			// toggle all inner nodes
 			var redraw = false
-			if(f.ctrl){
+			if(f.ctrl || f.alt){
 				base.onFingerDown.call(this, f)
 				if(node.type === 'BlockStatement'){
 					toggleASTNode(node, 13)
@@ -513,8 +514,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				color:'#f70'
 			},
 			unknown:{
-				boldness:0.3,
-				color:'#f33'
+				//boldness:0.3,
+				color:'#f99'
 			},
 			ObjectExpression:{
 				color:'#f77'

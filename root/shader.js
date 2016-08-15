@@ -1026,7 +1026,6 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
 			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
 			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
-			code += indent + '	$props.oldTimeMax = $timeMax\n'
 			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 			code += indent + '	if($view._time < $tweenStart + $duration){\n'
 			code += indent + '		var $time = $proto.tweenTime($tween'
@@ -1060,7 +1059,7 @@ module.exports = require('class').extend(function Shader(proto){
 		if(!instanceProps.this_DOT_tween){
 			code += indent + 'var $timeMax = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + '
 			code += (instanceProps.this_DOT_duration?'$a[$o + ' + instanceProps.this_DOT_duration.offset +']':'$proto.duration')+'\n'
-			code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax,$props.oldTimeMax = $timeMax\n'
+			code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 		}
 
 		return code
@@ -1168,11 +1167,11 @@ module.exports = require('class').extend(function Shader(proto){
 				$props.length = $props.oldLength
 				$props.dirty = false
 			}
-			if($props.oldTimeMax !== undefined){
-				if($props.oldTimeMax > this.todo.timeMax){
-					this.todo.timeMax = $props.oldTimeMax
-				}
-			}
+			//if($props.oldTimeMax !== undefined){
+			//	if($props.oldTimeMax > this.todo.timeMax){
+			//		this.todo.timeMax = $props.oldTimeMax
+			//	}
+			//}
 		}
 	}
 
