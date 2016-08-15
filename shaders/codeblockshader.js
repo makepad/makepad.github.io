@@ -26,6 +26,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
 		lockScroll:{kind:'uniform', noTween:1, value:1.},
 
+		errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
+
 		tween: {kind:'uniform', value:0.},
 		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
 		duration: {noTween:1., value:0.3},
@@ -44,7 +46,9 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		0, 1, 1,
 		1, 1, 1
 	)
-	
+
+	proto.noInterrupt = 1
+
 	proto.vertexStyle = function(){$
 	}
 
@@ -92,6 +96,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		else{
 			this.pickId = 0.
 		}
+
+		this.errorTime = this.animateUniform(this.errorAnim)
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
@@ -150,9 +156,11 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
 
 		var gloop = 4.
-
-		// open animation
-		var df = (1.-this.open)
+	
+		// so errorTime is normally 1.
+		// but once the error anim starts it will be 0. till it becomes 1.
+		// what we want is that 
+		var df = (1.-this.open* this.errorTime) 
 		sideField += df*14.
 		grabField += df*14.
 		topField += pow(df,4.) * abs(p.x)// - this.topSize.x)
@@ -170,26 +178,16 @@ module.exports = require('shader').extend(function QuadShader(proto){
 	}
 
 	proto.toolMacros = {
-		$readLength:function(){
-			return this.$PROPLEN()
-		},
-		// only set close to 0, everything else gets copied
-		animateClose:function(o){
-			this.$WRITEPROPS({
-				$offset:o,
-				$animate:true,
-				duration:5.,
-				open:0
-			})
+		$setTweenStart:function(o, v){
+			this.$PROPVARDEF()
+			this.$PROP(o, 'tweenStart') = v
 		},
 		fast:function(x, y, w, h, w2, h2, indent, pickId, style){
 			this.$ALLOCDRAW(1, true)
-			var tweenDelta = 0
-
 			this.$WRITEPROPS({
 				$fastWrite:true,
-				$tweenDelta:tweenDelta,
 				visible:1,
+				delay:0.,
 				fontSize:this.$fastTextFontSize,
 				duration:$proto.duration,
 				x: x,

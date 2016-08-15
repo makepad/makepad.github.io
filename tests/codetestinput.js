@@ -1,2 +1,2 @@
-var
-x = [1,2,3]
+function test(){}
+x = 1

@@ -59,6 +59,7 @@ module.exports = require('class').extend(function View(proto){
 		this.$shaders = {}
 		this.$stampId = 0
 		this.$stamps = [0]
+		this.todo.timeMax = 0
 
 		this.view = this
 
@@ -247,8 +248,7 @@ module.exports = require('class').extend(function View(proto){
 
 		// store time info on todo
 		todo.timeStart = this._time
-		todo.timeMax = 0
-
+		
 		// clean out the turtlestack for our draw api
 		this.$turtleStack.len = 0
 		var turtle = this.turtle
@@ -369,10 +369,11 @@ module.exports = require('class').extend(function View(proto){
 	// how do we incrementally redraw?
 	proto.redraw = function(){
 		this.$drawClean = false
+
 		if(!this.app.redrawTimer){
-			this.app.redrawTimer = setTimeout(function(){
-				this.redrawTimer = undefined
+			this.app.redrawTimer = setImmediate(function(){
 				this.$redrawViews()
+				this.redrawTimer = undefined
 			}.bind(this.app),0)
 		}
 	}
@@ -397,6 +398,11 @@ module.exports = require('class').extend(function View(proto){
 		if(old){
 			old.hasFocus = false
 		}
+	}
+
+	proto.animateUniform = function(value){
+		var timeMax = value[0] + value[1]
+		if(timeMax > this.todo.timeMax) this.todo.timeMax = timeMax
 	}
 
 	proto.onFlag1 = proto.recompose

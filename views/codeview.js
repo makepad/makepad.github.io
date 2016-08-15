@@ -66,6 +66,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			ease:[0,10,0,0],
 			closed:0,
 			vertexStyle:function(){$
+				this.errorTime = 1. -this.errorTime
+				if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1.
 				this.x2 -= 2.
 				this.x3 += 2.
 				this.opColor = this.bgColor*2.3
@@ -111,10 +113,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 		else{
 			
-			this.orderBlock()
-			this.orderMarker()
-			this.orderErrorMarker()
-			this.orderSelection()
 			this.error = undefined
 
 			this.$fastTextDelay = 0			
@@ -128,6 +126,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.textClean = true
 
 			if(this.ast){
+				if(!this.errorAnim || this.errorAnim[2] === 1){
+					this.errorAnim = [
+						this._time,
+						0.,
+						1., 1.
+					]
+				}
+				this.orderBlock()
+				this.orderMarker()
+				this.reuseErrorMarker()
+				this.orderSelection()
+
 				// first we format the code
 				this.indent = 0
 				this.currentIndent = this.padding[3]
@@ -164,22 +174,38 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.addUndoDelete(start, newlen)
 				}
 				this.cs.clampCursor(0, newlen)
-				if(this.$errorMarker){
-					this.$errorMarker.closed = 1
-					this.drawErrorMarker(this.$errorMarker)
+
+				var lengthBlock = this.lengthBlock()
+				if(this.$lengthBlock !== lengthBlock){
+					this.$lengthBlock = lengthBlock
+					for(var i = 0; i < lengthBlock; i++){
+						this.$setTweenStartBlock(i, 0)
+					}
 				}
+				var lengthMarker = this.lengthMarker()
+				if(this.$lengthMarker !== lengthMarker){
+					this.$lengthMarker = lengthMarker
+					for(var i = 0; i < lengthMarker; i++){
+						this.$setTweenStartMarker(i, 0)
+					}
+				}
+
 			}
 			else{
 				var ann = this.ann
 
+				if(!this.errorAnim || this.errorAnim[3] === 1){
+					this.errorAnim = [
+						this._time+.4,
+						.5,
+						1., 0.
+					]
+				}
+
 				this.reuseBlock()
-				for(var i =0, l = this.$readLengthBlock(); i < l; i++){
-					this.animateCloseBlock(i)
-				}
 				this.reuseMarker()
-				for(var i =0, l = this.$readLengthMarker(); i < l; i++){
-					this.animateCloseMarker(i)
-				}
+				this.orderSelection()
+				this.orderErrorMarker()
 
 				this.$fastTextWrite = false
 				this.text = ''
@@ -188,11 +214,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					this.$fastTextFontSize = ann[i+4]
 					this.fastText(ann[i], ann[i+1],ann[i+3])
 				}
-				// lets query the geometry for the error pos
+				
 				var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
 				var rd = this.$readOffsetText(epos)
 
-				this.$errorMarker = {
+				this.drawErrorMarker({
+					
 					x1:0,
 					x2:rd.x,
 					x3:rd.x + rd.w,
@@ -200,11 +227,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					y:rd.y,
 					h:rd.fontSize * rd.lineSpacing,
 					closed: 0
-				}
-				this.drawErrorMarker(this.$errorMarker)
+				})
 
 				// lets draw the error
 				this.drawErrorText({
+					errorAnim:this.errorAnim,
 					text:this.error.msg
 				})
 			}
@@ -375,7 +402,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			},
 			above:{},
 			top:{head:0.5},
-			bottom:{head:0.5},
+			bottom:{head:0.},
 			around:{}
 		},
 		Paren:{
@@ -411,7 +438,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				close:{tail:0.5},
 			},
 			VariableDeclaration:{},
-			SequenceExpression:{},
+			SequenceExpression:{tail:0.5},
 			NewExpression:{tail:0.5}
 		},
 		Curly:{
@@ -707,7 +734,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			var statement = body[i]
 			// the above
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
-			this[statement.type](statement, node)
+			this[statement.type](statement)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 			// support $
 			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
@@ -724,7 +751,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	
 		var pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
-
 		this.fastBlock(
 			startx,
 			starty,
@@ -1741,6 +1767,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 
+		
+		if(text === '}' && this.text.charAt(offset) ==='}') return
+		if(text === ']' && this.text.charAt(offset) ===']') return
+		if(text === ')' && this.text.charAt(offset) ===')') return
+
+		if(text === '\n' && this.text.charAt(offset-1) ==='{'&& this.text.charAt(offset) ==='}') text = '\n\n'
+		if(text === '{' && (!this.error || this.text.charAt(offset)!=='}')) text = '{}'
+		if(text === '[' && (!this.error || this.text.charAt(offset)!==']')) text = '[]'
+		if(text === '(' && (!this.error || this.text.charAt(offset)!==')')) text = '()'
+
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
 		this.$fastTextStart = offset + text.length 
@@ -1769,11 +1805,22 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.removeText = function(start, end){
 		this.textClean = false
+		
+		this.wasNewlineChange = 0
+		var text = this.text
 
-		if(this.text.slice(start, end) === '\n') this.wasNewlineChange = true
-		else this.wasNewlineChange = 0
+		if(end === start + 1){
+			var delchar = text.slice(start, end)
+			if(delchar === '\n'){
+				this.wasNewlineChange = true
+				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
+			}
+			else if(delchar === '{' && text.charAt(end) === '}') end ++
+			else if(delchar === '[' && text.charAt(end) === ']') end ++
+			else if(delchar === '(' && text.charAt(end) === ')') end ++
+		}
 
-		this.text = this.text.slice(0, start) + this.text.slice(end)
+		this.text = text.slice(0, start) + text.slice(end)
 
 		this.$fastTextDelta -= (end - start)
 		this.$fastTextStart = 

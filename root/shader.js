@@ -15,8 +15,9 @@ module.exports = require('class').extend(function Shader(proto){
 	
 	proto.vertexMain = function(){$
 		var T = 1.
+		this.animTime = this.time
 		if(this.tween > 0.01){
-			this.normalTween = clamp((this.time - this.tweenStart) / this.duration, 0.0, 1.0)
+			this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
 			T = this.easedTween = this.tweenTime(
 				this.tween,
 				this.normalTween, 
@@ -70,6 +71,10 @@ module.exports = require('class').extend(function Shader(proto){
 			}
 		}
 		return 0
+	}
+
+	proto.animateUniform = function(uni){$
+		return clamp((this.animTime - uni.x)/uni.y, 0., 1.) * (uni.w-uni.z) + uni.z
 	}
 
 	proto.onextendclass = function(){
@@ -658,7 +663,13 @@ module.exports = require('class').extend(function Shader(proto){
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
-			code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+','+source+')\n'
+			if(uniform.config.animate){
+				code += indent+'    var $animate = '+source+'\n'
+				code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
+				code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+',$animate)\n'
+
+			}
+			else code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+','+source+')\n'
 		}
 
 		// do the samplers
@@ -834,19 +845,23 @@ module.exports = require('class').extend(function Shader(proto){
 							'(($1mcf * (_upo%4096) +' +
 							'$cf * (_upn%4096))|0)\n'
 						if(hasTweenDelta){
-							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
+							deltafwd += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
 							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
 						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 					}
 				}
 				else{
+
 					for(var i = 0; i < slots; i++){
+						//if(key === 'this_DOT_open') tweencode += 'if($o===2*' + info.propSlots +')console.error($duration,$cf, $a[$o+'+(o +i)+'])\n'
+
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
-							'$1mf * $a[$o+'+(o + i + slots)+'] + ' +
-							'$f * $a[$o+'+(o +i)+']\n'
+							'$1mcf * $a[$o+'+(o + i + slots)+'] + ' +
+							'$cf * $a[$o+'+(o +i)+']\n'
+
 						if(hasTweenDelta){
-							deltafwd += '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
+							deltafwd += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
 							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
 						}
 						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
@@ -861,7 +876,8 @@ module.exports = require('class').extend(function Shader(proto){
 			var propsource = '$turtle._' + prop.name
 
 			if(prop.name === 'tweenStart'){
-				propsource = '($view._time + $turtle._delay)'
+				if(macroargs[0].delay) propsource = '($view._time +'+macroargs[0].delay+')'
+				else propsource = '($view._time + $turtle._delay)'
 			}
 			if(typeof macroargs[0] === 'object'){
 				var marg = macroargs[0][prop.name]
@@ -989,17 +1005,18 @@ module.exports = require('class').extend(function Shader(proto){
 
 		// if we dont have per instance tweening
 		if(!instanceProps.this_DOT_tween){
-			var duration = macroargs[0].duration?macroargs[0].duration:'$proto.duration'
-			var ease = macroargs[0].ease?macroargs[0].ease:'$proto.ease'
+			code += indent + 'if($proto.tween > 0){\n'
 
-			code += indent + 'if($proto.tween > 0){'
-			code += indent + '	var $timeMax = $view._time + '+duration+'\n'
-			code += indent + '	$props.oldTimeMax = $timeMax\n'
-			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + '+duration+'){\n'
-			code += indent + '	var $ease = '+ease+'\n'
-			code += indent + '	var $time = $proto.tweenTime($proto.$tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/'+duration+'))'
+			if(instanceProps.this_DOT_duration){
+				code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+			}
+			else{
+				code += indent + '	var $duration = $proto.duration\n'
+			}			
+			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] +  $duration){\n'
+			code += indent + '	var $ease = $proto.ease\n'
+			code += indent + '	var $time = $proto.tweenTime($proto.tween'
+			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/ $duration))'
 			code += ',$ease[0],$ease[1],$ease[2],$ease[3]'
 			code += ')\n'
 		}
@@ -1022,7 +1039,7 @@ module.exports = require('class').extend(function Shader(proto){
 		}
 		code += indent + tweencode 
 		code += indent + '	}\n'
-		code += indent + '}'
+		code += indent + '}\n'
 
 		if(hasTweenDelta){
 			code += 'if($tweenDelta>0){\n'
@@ -1032,7 +1049,7 @@ module.exports = require('class').extend(function Shader(proto){
 			code += copyprev
 			code += '}else{\n'
 			code += copyfwd
-			code += '}'
+			code += '}\n'
 		}
 		else{
 			code += copyprev
@@ -1040,7 +1057,11 @@ module.exports = require('class').extend(function Shader(proto){
 
 		code += propcode
 
-		//code += this.$DUMPPROPS(instanceProps, indent)+'\n'
+		if(!instanceProps.this_DOT_tween){
+			code += indent + 'var $timeMax = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + '
+			code += (instanceProps.this_DOT_duration?'$a[$o + ' + instanceProps.this_DOT_duration.offset +']':'$proto.duration')+'\n'
+			code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax,$props.oldTimeMax = $timeMax\n'
+		}
 
 		return code
 	}
@@ -1133,12 +1154,15 @@ module.exports = require('class').extend(function Shader(proto){
 	})
 
 	proto.toolMacros = {
-		order:function(){
+		length:function(){
+			return this.$PROPLEN()
+		},
+		order:function(overload){
 			this.$ALLOCDRAW()
 		},
-		reuse:function(){
+		reuse:function(overload){
 			// make sure we are drawn
-			this.orderNAME()
+			this.orderNAME(overload)
 			var $props = this.$shaders.NAME.$props
 			if($props.oldLength !== undefined){
 				$props.length = $props.oldLength

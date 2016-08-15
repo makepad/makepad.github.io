@@ -144,14 +144,7 @@
 	}
 
 	function createOnMessage(busses, worker, inkernel){
-		worker.postEntry = function(){
-			// send out any produced sync messages in one go
-			if(worker.postfunctions.length){
-				for(var i = 0; i < worker.postfunctions.length; i++){
-					worker.postfunctions[i]()
-				}
-				worker.postfunctions.length = 0
-			}
+		worker.postEntry = function(level){
 			var batchmessages = worker.batchmessages
 			if(batchmessages.length){
 				for(var i = 0; i <batchmessages.length; i++){
@@ -170,6 +163,14 @@
 				}
 				else worker.batchmessages.length = 0
 			}
+			// send out any produced sync messages in one go
+			if(worker.postfunctions.length){
+				for(var i = 0; i < worker.postfunctions.length; i++){
+					worker.postfunctions[i]()
+				}
+				worker.postfunctions.length = 0
+			}		
+			if(worker.batchmessages.length && !level) worker.postEntry(1)
 		}
 		return function onMessage(e){
 			var msg = e.data
@@ -752,7 +753,12 @@
 			}, time)
 			allIntervals.push(id)
 			return id
-		}		
+		}
+
+		self.setImmediate = function(fn){
+			worker.postfunctions.push(fn)
+			return worker.postfunctions.length
+		}
 	}
 
 	document.addEventListener('DOMContentLoaded', init)

@@ -50,7 +50,7 @@ module.exports = require('view').extend(function EditView(proto){
 			}
 		}),
 		Cursor:require('shaders/rectshader').extend({
-			duration:0.15,
+			duration:0.1,
 			ease:[1,100,0,0],
 			tween:2,
 			color:'#fff',
@@ -535,7 +535,7 @@ module.exports = require('view').extend(function EditView(proto){
 				cr.x = 0
 			}
 			else{
-				cr.x += cr.advance * cr.fontSize
+				cr.x += (cr.head + cr.tail + cr.advance) * cr.fontSize
 			}
 			cr.advance = 0
 			return cr
@@ -544,6 +544,8 @@ module.exports = require('view').extend(function EditView(proto){
 		return {
 			lineSpacing: rd.lineSpacing,
 			fontSize:rd.fontSize,
+			tail:rd.tail,
+			head:rd.head,
 			advance:rd.advance,
 			x:rd.x, //+ t.fontSize * t.x1,
 			y:rd.y + this.cursorTrim * rd.fontSize,

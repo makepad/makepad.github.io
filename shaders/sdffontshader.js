@@ -185,7 +185,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 				y:this.$PROP(o, 'y'),
 				head:this.$PROP(o, 'head'),
 				advance:this.$PROP(o, 'advance'),
-				tail:this.$PROP(o, 'head'),
+				tail:this.$PROP(o, 'tail'),
 				fontSize:this.$PROP(o, 'fontSize'),
 				italic:this.$PROP(o, 'italic')
 			}
