@@ -256,8 +256,28 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			return override
 		}
 		var top = node.top
-		// alright lets modify the top thing to be a '\r'
+	
+		// special handling of our {$ shader code
+		if(node.type === 'BlockStatement' && 
+			node.body.length > 0 && 
+			node.body[0].type === 'ExpressionStatement' &&  
+			node.body[0].expression.type === 'Identifier' && 
+			node.body[0].expression.name === '$'){
+			node = node.body[0]
+			var side = node.side
+			var charCode = override || side.charCodeAt(side.length-1)
+			if(charCode=== 10){
+				node.side = side.slice(0,-1)+'\r'
+				return 10
+			}
+			else{
+				node.side = side.slice(0,-1)+'\n'
+				return 13
+			}	
+		}
+
 		if(!top)return
+
 		var charCode = override || top.charCodeAt(top.length-1)
 		if(charCode=== 10){
 			node.top = top.slice(0,-1)+'\r'
@@ -328,14 +348,28 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	function toggleObjectExpression(node){
 		var props = node.properties
 		var propslen = props.length - 1
+		var first = 0
 		for(var i = 0 ; i <= propslen; i++){
 			var prop = props[i]
 			var value = prop.value
-			if(value.type === 'FunctionExpression'){
-				toggleASTNode(value.body)
+			if(value.type === 'CallExpression'){
+				var args = value.arguments
+				var argslen = args.length - 1
+				for(var j = 0; j <= argslen; j++){
+					var arg = args[j]
+					if(arg.type === 'FunctionExpression'){
+						first = toggleASTNode(arg.body, first) || first
+					}
+					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
+						first = toggleASTNode(arg, first) || first
+					}
+				}
+			}
+			else if(value.type === 'FunctionExpression'){
+				first = toggleASTNode(value.body, first) || first
 			}
 			else if(value.type === 'ObjectExpression' || value.type === 'ArrayExpression'){
-				toggleASTNode(value)
+				first = toggleASTNode(value, first) || first
 			}
 		}
 	}
@@ -358,28 +392,37 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.onFingerDown = function(f){
 		// check if we are a doubleclick on a block
 		var node = this.pickIds[f.pickId]
-		if(node && f.tapCount>0){
+		if(node){
 			// toggle all inner nodes
+			var redraw = false
 			if(f.ctrl){
+				base.onFingerDown.call(this, f)
 				if(node.type === 'BlockStatement'){
+					toggleASTNode(node, 13)
 					toggleBlockStatement(node)
 				}
 				else if(node.type === 'ObjectExpression'){
+					toggleASTNode(node, 13)
 					toggleObjectExpression(node)
 				}
 				else if(node.type === 'ArrayExpression'){
+					toggleASTNode(node, 13)
 					toggleArrayExpression(node)
 				}
+				redraw = true
 			}
-			else{
+			else if(f.tapCount>0){
 				toggleASTNode(node)
+				redraw = true
 			}
-			this.$fastTextStart = 
-			this.$fastTextOffset = 0
-			// we need to toggle folding but not make it slow.
-			this.textClean = null
-			this.redraw()
-			return
+			if(redraw){
+				this.$fastTextStart = 
+				this.$fastTextOffset = 0
+				// we need to toggle folding but not make it slow.
+				this.textClean = null
+				this.redraw()
+				return
+			}
 		}
 		return base.onFingerDown.call(this, f)
 	}
@@ -776,19 +819,26 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		//this.newLine()
 		var top = node.top
 
+		var body = node.body
+		var bodylen = body.length - 1
+
 		if(top){
 			this.fastText(node.top, this.styles.Comment.top)
 
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
-		}		
+		}
 
-		var body = node.body
-		var bodylen = body.length - 1
-
+		var foldAfterFirst = false
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
-			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$') this.scope.$ = 1
+			// Support the $ right after function { to mark shaders
+			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$'){
+				this.scope.$ = 1
+				var expside = statement.side
+				isFolded = expside && expside.charCodeAt(expside.length - 1) === 13?this.$fastTextFontSize:0
+				if(isFolded) foldAfterFirst = true
+			}
 			if(statement.type === 'FunctionDeclaration'){
 				this.scope[statement.id.name] = 1
 			}
@@ -797,12 +847,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
 			// the above
-
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
-			// lets output the 
-			//if(i < bodylen) this.newLine()
+			// support $
+			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
 		}
 		if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
 
