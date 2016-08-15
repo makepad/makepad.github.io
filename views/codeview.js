@@ -127,11 +127,20 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 			if(this.ast){
 				if(!this.errorAnim || this.errorAnim[2] === 1){
-					this.errorAnim = [
-						this._time,
-						0.,
-						1., 1.
-					]
+					if(!this.errorAnim || this._time - this.errorAnim[0] < .5){
+						this.errorAnim = [
+							this._time,
+							0.,
+							1., 1.
+						]
+					}
+					else{
+						this.errorAnim = [
+							this._time,
+							0.2,
+							0., 1.
+						]
+					}
 				}
 				this.orderBlock()
 				this.orderMarker()
