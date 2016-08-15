@@ -248,147 +248,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.endBg()
 	}
 
-	function toggleASTNode(node, override){
-		if(!node)return
-		if(node.type === 'IfStatement'){
-			override = toggleASTNode(node.consequent, override) || override
-			override = toggleASTNode(node.alternate, override) || override
-			return override
-		}
-		var top = node.top
-	
-		// special handling of our {$ shader code
-		if(node.type === 'BlockStatement' && 
-			node.body.length > 0 && 
-			node.body[0].type === 'ExpressionStatement' &&  
-			node.body[0].expression.type === 'Identifier' && 
-			node.body[0].expression.name === '$'){
-			node = node.body[0]
-			var side = node.side
-			var charCode = override || side.charCodeAt(side.length-1)
-			if(charCode=== 10){
-				node.side = side.slice(0,-1)+'\r'
-				return 10
-			}
-			else{
-				node.side = side.slice(0,-1)+'\n'
-				return 13
-			}	
-		}
-
-		if(!top)return
-
-		var charCode = override || top.charCodeAt(top.length-1)
-		if(charCode=== 10){
-			node.top = top.slice(0,-1)+'\r'
-			return 10
-		}
-		else{
-			node.top = top.slice(0,-1)+'\n'
-			return 13
-		}	
-	}
-
-	function toggleBlockStatement(node){
-		var body = node.body
-		var bodylen = body.length - 1
-		var first = 0
-		for(var i = 0 ; i <= bodylen; i++){
-			var statement = body[i]
-			if(statement.type === 'ExpressionStatement')statement = statement.expression
-			if(statement.type === 'AssignmentExpression'){
-				if(statement.right.type === 'FunctionExpression'){
-					first = toggleASTNode(statement.right.body, first) || first
-				}
-				else if(statement.right.type === 'ObjectExpression' || statement.right.type === 'ArrayExpression'){
-					first = toggleASTNode(statement.right, first) || first
-				}
-			}
-			else if(statement.type === 'FunctionDeclaration'){
-				first = toggleASTNode(statement.body, first) || first
-			}
-			else if(statement.type === 'CallExpression'){
-				var args = statement.arguments
-				var argslen = args.length - 1
-				for(var j = 0; j <= argslen; j++){
-					var arg = args[j]
-					if(arg.type === 'FunctionExpression'){
-						first = toggleASTNode(arg.body, first) || first
-					}
-					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
-						first = toggleASTNode(arg, first) || first
-					}
-				}
-			}
-			else if(statement.type === 'VariableDeclaration'){
-				var decls = statement.declarations
-				var declslen = decls.length - 1
-				for(var j = 0; j <= declslen; j++){
-					var decl = decls[j]
-					var init = decl.init
-					if(!init) continue
-					if(init.type === 'FunctionExpression'){
-						first = toggleASTNode(init.body, first) || first
-					}
-					else if(init.type === 'ObjectExpression' || init.type === 'ArrayExpression'){
-						first = toggleASTNode(init, first) || first
-					}
-				}
-			}
-			else if(statement.type === 'IfStatement'){
-				first = toggleASTNode(statement.consequent, first) || first
-				first = toggleASTNode(statement.alternate, first) || first
-			}
-			else if(statement.type === 'ForStatement' || statement.type === 'ForInStatement'){
-				first = toggleASTNode(statement.body, first) || first
-			}
-		}
-	}
-
-	function toggleObjectExpression(node){
-		var props = node.properties
-		var propslen = props.length - 1
-		var first = 0
-		for(var i = 0 ; i <= propslen; i++){
-			var prop = props[i]
-			var value = prop.value
-			if(value.type === 'CallExpression'){
-				var args = value.arguments
-				var argslen = args.length - 1
-				for(var j = 0; j <= argslen; j++){
-					var arg = args[j]
-					if(arg.type === 'FunctionExpression'){
-						first = toggleASTNode(arg.body, first) || first
-					}
-					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
-						first = toggleASTNode(arg, first) || first
-					}
-				}
-			}
-			else if(value.type === 'FunctionExpression'){
-				first = toggleASTNode(value.body, first) || first
-			}
-			else if(value.type === 'ObjectExpression' || value.type === 'ArrayExpression'){
-				first = toggleASTNode(value, first) || first
-			}
-		}
-	}
-
-	function toggleArrayExpression(node){
-		var elems = node.elements
-		var elemslen = elems.length - 1
-		for(var i = 0 ; i <= elemslen; i++){
-			var elem = elems[i]
-			if(!elem) continue
-			if(elem.type === 'FunctionExpression'){
-				toggleASTNode(elem.body)
-			}
-			else if(elem.type === 'ObjectExpression' || elem.type === 'ArrayExpression'){
-				toggleASTNode(elem)
-			}
-		}
-	}
-
 	proto.onFingerDown = function(f){
 		// check if we are a doubleclick on a block
 		var node = this.pickIds[f.pickId]
@@ -1686,6 +1545,147 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	//TryStatement:{block:1, handler:1, finalizer:1},
 	proto.SpreadElement = function(node){
 		logNonexisting(node)
+	}
+
+	function toggleASTNode(node, override){
+		if(!node)return
+		if(node.type === 'IfStatement'){
+			override = toggleASTNode(node.consequent, override) || override
+			override = toggleASTNode(node.alternate, override) || override
+			return override
+		}
+		var top = node.top
+	
+		// special handling of our {$ shader code
+		if(node.type === 'BlockStatement' && 
+			node.body.length > 0 && 
+			node.body[0].type === 'ExpressionStatement' &&  
+			node.body[0].expression.type === 'Identifier' && 
+			node.body[0].expression.name === '$'){
+			node = node.body[0]
+			var side = node.side
+			var charCode = override || side.charCodeAt(side.length-1)
+			if(charCode=== 10){
+				node.side = side.slice(0,-1)+'\r'
+				return 10
+			}
+			else{
+				node.side = side.slice(0,-1)+'\n'
+				return 13
+			}	
+		}
+
+		if(!top)return
+
+		var charCode = override || top.charCodeAt(top.length-1)
+		if(charCode=== 10){
+			node.top = top.slice(0,-1)+'\r'
+			return 10
+		}
+		else{
+			node.top = top.slice(0,-1)+'\n'
+			return 13
+		}	
+	}
+
+	function toggleBlockStatement(node){
+		var body = node.body
+		var bodylen = body.length - 1
+		var first = 0
+		for(var i = 0 ; i <= bodylen; i++){
+			var statement = body[i]
+			if(statement.type === 'ExpressionStatement')statement = statement.expression
+			if(statement.type === 'AssignmentExpression'){
+				if(statement.right.type === 'FunctionExpression'){
+					first = toggleASTNode(statement.right.body, first) || first
+				}
+				else if(statement.right.type === 'ObjectExpression' || statement.right.type === 'ArrayExpression'){
+					first = toggleASTNode(statement.right, first) || first
+				}
+			}
+			else if(statement.type === 'FunctionDeclaration'){
+				first = toggleASTNode(statement.body, first) || first
+			}
+			else if(statement.type === 'CallExpression'){
+				var args = statement.arguments
+				var argslen = args.length - 1
+				for(var j = 0; j <= argslen; j++){
+					var arg = args[j]
+					if(arg.type === 'FunctionExpression'){
+						first = toggleASTNode(arg.body, first) || first
+					}
+					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
+						first = toggleASTNode(arg, first) || first
+					}
+				}
+			}
+			else if(statement.type === 'VariableDeclaration'){
+				var decls = statement.declarations
+				var declslen = decls.length - 1
+				for(var j = 0; j <= declslen; j++){
+					var decl = decls[j]
+					var init = decl.init
+					if(!init) continue
+					if(init.type === 'FunctionExpression'){
+						first = toggleASTNode(init.body, first) || first
+					}
+					else if(init.type === 'ObjectExpression' || init.type === 'ArrayExpression'){
+						first = toggleASTNode(init, first) || first
+					}
+				}
+			}
+			else if(statement.type === 'IfStatement'){
+				first = toggleASTNode(statement.consequent, first) || first
+				first = toggleASTNode(statement.alternate, first) || first
+			}
+			else if(statement.type === 'ForStatement' || statement.type === 'ForInStatement'){
+				first = toggleASTNode(statement.body, first) || first
+			}
+		}
+	}
+
+	function toggleObjectExpression(node){
+		var props = node.properties
+		var propslen = props.length - 1
+		var first = 0
+		for(var i = 0 ; i <= propslen; i++){
+			var prop = props[i]
+			var value = prop.value
+			if(value.type === 'CallExpression'){
+				var args = value.arguments
+				var argslen = args.length - 1
+				for(var j = 0; j <= argslen; j++){
+					var arg = args[j]
+					if(arg.type === 'FunctionExpression'){
+						first = toggleASTNode(arg.body, first) || first
+					}
+					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
+						first = toggleASTNode(arg, first) || first
+					}
+				}
+			}
+			else if(value.type === 'FunctionExpression'){
+				first = toggleASTNode(value.body, first) || first
+			}
+			else if(value.type === 'ObjectExpression' || value.type === 'ArrayExpression'){
+				first = toggleASTNode(value, first) || first
+			}
+		}
+	}
+
+	function toggleArrayExpression(node){
+		var elems = node.elements
+		var elemslen = elems.length - 1
+		for(var i = 0 ; i <= elemslen; i++){
+			var elem = elems[i]
+			if(!elem) continue
+			if(elem.type === 'FunctionExpression'){
+				toggleASTNode(elem.body)
+			}
+			else if(elem.type === 'ObjectExpression' || elem.type === 'ArrayExpression'){
+				toggleASTNode(elem)
+			}
+		}
 	}
 
 	proto.defaultScope = {
