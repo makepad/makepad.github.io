@@ -13,6 +13,7 @@ pp.commentBegin = function(){
 			break
 		}
 		if(cm === 1) above += '\n'
+		else if(cm === 2) above += '\r'
 		else above += cm
 	}
 	if(i === l) comments.length = 0
@@ -43,6 +44,12 @@ pp.commentEnd = function(node, above, tail){
 			node.side = side
 			return
 		}
+		else if(cm === 2){
+			side += '\r'
+			comments.splice(0, i + 1)
+			node.side = side
+			return
+		}
 		else {
 			side += cm
 		}
@@ -60,6 +67,11 @@ pp.commentTop = function(node){
 		if(typeof item != 'object'){
 			if(item === 1){
 				out += '\n'
+				comments.splice(0, i + 1)
+				break
+			}
+			else if(item === 2){
+				out += '\r'
 				comments.splice(0, i + 1)
 				break
 			}
@@ -87,6 +99,9 @@ pp.commentBottom = function(tail, node){
 		if(typeof item !== 'object'){
 			if(item === 1){
 				out += '\n'
+			}
+			else if(item === 2){
+				out += '\r'
 			}
 			else out += item
 		}
@@ -125,6 +140,7 @@ pp.commentAround = function(node, token){
 				var item = comments[j]
 				if(typeof item === 'object') break
 				if(item === 1) out = '\n' + out
+				else if(item === 2) out = '\r' + out
 				else{
 					out = item + out
 				}
@@ -138,6 +154,7 @@ pp.commentAround = function(node, token){
 				var item = comments[j]
 				if(typeof item === 'object') break
 				if(item === 1) out += '\n'
+				else if(item === 2) out += '\r'
 				else out += item
 			}
 			if(out.length) node.around2 = out

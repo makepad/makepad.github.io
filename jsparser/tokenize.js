@@ -139,11 +139,13 @@ pp.skipSpace = function() {
 	this.skippedNewlines = 0
 	loop: while (this.pos < this.input.length) {
 		var ch = this.input.charCodeAt(this.pos)
+		var is13
 		switch (ch) {
 			case 32: case 160: // ' '
 				++this.pos
 				break
 			case 13:
+				is13 = true
 				if (this.input.charCodeAt(this.pos + 1) === 10) {
 					++this.pos
 				}
@@ -151,7 +153,7 @@ pp.skipSpace = function() {
 				++this.pos
 				this.skippedNewlines++
 				if(this.storeComments){
-					this.storeComments.push(1)
+					this.storeComments.push(is13?2:1)
 				}
 				break
 			case 47: // '/'
