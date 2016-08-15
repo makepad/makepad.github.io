@@ -126,7 +126,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.textClean = true
 
 			if(this.ast){
-				if(!this.errorAnim || this.errorAnim[2] === 1){
+				if(!this.errorAnim || this.errorAnim[1] === .5){
 					if(!this.errorAnim || this._time - this.errorAnim[0] < .5){
 						this.errorAnim = [
 							this._time,
@@ -160,6 +160,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 				this.$fastTextWrite = true
 				this.scope = Object.create(this.defaultScope)
+
 				// run the AST formatter
 				this[this.ast.type](this.ast, null)
 
@@ -184,6 +185,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				}
 				this.cs.clampCursor(0, newlen)
 
+				// overwrite tweenstarts when blocks are different
+				// so we dont get jarring blocks
 				var lengthBlock = this.lengthBlock()
 				if(this.$lengthBlock !== lengthBlock){
 					this.$lengthBlock = lengthBlock
@@ -198,14 +201,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 						this.$setTweenStartMarker(i, 0)
 					}
 				}
-
 			}
 			else{
 				var ann = this.ann
 
 				if(!this.errorAnim || this.errorAnim[3] === 1){
 					this.errorAnim = [
-						this._time+.5,
+						this._time+.7,
 						.5,
 						1., 0.
 					]
