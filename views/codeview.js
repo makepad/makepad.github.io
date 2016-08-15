@@ -66,7 +66,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			ease:[0,10,0,0],
 			closed:0,
 			vertexStyle:function(){$
-				this.errorTime = 1. -this.errorTime
+				this.errorTime = max(0.,.1 -this.errorTime)
 				if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1.
 				this.x2 -= 2.
 				this.x3 += 2.
@@ -205,7 +205,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 				if(!this.errorAnim || this.errorAnim[3] === 1){
 					this.errorAnim = [
-						this._time+.4,
+						this._time+.5,
 						.5,
 						1., 0.
 					]
