@@ -241,6 +241,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					w:2,
 					h:t.h
 				})
+				this.showLastCursor()
 			}
 		}
 		//require.perf()
