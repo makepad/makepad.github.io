@@ -308,10 +308,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					var init = decl.init
 					if(!init) continue
 					if(init.type === 'FunctionExpression'){
-						first = toggleASTNode(arg.body, first) || first
+						first = toggleASTNode(init.body, first) || first
 					}
 					else if(init.type === 'ObjectExpression' || init.type === 'ArrayExpression'){
-						first = toggleASTNode(arg, first) || first
+						first = toggleASTNode(init, first) || first
 					}
 				}
 			}
