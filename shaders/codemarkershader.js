@@ -21,7 +21,7 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		opMargin:{kind:'uniform', value:2},
 		noBounds: {kind:'uniform',value:0},
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-		visible:{kind:'uniform',noTween:1, value:1.},
+		visible:{kind:'uniform', value:1.},
 		tween: {kind:'uniform', value:2.},
 		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
 		duration: {noTween:1., value:0.},
@@ -102,8 +102,8 @@ module.exports = require('shaders/quadshader').extend(function(proto){
 		start:function(y, level, style){
 			this.$ALLOCDRAW(1, true)
 			this.$WRITEPROPS({
-				duration:$proto.duration,
 				$fastWrite:true,
+				duration:$proto.duration,
 				y:y,
 				closed:0,
 				level:level,

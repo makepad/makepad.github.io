@@ -356,6 +356,7 @@ pp.parseLabeledStatement = function(node, maybeName, expr) {
 pp.parseExpressionStatement = function(node, expr) {
 	node.expression = expr
 	this.semicolon()
+	
 	return this.finishNode(node, "ExpressionStatement")
 }
 

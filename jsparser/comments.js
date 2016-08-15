@@ -42,7 +42,7 @@ pp.commentEnd = function(node, above, tail){
 			node.side = side
 			return
 		}
-		else{
+		else {
 			side += cm
 		}
 	}

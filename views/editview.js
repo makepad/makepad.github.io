@@ -396,7 +396,8 @@ module.exports = require('view').extend(function EditView(proto){
 
 		proto.scanChange = function(pos, oldText, newText){
 			if(this.start !== this.end) return
-			if(pos < this.end){
+			console.log(pos, this.end)
+			if(pos < this.end - 1){
 				// now we have to scan forward 
 				// from pos to found our charcode
 				if(oldText.length > newText.length){

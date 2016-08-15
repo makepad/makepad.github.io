@@ -64,8 +64,10 @@ pp.insertSemicolon = function() {
 // Consume a semicolon, or, failing that, see if we are allowed to
 // pretend that there is a semicolon at this position.
 
-pp.semicolon = function() {
-	if (!this.eat(tt.semi) && !this.insertSemicolon()) this.unexpected()
+pp.semicolon = function(node) {
+	if (!this.eat(tt.semi)){
+		if(!this.insertSemicolon()) this.unexpected()
+	}
 }
 
 pp.afterTrailingComma = function(tokType) {
