@@ -237,10 +237,18 @@ pp.parseReturnStatement = function(node) {
 }
 
 pp.parseSwitchStatement = function(node) {
+
 	this.next()
+
 	node.discriminant = this.parseParenExpression()
 	node.cases = []
+
 	this.expect(tt.braceL)
+
+	if(this.storeComments){
+		this.commentTop(node)
+	}
+
 	this.labels.push(switchLabel)
 
 	// Statements under must be grouped (by label) in SwitchCase
@@ -248,12 +256,19 @@ pp.parseSwitchStatement = function(node) {
 	// adding statements to.
 
 	for (var cur, sawDefault = false; this.type != tt.braceR;) {
+
 		if (this.type === tt._case || this.type === tt._default) {
+
 			var isCase = this.type === tt._case
+
 			if (cur) this.finishNode(cur, "SwitchCase")
 			node.cases.push(cur = this.startNode())
 			cur.consequent = []
+
 			this.next()
+
+			if(this.storeComments) var above = this.commentBegin()
+
 			if (isCase) {
 				cur.test = this.parseExpression()
 			} else {
@@ -262,22 +277,35 @@ pp.parseSwitchStatement = function(node) {
 				cur.test = null
 			}
 			this.expect(tt.colon)
+			if(this.storeComments) this.commentEnd(cur, above, tt.colon)
 		} else {
 			if (!cur) this.unexpected()
-			cur.consequent.push(this.parseStatement(true))
+			if(this.storeComments) var above = this.commentBegin()
+			var stmt = this.parseStatement(true)
+			if(this.storeComments) this.commentEnd(stmt, above)
+			cur.consequent.push(stmt)
+			//if(this.storeComments) this.commentEnd(stmt, above)
 		}
 	}
+	//if(cur)this.commentEnd(cur, above, tt.braceR)
 	if (cur) this.finishNode(cur, "SwitchCase")
 	this.next() // Closing brace
 	this.labels.pop()
+	if(this.storeComments) this.commentBottom(tt.braceR, node)
 	return this.finishNode(node, "SwitchStatement")
 }
 
 pp.parseThrowStatement = function(node) {
+
+	if(this.input.charCodeAt(this.pos) === 32)node.space = ' ' 
+	else node.space = ''
+
 	this.next()
+
 	if (lineBreak.test(this.input.slice(this.lastTokEnd, this.start)))
 		this.raise(this.lastTokEnd, "Illegal newline after throw")
 	node.argument = this.parseExpression()
+
 	this.semicolon()
 	return this.finishNode(node, "ThrowStatement")
 }
@@ -291,7 +319,13 @@ pp.parseTryStatement = function(node) {
 	node.block = this.parseBlock()
 	node.handler = null
 	if (this.type === tt._catch) {
+		if(this.storeComments){
+			var above = this.commentBegin()
+		}
 		var clause = this.startNode()
+		if(this.storeComments && above){
+			clause.above = above
+		}
 		this.next()
 		this.expect(tt.parenL)
 		clause.param = this.parseBindingAtom()
@@ -300,7 +334,16 @@ pp.parseTryStatement = function(node) {
 		clause.body = this.parseBlock()
 		node.handler = this.finishNode(clause, "CatchClause")
 	}
-	node.finalizer = this.eat(tt._finally) ? this.parseBlock() : null
+	if(this.eat(tt._finally)){
+		if(this.storeComments){
+			var above = this.commentBegin()
+		}
+		node.finalizer = this.parseBlock()
+		if(this.storeComments && above){
+			node.finalizer.above = above
+		}
+	}
+	
 	if (!node.handler && !node.finalizer)
 		this.raise(node.start, "Missing catch or finally clause")
 	return this.finishNode(node, "TryStatement")

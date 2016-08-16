@@ -27,7 +27,10 @@ pp.commentEnd = function(node, above, tail){
 	var comments = this.storeComments
 	for(var i = 0, l = comments.length; i < l; i++){
 		var cm = comments[i]
-		if(cm === tail) break
+		if(cm === tail){
+			i++
+			break
+		} 
 		if(typeof cm !== 'object') break
 	}
 	var side = ''
@@ -83,7 +86,6 @@ pp.commentTop = function(node){
 	 	return out
 	 }
 }
-
 
 // this is called at a } we run to it then splice and leave that for the next layer up
 pp.commentBottom = function(tail, node){
@@ -166,3 +168,25 @@ pp.commentAround = function(node, token){
 	}
 }
 
+pp.commentAfter = function(node, token){
+	var comments = this.storeComments
+	if(token === tt._var) console.log(comments)
+	for(var i = 0,l = comments.length;i < l; i++){
+		if(comments[i] == token){
+			var out = ''
+
+			// scan forward for the comments after
+			for(var j = i + 1, l = comments.length; j < l; j++){
+				var item = comments[j]
+				if(typeof item === 'object') break
+				if(item === 1) out += '\n'
+				else if(item === 2) out += '\r'
+				else out += item
+			}
+
+			comments.splice(0, j)
+
+			return out
+		}
+	}
+}

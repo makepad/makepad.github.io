@@ -70,25 +70,26 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			this.$ALLOCDRAW(len + 1, true)
 
 			var margin = style.margin
-			var lineSpacing = this._NAME.prototype.lineSpacing
-			var glyphs = this._NAME.prototype.font.fontmap.glyphs
-			var displace = this._NAME.prototype.displace
-			var fontSize = this.$fastNAMEFontSize//style.fontSize
-			var posx = turtle.wx// + margin[3] * fontSize
-			var posy = turtle.wy// + margin[0] * fontSize
+			var lineSpacing = $proto.lineSpacing
+			var glyphs = $proto.font.fontmap.glyphs
 
+			var fontSize = this.$fastNAMEFontSize
+			var posx = turtle.wx
+			var posy = turtle.wy
+			var nh = fontSize * lineSpacing
+			
 			var base = out.text.length 
 			out.text += txt
+			var sx = turtle.sx
 
 			if(this.$fastNAMEWrite){
-				out.ann.push(txt, style, turtle.sx, head, this.$fastNAMEFontSize)
+				out.ann.push(txt, style, sx, head, fontSize)
 			}
 
 			var changeOffset = this.$fastNAMEOffset
 			var changeStart = this.$fastNAMEStart
 			var changeDelta = this.$fastNAMEDelta
 
-			var sx = turtle.sx
 			var advance = 0
 			var head = head || style.head, tail = 0
 			var tweenDelta
@@ -104,19 +105,20 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			else{
 				turtle._delay = -100000
 			}
-			
+			var color = style.color
+			var boldness = style.boldness
 			for(var i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
 				var basei = base + i
-				if(basei == changeOffset){
+				if(basei === changeOffset){
 					tweenDelta = -changeDelta
 				}
-				if(basei == changeStart){
+				if(basei === changeStart){
 					turtle._delay = this.$fastNAMEDelay
 				}
 
 				var g = glyphs[unicode] || glyphs[63]
-				var d = displace[unicode] || displace[0]
+				//var d = displace[unicode] || displace[0]
 
 				if(i ===len) tail = style.tail
 				var advance = g.advance
@@ -124,13 +126,12 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 				this.$WRITEPROPS({
 					$fastWrite:true,
 					$tweenDelta:tweenDelta,
-					visible:1,
 					x:posx,
 					y:posy,
-					color: style.color,
+					color: color,
 					fontSize:fontSize,
-					italic:style.italic,
-					boldness:style.boldness, 
+					//italic:style.italic,
+					boldness:boldness, 
 					unicode:unicode,
 					head:head,
 					advance:advance,
@@ -139,26 +140,26 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 					ty1: g.ty1,
 					tx2: g.tx2,
 					ty2: g.ty2,
-					x1: g.x1 + d.x,
-					y1: g.y1 + d.y,
-					x2: g.x2 + d.x,
-					y2: g.y2 + d.y,
+					x1: g.x1,// + d.x,
+					y1: g.y1,// + d.y,
+					x2: g.x2,// + d.x,
+					y2: g.y2,// + d.y,
 					unicode: unicode
 				})
 
 				posx += (head + advance + tail) * fontSize
 
-				var nh = fontSize * lineSpacing
 				head = 0
-				if(nh > turtle.mh) turtle.mh = nh
+				
 				if(unicode === 10 || unicode ===13){
 					turtle.mh = 0
 					if(posx>turtle.x2) turtle.x2 = posx
-					posx = turtle.sx, posy += fontSize * lineSpacing
-					turtle.wy += fontSize * lineSpacing
+					posx = turtle.sx, posy += nh
+					turtle.wy += nh
 				}
+				else turtle.mh = nh
 			}
-			posy += fontSize * lineSpacing
+			posy += nh
 			if(posy>turtle.y2) turtle.y2 = posy
 			turtle.wx = posx// + margin[1]* fontSize
 		}

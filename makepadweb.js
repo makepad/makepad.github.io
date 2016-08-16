@@ -360,13 +360,20 @@
 		require.perf = function(id){
 			var t = perfNow.now()
 			if(!perf) perf = {}
-			if(perf[id]){
-				console.log('Perf: ' + (t - perf[id]))
-				// 
-				//worker.postMessage({$:'debug', msg:'Perf: '+(t-perf[id])})
-				perf[id] = undefined
+			var obj = perf[id] || (perf[id] = {})
+			if(obj.sample){
+				var dt = (t - obj.sample)
+				if(!obj.list) obj.list = [dt]
+				else obj.list.push(dt)
+
+				var avg = 0
+				for(var i = 0; i < obj.list.length;i++)avg += obj.list[i]
+				avg = avg / obj.list.length
+
+				console.log('Perf: ' +dt+ ' Avg: '+avg)
+				obj.sample = undefined
 			}
-			else perf[id] = t
+			else obj.sample = t
 		}
 
 		require.module = function(exports){

@@ -696,7 +696,12 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent + '	this.$propsLen'+classname+' = $propslength\n'
 			code += indent + '}\n'
 		}
-		code += indent + 'this.turtle.$propoffset = $propslength\n'
+		else{
+			code += indent + 'var $a = $props.array\n'
+			code += indent + '$props.dirty = true\n'
+		}
+		code += indent + 'var $turtle = this.turtle\n'
+		code += indent + '$turtle.$propoffset = $propslength\n'
 		code += indent + '$props.length = $need\n'
 
 		return code
@@ -795,14 +800,21 @@ module.exports = require('class').extend(function Shader(proto){
 			code += indent +'var $proto = this._' + classname +'.prototype\n'
 			code += indent +'var $shader = this.$shaders.'+classname+'\n'
 			code += indent +'var $props = $shader.$props\n'
+			code += indent +'var $a = $props.array\n'
+			code += indent + '$props.dirty = true\n'
+
 		}
-		code += indent + '$props.dirty = true\n'
-		code += indent +'var $a = $props.array\n'
+
 		if(macroargs[0].$offset){
 			code += indent +'var $o = ('+macroargs[0].$offset+') * ' + info.propSlots +'\n'
 		}
 		else{
-			code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+			if(!fastWrite){
+				code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
+			}
+			else{
+				code += indent +'var $o = $propslength++ * ' + info.propSlots +'\n'
+			}
 		}
 
 		if(hasTweenDelta){
@@ -1044,9 +1056,7 @@ module.exports = require('class').extend(function Shader(proto){
 			code += 'if($tweenDelta>0){\n'
 			code += deltafwd
 			code += '}\n'
-			code += 'else if($tweenDelta == 0){\n'
-			code += copyprev
-			code += '}else{\n'
+			code += 'else{\n'
 			code += copyfwd
 			code += '}\n'
 		}

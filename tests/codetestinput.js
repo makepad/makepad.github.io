@@ -1,2 +1,5 @@
-function test(){}
-x = 1
+//0
+var x = true? //1
+	1: //2
+	2 //3
+//4

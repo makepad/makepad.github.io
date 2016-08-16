@@ -142,9 +142,17 @@ pp.parseMaybeConditional = function(noIn, refDestructuringErrors) {
 	if (this.checkExpressionErrors(refDestructuringErrors)) return expr
 	if (this.eat(tt.question)) {
 		var node = this.startNodeAt(startPos)
+		if(this.storeComments){
+			var after = this.commentAfter(node, tt.question)
+			if(after && after.length) node.afterq = after
+		}
 		node.test = expr
 		node.consequent = this.parseMaybeAssign()
 		this.expect(tt.colon)
+		if(this.storeComments){
+			var after = this.commentAfter(node, tt.colon)
+			if(after && after.length) node.afterc = after
+		}
 		node.alternate = this.parseMaybeAssign(noIn)
 		return this.finishNode(node, "ConditionalExpression")
 	}
@@ -539,12 +547,11 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 
 		if(this.storeComments){
 			if(prop)this.commentEnd(prop, above, tt.braceR)
-			if(this.storeComments) var above = this.commentBegin()
-
-			if(this.type === tt.comma){
-				this.eat(tt.comma)
-				above = this.commentBegin()
-			}
+			var above = this.commentBegin()
+		}
+		if(this.type === tt.comma){
+			this.eat(tt.comma)
+			if(this.storeComments) above = this.commentBegin()
 		}
 	
 		var prop = this.startNode(), isGenerator, startPos
@@ -784,6 +791,10 @@ pp.parseIdent = function(liberal) {
 
 pp.parseYield = function() {
 	var node = this.startNode()
+
+	if(this.input.charCodeAt(this.pos) === 32)node.space = ' ' 
+	else node.space = ''
+
 	this.next()
 	if (this.type == tt.semi || this.canInsertSemicolon() || (this.type != tt.star && !this.type.startsExpr)) {
 		node.delegate = false

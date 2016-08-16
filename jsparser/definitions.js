@@ -71,7 +71,7 @@ module.exports = {
 
 	// switch
 	SwitchStatement:{discriminant:1, cases:2},
-	SwitchCase:{test:1, consequent:1},
+	SwitchCase:{test:1, consequent:2},
 
 	// templates
 	TaggedTemplateExpression:{tag:1, quasi:1},
