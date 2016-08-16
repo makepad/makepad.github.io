@@ -84,7 +84,6 @@ module.exports = {
 	ClassBody:{body:2},
 	MethodDefinition:{value:1, kind:0, static:0},
 
-
 	// modules
 	ExportAllDeclaration:{source:1},
 	ExportDefaultDeclaration:{declaration:1},

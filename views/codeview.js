@@ -454,7 +454,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			})
 		}
 		catch(e){
-			console.log(e)
 			this.error = e
 		}
 	}
@@ -473,7 +472,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(this.error) this.reuseErrorText()
 		}
 		else{
-			require.perf()
+			//require.perf()
 
 			this.error = undefined
 
@@ -596,7 +595,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			require.perf()
+			//require.perf()
 			this.$fastTextDelta = 0
 		}
 
