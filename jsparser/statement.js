@@ -459,6 +459,11 @@ pp.parseFor = function(node, init) {
 	this.expect(tt.semi)
 	node.update = this.type === tt.parenR ? null : this.parseExpression()
 	this.expect(tt.parenR)
+	// lets parse the above
+	if(this.storeComments){
+		var after = this.commentAfter(tt.parenR)
+		if(after && after.length) node.after = after
+	}
 	node.body = this.parseStatement(false)
 	this.labels.pop()
 	return this.finishNode(node, "ForStatement")

@@ -845,6 +845,7 @@ module.exports = function(proto){
 		this.trace += ')'
 		this.fastText(')', this.style.Paren.ForStatement.right)
 		var body = node.body
+		if(node.after) this.fastText(node.after, this.style.Comment.above)
 		this[body.type](body, this.style.Block.ForStatement)
 	}
 

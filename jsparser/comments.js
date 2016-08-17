@@ -3,7 +3,7 @@ var Parser = require('./state').Parser
 const pp = Parser.prototype
 var tt = require('./tokentype').types
 
-pp.commentBegin = function(){
+pp.commentBegin = function(start){
 	var comments = this.storeComments
 	var above = ''
 	for(var i = 0, l = comments.length; i < l; i++){
@@ -171,13 +171,13 @@ pp.commentAround = function(node, token){
 	}
 }
 
-pp.commentAfter = function(node, token){
+pp.commentAfter = function(token){
+
 	var comments = this.storeComments
-	if(token === tt._var) console.log(comments)
+	//if(token === tt._var) console.log(comments)
 	for(var i = 0,l = comments.length;i < l; i++){
 		if(comments[i] == token){
 			var out = ''
-
 			// scan forward for the comments after
 			for(var j = i + 1, l = comments.length; j < l; j++){
 				var item = comments[j]

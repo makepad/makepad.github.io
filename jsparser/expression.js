@@ -145,14 +145,14 @@ pp.parseMaybeConditional = function(noIn, refDestructuringErrors) {
 	if (this.eat(tt.question)) {
 		var node = this.startNodeAt(startPos)
 		if(this.storeComments){
-			var after = this.commentAfter(node, tt.question)
+			var after = this.commentAfter(tt.question)
 			if(after && after.length) node.afterq = after
 		}
 		node.test = expr
 		node.consequent = this.parseMaybeAssign()
 		this.expect(tt.colon)
 		if(this.storeComments){
-			var after = this.commentAfter(node, tt.colon)
+			var after = this.commentAfter(tt.colon)
 			if(after && after.length) node.afterc = after
 		}
 		node.alternate = this.parseMaybeAssign(noIn)
