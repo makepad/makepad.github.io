@@ -540,10 +540,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				for(var oldend = oldlen-1, newend = newlen-1; oldend > start && newend > start; oldend--, newend--){
 					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)) break
 				}
+
+				this.cs.scanChange(start, oldtext, newtext)
+
 				if(start !== newlen){
 					// if something changed before our cursor, we have to scan
 					// forward for our old char
-					this.cs.scanChange(start, oldtext, newtext)
 
 					// this gets tacked onto the undo with the same group
 					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext)

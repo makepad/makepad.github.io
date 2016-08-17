@@ -120,6 +120,7 @@ module.exports = function(proto){
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
+			else this.fastText('\n', this.styles.Comment.side)
 			this.trace += '\n'
 			// support $
 			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
