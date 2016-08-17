@@ -24,7 +24,7 @@ module.exports = require('shader').extend(function Rect9Shader(proto){
 		
 		color: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'white'},
-		borderRadius: {value:8},
+		borderRadius: {value:0},
 		borderWidth: {value:0},
 
 		lockScroll:{noTween:1, value:1.},

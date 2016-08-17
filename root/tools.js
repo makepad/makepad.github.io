@@ -103,6 +103,7 @@ module.exports = function(proto){
 		var hProp = info.instanceProps.this_DOT_h
 		props.hOffset = hProp && hProp.offset
 		props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
+		props.transferData = proto.transferData
 		return shader
 	}
 

@@ -53,7 +53,7 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var i = 0; i < 4; i++){
 			var f = this.fingerInfo[i]
 			if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && this.pickId == f[3] ){
-				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy - vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
 				return i+1
 			}
 		}
@@ -66,7 +66,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var f = this.fingerInfo[i]
 			var f2 = abs(f[2])
 			if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.) && this.pickId == f[3] ){
-				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy - vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
 				return i+1
 			}
 		}

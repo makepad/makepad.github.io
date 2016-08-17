@@ -213,6 +213,10 @@ function renderPickDep(framebuffer){
 }
 
 function renderPickWindow(digit, x, y, force){
+
+	if(!mainFramebuffer || !mainFramebuffer.todoId){
+		return console.error("No Main framebuffer or attached todo found")
+	}
 	// find a pick window
 	var pick = pickWindows[digit]
 
@@ -358,6 +362,7 @@ function renderColor(framebuffer){
 
 var repaintPending = false
 function repaint(time){
+
 	if(showAgain)canvas.style.visibility = 'visible'
 	showAgain = false
 
@@ -367,7 +372,7 @@ function repaint(time){
 
 	bus.postMessage({fn:'onSync', time:repaintTime, frameId:frameId++})
 
-	if(!mainFramebuffer) return
+	if(!mainFramebuffer || !mainFramebuffer.todoId) return
 
 	// lets resolve pending mousepicks slash create digit windows	
 	for(var digit in pickPromises){
@@ -1030,7 +1035,7 @@ userfn.updateMesh = function(msg){
 	glbuffer.updateId = frameId
 	// check the type
 
-	if(msg.array.constructor === Uint16Array){
+	if(msg.arrayType === 'uint16'){
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	}
@@ -1591,7 +1596,7 @@ userfn.updateTodo = function(msg){
 	todo.scrollToSpeed = msg.scrollToSpeed || .5
 	todo.scrollMomentum = msg.scrollMomentum
 	todo.scrollMask = msg.scrollMask
-
+	
 	// what if we are the todo of the mainFrame
 	if(mainFramebuffer && mainFramebuffer.todoId === todo.todoId){
 		requestRepaint()

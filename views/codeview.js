@@ -23,6 +23,21 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			displace:{
 				0:{x:0,y:0.08},
 				42:{x:0,y:-0.08} // * 
+			},
+			vertexStyle:function(){$
+				// get distance to mouse
+				/*
+				if(this.fontSize < 6.){
+					var pos = vec2()
+					if(this.isFingerOver(pos)>0){
+						var fontSize = this.fontSize
+						this.fontSize = max(1.,14.-0.3*abs(this.y-pos.y))
+						if(this.fontSize>1.){
+							this.y += (this.y - pos.y)*4.
+							this.x += this.x*(this.fontSize / fontSize)
+						}
+					}
+				}*/
 			}
 		}),
 		Block:require('shaders/codeblockshader').extend({
@@ -460,7 +475,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.onDraw = function(){
 
-		this.beginBg(this.viewBgProps)
+		this.beginBackground(this.viewGeom)
 		// ok lets parse the code
 		if(this.textClean){
 			this.reuseDrawSize()
@@ -472,7 +487,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(this.error) this.reuseErrorText()
 		}
 		else{
-			//require.perf()
+			require.perf()
 
 			this.error = undefined
 
@@ -595,7 +610,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			//require.perf()
+			require.perf()
 			this.$fastTextDelta = 0
 		}
 
@@ -633,7 +648,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		}
 		
-		this.endBg()
+		this.endBackground()
 	}
 
 	proto.onFingerDown = function(f){
@@ -873,6 +888,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 
+		if(text === "'" && this.text.charAt(offset) ==="'") return
+		if(text === '"' && this.text.charAt(offset) ==='"') return
 		
 		if(text === '}' && this.text.charAt(offset) ==='}') return
 		if(text === ']' && this.text.charAt(offset) ===']') return
@@ -882,6 +899,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(text === '{' && (!this.error || this.text.charAt(offset)!=='}')) text = '{}'
 		if(text === '[' && (!this.error || this.text.charAt(offset)!==']')) text = '[]'
 		if(text === '(' && (!this.error || this.text.charAt(offset)!==')')) text = '()'
+		if(text === '"' && (!this.error || this.text.charAt(offset)!=='"')) text = '""'
+		if(text === "'" && (!this.error || this.text.charAt(offset)!=="'")) text = "''"
 
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
@@ -924,7 +943,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else if(delchar === '{' && text.charAt(end) === '}') end ++
 			else if(delchar === '[' && text.charAt(end) === ']') end ++
 			else if(delchar === '(' && text.charAt(end) === ')') end ++
+			else if(delchar === "'" && text.charAt(end) === "'") end ++
+			else if(delchar === '"' && text.charAt(end) === '"') end ++
 		}
+
 
 		this.text = text.slice(0, start) + text.slice(end)
 

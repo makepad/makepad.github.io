@@ -102,7 +102,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 	}
 
 	proto.toMessage = function(){
-		return {
+		return [{
 			fn:'updateTodo',
 			name:this.name,
 			deps:this.deps,
@@ -132,7 +132,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 			scrollMomentum:this.scrollMomentum,
 			scrollToSpeed:this.scrollToSpeed,
 			scrollMask:this.scrollMask
-		}
+		}]
 	}
 
 	proto.scrollTo = function(x, y, scrollToSpeed){
@@ -690,17 +690,29 @@ painter.Mesh = require('class').extend(function Mesh(proto){
 			return null
 		}
 		this.dirty = false
-		return {
+
+		//console.log(this.array.length)
+		if(this.transferData){
+			sendarray = this.array
+			this.array = undefined
+			this.allocated = 0
+			this.length = 0	
+		}
+		else{
+			var sendarray = new this.arraytype(this.array)
+		}
+		return [{
 			fn:'updateMesh',
+			arrayType:this.type.name,
 			meshId:this.meshId,
 			length:this.length,
-			array:this.array,
+			array:sendarray.buffer,
 			drawDiscard: this.drawDiscard,
 			xOffset:this.xOffset,
 			yOffset:this.yOffset,
 			wOffset:this.wOffset,
 			hOffset:this.hOffset
-		}
+		}, [sendarray.buffer]]
 	}
 
 	proto.updateMesh = function(){
@@ -844,18 +856,35 @@ painter.Texture = require('class').extend(function Texture(proto){
 	painter.PREMULTIPLY_ALPHA = 1<<1
 	painter.CUBEMAP = 1<<2
 	painter.SAMPLELINEAR = 1<<3
-	
+	painter.TRANSFER_DATA = 1<<4
+
 	proto.toMessage = function(){
-		return {
+
+		var transfer = []
+		var sendbuffer
+		if(this.array){
+			if(this.flags & painter.TRANSFER_DATA){
+				if(this.array.constructor === ArrayBuffer) sendbuffer = this.array
+				else sendbuffer = this.array.buffer
+			}
+			else{
+				var constr = this.array.constructor
+				if(constr === ArrayBuffer) constr = Uint8Array
+				sendbuffer = new constr(this.array).buffer
+			}
+			transfer.push(sendbuffer)
+		}
+
+		return [{
 			fn:'newTexture',
 			bufType:this.bufType,
 			dataType:this.dataType,
 			flags:this.flags,
 			w:this.w,
 			h:this.h,
-			array:this.array,
+			array:sendbuffer,
 			texId:this.texId
-		}
+		}, transfer]
 	}
 
 	proto.onConstruct = function(bufType, dataType, flags, w, h, array){

@@ -87,7 +87,7 @@
 					msgs:workerhandle.queue
 				})
 			}
-
+			worker.batchtransfers = []
 			worker.batchmessages = []
 			worker.postfunctions = []
 			worker.onmessage = createOnMessage(kernelbusses, worker, true)
@@ -106,6 +106,7 @@
 		var worker = {
 			postMessage:self.postMessage.bind(self),
 			batchmessages:[],
+			batchtransfers:[],
 			postfunctions:[]
 		}
 
@@ -147,21 +148,38 @@
 		worker.postEntry = function(level){
 			var batchmessages = worker.batchmessages
 			if(batchmessages.length){
+				var transfers = worker.batchtransfers
 				for(var i = 0; i <batchmessages.length; i++){
 					var msg = batchmessages[i]
 					var body = msg.msg
 					if(typeof body === 'object' && body.constructor !== Object){
-						batchmessages[i].msg = body.toMessage()
+						var ret = body.toMessage()
+						msg.msg = undefined
+						if(!ret) continue
+						if(!Array.isArray(ret)){
+							console.error("Return value of toMessage needs to be an [msg,[transfer]] array")
+							continue
+						}
+						msg.msg = ret[0]
+						var tr = ret[1]
+						if(tr){
+							if(!Array.isArray(ret)){
+								console.error("Return value of toMessage transfer needs to be an array [msg,[transfer]] array")
+								continue
+							}
+							transfers.push.apply(transfers, tr)
+						}
 					}
 				}
 				worker.postMessage({
 					$:'batch',
 					msgs:batchmessages
-				})
+				}, transfers)
 				if(worker.fakeworker){
 					worker.batchmessages = []
+					worker.batchtransfers = []
 				}
-				else worker.batchmessages.length = 0
+				else worker.batchmessages.length = worker.batchtransfers.length = 0
 			}
 			// send out any produced sync messages in one go
 			if(worker.postfunctions.length){
@@ -211,11 +229,12 @@
 			var kernelservice = {}
 
 			var kernelservicebus = {
-				batchMessage:function(servicename, msg){
+				batchMessage:function(servicename, msg, transfers){
 					worker.batchmessages.push({$:servicename,msg:msg})
+					if(transfers) worker.batchtransfers.push.apply(worker.batchtransfers,transfers)
 				}.bind(kernelservice, servicename),
-				postMessage:function(servicename, msg){
-					worker.postMessage({$:servicename, msg:msg})
+				postMessage:function(servicename, msg, transfers){
+					worker.postMessage({$:servicename, msg:msg}, transfers)
 				}.bind(kernelservice, servicename)
 			}
 			var myuserargs = userargs[servicename] = {}
@@ -312,11 +331,12 @@
 					args:userargs[servicename],
 					workerid:worker.workerid,
 					bus:{
-						batchMessage:function(servicename, msg){
+						batchMessage:function(servicename, msg, transfers){
 							worker.batchmessages.push({$:servicename,msg:msg})
+							if(transfers) worker.batchtransfers.push.apply(worker.batchtransfers,transfers)
 						}.bind(null, servicename),
-						postMessage:function(servicename, msg){
-							worker.postMessage({$:servicename,msg:msg})
+						postMessage:function(servicename, msg, transfers){
+							worker.postMessage({$:servicename,msg:msg}, transfers)
 						}.bind(null, servicename),
 					}
 				}

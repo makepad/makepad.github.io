@@ -155,7 +155,7 @@ module.exports = require('class').extend(function View(proto){
 		return pass
 	}
 
-	Object.defineProperty(proto, 'viewBgProps', {
+	Object.defineProperty(proto, 'viewGeom', {
 		get:function(){
 			return {
 				lockScroll:0.,

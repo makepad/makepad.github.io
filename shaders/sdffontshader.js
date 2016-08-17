@@ -358,7 +358,7 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 		if(this.font){
 			if(!this.font.fontmap){
 				var map = this.font.fontmap = fontloader(this.font)
-				this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, map.texw, map.texh, map.textureArray)
+				this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
 			}
 			// make the texture.
 			this.fontSampler = this.font.fontSampler

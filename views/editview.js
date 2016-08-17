@@ -11,7 +11,7 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 
 	proto.tools = {
-		Bg:require('shaders/fastrectshader').extend({
+		Background:require('shaders/backgroundshader').extend({
 			borderRadius:0,
 			padding:2,
 			color:'#0c2141'
@@ -57,10 +57,10 @@ module.exports = require('view').extend(function EditView(proto){
 			vertexStyle:function(){
 				var time = this.normalTween
 				var v = sin(time*PI)
-				this.y -= v*4.
-				this.h += v*8.
+				this.y -= v*2.
+				this.h += v*4.
 				this.x -= v
-				this.w += v*2.
+				this.w += v*1.
 				this.shadowOffset = vec2(-v,v)*4.
 			}
 		})/*,
@@ -137,7 +137,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.onDraw = function(){
 
-		this.beginBg(this.viewBgProps)
+		this.beginBackground(this.viewGeom)
 
 		this.drawSelection()
 
@@ -198,7 +198,7 @@ module.exports = require('view').extend(function EditView(proto){
 				})
 			}
 		}
-		this.endBg()
+		this.endBackground()
 	}
 
 	//

@@ -302,7 +302,7 @@ if(isIOSDevice){
 // Text area listeners
 //
 //
-
+var dt 
 cliptext.addEventListener('cut', onCut)
 cliptext.addEventListener('paste', onPaste)
 cliptext.addEventListener('select', onSelect)
@@ -328,6 +328,8 @@ var fireFoxKeyRemap = {
 }
 
 function onKeyDown(e){
+	window.mystamp = performance.now()
+
 	keyDownTriggered = true
 	var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
 
@@ -428,6 +430,7 @@ function onSelect(e){
 
 // the magic 'watch input event' function on the textares
 function onInput(){
+	
 	var value = cliptext.value
 	// we seem to have pressed backspace on android	
 	if(value.length === 4 && value === androidBackspace){
