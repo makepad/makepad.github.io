@@ -289,7 +289,8 @@
 		// initialize the last module 
 		last.exports = {}
 		var ret = last.factory.call(last.exports, last.require, last.exports, last)
-		if(ret) module.exports = ret
+		if(ret) last.exports = ret
+		if(typeof last.exports === 'function') last.exports()
 	}
 
 	function buildURL(rooturl, parenturl, path){

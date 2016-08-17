@@ -469,6 +469,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			})
 		}
 		catch(e){
+			//console.log(e, e.stack)
 			this.error = e
 		}
 	}
@@ -487,7 +488,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(this.error) this.reuseErrorText()
 		}
 		else{
-			require.perf()
+			//require.perf()
 
 			this.error = undefined
 
@@ -610,7 +611,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			require.perf()
+			//require.perf()
 			this.$fastTextDelta = 0
 		}
 
@@ -930,7 +931,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.removeText = function(start, end){
 		this.textClean = false
-		
+		var delta = 0
 		this.wasNewlineChange = 0
 		var text = this.text
 
@@ -939,6 +940,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(delchar === '\n'){
 				this.wasNewlineChange = true
 				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
+				else if(text.charAt(start-1) === ',') start--, delta = -1
 			}
 			else if(delchar === '{' && text.charAt(end) === '}') end ++
 			else if(delchar === '[' && text.charAt(end) === ']') end ++
@@ -946,7 +948,6 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else if(delchar === "'" && text.charAt(end) === "'") end ++
 			else if(delchar === '"' && text.charAt(end) === '"') end ++
 		}
-
 
 		this.text = text.slice(0, start) + text.slice(end)
 
@@ -983,6 +984,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		}
 		this.redraw()
+		return delta
 	}
 
 	proto.serializeSlice = function(start, end, arg){

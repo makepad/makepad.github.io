@@ -28,8 +28,8 @@ pp.commentEnd = function(node, above, tail){
 	for(var i = 0, l = comments.length; i < l; i++){
 		var cm = comments[i]
 		if(cm === tail){
-			i++
-			break
+			comments.splice(0, i)
+			return
 		} 
 		if(typeof cm !== 'object') break
 	}
@@ -60,6 +60,7 @@ pp.commentEnd = function(node, above, tail){
 	if(side.length) node.side = side
 	comments.length = 0
 }
+
 
 // called on the head of a block
 pp.commentTop = function(node){
@@ -109,11 +110,13 @@ pp.commentBottom = function(tail, node){
 		}
 	}
 	if(i==l){
-		comments.length = 0
+		comments.splice(0, l - 1)
+		//comments.length = 0
 	}
 	if(out.length && node)node.bottom = out
 	return out
 }
+
 
 pp.commentsDump = function(){
 	var out = []

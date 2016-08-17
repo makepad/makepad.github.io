@@ -424,8 +424,12 @@ pp.parseBlock = function(allowStrict) {
 	while (!this.eat(tt.braceR)) {
 		
 		if(this.storeComments) var begin = this.commentBegin()
+
 		var stmt = this.parseStatement(true)
-		if(this.storeComments) this.commentEnd(stmt, begin, tt.braceR)
+
+		if(this.storeComments){
+			this.commentEnd(stmt, begin, tt.braceR)
+		}
 
 		node.body.push(stmt)
 		if (first && allowStrict && this.isUseStrict(stmt)) {
@@ -434,9 +438,12 @@ pp.parseBlock = function(allowStrict) {
 		}
 		first = false
 	}
+	//if(this.storeComments) this.commentEnd(stmt, begin, tt.braceR)
 	if (oldStrict === false) this.setStrict(false)
 
-	if(this.storeComments) this.commentBottom(tt.braceR, node)
+	if(this.storeComments){
+		this.commentBottom(tt.braceR, node)
+	}
 	
 	return this.finishNode(node, "BlockStatement")
 }

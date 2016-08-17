@@ -116,6 +116,7 @@ module.exports = function(proto){
 		for(var i = 0; i <= bodylen; i++){
 			var statement = body[i]
 			// the above
+
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)

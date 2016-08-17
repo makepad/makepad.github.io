@@ -1,10 +1,9 @@
 module.exports = require('apps/drawapp').extend({
+	require,//here
+	require,
 	onDraw:function(){
-		this.drawRect({
-			x:0,
-			y:0,
-			w:100,
-			h:100
-		})
+		//1
+		this.drawRect({x:1}) //2
+		//3
 	}
 })

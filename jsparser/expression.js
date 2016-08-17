@@ -78,6 +78,7 @@ pp.checkPropClash = function(prop, propHash) {
 pp.parseExpression = function(noIn, refDestructuringErrors) {
 	var startPos = this.start
 	var expr = this.parseMaybeAssign(noIn, refDestructuringErrors)
+
 	if (this.type === tt.comma) {
 		var node = this.startNodeAt(startPos)
 		node.expressions = [expr]
@@ -137,6 +138,7 @@ pp.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
 // Parse a ternary conditional (`?:`) operator.
 
 pp.parseMaybeConditional = function(noIn, refDestructuringErrors) {
+
 	var startPos = this.start
 	var expr = this.parseExprOps(noIn, refDestructuringErrors)
 	if (this.checkExpressionErrors(refDestructuringErrors)) return expr
@@ -156,6 +158,7 @@ pp.parseMaybeConditional = function(noIn, refDestructuringErrors) {
 		node.alternate = this.parseMaybeAssign(noIn)
 		return this.finishNode(node, "ConditionalExpression")
 	}
+
 	return expr
 }
 
@@ -295,6 +298,7 @@ pp.parseSubscripts = function(base, startPos, noCalls) {
 // or `{}`.
 
 pp.parseExprAtom = function(refDestructuringErrors) {
+
 	var node, canBeArrow = this.potentialArrowAt == this.start
 	switch (this.type) {
 	case tt._super:
@@ -321,6 +325,7 @@ pp.parseExprAtom = function(refDestructuringErrors) {
 		return node
 
 	case tt.num: case tt.string:
+
 		return this.parseLiteral(this.value)
 
 	case tt._null: case tt._true: case tt._false:
@@ -529,29 +534,8 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 
 	while (!this.eat(tt.braceR)) {
 
-		if (!first) {
-			// if we dont get a comma, see if we can insert one
-			// how do we check our last newline?
-			if(!this.eat(tt.comma)){
-				if(!this.insertCommas || !this.skippedNewlines){ // insert a comma?
-					this.unexpected()
-				}
-			}
-			//this.expect(tt.comma)
-
-			if (this.afterTrailingComma(tt.braceR)){
-				node.trail = true
-				break
-			}
-		} else first = false
-
 		if(this.storeComments){
-			if(prop)this.commentEnd(prop, above, tt.braceR)
 			var above = this.commentBegin()
-		}
-		if(this.type === tt.comma){
-			this.eat(tt.comma)
-			if(this.storeComments) above = this.commentBegin()
 		}
 	
 		var prop = this.startNode(), isGenerator, startPos
@@ -565,13 +549,35 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 				isGenerator = this.eat(tt.star)
 		}
 		this.parsePropertyName(prop)
+
 		this.parsePropertyValue(prop, isPattern, isGenerator, startPos, refDestructuringErrors)
+
 		this.checkPropClash(prop, propHash)
 
-		if(this.storeComments) this.commentEnd(prop, above, tt.braceR)
 		node.properties.push(this.finishNode(prop, "Property"))
+
+		if(this.eat(tt.braceR)){
+			
+			if(this.storeComments){
+				this.commentEnd(prop, above, tt.braceR)
+			}
+			break
+		}
+		if(this.eat(tt.comma) || this.insertCommas && this.skippedNewlines){
+			
+			if(this.storeComments){
+				this.commentEnd(prop, above, tt.braceR)
+			}
+			if(this.eat(tt.braceR)){
+				
+				node.trail = true
+				break
+			}
+ 		}
 	}
-	if(this.storeComments) this.commentBottom(tt.braceR, node)
+	if(this.storeComments){
+		this.commentBottom(tt.braceR, node)
+	}
 	return this.finishNode(node, isPattern ? "ObjectPattern" : "ObjectExpression")
 }
 
@@ -727,23 +733,10 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 
 	if(this.storeComments && node) this.commentTop(node)
 
-	var elts = [], first = true
+	var elts = []
 	while (!this.eat(close)) {
-		if (!first) {
-			if(!this.eat(tt.comma)){
-				if(!this.insertCommas || !this.skippedNewlines){ // insert a comma?
-					this.unexpected()
-				}
-			}
-			if (allowTrailingComma && this.afterTrailingComma(close)){
-				node.trail = true
-				break
-			}
-		} else first = false
-
 		if(this.storeComments){
-			if(elt)this.commentEnd(elt, above, close)
-			if(this.storeComments) var above = this.commentBegin()
+			var above = this.commentBegin()
 		}
 
 		var elt
@@ -757,6 +750,23 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 		} else
 			elt = this.parseMaybeAssign(false, refDestructuringErrors)
 		elts.push(elt)
+
+		if(this.eat(close)){
+			if(this.storeComments){
+				this.commentEnd(elt, above, close)
+			}
+			break
+		}
+		if(this.eat(tt.comma) || this.insertCommas && this.skippedNewlines){
+			
+			if(this.storeComments){
+				this.commentEnd(elt, above, close)
+			}
+			if(this.eat(close)){
+				node.trail = true
+				break
+			}
+ 		}
 	}
 	if(this.storeComments && node) this.commentBottom(close, node)
 

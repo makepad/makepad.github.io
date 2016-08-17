@@ -312,6 +312,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 			this.editor.addUndoInsert(lo, hi)
 			this.editor.removeText(lo, hi)
+
 			this.cursorSet.delta -= this.span()
 			var len = text.length
 			if(len){
@@ -363,7 +364,7 @@ module.exports = require('view').extend(function EditView(proto){
 			if(this.start === 0) return
 			var prev = this.end - 1
 			this.editor.addUndoInsert(prev, this.end)
-			this.editor.removeText(prev, this.end)
+			prev += this.editor.removeText(prev, this.end)
 			this.cursorSet.delta -= 1
 			this.editor.forkRedo()
 			this.start = this.end = prev
@@ -524,8 +525,7 @@ module.exports = require('view').extend(function EditView(proto){
 		
 		if(!rd){
 			if(loop){
-				console.log("WHUT", offset)
-				return
+				return {}
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
 			var last = this.$lengthText() - 1//this.text.length - 1
