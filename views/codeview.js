@@ -226,6 +226,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		Comma:{
+			color:'#777',
 			FunctionDeclaration:{tail:0.5},
 			CallExpression:{tail:0.5},
 			ArrayExpression:{

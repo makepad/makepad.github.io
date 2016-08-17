@@ -763,6 +763,7 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 				this.commentEnd(elt, above, close)
 			}
 			if(this.eat(close)){
+				if(!allowTrailingComma) this.unexpected()
 				node.trail = true
 				break
 			}

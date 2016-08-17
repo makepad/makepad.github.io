@@ -398,26 +398,29 @@ module.exports = require('view').extend(function EditView(proto){
 		proto.scanChange = function(pos, oldText, newText){
 			if(this.start !== this.end) return
 			if(pos < this.end){
-				// now we have to scan forward 
-				// from pos to found our charcode
-				if(oldText.length > newText.length){
-					var oldCode = newText.charCodeAt(this.end-1)
-					for(var i = pos; i >= 0; i--){
-						if(newText.charCodeAt(i) === oldCode){
-							this.start = this.end = i
-							return
-						}
+
+				// scan for the closest position for the cursor
+				var oc1 = oldText.charCodeAt(this.end)
+				var oc2 = oldText.charCodeAt(this.end-1)
+				for(var i = pos; i >= 0; i--){
+					if(newText.charCodeAt(i) === oc1 && 
+						newText.charCodeAt(i-1) === oc2){
+						break
+						return
 					}
 				}
-				else{
-					var oldCode = oldText.charCodeAt(this.end-1)
-					for(var i = pos-2; i < newText.length; i++){
-						if(newText.charCodeAt(i) === oldCode){
-							this.start = this.end = i + 1
-							return
-						}
+				var oldCode = oldText.charCodeAt(this.end)
+				for(var j = pos-2; j < newText.length; j++){
+					if(newText.charCodeAt(j) === oc1 && 
+						newText.charCodeAt(j-1) === oc2){
+						break
+						return
 					}
 				}
+				if(Math.abs(pos-i) < Math.abs(pos-j)){
+					this.start = this.end = i
+				}
+				else this.start = this.end =j
 			}
 		}
 
