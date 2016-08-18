@@ -525,7 +525,7 @@
 			var resource = allresources[resourceurl]
 			array.push(resource)
 			if(type === 'code'){
-				console.log("LOADING",resourceurl, resource)
+				console.log("LOADING",resourceurl, resource.response)
 				var deps = processCode(resource.response)
 				Promise.all(deps).then(function(result){
 					resolve(resource)
