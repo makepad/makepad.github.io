@@ -1,6 +1,6 @@
 module.exports=require('apps/drawapp').extend({
 tools:{Rect:{
-pixel:function(){
+pixel:function(){$
 return mix(
 'white',
 'green',
