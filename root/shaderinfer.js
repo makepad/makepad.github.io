@@ -1053,10 +1053,23 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 		var group = groupBinaryExpression[node.operator]
 		if(group === 1){
 			var lt = tableBinaryExpression[leftinfer.type.name]
+
 			if(!lt) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name)
 
 			var type = lt[rightinfer.type.name] 
-			if(!type) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+' and '+rightinfer.type.name)
+			if(!type){
+				if(node.left.type === 'Literal' && leftinfer.type.name === 'int' &&
+					rightinfer.type.name === 'float'){
+					leftstr += '.0'
+					type = types.float
+				}
+				else if(node.right.type === 'Literal' && rightinfer.type.name === 'int' &&
+					leftinfer.type.name === 'float'){
+					rightstr += '.0'
+					type = types.float
+				}
+				else throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+' and '+rightinfer.type.name)
+			}
 
 			node.infer = {
 				type:type,
