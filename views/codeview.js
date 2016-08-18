@@ -118,7 +118,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		italic:0,
 		head:0,
 		tail:0,
-		
+		NewText:{
+			color:'#ccc'
+		},
 		Block:{
 			borderColor:'white',
 			bgColor:'red',
@@ -905,6 +907,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(text === ')' && this._text.charAt(offset) ===')') return
 
 		if(text === '\n' && this._text.charAt(offset-1) ==='{'&& this._text.charAt(offset) ==='}') text = '\n\n'
+
 		if(text === '{' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
 		if(text === '[' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
 		if(text === '(' && (!this.error || this._text.charAt(offset)!==')')) text = '()'
@@ -930,7 +933,26 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			pos += txt.length
 			if(offset<=pos){
 				var idx = offset - (pos - txt.length)
-				ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
+				if(ann[i+1] === this.styles.newText){
+					ann[i] = txt.slice(0, idx) + text + txt.slice(idx)
+				}
+				else{
+					ann[i] = txt.slice(0, idx)
+					// lets choose a style
+					ann.splice(i+5,0,
+						text,
+						this.styles.NewText,
+						ann[i+2],
+						ann[i+3],
+						ann[i+4],
+
+						txt.slice(idx) ,
+						ann[i+1],
+						ann[i+2],
+						ann[i+3],
+						ann[i+4]
+					)
+				}
 				break
 			}
 		}
