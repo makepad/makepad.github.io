@@ -38,6 +38,8 @@
 	var workerbloburl = URL.createObjectURL(new Blob([webworkersrc], {type: "text/javascript"}))
 
 	function updateWorker(handle, mainUrl, functionSource, workerArgs){
+		if(!handle.worker) return
+
 		// lets delta the resources
 		handle.lastResources = handle.resources
 
@@ -46,8 +48,6 @@
 			codefiles:[],
 			binaries:[]
 		}
-
-		if(!handle.worker) return
 
 		loadResourceAndDeps(mainUrl, mainUrl, 'code', handle.resources, functionSource).then(function(result){
 
