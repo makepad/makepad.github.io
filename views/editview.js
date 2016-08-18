@@ -824,13 +824,13 @@ module.exports = require('view').extend(function EditView(proto, base){
 	}
 
 	proto.onKeyX = function(k){
-		if(!k.ctrl && !k.meta) return
+		if(!k.ctrl && !k.meta) return true
 		this.$undoGroup++
 		this.cs.delete()
 	}
 
 	proto.onKeyA = function(k){
-		if(!k.ctrl && !k.meta) return
+		if(!k.ctrl && !k.meta) return true
 		// select all
 		var cur = this.cs.clearCursors()
 		cur.select(0, this.textLength())
@@ -841,7 +841,12 @@ module.exports = require('view').extend(function EditView(proto, base){
 		var name = k.name
 		var prefix = ''
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
-		if(this[evname]) return this[evname](k)
+		if(this[evname]){
+			if(!this[evname](k)){
+				this.$lastKeyPress = undefined				
+			}
+		}
+
 	}
 
 	// move the cursor into view when the keyboard opens on mobile
@@ -863,8 +868,16 @@ module.exports = require('view').extend(function EditView(proto, base){
 	}
 	
 	proto.onKeyPress = function(k){
-		this.$undoGroup ++
+		// if we switch from characters fo space
 		var out = String.fromCharCode(k.char === 13? 10: k.char)
+		var type = charType(out)
+		if(this.$lastKeyPress !== type){
+			// if its not space->word transition
+			if(!(this.$lastKeyPress ===2 && type === 1)){
+				this.$undoGroup++
+			}
+			this.$lastKeyPress = type
+		}
 		// lets run over all our cursors
 		// if repeat is -1 we have to replace last char
 		if(k.special){

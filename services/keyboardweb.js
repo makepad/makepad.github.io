@@ -132,8 +132,7 @@ function arrowCursorPoll(){
 		if(dir == 0) key = 38 // up
 		if(dir == 5) key = 40 // down
 		if(dir == 2) key = 37 // left
-		if(dir == 3) key = 39 // right
-		console.log(dir)
+		if(dir ==      3) key = 39 // right
 		// reset selection
 		lastStart = cliptext.selectionStart = defaultStart
 		lastEnd = cliptext.selectionEnd = defaultEnd
