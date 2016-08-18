@@ -411,10 +411,11 @@ module.exports = require('view').extend(function EditView(proto, base){
 				}
 				else{
 					oc1 = oldText.charCodeAt(this.end)
+					// find something better than a newline to hold on to
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
 					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
 				}
 
-				//var oc2 = oldText.charCodeAt(this.end-1)
 				for(var i = pos; i > 0; i--){
 					if(newText.charCodeAt(i) === oc1){
 						i+=d
@@ -427,6 +428,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 						break
 					}
 				}
+
 				if(Math.abs(pos-i) < Math.abs(pos-j)){
 					this.start = this.end = i
 				}
