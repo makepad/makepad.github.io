@@ -148,6 +148,7 @@ exports.onChildResize = function(attach, glfb, glpfb){
 	args.w = attach.color0.w
 	args.h = attach.color0.h
 	args.pixelRatio = attach.color0.pixelRatio
+	bus.postMessage({fn:'onResize', pixelRatio:args.pixelRatio, w:args.w, h:args.h})
 }
 
 var gl
