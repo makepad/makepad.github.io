@@ -20,7 +20,6 @@ module.exports = require('app').extend(function(proto){
 
 	proto.onInit = function(){
 		load.text("tests/livecode1.js").then(function(text){
-			console.error(text)
 			this.find('CodeView').text = text
 		}.bind(this))
 	}
@@ -44,7 +43,6 @@ module.exports = require('app').extend(function(proto){
 				//text:'',
 				onText:function(){
 					if(!this.error && this.text){
-						console.error(this.text)
 						this.app.runUserApp(this.text)
 					}
 				},

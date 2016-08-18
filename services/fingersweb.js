@@ -5,7 +5,6 @@ var services = service.others
 
 var ownerServices = service.ownerServices
 if(ownerServices){
-	console.log('bailin')
 	return
 }
 
