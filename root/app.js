@@ -164,7 +164,6 @@ module.exports = require('view').extend(function App(proto, base){
 
 		// lets attach our todo to the main framebuffer
 		painter.mainFramebuffer.assignTodo(this.todo)
-
 		// first draw
 		this.$redrawViews(0,0)
 	}

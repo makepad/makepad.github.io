@@ -1,0 +1,21 @@
+module.exports=require('apps/drawapp').extend({
+tools:{Rect:{
+pixel:function(){
+return mix(
+'white',
+'green',
+abs(
+sin(8.*length(
+this.mesh.xy-vec2(.5)
+)+this.time)
+)
+)
+}
+}},
+onDraw:function(){
+this.drawRect({
+w:"100%",
+h:"100%"
+})
+}
+})

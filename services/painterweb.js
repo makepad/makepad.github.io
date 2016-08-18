@@ -128,6 +128,7 @@ exports.addChild = function(child, fbId){
 
 	// send the framebuffer to make the main to the child
 	return {
+		requestRepaint: requestRepaint,
 		painterWorkerId:childPainters.push(child),
 		gl:gl,
 		attach:fb.attach,
@@ -138,30 +139,31 @@ exports.addChild = function(child, fbId){
 }
 // ok someone wants to hot reload
 exports.onHotReload = function(){
-	console.log('hot reload!')
 }
 
-exports.onChildResize = function(attach, glfb, glpfb, w, h){
+exports.onChildResize = function(attach, glfb, glpfb){
 	mainFramebuffer.attach = attach
 	mainFramebuffer.glfb = glfb
 	mainFramebuffer.glpfb = glpfb
-	args.w = w
-	args.h = h
+	args.w = attach.color0.w
+	args.h = attach.color0.h
+	args.pixelRatio = attach.color0.pixelRatio
 }
 
 var gl
 
 var ownerServices = service.ownerServices
-var parentFrameBuffer
+var parentFramebuffer
 
 if(ownerServices && ownerServices.painter){
 	var workerArgs = service.workerArgs	
-	parentFrameBuffer = ownerServices.painter.addChild(exports, service.workerArgs.fbId)
-	gl = parentFrameBuffer.gl
-	painterWorkerId = parentFrameBuffer.painterWorkerId
-	args.w = workerArgs.w
-	args.h = workerArgs.h
-	args.pixelRatio = workerArgs.parentPixelRatio
+	parentFramebuffer = ownerServices.painter.addChild(exports, service.workerArgs.fbId)
+	gl = parentFramebuffer.gl
+	painterWorkerId = parentFramebuffer.painterWorkerId
+	var attach = parentFramebuffer.attach
+	args.w = attach.color0.w
+	args.h = attach.color0.h
+	args.pixelRatio = attach.color0.pixelRatio
 }
 else{
 	gl = initializeGLContext(canvas)
@@ -205,6 +207,7 @@ function runTodo(todo){
 	}
 	currentTodo = lastTodo
 	if(!pickPass && processScrollState(todo))return true
+
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
 
@@ -449,6 +452,7 @@ function renderColor(framebuffer, todoId){
 	pickPass = false
 		// lets check our maxDuration
 	if(runTodo(todo)) return true
+	return repaint
 }
 
 exports.renderChildColor = function(time, fid){
@@ -457,14 +461,11 @@ exports.renderChildColor = function(time, fid){
 
 	if(!mainFramebuffer || !mainFramebuffer.todoId) return
 	// render the main scene
-	if(renderColor(mainFramebuffer)){
-	//	requestRepaint()
-	}
+	return renderColor(mainFramebuffer)
 }
 
 var repaintPending = false
 function repaint(time){
-
 	repaintTime = (Date.now() - args.timeBoot) / 1000
 
 	repaintPending = false
@@ -491,6 +492,9 @@ function repaint(time){
 }
 
 function requestRepaint(){
+	if(parentFramebuffer){
+		return parentFramebuffer.requestRepaint()
+	}
 	if(!repaintPending){
 		repaintPending = true
 		window.requestAnimationFrame(repaint)
@@ -1024,13 +1028,13 @@ userfn.newShader = function(msg){
 
 	localStorage.setItem(cacheid, 1)
 	var shader = gl.shaderCache[cacheid]
-
 	if(shader){
 		if(!shader.attrlocs) mapShaderIO(shader, vertexcode, pixelcode)
 		shader.refCount++
 		shaderIds[shaderid] = shader
 		return
 	}
+	
 	shader = shaderIds[shaderid] = gl.shaderCache[cacheid] = compileShader(vertexcode, pixelcode)
 	if(shader){
 		mapShaderIO(shader, vertexcode, pixelcode)
@@ -1044,11 +1048,12 @@ todofn[2] = function useShader(i32, f32, o){
 	// check last maxindex
 
 	var prevAttrMax = -1
-	if(currentShader){
-		prevAttrMax = currentShader.maxAttrIndex
+	if(gl.currentShader){
+		prevAttrMax = gl.currentShader.maxAttrIndex
 		//shader.prevMaxTexIndex = currentShader.maxTexIndex || 0
 	}
 	
+	gl.currentShader = 
 	currentShader = shader
 	
 	if(shader){
@@ -1094,6 +1099,7 @@ userfn.updateMesh = function(msg){
 		glbuffer.wOffset = msg.wOffset
 		glbuffer.hOffset = msg.hOffset
 	}
+
 	glbuffer.array = msg.array
 	glbuffer.length = msg.length
 	glbuffer.updateId = frameId
@@ -1263,7 +1269,7 @@ userfn.newFramebuffer = function(msg){
 			throw new Error('Dont create a mainframebuffer more than once')
 		}
 		
-		mainFramebuffer =  framebufferIds[msg.fbId] = parentFrameBuffer || {
+		mainFramebuffer =  framebufferIds[msg.fbId] = parentFramebuffer || {
 			todo:undefined
 		}
 
@@ -1298,6 +1304,7 @@ userfn.newFramebuffer = function(msg){
 
 		tex.w = msg.w
 		tex.h = msg.h
+		tex.pixelRatio = args.pixelRatio
 		attach[key] = tex
 	}
 	// and create framebuffer and attach all of the textures
@@ -1337,7 +1344,7 @@ userfn.newFramebuffer = function(msg){
 	// signal the child their framebuffer has resized
 	if(prev && prev.child){
 		fb.child = prev.child
-		prev.child.onChildResize(attach, glfb, glpfb, msg.w, msg.h)
+		prev.child.onChildResize(attach, glfb, glpfb)
 	}
 }
 

@@ -321,9 +321,6 @@
 			binarylut[binary.resourceurl] = binary.response
 		}
 
-		// we have to delta with the previous load
-		// and only reload modules that changed
-		// 
 		for(var i = codefiles.length - 1; i >=0; i--){
 			var code = codefiles[i]
 			var old = modules[code.resourceurl]

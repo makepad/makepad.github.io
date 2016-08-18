@@ -19,7 +19,7 @@ module.exports = require('app').extend(function(proto){
 	})
 
 	proto.onInit = function(){
-		load.text("tests/codetestinput.js").then(function(text){
+		load.text("tests/livecode1.js").then(function(text){
 			this.find('CodeView').text = text
 		}.bind(this))
 	}
@@ -28,10 +28,7 @@ module.exports = require('app').extend(function(proto){
 		var userview = this.find('UserCode')
 		var args = {
 			painter:{
-				fbId: userview.$renderPasses.surface.framebuffer.fbId,
-				w: userview.$w,
-				h: userview.$h,
-				pixelRatio: require('painter').pixelRatio
+				fbId: userview.$renderPasses.surface.framebuffer.fbId
 			}
 		}
 		if(!this.userApp){

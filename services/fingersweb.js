@@ -4,7 +4,10 @@ var canvas = service.canvas
 var services = service.others
 
 var ownerServices = service.ownerServices
-if(ownerServices) return
+if(ownerServices){
+	console.log('bailin')
+	return
+}
 
 var TAP_TIME = 350
 

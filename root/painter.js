@@ -112,7 +112,6 @@ painter.Todo = require('class').extend(function Todo(proto){
 			// animation related
 			timeStart:this.timeStart,
 			timeMax:this.timeMax,
-			animLoop:this.animLoop,
 
 			wPainter:painter.w,
 			hPainter:painter.h,

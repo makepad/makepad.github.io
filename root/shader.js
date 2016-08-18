@@ -104,7 +104,11 @@ module.exports = require('class').extend(function Shader(proto){
 		for(var key in vtx.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = vtx.instanceProps[key]
 		for(var key in pix.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = pix.instanceProps[key]
 		for(var key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
-		for(var key in pix.uniforms) uniforms[key] = pix.uniforms[key]
+		for(var key in pix.uniforms){
+			var uni = pix.uniforms[key]
+			if(uniforms[key]) uniforms[key].refcount += uni.refcount
+			else uniforms[key] = uni
+		}
 
 		// the shaders
 		var vhead = proto.$vertexHeader, vpre = '', vpost = ''
@@ -658,7 +662,7 @@ module.exports = require('class').extend(function Shader(proto){
 			var uniform = uniforms[key]
 			if(uniform.config.asGlobal) continue
 			if(key === 'this_DOT_time' && uniform.refcount > 1){
-				code += indent +'	$todo.animLoop = true\n'
+				code += indent +'	$todo.timeMax = Infinity\n'
 			}
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
