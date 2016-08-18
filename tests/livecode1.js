@@ -14,7 +14,7 @@ onFingerDown:function(){
 this.redraw()
 },
 onDraw:function(){
-for(var i=0;i<100;i++)
+for(var i=0;i<100;i++){
 this.drawRect({
 id:i,
 col:[random(),random(),random(),1],
@@ -23,5 +23,6 @@ y:floor(i/10)*100,
 w:100,
 h:100
 })
+}
 }
 })
