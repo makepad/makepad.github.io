@@ -8,7 +8,7 @@ borderColor:'white',
 borderWidth:2,
 pixelStyle:function(){$
 this.color=mix('white',this.color,abs(
-sin(8.*length(
+sin(sin(this.time+this.id)*8.*length(
 this.mesh.xy-vec2(.5+.5*sin(this.time+this.id))
 )+this.time)
 ))
