@@ -4,9 +4,9 @@ col:'red',
 id:0,
 borderRadius:20,
 shadowOffset:[5,5],
-borderColor:'white',
 borderWidth:2,
 pixelStyle:function(){$
+this.borderColor=mix('white','black',this.mesh.y)
 this.color=mix('white',this.color,abs(
 sin(sin(this.time+this.id)*8.*length(
 this.mesh.xy-vec2(.5+0.*sin(this.time+8.*this.id))
