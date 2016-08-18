@@ -46,7 +46,7 @@
 			codefiles:[],
 			binaries:[]
 		}
-		console.error("UPDATE WOKRER", workerArgs)
+		console.error("UPDATE WOKRER", functionSource)
 		loadResourceAndDeps(mainUrl, mainUrl, 'code', handle.resources, functionSource).then(function(result){
 
 			// so kernel services... 
