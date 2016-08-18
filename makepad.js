@@ -44,6 +44,7 @@ module.exports = require('app').extend(function(proto){
 				//text:'',
 				onText:function(){
 					if(!this.error && this.text){
+						console.error(this.text)
 						this.app.runUserApp(this.text)
 					}
 				},
