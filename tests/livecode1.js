@@ -9,7 +9,7 @@ borderWidth:2,
 pixelStyle:function(){$
 this.color=mix('white',this.color,abs(
 sin(sin(this.time+this.id)*8.*length(
-this.mesh.xy-vec2(.5+.5*sin(this.time+this.id))
+this.mesh.xy-vec2(.5+0.*sin(this.time+8.*this.id))
 )+this.time)
 ))
 }
@@ -18,9 +18,9 @@ onFingerDown:function(){
 this.redraw()
 },
 onDraw:function(){
-for(var i=0;i<100;i++){
+for(var i=0;i<200;i++){
 this.drawRect({
-id:i,
+id:i*0.01,
 color:[random(),random(),random(),1],
 x:(i%10)*100,
 y:floor(i/10)*100,
