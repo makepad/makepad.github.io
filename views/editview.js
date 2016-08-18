@@ -404,18 +404,19 @@ module.exports = require('view').extend(function EditView(proto, base){
 
 				// scan for the closest position for the cursor
 				var oc1 = oldText.charCodeAt(this.end)
+				var d = 0
+				if(oc1 === 10) oc1 = oldText.charCodeAt(this.end+1), d = -1
 				//var oc2 = oldText.charCodeAt(this.end-1)
-				for(var i = pos; i >= 0; i--){
+				for(var i = pos; i > 0; i--){
 					if(newText.charCodeAt(i) === oc1){
+						i+=d
 						break
-						return
 					}
 				}
-				var oldCode = oldText.charCodeAt(this.end)
-				for(var j = pos-2; j < newText.length; j++){
+				for(var j = pos; j < newText.length; j++){
 					if(newText.charCodeAt(j) === oc1){
+						j+=d
 						break
-						return
 					}
 				}
 				if(Math.abs(pos-i) < Math.abs(pos-j)){

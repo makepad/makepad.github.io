@@ -740,8 +740,9 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 		}
 
 		var elt
-		if (allowEmpty && this.type === tt.comma)
+		if (allowEmpty && this.type === tt.comma){
 			elt = null
+		}
 		else if (this.type === tt.ellipsis) {
 			elt = this.parseSpread(refDestructuringErrors)
 			if (this.type === tt.comma && refDestructuringErrors && !refDestructuringErrors.trailingComma) {
@@ -757,7 +758,8 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 			}
 			break
 		}
-		if(this.eat(tt.comma) || this.insertCommas && this.skippedNewlines){
+
+		if(this.eat(tt.comma) || allowTrailingComma && this.insertCommas && this.skippedNewlines){
 			
 			if(this.storeComments){
 				this.commentEnd(elt, above, close)
@@ -767,6 +769,9 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 				node.trail = true
 				break
 			}
+ 		}
+ 		else{
+ 			this.unexpected()
  		}
 	}
 	if(this.storeComments && node) this.commentBottom(close, node)
