@@ -1,7 +1,9 @@
-module.exports = require('view').extend(function EditView(proto){
+module.exports = require('view').extend(function EditView(proto, base){
 	var painter = require('painter')
+
 	proto.props = {
-		cursorTrim:0.
+		cursorTrim:0.,
+		text:''
 	}
 
 	//
@@ -9,7 +11,6 @@ module.exports = require('view').extend(function EditView(proto){
 	// Shaders
 	//
 	//
-
 	proto.tools = {
 		Background:require('shaders/backgroundshader').extend({
 			borderRadius:0,
@@ -55,6 +56,7 @@ module.exports = require('view').extend(function EditView(proto){
 			tween:2,
 			color:'#fff',
 			vertexStyle:function(){
+
 				var time = this.normalTween
 				var v = sin(time*PI)
 				this.y -= v*2.
@@ -111,7 +113,8 @@ module.exports = require('view').extend(function EditView(proto){
 	//
 	//
 
-	proto.onInit = function(){
+	proto._onInit = function(){
+		base._onInit.call(this)
 		this.cs = new CursorSet(this)
 		this.setFocus()
 		this.$undoStack = []
@@ -142,9 +145,9 @@ module.exports = require('view').extend(function EditView(proto){
 		this.drawSelection()
 
 		this.drawText({
-			wrapping:'line',
-			$editMode:true,
-			text:this.text
+			wrapping: 'line',
+			$editMode: true,
+			text: this._text
 		})
 
 		if(this.hasFocus){
@@ -155,7 +158,7 @@ module.exports = require('view').extend(function EditView(proto){
 				var t = this.cursorRect(cursor.end)
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
 				if(cursor.max < 0) cursor.max = t.x
-				for(var j = 0; j < boxes.length;j++){
+				for(var j = 0; j < boxes.length; j++){
 					var box = boxes[j]
 					var pbox = boxes[j-1]
 					var nbox = boxes[j+1]
@@ -529,9 +532,9 @@ module.exports = require('view').extend(function EditView(proto){
 				return {}
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
-			var last = this.$lengthText() - 1//this.text.length - 1
+			var last = this.$lengthText() - 1//this._text.length - 1
 			var cr = this.cursorRect(last, 1)
-			if(this.text.charCodeAt(last) === 10){
+			if(this._text.charCodeAt(last) === 10){
 				cr.y += cr.fontSize * cr.lineSpacing
 				cr.x = 0
 			}
@@ -563,29 +566,29 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.textLength = function(){
-		return this.text.length
+		return this._text.length
 	}
 
 	proto.charAt = function(offset){
-		return this.text.charAt(offset)
+		return this._text.charAt(offset)
 	}
 
 	proto.charCodeAt = function(offset){
-		return this.text.charCodeAt(offset)
+		return this._text.charCodeAt(offset)
 	}
 
 	proto.insertText = function(offset, text){
-		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
+		this._text = this._text.slice(0, offset) + text + this._text.slice(offset)
 		this.redraw()
 	}
 
 	proto.removeText = function(start, end){
-		this.text = this.text.slice(0, start) + this.text.slice(end)
+		this._text = this._text.slice(0, start) + this._text.slice(end)
 		this.redraw()
 	}
 
 	proto.serializeSlice = function(start, end, arg){
-		return this.text.slice(start, end)
+		return this._text.slice(start, end)
 	}
 
 	function charType(char){
@@ -604,7 +607,7 @@ module.exports = require('view').extend(function EditView(proto){
 
 	proto.scanWordRight = function(start){
 		var i = start, type = 2, len = this.textLength()
-		if(this.text.charCodeAt(start) === 10) return start
+		if(this._text.charCodeAt(start) === 10) return start
 		while(i < len && type === 2) type = charType(this.charAt(i++))
 		while(i < len && type === charType(this.charAt(i))) i++
 		return i
@@ -618,7 +621,7 @@ module.exports = require('view').extend(function EditView(proto){
 	}
 
 	proto.scanLineRight = function(start){
-		for(var i = start; i < this.text.length; i++){
+		for(var i = start; i < this._text.length; i++){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i
@@ -653,7 +656,7 @@ module.exports = require('view').extend(function EditView(proto){
 			var txt = ''
 			for(var i = 0; i < this.cs.cursors.length; i++){
 				var cursor = this.cs.cursors[i]
-				txt += this.text.slice(cursor.lo(), cursor.hi())
+				txt += this._text.slice(cursor.lo(), cursor.hi())
 			}
 
 			this.app.setClipboardText(txt)

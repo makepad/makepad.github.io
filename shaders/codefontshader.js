@@ -78,8 +78,8 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var posy = turtle.wy
 			var nh = fontSize * lineSpacing
 			
-			var base = out.text.length 
-			out.text += txt
+			var base = out._text.length 
+			out._text += txt
 			var sx = turtle.sx
 
 			if(this.$fastNAMEWrite){

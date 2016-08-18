@@ -205,6 +205,18 @@ module.exports = require('shader').extend(function RectShader(proto){
 		begin:function(overload){
 			this.$STYLEPROPS(overload, 2)
 			this.$ALLOCDRAW()
+			var t = this.turtle
+			// add borderwidth to padding
+			var bw = t._borderWidth
+			if(bw[0] || bw[1] || bw[2] || bw[3]){
+				var pad = t.$bwPadding || (t.$bwPadding = [0,0,0,0])
+				var op = t._padding
+				pad[0] = op[0] + bw[0]
+				pad[1] = op[1] + bw[1]
+				pad[2] = op[2] + bw[2]
+				pad[3] = op[3] + bw[3]
+				t._padding = pad
+			}
 			this.beginTurtle()
 		},
 		end:function(){

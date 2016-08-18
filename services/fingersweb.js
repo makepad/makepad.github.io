@@ -3,6 +3,9 @@ var bus = service.bus
 var canvas = service.canvas
 var services = service.others
 
+var ownerServices = service.ownerServices
+if(ownerServices) return
+
 var TAP_TIME = 350
 
 var TAP_DIST_TOUCH = 50

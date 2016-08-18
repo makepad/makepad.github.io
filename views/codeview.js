@@ -5,8 +5,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	// mixin the formatter
 	require('jsparser/jsformatter')(proto, this.styles)
 
-	proto.onInit = function(){
-		base.onInit.call(this)
+	proto._onInit = function(){
+		base._onInit.call(this)
 		this.$fastTextOutput = this
 		this.ann = []
 		this.oldText = ''
@@ -18,7 +18,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.tools = {
 		Text:require('shaders/codefontshader').extend({
 			tween:2.,
-			ease: [0,10,1.0,1.0],
+			ease:[0, 10, 1.0, 1.0],
 			duration:0.3,
 			displace:{
 				0:{x:0,y:0.08},
@@ -461,11 +461,18 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.$fastTextFontSize = 12
 
+	// abuse a flag as a listener so we keep onText clean without having to use
+	// on('text') API
+	proto._onText = 8
+	proto.onFlag8 = function(){
+		this.textClean = false
+		this.redraw()
+	}
 
 	proto.parseText = function(){
 		this.ast = undefined
 		try{
-			this.ast = parser.parse(this.text,{
+			this.ast = parser.parse(this._text, {
 				storeComments:[]
 			})
 		}
@@ -490,9 +497,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 		else{
 			//require.perf()
-
 			this.error = undefined
-
 			this.$fastTextDelay = 0			
 
 			if(this.textClean === false){
@@ -525,13 +530,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.reuseErrorMarker()
 				this.orderSelection()
 
-				var oldtext = this.text
+				var oldtext = this._text
 
 				// first we format the code
 				this.formatJS(this.Text.prototype.font.fontmap.glyphs[32].advance * 3, this.ast)
 
 				// make undo operation for reformat
-				var newtext = this.text
+				var newtext = this._text
 				var oldlen = oldtext.length
 				var newlen = newtext.length
 				for(var start = 0; start < oldlen && start < newlen; start++){
@@ -569,6 +574,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 						this.$setTweenStartMarker(i, 0)
 					}
 				}
+				if(this.onText) setImmediate(this.onText.bind(this))
 			}
 			else{
 				var ann = this.ann
@@ -587,18 +593,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.orderErrorMarker()
 
 				this.$fastTextWrite = false
-				this.text = ''
+				this._text = ''
 				for(var i = 0, len = ann.length; i < len; i+=5){
 					this.turtle.sx = ann[i+2]
 					this.$fastTextFontSize = ann[i+4]
-					this.fastText(ann[i], ann[i+1],ann[i+3])
+					this.fastText(ann[i], ann[i+1], ann[i+3])
 				}
 				
 				var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
 				var rd = this.$readOffsetText(epos)
 
 				this.drawErrorMarker({
-					
 					x1:0,
 					x2:rd.x,
 					x3:rd.x + rd.w,
@@ -892,19 +897,19 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 
-		if(text === "'" && this.text.charAt(offset) ==="'") return
-		if(text === '"' && this.text.charAt(offset) ==='"') return
+		if(text === "'" && this._text.charAt(offset) ==="'") return
+		if(text === '"' && this._text.charAt(offset) ==='"') return
 		
-		if(text === '}' && this.text.charAt(offset) ==='}') return
-		if(text === ']' && this.text.charAt(offset) ===']') return
-		if(text === ')' && this.text.charAt(offset) ===')') return
+		if(text === '}' && this._text.charAt(offset) ==='}') return
+		if(text === ']' && this._text.charAt(offset) ===']') return
+		if(text === ')' && this._text.charAt(offset) ===')') return
 
-		if(text === '\n' && this.text.charAt(offset-1) ==='{'&& this.text.charAt(offset) ==='}') text = '\n\n'
-		if(text === '{' && (!this.error || this.text.charAt(offset)!=='}')) text = '{}'
-		if(text === '[' && (!this.error || this.text.charAt(offset)!==']')) text = '[]'
-		if(text === '(' && (!this.error || this.text.charAt(offset)!==')')) text = '()'
-		if(text === '"' && (!this.error || this.text.charAt(offset)!=='"')) text = '""'
-		if(text === "'" && (!this.error || this.text.charAt(offset)!=="'")) text = "''"
+		if(text === '\n' && this._text.charAt(offset-1) ==='{'&& this._text.charAt(offset) ==='}') text = '\n\n'
+		if(text === '{' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
+		if(text === '[' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
+		if(text === '(' && (!this.error || this._text.charAt(offset)!==')')) text = '()'
+		if(text === '"' && (!this.error || this._text.charAt(offset)!=='"')) text = '""'
+		if(text === "'" && (!this.error || this._text.charAt(offset)!=="'")) text = "''"
 
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
@@ -914,7 +919,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		else this.wasNewlineChange = 0
 
 		this.textClean = false
-		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
+		this._text = this._text.slice(0, offset) + text + this._text.slice(offset)
 
 		// alright lets find the insertion spot in ann
 		var ann = this.ann
@@ -929,6 +934,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				break
 			}
 		}
+
 		this.redraw()
 	}
 
@@ -936,7 +942,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.textClean = false
 		var delta = 0
 		this.wasNewlineChange = 0
-		var text = this.text
+		var text = this._text
 
 		if(end === start + 1){
 			var delchar = text.slice(start, end)
@@ -952,7 +958,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			else if(delchar === '"' && text.charAt(end) === '"') end ++
 		}
 
-		this.text = text.slice(0, start) + text.slice(end)
+		this._text = text.slice(0, start) + text.slice(end)
 
 		this.$fastTextDelta -= (end - start)
 		this.$fastTextStart = 
@@ -992,7 +998,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.serializeSlice = function(start, end, arg){
 		if(arg) return arg.slice(start, end)
-		return this.text.slice(start, end)
+		return this._text.slice(start, end)
 	}
 
 	// creates a prototypical inheritance overload from an object

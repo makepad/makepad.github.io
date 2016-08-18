@@ -5,7 +5,7 @@ var worker = require('worker')(function(){
 	var owner = require('worker')
 	var painter = require('painter')
 
-	owner.onmessage = function(msg){
+	owner.onMessage = function(msg){
 		console.log("GOT MESSAGE FROM OWNER", msg)
 	}
 
@@ -13,7 +13,7 @@ var worker = require('worker')(function(){
 })
 
 worker.postMessage("hi")
-worker.onmessage = function(msg){
+worker.onMessage = function(msg){
 	console.log("got message from worker", msg)
 }
 

@@ -1,4 +1,4 @@
-var Div = require('canvas').extend({
+var Div = require('views/drawview').extend({
 	props:{
 		bgColor:[1,0,0,1]
 	},
@@ -11,7 +11,7 @@ var Div = require('canvas').extend({
 	}
 })
 
-var Text = require('canvas').extend({
+var Text = require('views/drawview').extend({
 	padding:10,
 	onDraw:function(){
 		this.beginRect(this.viewGeom)
@@ -23,14 +23,14 @@ var Text = require('canvas').extend({
 	}
 })
 
-var Scrollbars = require('canvas').extend({
+var Scrollbars = require('views/drawview').extend({
 	tools:{
 		Button:require('stamps/buttonstamp').extend({
 			Bg:{
 				borderWidth:1,
 			}
 		}),
-		Rect:require('shaders/fastrectshader').extend({
+		Rect:require('shaders/backgroundshader').extend({
 			borderRadius:8,
 		})
 	},

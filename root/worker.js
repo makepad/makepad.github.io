@@ -1,8 +1,8 @@
 var service = require('services/worker')
 var bus = service.bus
 
-var workeridalloc = 0
-var workerids = {}
+var workerIdsAlloc = 0
+var workerIds = {}
 var requires = {}
 
 bus.onMessage = function(msg){
@@ -12,69 +12,84 @@ bus.onMessage = function(msg){
 		}
 	}
 	else if(msg.fn === 'owner'){
-		workerids[msg.workerid].onMessage(msg.msg)
+		workerIds[msg.workerId].onMessage(msg.msg)
 	}
 }
 
 exports.onRequire = function(args, resolve, moduleurl){
 
 	var Worker = require('class').extend(function Worker(proto){
-		proto.onConstruct = function(onrun){
+		proto.onConstruct = function(onRun, args){
+			var workerId = workerIdsAlloc++
 
-			if(!onrun) onrun = this.onrun
+			this.postMessage = function(msg, transfers){
+				bus.postMessage({
+					fn:'worker',
+					workerId:workerId,
+					msg:msg,
+					transfers:transfers
+				}, transfers)
+			},
+			this.batchMessage = function(msg, transfers){
+				bus.batchMessage({
+					fn:'worker',
+					workerId:workerId,
+					msg:msg,
+					transfers:transfers
+				}, transfers)
+			},
+			
+			workerIds[workerId] = this
 
-			var workerid = workeridalloc++
-			if(typeof onrun === 'function'){
-				// send message to workerweb to start this worker
-				var fncode = onrun.toString().replace(/function\s*\([^\)]*?\)\s*\{([\S\s]*)\}\s*$/, function(m,b){return b})
+			// run more code
+			this.run = function(onRun,args){
+				if(!onRun) onRun = this.onRun
+				var code
+				if(typeof onRun === 'function'){
+					// send message to workerweb to start this worker
+					code = onRun.toString().replace(/function\s*\([^\)]*?\)\s*\{([\S\s]*)\}\s*$/, function(m,b){return b})
+				}
+				else if(typeof onRun === 'string'){
+					code = onRun
+				}
+				else{
+					throw new Error("No onRun function specified for worker")
+				}
+
 				bus.postMessage({
 					fn: 'run',
 					url: moduleurl,
-					workerid: workerid,
-					function: fncode
+					args: args, 
+					workerId: workerId,
+					function: code
 				})
 			}
-			else{// TODO
-				console.log("No other onrun types supported")
-			}
-			this.postMessage = function(msg){
-				bus.postMessage({
-					fn:'worker',
-					workerid:workerid,
-					msg:msg
-				})
-			},
-			this.batchMessage = function(msg){
-				bus.batchMessage({
-					fn:'worker',
-					workerid:workerid,
-					msg:msg
-				})
-			},
 			
-			workerids[workerid] = this
+			this.run(onRun,args)
 		}
 
-		proto.onrun = function(){}
+		proto.onRun = function(){}
 		
 		proto.onMessage = function(msg){}
 
 		var construct = proto.constructor
 
 		construct.onMessage = function(msg){}
-		construct.postMessage = function(msg){
+		construct.postMessage = function(msg, transfers){
 			bus.postMessage({
 				fn:'owner',
-				workerid:service.workerid,
-				msg:msg
-			})
+				workerId:service.workerId,
+				msg:msg,
+				transfers:transfers
+			}, transfers)
 		}
-		construct.batchMessage = function(msg){
+		construct.batchMessage = function(msg, transfers){
 			bus.batchMessage({
 				fn:'owner',
-				workerid:service.workerid,
-				msg:msg
-			})
+				workerId:service.workerId,
+				msg:msg,
+				transfers:transfers
+			}, transfers)
 		}
 	})
 

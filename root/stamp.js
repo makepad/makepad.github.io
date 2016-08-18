@@ -4,7 +4,6 @@ module.exports = require('class').extend(function Stamp(proto){
 	require('tools')(proto)
 
 	proto.onFlag0 = 1
-
 	proto.onFlag1 =
 	proto.redraw = function(){
 		var view = this.view
@@ -56,7 +55,7 @@ module.exports = require('class').extend(function Stamp(proto){
 		}
 		else if(view) view.redraw()
 	}
-
+	proto.$isStamp = true
 	proto.inPlace = false
 
 	proto.props = {

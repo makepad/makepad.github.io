@@ -75,8 +75,25 @@ module.exports = require('class').extend(function View(proto){
 				children.push(value)
 			}
 		}
-
 		this.todo.name = this.name || this.constructor.name
+	}
+
+	// breadth first find child by name
+	proto.find = function(name){
+		if(this.name === name || this.constructor.name === name) return this
+		var children = this.children
+		if(children){
+			var childlen = children.length
+			for(var i = 0; i < childlen; i++){
+				var child = children[i]
+				if(child.name === name || child.constructor.name === name) return child
+			}
+			for(var i = 0; i< childlen; i++){
+				var child = children[i]
+				var res = child.find(name)
+				if(res) return res
+			}
+		}
 	}
 
 	proto._onInit = function(){
@@ -130,7 +147,7 @@ module.exports = require('class').extend(function View(proto){
 			pass.projection = mat4.create()
 			pass.w = w
 			pass.h = h
-			mat4.ortho(pass.projection, 0, pass.w, pass.h, 0, -100, 100)
+			mat4.ortho(pass.projection, 0, pass.w, 0, pass.h, -100, 100)
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodo(pass.todo)
 		}
@@ -369,8 +386,7 @@ module.exports = require('class').extend(function View(proto){
 	// how do we incrementally redraw?
 	proto.redraw = function(){
 		this.$drawClean = false
-
-		if(!this.app.redrawTimer){
+		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){
 				this.$redrawViews()
 				this.redrawTimer = undefined
@@ -538,10 +554,10 @@ module.exports = require('class').extend(function View(proto){
 
 			proto.pixelMain = function(){$
 				if(this.workerId < 0.){
-					gl_FragColor = texture2D(this.pickSampler, this.mesh.xy)
+					gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 				else{
-					gl_FragColor = texture2D(this.colorSampler, this.mesh.xy)
+					gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 			}
 

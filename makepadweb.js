@@ -1,5 +1,5 @@
 (function(){
-	var rooturl = location.origin
+	var rootUrl = location.origin
 	var WorkerClass
 	// insert meta config tags
 	function init(){
@@ -12,10 +12,10 @@
 		//!TODO multiple canvasses boot up cycle fix
 		for(var i = 0; i < canvasses.length; i++){
 			var canvas = canvasses[i]
-			var mainurl = buildURL(rooturl, location.href, canvas.getAttribute('main'), 'code')
+			var mainUrl = buildURL(rootUrl, location.href, canvas.getAttribute('main'), 'code')
 			WorkerClass = canvas.getAttribute("noworker")?FakeWorker:Worker
 			// boot it up!
-			runWorker(mainurl, canvas)
+			runWorker(mainUrl, canvas)
 		}
 	}
 
@@ -37,25 +37,59 @@
 
 	var workerbloburl = URL.createObjectURL(new Blob([webworkersrc], {type: "text/javascript"}))
 
-	function runWorker(mainurl, canvas, owner, functionsource, workerid){
-		// a forward reference for the owner
-		var workerhandle = {
-			workerid:workerid,
-			queue:[]
-		}
+	function updateWorker(handle, mainUrl, functionSource, workerArgs){
+		// lets delta the resources
+		handle.lastResources = handle.resources
 
-		var resources = {
+		handle.resources = {
 			services:[],
 			codefiles:[],
 			binaries:[]
 		}
 
-		loadResourceAndDeps(mainurl, mainurl, 'code', resources, functionsource).then(function(result){
+		loadResourceAndDeps(mainUrl, mainUrl, 'code', handle.resources, functionSource).then(function(result){
 
+			// so kernel services... 
+			var userArgs = {}
+
+			initKernelServices(handle.resources.services, handle.kernelBusses, handle.kernelServices, handle.canvas, handle.worker, userArgs, handle.owner, workerArgs)
+			
+			handle.worker.postMessage({
+				$:'initworker', 
+				msg:{
+					workerId: handle.workerId,
+					rootUrl: rootUrl, 
+					resources: handle.resources,
+					userArgs: userArgs,
+					workerArgs: workerArgs
+				}
+			})
+		})
+	}
+
+	//keep track of all the workers
+	var workerHandles = []
+
+	function runWorker(mainUrl, canvas, owner, functionSource, workerId, workerArgs){
+		// a forward reference for the owner
+		var handle = {
+			owner:owner,
+			workerId:workerId,
+			canvas:canvas,
+			preInitQueue:[],
+			preInitTransfers:[],
+			resources:{
+				services:[],
+				codefiles:[],
+				binaries:[]
+			}
+		}
+
+		loadResourceAndDeps(mainUrl, mainUrl, 'code', handle.resources, functionSource).then(function(result){
 			var worker = new WorkerClass(workerbloburl, webworkersrc)
 
 			var subworkers = []
-			var kernelbusses = {
+			handle.kernelBusses = {
 				parseerror:{
 					onMessage:function(msg){
 						var script = document.createElement('script')
@@ -66,38 +100,43 @@
 				}
 			}
 
-			var kernelservices = {}
-			var userargs = {}
-			initKernelServices(resources.services, kernelbusses, kernelservices, canvas, worker, userargs, owner)
+			handle.kernelServices = {}
+			var userArgs = {}
+
+			initKernelServices(handle.resources.services, handle.kernelBusses, handle.kernelServices, canvas, worker, userArgs, owner, workerArgs)
 
 			worker.postMessage({
 				$:'initworker', 
 				msg:{
-					workerid: workerid,
-					rooturl: rooturl, 
-					resources: resources,
-					userargs: userargs
+					workerId: handle.workerId,
+					rootUrl: rootUrl, 
+					resources: handle.resources,
+					userArgs: userArgs,
+					workerArgs: workerArgs
 				}
 			})
 
 			// our owner worker has already sent messages whilst the worker was initializing, send them
-			if(workerhandle.queue.length){
+			if(handle.preInitQueue.length){
 				worker.postMessage({
 					$:'batch',
-					msgs:workerhandle.queue
-				})
+					msgs:handle.preInitQueue
+				}, handle.preInitTransfers)
 			}
-			worker.batchtransfers = []
-			worker.batchmessages = []
-			worker.postfunctions = []
-			worker.onmessage = createOnMessage(kernelbusses, worker, true)
+
+			worker.batchTransfers = []
+			worker.batchMessages = []
+			worker.postFunctions = []
+			worker.onmessage = createOnMessage(handle.kernelBusses, worker, true)
+			worker.handle = handle
 			// now the worker can receive messages instead of queues
-			workerhandle.worker = worker
+			handle.worker = worker
 		}, 
 		function(err){
-			console.error("Error loading "+mainurl+" cannot load "+err.resourceurl+" loaded from "+err.parenturl)
+			console.error("Error loading "+mainUrl+" cannot load "+err.resourceurl+" loaded from "+err.parenturl)
 		})
-		return workerhandle
+		workerHandles.push(handle)
+		return handle
 	}
 
 	function initWorker(){
@@ -105,25 +144,30 @@
 		// substitute for self
 		var worker = {
 			postMessage:self.postMessage.bind(self),
-			batchmessages:[],
-			batchtransfers:[],
-			postfunctions:[]
+			batchMessages:[],
+			batchTransfers:[],
+			postFunctions:[]
 		}
 
 		var userbusses = {
+			updateworker:{
+				onMessage:function(msg){
+					console.log("UPDATIN", msg.resources)
+				}
+			},
 			initworker:{
 				onMessage:function(msg){
 					var resources = msg.resources
-					worker.workerid =  msg.workerid
+					worker.workerId =  msg.workerId
 					initUserCode(
-						msg.rooturl, 
+						msg.rootUrl, 
 						resources.codefiles, 
 						resources.binaries,
 						modules, 
 						factories,
 						worker, 
 						userbusses,
-						msg.userargs
+						msg.userArgs
 					)
 				}
 			}
@@ -146,11 +190,11 @@
 
 	function createOnMessage(busses, worker, inkernel){
 		worker.postEntry = function(level){
-			var batchmessages = worker.batchmessages
-			if(batchmessages.length){
-				var transfers = worker.batchtransfers
-				for(var i = 0; i <batchmessages.length; i++){
-					var msg = batchmessages[i]
+			var batchMessages = worker.batchMessages
+			if(batchMessages.length){
+				var transfers = worker.batchTransfers
+				for(var i = 0; i <batchMessages.length; i++){
+					var msg = batchMessages[i]
 					var body = msg.msg
 					if(typeof body === 'object' && body.constructor !== Object){
 						var ret = body.toMessage()
@@ -173,22 +217,24 @@
 				}
 				worker.postMessage({
 					$:'batch',
-					msgs:batchmessages
+					msgs:batchMessages
 				}, transfers)
+
 				if(worker.fakeworker){
-					worker.batchmessages = []
-					worker.batchtransfers = []
+					worker.batchMessages = []
+					worker.batchTransfers = []
 				}
-				else worker.batchmessages.length = worker.batchtransfers.length = 0
+				else worker.batchMessages.length = worker.batchTransfers.length = 0
 			}
 			// send out any produced sync messages in one go
-			if(worker.postfunctions.length){
-				for(var i = 0; i < worker.postfunctions.length; i++){
-					worker.postfunctions[i]()
+			if(worker.postFunctions.length){
+				var postFunctions = worker.postFunctions
+				worker.postFunctions = []
+				for(var i = 0; i < postFunctions.length; i++){
+					postFunctions[i]()
 				}
-				worker.postfunctions.length = 0
-			}		
-			if(worker.batchmessages.length && !level) worker.postEntry(1)
+			}
+			if(worker.batchMessages.length && !level) worker.postEntry(1)
 		}
 		return function onMessage(e){
 			var msg = e.data
@@ -210,10 +256,20 @@
 		}
 	}
 
-	function initKernelServices(serviceresources, kernelbusses, kernelservices, canvas, worker, userargs, owner){
+	function initKernelServices(serviceresources, kernelBusses, kernelServices, canvas, worker, userArgs, owner, workerArgs){
 
 		for(var i = serviceresources.length - 1; i >=0; i--){
+
 			var serviceresource = serviceresources[i]
+
+			var serviceName = parseFileName(serviceresource.resourceurl).slice(0,-3)
+
+			var oldService = kernelServices[serviceName]
+			if(oldService){
+				if(oldService.onHotReload) oldService.onHotReload()
+				continue
+			}
+
 			try{
 				var kernelfn = new Function("exports", "service", serviceresource.response+'\n//# sourceURL='+serviceresource.resourceurl+'\n')
 			}
@@ -224,37 +280,38 @@
 				document.getElementsByTagName('head')[0].appendChild(script)
 			}
 
-			var servicename = parseFileName(serviceresource.resourceurl).slice(0,-3)
+			var kernelService = {}
 
-			var kernelservice = {}
-
-			var kernelservicebus = {
-				batchMessage:function(servicename, msg, transfers){
-					worker.batchmessages.push({$:servicename,msg:msg})
-					if(transfers) worker.batchtransfers.push.apply(worker.batchtransfers,transfers)
-				}.bind(kernelservice, servicename),
-				postMessage:function(servicename, msg, transfers){
-					worker.postMessage({$:servicename, msg:msg}, transfers)
-				}.bind(kernelservice, servicename)
+			var kernelServiceBus = {
+				batchMessage:function(serviceName, msg, transfers){
+					worker.batchMessages.push({$:serviceName,msg:msg})
+					if(transfers) worker.batchTransfers.push.apply(worker.batchTransfers,transfers)
+				}.bind(kernelService, serviceName),
+				postMessage:function(serviceName, msg, transfers){
+					worker.postMessage({$:serviceName, msg:msg}, transfers)
+				}.bind(kernelService, serviceName)
 			}
-			var myuserargs = userargs[servicename] = {}
+			var myuserargs = userArgs[serviceName] = {}
 
-			kernelfn(kernelservice, {
-				bus:kernelservicebus,
+			kernelfn(kernelService, {
+				bus:kernelServiceBus,
 				args:myuserargs,
+				workerArgs:workerArgs && workerArgs[serviceName],
 				canvas:canvas,
-				others:kernelservices,
+				others:kernelServices,
+				ownerServices:owner && owner.handle.kernelServices,
 				owner:owner,
 				worker:worker,
-				runWorker:runWorker
+				runWorker:runWorker,
+				updateWorker:updateWorker
 			})
 		
-			kernelbusses[servicename] = kernelservicebus
-			kernelservices[servicename] = kernelservice
+			kernelBusses[serviceName] = kernelServiceBus
+			kernelServices[serviceName] = kernelService
 		}
 	}
 
-	function initUserCode(rooturl, codefiles, binaries, modules, factories, worker, userbusses, userargs){
+	function initUserCode(rootUrl, codefiles, binaries, modules, factories, worker, userbusses, userArgs){
 
 		worker.loadworkerid = 1
 		var last
@@ -264,9 +321,19 @@
 			binarylut[binary.resourceurl] = binary.response
 		}
 
+		// we have to delta with the previous load
+		// and only reload modules that changed
+		// 
 		for(var i = codefiles.length - 1; i >=0; i--){
 			var code = codefiles[i]
+			var old = modules[code.resourceurl]
 
+			if(old){
+				if(old.source !== code.response){
+					if(old.onHotRemove) old.onHotRemove()
+				}
+				else continue
+			}
 			var factory
 
 			// name the constructors of the classes
@@ -280,20 +347,21 @@
 			}
 
 			modules[code.resourceurl] = last = {
-				require: createRequire(rooturl, code.resourceurl, modules, binarylut, worker, userbusses, userargs),
+				require: createRequire(rootUrl, code.resourceurl, modules, binarylut, worker, userbusses, userArgs),
 				factory: factory,
 				source: code.response
 			}
 		}
 
 		// initialize the last module 
+		if(!last) return
 		last.exports = {}
 		var ret = last.factory.call(last.exports, last.require, last.exports, last)
 		if(ret) last.exports = ret
 		if(typeof last.exports === 'function') last.exports()
 	}
 
-	function buildURL(rooturl, parenturl, path){
+	function buildURL(rootUrl, parenturl, path){
 
 		if(path.indexOf('services/') == 0){
 			path = path+'web.js'
@@ -305,7 +373,7 @@
 		var c1 = path.charAt(0)
 		var c2 = path.charAt(1)
 		if(c1 === '/'){
-			return rooturl + path.slice(1)
+			return rootUrl + path.slice(1)
 		}
 		else if(c1 === '.'){
 			if(c2 === '.'){
@@ -319,34 +387,34 @@
 		//else if(path.indexOf('services/') !== 0){
 		//	path = 'home/' + path
 		//}
-		return rooturl + '/' + path
+		return rootUrl + '/' + path
 	}
 
-	function createRequire(rooturl, moduleurl, modules, binarylut, worker, userbusses, userargs){
+	function createRequire(rootUrl, moduleurl, modules, binarylut, worker, userbusses, userArgs){
 		function require(path, args){
 			if(path.indexOf('services/') === 0){
 				//!TODO lock down this require to root/ modules
-				var servicename = path.slice(9)
+				var serviceName = path.slice(9)
 				// return a user service interface
 				var service = {
-					args:userargs[servicename],
-					workerid:worker.workerid,
+					args:userArgs[serviceName],
+					workerId:worker.workerId,
 					bus:{
-						batchMessage:function(servicename, msg, transfers){
-							worker.batchmessages.push({$:servicename,msg:msg})
-							if(transfers) worker.batchtransfers.push.apply(worker.batchtransfers,transfers)
-						}.bind(null, servicename),
-						postMessage:function(servicename, msg, transfers){
-							worker.postMessage({$:servicename,msg:msg}, transfers)
-						}.bind(null, servicename),
+						batchMessage:function(serviceName, msg, transfers){
+							worker.batchMessages.push({$:serviceName,msg:msg})
+							if(transfers) worker.batchTransfers.push.apply(worker.batchTransfers,transfers)
+						}.bind(null, serviceName),
+						postMessage:function(serviceName, msg, transfers){
+							worker.postMessage({$:serviceName,msg:msg}, transfers)
+						}.bind(null, serviceName),
 					}
 				}
-				userbusses[servicename] = service.bus
+				userbusses[serviceName] = service.bus
 				return service
 			}
 
 			// require module
-			var url = buildURL(rooturl, moduleurl, path)
+			var url = buildURL(rootUrl, moduleurl, path)
 
 			if(url.indexOf('.js') !== url.length - 3){ // its a binary
 				return binarylut[url]
@@ -364,7 +432,7 @@
 			//!TODO lock this down to services
 			if(exports.onRequire){
 				function resolve(path){
-					return buildURL(rooturl, moduleurl, path)
+					return buildURL(rootUrl, moduleurl, path)
 				}
 				return exports.onRequire(args, resolve, moduleurl)
 			}
@@ -390,8 +458,7 @@
 				var avg = 0
 				for(var i = 0; i < obj.list.length;i++)avg += obj.list[i]
 				avg = avg / obj.list.length
-
-				console.log('Perf: ' +dt+ ' Avg: '+avg)
+				require.log('Perf'+(id?'('+id+')':'')+':'+dt+ ' Avg: '+avg)
 				obj.sample = undefined
 			}
 			else obj.sample = t
@@ -415,15 +482,15 @@
 
 	var allresources = {}
 
-	function loadResourceAndDeps(parenturl, resourceurl, type, resources, functionsource){
+	function loadResourceAndDeps(parenturl, resourceurl, type, resources, functionSource){
 
 		var resolve, reject
 		var prom = new Promise(function(res, rej){resolve = res, reject = rej})
 
-		if(functionsource){
-			resources.codefiles.push({resourceurl: resourceurl, response:functionsource})
+		if(functionSource !== undefined){
+			resources.codefiles.push({resourceurl: resourceurl, response:functionSource})
 			
-			var deps = processCode(functionsource)
+			var deps = processCode(functionSource)
 			
 			Promise.all(deps).then(function(result){
 				resolve(result)
@@ -483,7 +550,7 @@
 			// look up loads
 			code.replace(/require\s*\(\s*['"](.*?)["']/g, function(m, path){
 				// lets check if we are loading a service
-				var suburl = buildURL(rooturl, resourceurl, path)
+				var suburl = buildURL(rootUrl, resourceurl, path)
 		
 				var deptype = 'code'
 
@@ -587,12 +654,10 @@
 				}, function(err){
 					reject(err)
 				})
-
 			})
 			req.open("GET", resourceurl)
 			req.send()
 		}
-
 		return prom
 	}
 
@@ -784,8 +849,8 @@
 		}
 
 		self.setImmediate = function(fn){
-			worker.postfunctions.push(fn)
-			return worker.postfunctions.length
+			worker.postFunctions.push(fn)
+			return worker.postFunctions.length
 		}
 	}
 

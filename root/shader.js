@@ -691,10 +691,13 @@ module.exports = require('class').extend(function Shader(proto){
 		if(!fastWrite){
 			code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
 			code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
-			code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
-			code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
-			code += indent + '	this.$propsLen'+classname+' = $propslength\n'
-			code += indent + '}\n'
+			
+			if(target.$isStamp){
+				code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
+				code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
+				code += indent + '	this.$propsLen'+classname+' = $propslength\n'
+				code += indent + '}\n'
+			}
 		}
 		else{
 			code += indent + 'var $a = $props.array\n'
@@ -1204,7 +1207,7 @@ module.exports = require('class').extend(function Shader(proto){
 		if(tween == 5.){
 		//	return this.tweenBezier(time, easex, easey, easez, easew)
 		}
-
+		
 		return 1.
 	}
 

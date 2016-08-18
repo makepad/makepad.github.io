@@ -2,99 +2,172 @@ var canvas = service.canvas
 var args = service.args
 var bus = service.bus
 var services = service.others
+
+args.timeBoot = Date.now()
+
 //
 //
 //  GL Context initialization
 //
 //
 
-var todofn = Array(100)
-var userfn = {}
-
-var options = {
-	alpha: canvas.getAttribute("alpha")?true:false,
-	depth: canvas.getAttribute("nodepth")?false:true,
-	stencil: canvas.getAttribute("nostencil")?false:true,
-	antialias: canvas.getAttribute("antialias")?true:false,
-	premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
-	preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
-	preferLowPowerToHighPerformance: true//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
-}
-
-var gl = canvas.getContext('webgl', options) ||
-         canvas.getContext('webgl-experimental', options) ||
-         canvas.getContext('experimental-webgl', options)
-
-function resize(dy){
-	var pixelRatio = window.devicePixelRatio
-	var w, h
-	// if a canvas is fullscreen we should size it to fullscreen
-	if(canvas.getAttribute("fullpage")){
-		w = document.body.offsetWidth 
-		h = document.body.offsetHeight- (dy || 0)
-	}
-	else{
-		w = canvas.offsetWidth
-		h = canvas.offsetHeight
+function initializeGLContext(canvas){
+	var options = {
+		alpha: canvas.getAttribute("alpha")?true:false,
+		depth: canvas.getAttribute("nodepth")?false:true,
+		stencil: canvas.getAttribute("nostencil")?false:true,
+		antialias: canvas.getAttribute("antialias")?true:false,
+		premultipliedAlpha: canvas.getAttribute("premultipliedAlpha")?true:false,
+		preserveDrawingBuffer: canvas.getAttribute("preserveDrawingBuffer")?true:false,
+		preferLowPowerToHighPerformance: true//canvas.getAttribute("preferLowPowerToHighPerformance")?true:false,
 	}
 
-	var sw = canvas.width = w * pixelRatio
-	var sh = canvas.height = h * pixelRatio
+	var gl = canvas.getContext('webgl', options) ||
+	         canvas.getContext('webgl-experimental', options) ||
+	         canvas.getContext('experimental-webgl', options)
 
-	// lets delay this to repaint?
-	canvas.style.width = w + 'px'
-	canvas.style.height = h + 'px'
+	function resize(dy){
+		var pixelRatio = window.devicePixelRatio
+		var w, h
+		// if a canvas is fullscreen we should size it to fullscreen
+		if(canvas.getAttribute("fullpage")){
+			w = document.body.offsetWidth 
+			h = document.body.offsetHeight- (dy || 0)
+		}
+		else{
+			w = canvas.offsetWidth
+			h = canvas.offsetHeight
+		}
 
-	gl.viewport(0,0,sw,sh)
+		var sw = canvas.width = w * pixelRatio
+		var sh = canvas.height = h * pixelRatio
 
-	if(args.pixelRatio){
-		bus.postMessage({fn:'onResize', pixelRatio:pixelRatio, w:w, h:h})
+		// lets delay this to repaint?
+		canvas.style.width = w + 'px'
+		canvas.style.height = h + 'px'
+
+		gl.viewport(0,0,sw,sh)
+
+		if(args.pixelRatio){
+			bus.postMessage({fn:'onResize', pixelRatio:pixelRatio, w:w, h:h})
+		}
+		args.pixelRatio = window.devicePixelRatio
+		args.w = canvas.offsetWidth
+		args.h = canvas.offsetHeight
+
+		requestRepaint()
 	}
-	args.pixelRatio = window.devicePixelRatio
-	args.w = canvas.offsetWidth
-	args.h = canvas.offsetHeight
 
-	requestRepaint()
+	window.addEventListener('resize', function(){
+		resize()
+		service.others.keyboard.onWindowResize()
+	})
+
+	exports.resizeCanvas = function(dy){
+		resize(dy)
+	}
+
+	//
+	//
+	// Bootcache
+	//
+	//
+
+	gl.shaderCache = {}
+
+	function bootCache(){
+		// now we have to bind the textures
+		var mesh = gl.createBuffer()
+		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16), gl.STATIC_DRAW)
+		gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, 0)
+		gl.enableVertexAttribArray(0)
+		var gltex = gl.createTexture()
+		gl.bindTexture(gl.TEXTURE_2D, gltex)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+
+		for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+
+			var cacheid = localStorage.key(i)
+			if(typeof cacheid !== 'string' || cacheid.indexOf('@@@@') === -1) continue
+
+			var shadercode = cacheid.split('@@@@')
+
+			var shader = gl.shaderCache[cacheid] = compileShader(shadercode[0], shadercode[1])
+			// delete it
+			localStorage.removeItem(cacheid)
+			--i
+
+			gl.useProgram(shader)
+			// set up some fake textures
+			for(var t = 0; t< 8; t++){
+				gl.activeTexture(gl.TEXTURE0 + t)
+				gl.bindTexture(gl.TEXTURE_2D, gltex)
+			}
+			gl.drawArrays(gl.TRIANGLES,0,1)
+		}
+	}
+	// wait a bit and fire it up
+	setTimeout(bootCache, 10)
+
+	gl.OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
+	gl.ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
+	gl.EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
+	gl.OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
+	gl.OES_texture_float_linear = gl.getExtension('OES_texture_float_linear')
+	gl.OES_texture_half_float = gl.getExtension('OES_texture_half_float')
+	gl.OES_texture_float = gl.getExtension('OES_texture_float')
+	gl.WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
+	return gl
 }
-args.timeBoot = Date.now()
 
-window.addEventListener('resize', function(){
-	resize()
-	service.others.keyboard.onWindowResize()
-})
+var childPainters = []
+exports.addChild = function(child, fbId){
+	var fb = framebufferIds[fbId]
+	fb.child = child
 
-exports.resizeCanvas = function(dy){
-	resize(dy)
+	// send the framebuffer to make the main to the child
+	return {
+		painterWorkerId:childPainters.push(child),
+		gl:gl,
+		attach:fb.attach,
+		glfb:fb.glfb,
+		glpfb: fb.glpfb,
+		todoId:undefined
+	}
+}
+// ok someone wants to hot reload
+exports.onHotReload = function(){
+	console.log('hot reload!')
 }
 
-var showAgain = false
-exports.disableCanvas = function(dy){
-	showAgain = false
-	gl.clear(gl.COLOR_BUFFER_BIT)
-	canvas.style.visibility = 'hidden'
+exports.onChildResize = function(attach, glfb, glpfb, w, h){
+	mainFramebuffer.attach = attach
+	mainFramebuffer.glfb = glfb
+	mainFramebuffer.glpfb = glpfb
+	args.w = w
+	args.h = h
 }
 
-exports.enableCanvas = function(dy){
-	showAgain = true
-	requestRepaint()
+var gl
+
+var ownerServices = service.ownerServices
+var parentFrameBuffer
+
+if(ownerServices && ownerServices.painter){
+	var workerArgs = service.workerArgs	
+	parentFrameBuffer = ownerServices.painter.addChild(exports, service.workerArgs.fbId)
+	gl = parentFrameBuffer.gl
+	painterWorkerId = parentFrameBuffer.painterWorkerId
+	args.w = workerArgs.w
+	args.h = workerArgs.h
+	args.pixelRatio = workerArgs.parentPixelRatio
 }
-
-resize()
-
-//
-//
-// Extensions
-//
-//
-
-var OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
-var ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
-var EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
-var OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
-var OES_texture_float_linear = gl.getExtension('OES_texture_float_linear')
-var OES_texture_half_float = gl.getExtension('OES_texture_half_float')
-var OES_texture_float = gl.getExtension('OES_texture_float')
-var WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
+else{
+	gl = initializeGLContext(canvas)
+	exports.resizeCanvas(0)
+	painterWorkerId = 1
+}
 
 //
 //
@@ -102,7 +175,10 @@ var WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtens
 //
 //
 
+var todofn = Array(100)
+var userfn = {}
 var currentTodo 
+
 function runTodo(todo){
 	//console.log("Running todo "+todo.name)
 	if(!todo) return false
@@ -165,7 +241,6 @@ function newPickWindow(width, height){
 var pickPass = false
 var pickPromises = {}
 
-
 // pick the screen for digit , at x and y
 exports.pickFinger = function pick(digit, x, y, immediate){
 	var pick = {}
@@ -192,7 +267,10 @@ function renderPickDep(framebuffer){
 	var todo = todoIds[framebuffer.todoId]
 	//console.log('RENDER PICKDEP')
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
-		renderPickDep(framebufferIds[deps[i]])
+		var depId = deps[i]
+		var fb = framebufferIds[depId]
+		if(fb === framebuffer) return console.error("INFINITE LOOP")
+		renderPickDep(fb)
 	}
 
 	// lets set some globals
@@ -201,7 +279,7 @@ function renderPickDep(framebuffer){
 	mat4Global(nameIds.this_DOT_fingerInfo, fingerInfo)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
-	floatGlobal(nameIds.this_DOT_workerId, -1)
+	floatGlobal(nameIds.this_DOT_workerId, -painterWorkerId)
 	mat4Global(nameIds.this_DOT_vertexPostMatrix, identityMat)
 	// alright lets bind the pick framebuffer
 	gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glpfb)
@@ -279,7 +357,7 @@ function renderPickWindow(digit, x, y, force){
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
 	mat4Global(nameIds.this_DOT_vertexPostMatrix, pickMat)
-	floatGlobal(nameIds.this_DOT_workerId, -1)
+	floatGlobal(nameIds.this_DOT_workerId, -painterWorkerId)
 	pickPass = true
 	//console.log('RENDER PICKMAIN')
 
@@ -321,12 +399,18 @@ var identityMat = [
 	0,0,0,1
 ]
 
-function renderColor(framebuffer){
+function renderColor(framebuffer, todoId){
 	var todo = todoIds[framebuffer.todoId]
 
 	var repaint = false
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
-		var ret = renderColor(framebufferIds[deps[i]])
+		var fb = framebufferIds[deps[i]]
+		var ret
+		if(fb.child){
+			// repaint the child
+			ret = fb.child.renderChildColor(repaintTime, frameId)
+		}
+		else ret = renderColor(fb)
 		if(ret) repaint = true
 	}
 
@@ -335,17 +419,24 @@ function renderColor(framebuffer){
 	mat4Global(nameIds.this_DOT_fingerInfo, fingerInfo)
 	floatGlobal(nameIds.this_DOT_time, repaintTime)
 	floatGlobal(nameIds.this_DOT_pixelRatio, args.pixelRatio)
-	floatGlobal(nameIds.this_DOT_workerId, 1)
+	floatGlobal(nameIds.this_DOT_workerId, painterWorkerId)
 	// compensation matrix for viewport size lag main thread vs user thread
 	if(framebuffer === mainFramebuffer){
 		lagCompMat[0] = todo.wPainter / args.w 
 		lagCompMat[5] = todo.hPainter / args.h
 		lagCompMat[3] = -(args.w - todo.wPainter) / args.w
 		lagCompMat[7] = (args.h - todo.hPainter) / args.h
-		mat4Global(nameIds.this_DOT_vertexPostMatrix, lagCompMat)
 		// alright lets 
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-		gl.viewport(0, 0, args.w * args.pixelRatio, args.h * args.pixelRatio)
+		if(!framebuffer.glfb){
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+			gl.viewport(0, 0, args.w * args.pixelRatio, args.h * args.pixelRatio)
+		}
+		else{
+			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glfb)
+			var color0 = framebuffer.attach.color0
+			gl.viewport(0, 0, color0.w, color0.h)
+		}
+		mat4Global(nameIds.this_DOT_vertexPostMatrix, lagCompMat)
 	}
 	else{
 		mat4Global(nameIds.this_DOT_vertexPostMatrix, identityMat)
@@ -360,11 +451,19 @@ function renderColor(framebuffer){
 	if(runTodo(todo)) return true
 }
 
+exports.renderChildColor = function(time, fid){
+	repaintTime = time
+	frameId = fid
+
+	if(!mainFramebuffer || !mainFramebuffer.todoId) return
+	// render the main scene
+	if(renderColor(mainFramebuffer)){
+	//	requestRepaint()
+	}
+}
+
 var repaintPending = false
 function repaint(time){
-
-	if(showAgain)canvas.style.visibility = 'visible'
-	showAgain = false
 
 	repaintTime = (Date.now() - args.timeBoot) / 1000
 
@@ -594,46 +693,6 @@ var currentShader
 var currentUniLocs
 
 
-//
-//
-// Bootcache
-//
-//
-
-function bootCache(){
-	// now we have to bind the textures
-	var mesh = gl.createBuffer()
-	gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16), gl.STATIC_DRAW)
-	gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, 0)
-	gl.enableVertexAttribArray(0)
-	var gltex = gl.createTexture()
-	gl.bindTexture(gl.TEXTURE_2D, gltex)
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
-
-	for ( var i = 0, len = localStorage.length; i < len; ++i ) {
-
-		var cacheid = localStorage.key(i)
-		if(typeof cacheid !== 'string' || cacheid.indexOf('@@@@') === -1) continue
-
-		var shadercode = cacheid.split('@@@@')
-
-		var shader = shaderCache[cacheid] = compileShader(shadercode[0], shadercode[1])
-		// delete it
-		localStorage.removeItem(cacheid)
-		--i
-
-		gl.useProgram(shader)
-		// set up some fake textures
-		for(var t = 0; t< 8; t++){
-			gl.activeTexture(gl.TEXTURE0 + t)
-			gl.bindTexture(gl.TEXTURE_2D, gltex)
-		}
-		gl.drawArrays(gl.TRIANGLES,0,1)
-	}
-}
-// wait a bit and fire it up
-setTimeout(bootCache, 10)
 
 // new shader helpers
 function addLineNumbers(code){
@@ -859,7 +918,6 @@ todofn[41] = function blending(i32, f32, o){
 //	Shader management
 //
 //
-var shaderCache = {}
 
 var slotsTable = {
 	'float':1,
@@ -965,7 +1023,7 @@ userfn.newShader = function(msg){
 	var cacheid = vertexcode + '@@@@' + pixelcode
 
 	localStorage.setItem(cacheid, 1)
-	var shader = shaderCache[cacheid]
+	var shader = gl.shaderCache[cacheid]
 
 	if(shader){
 		if(!shader.attrlocs) mapShaderIO(shader, vertexcode, pixelcode)
@@ -973,9 +1031,11 @@ userfn.newShader = function(msg){
 		shaderIds[shaderid] = shader
 		return
 	}
-	shader = shaderIds[shaderid] = shaderCache[cacheid] = compileShader(vertexcode, pixelcode)
-	mapShaderIO(shader, vertexcode, pixelcode)
-	shader.name = msg.name
+	shader = shaderIds[shaderid] = gl.shaderCache[cacheid] = compileShader(vertexcode, pixelcode)
+	if(shader){
+		mapShaderIO(shader, vertexcode, pixelcode)
+		shader.name = msg.name
+	}
 }
 
 todofn[2] = function useShader(i32, f32, o){
@@ -988,26 +1048,30 @@ todofn[2] = function useShader(i32, f32, o){
 		prevAttrMax = currentShader.maxAttrIndex
 		//shader.prevMaxTexIndex = currentShader.maxTexIndex || 0
 	}
-
-	if(prevAttrMax > shader.maxAttrIndex){
-		for(var i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
-			gl.disableVertexAttribArray(i)
-		}
-	}
-	else if(prevAttrMax < shader.maxAttrIndex){
-		for(var i = shader.maxAttrIndex; i > prevAttrMax; i--){
-			gl.enableVertexAttribArray(i)
-		}
-	}
-
+	
 	currentShader = shader
-	currentUniLocs = shader.uniLocs
-	//shader.maxTexIndex = -1
-	shader.instanced = false
-	shader.indexed = false
-	shader.samplers = 0
-	shader.fallbackInstancedArrays = false
-	gl.useProgram(shader)
+	
+	if(shader){
+		
+		if(prevAttrMax > shader.maxAttrIndex){
+			for(var i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
+				gl.disableVertexAttribArray(i)
+			}
+		}
+		else if(prevAttrMax < shader.maxAttrIndex){
+			for(var i = shader.maxAttrIndex; i > prevAttrMax; i--){
+				gl.enableVertexAttribArray(i)
+			}
+		}
+
+		currentUniLocs = shader.uniLocs
+		//shader.maxTexIndex = -1
+		shader.instanced = false
+		shader.indexed = false
+		shader.samplers = 0
+		shader.fallbackInstancedArrays = false
+		gl.useProgram(shader)
+	}
 }
 
 //
@@ -1046,6 +1110,7 @@ userfn.updateMesh = function(msg){
 }
 
 todofn[3] = function attributes(i32, f32, o){
+	if(!currentShader) return
 	var startId = i32[o+2]
 	var range = i32[o+3]
 	var meshid = i32[o+4]
@@ -1055,7 +1120,7 @@ todofn[3] = function attributes(i32, f32, o){
 	var mesh = meshIds[meshid]
 	currentShader.attrlength = mesh.length
 
-	if(!ANGLE_instanced_arrays){
+	if(!gl.ANGLE_instanced_arrays){
 		if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
 		var attr = currentShader.fallbackInstancedArrays.attr
 		attr.mesh = mesh
@@ -1069,12 +1134,13 @@ todofn[3] = function attributes(i32, f32, o){
 	for(var i = 0; i < range; i++){
 		var loc = currentShader.attrlocs[startId+i]
 		gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
-		if(ANGLE_instanced_arrays) ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
+		if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 		slotoff += loc.slots * 4
 	}
 }
 
 todofn[4] = function instances(i32, f32, o){
+	if(!currentShader) return
 	var startId = i32[o+2]
 	var range = i32[o+3]
 	var meshid = i32[o+4]
@@ -1111,7 +1177,7 @@ todofn[4] = function instances(i32, f32, o){
 	currentShader.instlength = len
 	currentShader.instanced = true
 
-	if(!ANGLE_instanced_arrays){
+	if(!gl.ANGLE_instanced_arrays){
 		if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
 		var inst = currentShader.fallbackInstancedArrays.inst
 		inst.mesh = mesh
@@ -1128,12 +1194,13 @@ todofn[4] = function instances(i32, f32, o){
 		var loc = currentShader.attrlocs[startId+i]
 		var index = loc.index
 		gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
-		ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
+		gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
 		slotoff += loc.slots * 4
 	}
 }
 
 todofn[5] = function indices(i32, f32, o){
+	if(!currentShader) return
 	var mesh = meshIds[i32[o+2]]
 	currentShader.attrlength = mesh.length
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh)
@@ -1155,10 +1222,10 @@ var textureBufTypes = [
 var textureDataTypes = [
 	gl.UNSIGNED_BYTE,
 	gl.UNSIGNED_SHORT,
-	OES_texture_float && gl.FLOAT,
-	OES_texture_half_float && OES_texture_half_float.HALF_FLOAT_OES,
-	OES_texture_float_linear && OES_texture_float_linear.FLOAT_LINEAR_OES,
-	OES_texture_half_float_linear && OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
+	gl.OES_texture_float && gl.FLOAT,
+	gl.OES_texture_half_float && gl.OES_texture_half_float.HALF_FLOAT_OES,
+	gl.OES_texture_float_linear && gl.OES_texture_float_linear.FLOAT_LINEAR_OES,
+	gl.OES_texture_half_float_linear && gl.OES_texture_half_float_linear.HALF_FLOAT_LINEAR_OES
 ]
 
 // other flags
@@ -1195,9 +1262,11 @@ userfn.newFramebuffer = function(msg){
 		if(mainFramebuffer){
 			throw new Error('Dont create a mainframebuffer more than once')
 		}
-		mainFramebuffer = framebufferIds[msg.fbId] = {
+		
+		mainFramebuffer =  framebufferIds[msg.fbId] = parentFrameBuffer || {
 			todo:undefined
 		}
+
 		return
 	}
 	
@@ -1258,11 +1327,17 @@ userfn.newFramebuffer = function(msg){
 	}
 
 	// store it
-	framebufferIds[msg.fbId] = {
+	var fb = framebufferIds[msg.fbId] = {
 		glpfb:glpfb,
 		glfb:glfb,
 		todoId: prev && prev.todoId || undefined,
 		attach:attach
+	}
+
+	// signal the child their framebuffer has resized
+	if(prev && prev.child){
+		fb.child = prev.child
+		prev.child.onChildResize(attach, glfb, glpfb, msg.w, msg.h)
 	}
 }
 
@@ -1314,6 +1389,8 @@ var samplerWrap = [
 ]
 
 todofn[8] = function sampler(i32, f32, o){
+	if(!currentShader) return
+
 	// this thing lazily creates textures and samplers
 	var nameid = i32[o+2]
 	var tex = textureIds[i32[o+3]]
@@ -1365,27 +1442,33 @@ todofn[8] = function sampler(i32, f32, o){
 //
 
 todofn[10] = function intUniform(i32, f32, o){
+	if(!currentShader) return
 	gl.uniform1i(currentUniLocs[i32[o+2]], i32[o+3])
 }
 
 todofn[11] = function floatUniform(i32, f32, o){
+	if(!currentShader) return
 	gl.uniform1f(currentUniLocs[i32[o+2]], f32[o+3])
 }
 
 todofn[12] = function vec2Uniform(i32, f32, o){
+	if(!currentShader) return
 	gl.uniform2f(currentUniLocs[i32[o+2]], f32[o+3], f32[o+4])
 }
 
 todofn[13] = function vec3Uniform(i32, f32, o){
+	if(!currentShader) return
 	gl.uniform3f(currentUniLocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5])
 }
 
 todofn[14] = function vec4Uniform(i32, f32, o){
+	if(!currentShader) return
 	gl.uniform4f(currentUniLocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5], f32[o+6])
 }
 
 var tmtx = new Float32Array(16)
 todofn[15] = function mat4Uniform(i32, f32, o){
+	if(!currentShader) return
 	tmtx[0] = f32[o+3]
 	tmtx[1] = f32[o+4]
 	tmtx[2] = f32[o+5]
@@ -1442,6 +1525,7 @@ var drawTypes = [
 ]
 //ANGLE_instanced_arrays = undefined
 todofn[30] = function draw(i32, f32, o){
+	if(!currentShader) return
 
 	// set the global uniforms
 	var type = drawTypes[i32[o+2]]
@@ -1526,10 +1610,10 @@ todofn[30] = function draw(i32, f32, o){
 				inst = currentShader.instlength
 			}
 			if(currentShader.indexed){
-				ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
+				gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
 			}
 			else{
-				ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, offset, len, inst)
+				gl.ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, offset, len, inst)
 			}
 		}
 	}
