@@ -20,7 +20,7 @@ pp.commentBegin = function(start){
 	return above
 }
 
-pp.commentEnd = function(node, above, tail){
+pp.commentEnd = function(node, above, tail, ignore){
 	// add the prefix
 	if(above.length) node.above = above
 
@@ -36,12 +36,14 @@ pp.commentEnd = function(node, above, tail){
 	var side = ''
 	for(; i < l; i++){
 		var cm = comments[i]
-		if(typeof cm === 'object'){
-			comments.splice(0, i)
-			if(side.length) node.side = side
-			return
+		if(typeof cm === 'object' ){
+			if(cm !== ignore){
+				comments.splice(0, i)
+				if(side.length) node.side = side
+				return
+			}
 		}
-		if(cm === 1){
+		else if(cm === 1){
 			side += '\n'
 			comments.splice(0, i + 1)
 			node.side = side
@@ -60,6 +62,53 @@ pp.commentEnd = function(node, above, tail){
 	if(side.length) node.side = side
 	comments.length = 0
 }
+
+
+pp.commentEndSplit = function(node, above, tail, split){
+	// add the prefix
+	if(above.length) node.above = above
+
+	var comments = this.storeComments
+	for(var i = 0, l = comments.length; i < l; i++){
+		var cm = comments[i]
+		if(cm === tail){
+			comments.splice(0, i)
+			return
+		} 
+		if(typeof cm !== 'object') break
+	}
+	var side = ''
+	for(; i < l; i++){
+		var cm = comments[i]
+		if(typeof cm === 'object' ){
+			if(cm !== split){
+				comments.splice(0, i)
+				if(side.length) node.side = side
+				return
+			}
+		}
+		else if(cm === 1){
+			side += '\n'
+			if(comments[i+1] !== split){
+				comments.splice(0, i + 1)
+				node.side = side
+				return
+			}
+		}
+		else if(cm === 2){
+			side += '\r'
+			comments.splice(0, i + 1)
+			node.side = side
+			return
+		}
+		else {
+			side += cm
+		}
+	}
+	if(side.length) node.side = side
+	comments.length = 0
+}
+
 
 
 // called on the head of a block

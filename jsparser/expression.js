@@ -566,7 +566,7 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 		if(this.eat(tt.comma) || this.insertCommas && this.skippedNewlines){
 			
 			if(this.storeComments){
-				this.commentEnd(prop, above, tt.braceR)
+				this.commentEndSplit(prop, above, close, tt.comma)
 			}
 			if(this.eat(tt.braceR)){
 				
@@ -762,7 +762,7 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 		if(this.eat(tt.comma) || allowTrailingComma && this.insertCommas && this.skippedNewlines){
 			
 			if(this.storeComments){
-				this.commentEnd(elt, above, close)
+				this.commentEndSplit(elt, above, close, tt.comma)
 			}
 			if(this.eat(close)){
 				if(!allowTrailingComma) this.unexpected()
