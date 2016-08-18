@@ -644,6 +644,7 @@
 				resource.response = req.response
 
 				var incode = req.response
+				if(!incode) console.log("FAIL AT", resourceurl)
 				var deps = processCode(incode)
 
 				Promise.all(deps).then(function(result){
