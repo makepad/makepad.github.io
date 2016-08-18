@@ -3,6 +3,9 @@ tools:{Rect:{
 col:'red',
 id:0,
 borderRadius:20,
+shadowOffset:[5,5],
+borderColor:'white',
+borderWidth:2,
 pixelStyle:function(){$
 this.color=mix('white',this.color,abs(
 sin(8.*length(
