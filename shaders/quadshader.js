@@ -41,23 +41,25 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
 		var size = vec2(this.w, this.h)
 
+		/*
 		this.mesh.xy = (clamp(
 			this.mesh.xy * size + shift, 
 			max(this.turtleClip.xy, this.viewClip.xy),
 			min(this.turtleClip.zw, this.viewClip.zw)
 		) - shift) / size
-
+	*/
 		var pos = vec4(
 			this.mesh.xy * size + shift, 
 			0., 
 			1.
 		)
+		this.pos = pos
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	proto.pixel = function(){$
-		return this.color
+		return mix('red','green',this.pos.x)
 	}
 
 	proto.toolMacros = {

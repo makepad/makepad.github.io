@@ -3,8 +3,6 @@ var args = service.args
 var bus = service.bus
 var services = service.others
 
-args.timeBoot = Date.now()
-
 //
 //
 //  GL Context initialization
@@ -73,7 +71,7 @@ function initializeGLContext(canvas){
 	//
 	//
 
-	gl.shaderCache = {}
+	gl.globalShaderCache = {}
 
 	function bootCache(){
 		// now we have to bind the textures
@@ -93,12 +91,12 @@ function initializeGLContext(canvas){
 
 			var shadercode = cacheid.split('@@@@')
 
-			var shader = gl.shaderCache[cacheid] = compileShader(shadercode[0], shadercode[1])
+			var shader = gl.globalShaderCache[cacheid] = compileShader(shadercode[0], shadercode[1])
 			// delete it
 			localStorage.removeItem(cacheid)
 			--i
 
-			gl.useProgram(shader)
+			gl.useProgram(shader.program)
 			// set up some fake textures
 			for(var t = 0; t< 8; t++){
 				gl.activeTexture(gl.TEXTURE0 + t)
@@ -121,19 +119,26 @@ function initializeGLContext(canvas){
 	return gl
 }
 
-var childPainters = []
-exports.addChild = function(child, fbId){
-	var fb = framebufferIds[fbId]
-	fb.child = child
+var subWorkers = {}
 
+exports.regSubWorker = function(subWorker, workerId){
+	if(ownerServices){
+		return ownerServices.painter.regSubWorker(subWorker, workerId)
+	}
+	subWorkers[workerId] = subWorker
+}
+
+exports.connectWorkerToFramebuffer = function(subWorker, fbId){
+	var fb = framebufferIds[fbId]
+	fb.subWorker = subWorker
 	// send the framebuffer to make the main to the child
 	return {
 		requestRepaint: requestRepaint,
-		painterWorkerId:childPainters.push(child),
 		gl:gl,
 		attach:fb.attach,
 		glfb:fb.glfb,
 		glpfb: fb.glpfb,
+		timeBoot: args.timeBoot,
 		todoId:undefined
 	}
 }
@@ -141,35 +146,39 @@ exports.addChild = function(child, fbId){
 exports.onHotReload = function(){
 }
 
-exports.onChildResize = function(attach, glfb, glpfb){
+exports.onFbResize = function(attach, glfb, glpfb){
 	mainFramebuffer.attach = attach
 	mainFramebuffer.glfb = glfb
 	mainFramebuffer.glpfb = glpfb
-	args.w = attach.color0.w
-	args.h = attach.color0.h
 	args.pixelRatio = attach.color0.pixelRatio
+	args.w = attach.color0.w / args.pixelRatio
+	args.h = attach.color0.h / args.pixelRatio
 	bus.postMessage({fn:'onResize', pixelRatio:args.pixelRatio, w:args.w, h:args.h})
 }
 
 var gl
 
 var ownerServices = service.ownerServices
+var painterWorkerId = service.workerId
 var parentFramebuffer
 
 if(ownerServices && ownerServices.painter){
 	var workerArgs = service.workerArgs	
-	parentFramebuffer = ownerServices.painter.addChild(exports, service.workerArgs.fbId)
+	var ownerPainter = ownerServices.painter
+	ownerPainter.regSubWorker(exports, service.workerId)
+	parentFramebuffer = ownerPainter.connectWorkerToFramebuffer(exports, service.workerArgs.fbId)
 	gl = parentFramebuffer.gl
-	painterWorkerId = parentFramebuffer.painterWorkerId
 	var attach = parentFramebuffer.attach
-	args.w = attach.color0.w
-	args.h = attach.color0.h
 	args.pixelRatio = attach.color0.pixelRatio
+	args.w = attach.color0.w / args.pixelRatio
+	args.h = attach.color0.h / args.pixelRatio
+	args.timeBoot = parentFramebuffer.timeBoot
+	args.isSub = true
 }
 else{
+	args.timeBoot = Date.now()
 	gl = initializeGLContext(canvas)
 	exports.resizeCanvas(0)
-	painterWorkerId = 1
 }
 
 //
@@ -208,7 +217,6 @@ function runTodo(todo){
 	}
 	currentTodo = lastTodo
 	if(!pickPass && processScrollState(todo))return true
-
 	if(repaint || todo.animLoop || todo.timeMax > repaintTime)return true
 }
 
@@ -268,13 +276,17 @@ exports.pickFinger = function pick(digit, x, y, immediate){
 }
 
 function renderPickDep(framebuffer){
+	if(!framebuffer) return
 	var todo = todoIds[framebuffer.todoId]
 	//console.log('RENDER PICKDEP')
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
 		var depId = deps[i]
 		var fb = framebufferIds[depId]
 		if(fb === framebuffer) return console.error("INFINITE LOOP")
-		renderPickDep(fb)
+		if(fb.subWorker){
+			fb.subWorker.renderSubPick(repaintTime, frameId)
+		}
+		else renderPickDep(fb)
 	}
 
 	// lets set some globals
@@ -328,7 +340,11 @@ function renderPickWindow(digit, x, y, force){
 
 	if(force){ // render deps before framebuffer
 		for(var deps = todo.deps, i = 0; i < deps.length; i++){
-			renderPickDep(framebufferIds[deps[i]])
+			var fb = framebufferIds[deps[i]]
+			if(fb.subWorker){
+				fb.subWorker.renderSubPick(repaintTime, frameId)
+			}
+			else renderPickDep()
 		}
 	}
 
@@ -404,15 +420,16 @@ var identityMat = [
 ]
 
 function renderColor(framebuffer, todoId){
+
 	var todo = todoIds[framebuffer.todoId]
 
 	var repaint = false
 	for(var deps = todo.deps, i = 0; i < deps.length; i++){
 		var fb = framebufferIds[deps[i]]
 		var ret
-		if(fb.child){
+		if(fb.subWorker){
 			// repaint the child
-			ret = fb.child.renderChildColor(repaintTime, frameId)
+			ret = fb.subWorker.renderSubColor(repaintTime, frameId)
 		}
 		else ret = renderColor(fb)
 		if(ret) repaint = true
@@ -447,22 +464,31 @@ function renderColor(framebuffer, todoId){
 		// alright lets 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glfb)
 		var color0 = framebuffer.attach.color0
-		gl.viewport(0, 0, color0.w, color0.h)
+		gl.viewport(0, 0, color0.w, color0.h)	
 	}
 
 	pickPass = false
 		// lets check our maxDuration
 	if(runTodo(todo)) return true
+
 	return repaint
 }
 
-exports.renderChildColor = function(time, fid){
+exports.renderSubColor = function(time, fid){
 	repaintTime = time
 	frameId = fid
 
 	if(!mainFramebuffer || !mainFramebuffer.todoId) return
 	// render the main scene
 	return renderColor(mainFramebuffer)
+}
+
+exports.renderSubPick = function(time, fid){
+	repaintTime = time
+	frameId = fid
+	if(!mainFramebuffer || !mainFramebuffer.todoId) return
+	// render the main scene
+	return renderPickDep(mainFramebuffer)
 }
 
 var repaintPending = false
@@ -569,6 +595,7 @@ function processScrollState(todo){
 var isScrollBarMove = 0
 var scrollDelta
 exports.onFingerDown = function(f){
+	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerDown(f)
 	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
@@ -614,6 +641,7 @@ exports.onFingerDown = function(f){
 }
 
 exports.onFingerMove = function(f){
+	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerMove(f)
 
 	// store finger pos
 	var o = (f.digit-1) * 4
@@ -642,6 +670,8 @@ exports.onFingerMove = function(f){
 }
 
 exports.onFingerUp = function(f){
+	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerUp(f)
+
 	requestRepaint()
 
 	var o = (f.digit-1) * 4
@@ -660,6 +690,8 @@ exports.onFingerUp = function(f){
 }
 
 exports.onFingerHover = function(f){
+	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerHover(f)
+
 	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
@@ -669,6 +701,8 @@ exports.onFingerHover = function(f){
 }
 
 exports.onFingerWheel = function(f){
+	if(f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerWheel(f)
+
 	var todo = todoIds[f.todoId]
 	if(!todo) return
 	doScroll(todo, todo.xScroll + f.xWheel, todo.yScroll + f.yWheel)
@@ -978,7 +1012,9 @@ function compileShader(vertexcode, pixelcode){
 		)
 	}
 
-	return shader
+	return {
+		program:shader
+	}
 }
 
 function mapShaderIO(shader, vertexcode, pixelcode){
@@ -994,7 +1030,7 @@ function mapShaderIO(shader, vertexcode, pixelcode){
 	var maxAttrIndex = 0
 	for(var name in attrs){
 		var nameid = nameIds[name]
-		var index = gl.getAttribLocation(shader, name)
+		var index = gl.getAttribLocation(shader.program, name)
 
 		if(index > maxAttrIndex) maxAttrIndex = index
 		attrlocs[nameid] = {
@@ -1008,11 +1044,13 @@ function mapShaderIO(shader, vertexcode, pixelcode){
 	var uniLocs = {}
 	for(var name in uniforms){
 		var nameid = nameIds[name]
-		var index = gl.getUniformLocation(shader, name)
+		var index = gl.getUniformLocation(shader.program, name)
 		uniLocs[nameid] = index
 	}
 	shader.uniLocs = uniLocs
 }
+
+var localShaderCache = {}
 
 userfn.newShader = function(msg){
 	var pixelcode = msg.code.pixel
@@ -1028,18 +1066,22 @@ userfn.newShader = function(msg){
 	var cacheid = vertexcode + '@@@@' + pixelcode
 
 	localStorage.setItem(cacheid, 1)
-	var shader = gl.shaderCache[cacheid]
+
+	var shader = localShaderCache[cacheid]
 	if(shader){
-		if(!shader.attrlocs) mapShaderIO(shader, vertexcode, pixelcode)
 		shader.refCount++
 		shaderIds[shaderid] = shader
 		return
 	}
-	
-	shader = shaderIds[shaderid] = gl.shaderCache[cacheid] = compileShader(vertexcode, pixelcode)
+
+	shader = gl.globalShaderCache[cacheid] || (gl.globalShaderCache[cacheid] = compileShader(vertexcode, pixelcode))
 	if(shader){
+		shader = Object.create(shader)
+		shader.refCount = 1
 		mapShaderIO(shader, vertexcode, pixelcode)
 		shader.name = msg.name
+		shaderIds[shaderid] = shader
+		return
 	}
 }
 
@@ -1076,7 +1118,7 @@ todofn[2] = function useShader(i32, f32, o){
 		shader.indexed = false
 		shader.samplers = 0
 		shader.fallbackInstancedArrays = false
-		gl.useProgram(shader)
+		gl.useProgram(shader.program)
 	}
 }
 
@@ -1343,9 +1385,9 @@ userfn.newFramebuffer = function(msg){
 	}
 
 	// signal the child their framebuffer has resized
-	if(prev && prev.child){
-		fb.child = prev.child
-		prev.child.onChildResize(attach, glfb, glpfb)
+	if(prev && prev.subWorker){
+		fb.subWorker = prev.subWorker
+		prev.subWorker.onFbResize(attach, glfb, glpfb)
 	}
 }
 
@@ -1474,6 +1516,13 @@ todofn[14] = function vec4Uniform(i32, f32, o){
 	gl.uniform4f(currentUniLocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5], f32[o+6])
 }
 
+var identity = [
+	1,0,0,0,
+	0,1,0,0,
+	0,0,1,0,
+	0,0,0,1
+]
+
 var tmtx = new Float32Array(16)
 todofn[15] = function mat4Uniform(i32, f32, o){
 	if(!currentShader) return
@@ -1493,6 +1542,7 @@ todofn[15] = function mat4Uniform(i32, f32, o){
 	tmtx[13] = f32[o+16]
 	tmtx[14] = f32[o+17]
 	tmtx[15] = f32[o+18]
+
 	gl.uniformMatrix4fv(currentUniLocs[i32[o+2]], 0, tmtx)
 }
 

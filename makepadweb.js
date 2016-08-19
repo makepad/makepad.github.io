@@ -71,12 +71,12 @@
 
 	//keep track of all the workers
 	var workerHandles = []
-
-	function runWorker(mainUrl, canvas, owner, functionSource, workerId, workerArgs){
+	var workerIdAlloc = 1
+	function runWorker(mainUrl, canvas, owner, functionSource, workerArgs){
 		// a forward reference for the owner
 		var handle = {
 			owner:owner,
-			workerId:workerId,
+			workerId:workerIdAlloc++,
 			canvas:canvas,
 			preInitQueue:[],
 			preInitTransfers:[],
@@ -104,7 +104,7 @@
 
 			handle.kernelServices = {}
 			var userArgs = {}
-
+			worker.workerId = handle.workerId
 			initKernelServices(handle.resources.services, handle.kernelBusses, handle.kernelServices, canvas, worker, userArgs, owner, workerArgs)
 
 			worker.postMessage({
@@ -298,6 +298,7 @@
 			kernelfn(kernelService, {
 				bus:kernelServiceBus,
 				args:myuserargs,
+				workerId:worker.workerId,
 				workerArgs:workerArgs && workerArgs[serviceName],
 				canvas:canvas,
 				others:kernelServices,
@@ -315,7 +316,6 @@
 
 	function initUserCode(rootUrl, codefiles, binaries, modules, factories, worker, userbusses, userArgs){
 
-		worker.loadworkerid = 1
 		var last
 		var binarylut = {}
 		for(var i = binaries.length - 1; i >= 0; i--){
@@ -408,6 +408,7 @@
 						}.bind(null, serviceName),
 					}
 				}
+
 				userbusses[serviceName] = service.bus
 				return service
 			}

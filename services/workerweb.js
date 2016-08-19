@@ -45,7 +45,7 @@ bus.onMessage = function(msg){
 			service.updateWorker(handle, msg.url, msg.function, msg.args)
 		}
 		else {
-			workers[msg.workerId] = service.runWorker(msg.url, service.canvas, service.worker, msg.function, msg.workerId, msg.args)
+			workers[msg.workerId] = service.runWorker(msg.url, service.canvas, service.worker, msg.function,msg.args)
 		}
 	}
 }

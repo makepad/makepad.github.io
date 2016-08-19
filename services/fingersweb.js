@@ -2,18 +2,49 @@
 var bus = service.bus
 var canvas = service.canvas
 var services = service.others
-
 var ownerServices = service.ownerServices
-if(ownerServices){
-	return
-}
 
 var TAP_TIME = 350
-
 var TAP_DIST_TOUCH = 50
 var TAP_DIST_MOUSE = 5
-
 var isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
+
+var subWorkers = {}
+exports.addSubWorker = function(worker, workerId){
+	if(ownerServices && ownerServices.fingers){
+		ownerServices.fingers.addSubWorker(worker, workerId)
+		return
+	}
+	subWorkers[workerId] = worker
+}
+
+exports.postMessage = function(msg){
+	bus.postMessage(msg)
+}
+
+function postMessage(msg){
+	if(msg.workerId){
+		if(msg.workerId === service.workerId){
+			bus.postMessage(msg)
+		}
+		else{
+			var sub = subWorkers[msg.workerId]
+			if(sub) sub.postMessage(msg)
+		}
+	}
+	else{
+		for(var key in subWorkers){
+			console.log()
+			subWorkers[key].postMessage(msg)
+		}
+		bus.postMessage(msg)
+	}
+}
+
+if(ownerServices && ownerServices.fingers){
+	ownerServices.fingers.addSubWorker(exports, service.workerId)
+	return
+}
 
 // 
 // 
@@ -107,7 +138,7 @@ function onFingerDown(fingers){
 
 		// post it twice, first is the immediate message
 		f.fn = 'onImmediateFingerDown'
-		bus.postMessage(f)
+		postMessage(f)
 
 		services.painter.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
 			if(!pick) return
@@ -134,12 +165,12 @@ function onFingerDown(fingers){
 			services.painter.onFingerDown(f)
 
 			// post the message
-			bus.postMessage(f)
+			postMessage(f)
 			if(f.queue){
 				for(var i = 0; i < f.queue.length; i++){
 					var q = f.queue[i]
 					q.pick = pick
-					bus.postMessage(q)
+					postMessage(q)
 				}
 			}
 		}.bind(null, f))
@@ -177,7 +208,7 @@ function onFingerMove(fingers){
 			var queue = oldf.queue || (oldf.queue = [])
 			queue.push(f)
 		}
-		else bus.postMessage(f)
+		else postMessage(f)
 	}
 }
 
@@ -227,7 +258,7 @@ function onFingerUp(fingers){
 			queue.push(f)
 		}
 		else{
-			bus.postMessage(f)
+			postMessage(f)
 		}
 
 		return f.tapCount
@@ -244,7 +275,7 @@ function onFingerHover(fingers){
 			f.workerId = pick.workerId
 			f.fn = 'onFingerHover'
 			services.painter.onFingerHover(f)
-			bus.postMessage(f)
+			postMessage(f)
 		}.bind(null, f))
 	}
 }
@@ -261,7 +292,7 @@ function onFingerForce(fingers){
 		f.todoId = oldf.todoId
 		f.workerId = oldf.workerId
 
-		bus.postMessage(f)
+		postMessage(f)
 	}
 }
 
@@ -276,7 +307,7 @@ function onFingerWheel(fingers){
 			f.workerId = pick.workerId
 			f.fn = 'onFingerWheel'
 			services.painter.onFingerWheel(f)
-			bus.postMessage(f)
+			postMessage(f)
 		}.bind(null, f))
 	}
 }

@@ -145,6 +145,37 @@ module.exports = require('class').extend(function Turtle(proto){
 		}
 	}
 
+	proto.shiftPadding = function(shift){
+		var pad = this._padding
+		if(typeof shift === 'number'){
+			if(!shift) return
+			if(typeof pad === 'number'){
+				this._padding = pad + shift
+				return
+			}
+			var out = this.$shiftPadding || (this.$shiftPadding = [0,0,0,0])
+			out[0] = pad[0] + shift
+			out[1] = pad[1] + shift
+			out[2] = pad[2] + shift
+			out[3] = pad[3] + shift
+			this._padding = out
+			return
+		}
+		var out = this.$shiftPadding || (this.$shiftPadding = [0,0,0,0])
+		this._padding = out
+		if(typeof pad === 'number'){
+			out[0] = pad + shift[0]
+			out[1] = pad + shift[1]
+			out[2] = pad + shift[2]
+			out[3] = pad + shift[3]
+			return
+		}
+		out[0] = pad[0] + shift[0]
+		out[1] = pad[1] + shift[1]
+		out[2] = pad[2] + shift[2]
+		out[3] = pad[3] + shift[3]
+	}
+
 	// evaluators of string x/y/w/h
 
 	var xcache = {}

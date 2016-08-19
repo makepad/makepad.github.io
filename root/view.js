@@ -59,7 +59,6 @@ module.exports = require('class').extend(function View(proto){
 		this.$shaders = {}
 		this.$stampId = 0
 		this.$stamps = [0]
-		this.todo.timeMax = 0
 
 		this.view = this
 
@@ -166,7 +165,7 @@ module.exports = require('class').extend(function View(proto){
 			pass.h = h
 			pass.sw = sw
 			pass.sh = sh
-			mat4.ortho(pass.projection,0, pass.w, pass.h, 0, -100, 100)
+			mat4.ortho(pass.projection,0, pass.w,  0,pass.h, -100, 100)
 		}
 
 		return pass
@@ -197,7 +196,7 @@ module.exports = require('class').extend(function View(proto){
 
 	proto.$scrollBarSize = 10
 	proto.$scrollBarRadius = 4
-	proto.$scrollPickIds = 65533
+	proto.$scrollPickIds = 65530
 
 	proto.scrollIntoView = function(x, y, w, h){
 		// we figure out the scroll-to we need
@@ -222,7 +221,6 @@ module.exports = require('class').extend(function View(proto){
 			var hw = this.$w * this.xCenter
 			var hh = this.$h * this.yCenter
 			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
-
 			if(this.parent && !this.parent.surface){
 				mat4.multiply(this.viewPosition, this.viewPosition, this.parent.viewPosition)
 			}
@@ -244,6 +242,12 @@ module.exports = require('class').extend(function View(proto){
 		//todo.viewInverse = this.viewInverse
 		todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 
+		if(this.app == this){
+			todo.mat4Global(painter.nameId('this_DOT_camPosition'), this.camPosition)
+			todo.mat4Global(painter.nameId('this_DOT_camProjection'), this.camProjection)
+			todo.clearColor(0.2, 0.2, 0.2, 1)
+		}
+
 		// we need to render to a texture
 		if(this.surface){
 			// set up a surface and start a pass
@@ -254,13 +258,6 @@ module.exports = require('class').extend(function View(proto){
 			todo.mat4Global(painter.nameId('this_DOT_camPosition'),identityMat4)
 			todo.mat4Global(painter.nameId('this_DOT_camProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)
-		}
-		else{
-			if(this.app == this){
-				todo.mat4Global(painter.nameId('this_DOT_camPosition'), this.camPosition)
-				todo.mat4Global(painter.nameId('this_DOT_camProjection'), this.camProjection)
-				todo.clearColor(0.2, 0.2, 0.2, 1)
-			}
 		}
 
 		// store time info on todo
@@ -327,7 +324,7 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.yView = th
 		this.todo.scrollMomentum = 0.92
 		this.todo.scrollToSpeed = 0.5
-
+		
 		// use the last 2 stampIds for the scroller
 		this.$stampId = this.$scrollPickIds
 		if(th < this.$hDraw){
@@ -346,6 +343,7 @@ module.exports = require('class').extend(function View(proto){
 		}
 
 		if(tw < this.$wDraw){ // we need a vertical scrollbar
+
 			this.$yScroll = this.drawScrollBar({
 				lockScroll:0,
 				isHorizontal:0.,
@@ -438,9 +436,7 @@ module.exports = require('class').extend(function View(proto){
 					props:{
 						x:{noTween:1, noInPlace:1, value:NaN},
 						y:{noTween:1, noInPlace:1, value:NaN},
-						fingerDigit:{noTween:1, value:0.},
 						isHorizontal:{noTween:1, value:0.},
-						id:{noTween:1, value:0},
 						bgColor:'#000',
 						handleColor:'#111',
 						borderRadius:4
@@ -557,6 +553,7 @@ module.exports = require('class').extend(function View(proto){
 					gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 				else{
+
 					gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 			}

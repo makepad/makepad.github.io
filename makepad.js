@@ -19,7 +19,7 @@ module.exports = require('app').extend(function(proto){
 	})
 
 	proto.onInit = function(){
-		load.text("tests/livecode1.js").then(function(text){
+		load.text("tests/livecode2.js").then(function(text){
 			this.find('CodeView').text = text
 		}.bind(this))
 	}
@@ -57,6 +57,7 @@ module.exports = require('app').extend(function(proto){
 				w:'50%',
 				h:'100%'
 			})
+			
 		]
 	}
 })

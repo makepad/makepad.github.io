@@ -24,7 +24,7 @@ function extend(body){
 	// get name
 	var Constructor = Class
 
-	if(true){
+	if(false){
 		var path = Error().stack.split('\n')[3]
 		var clsname
 		if(body && body.name){
@@ -39,7 +39,9 @@ function extend(body){
 		if(clsname && clsname.indexOf('-') === -1) Constructor = new Function('return '+Class.toString().replace(/Class/g,clsname))()
 	}
 	else{ //?
-		
+		if(body && body.name){
+			proto.name = body.name
+		}
 	}
 
 	// connect 

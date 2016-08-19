@@ -13,6 +13,7 @@ painter.w = args.w
 painter.h = args.h
 painter.pixelRatio = args.pixelRatio
 painter.timeBoot = args.timeBoot
+painter.isSub = args.isSub
 
 bus.onMessage = function(msg){
 	if(msg.fn === 'onResize'){
@@ -87,7 +88,7 @@ painter.Todo = require('class').extend(function Todo(proto){
 		
 		this.xScroll = 0
 		this.yScroll = 0
-
+		this.timeMax = 0
 		// store the todo
 		todoIds[todoId] = this
 	}

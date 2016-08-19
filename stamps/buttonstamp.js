@@ -5,8 +5,8 @@ module.exports = require('stamp').extend(function ButtonStamp(proto){
 	}
 
 	proto.inPlace = 1
-	// i haz comment!
-proto.tools = {
+	
+	proto.tools = {
 		Bg: require('shaders/rectshader').extend({
 			color:'gray',
 			padding:[10,10,10,10]
@@ -20,13 +20,13 @@ proto.tools = {
 		default:{
 			Bg:{color:'gray'}
 		},
-		hover:{
+		click:{
 			Bg:{color:'red'}
 		}
 	}
 
 	proto.onFingerDown = function(){
-		this.state = this.states.hover
+		this.state = this.states.click
 	}
 
 	proto.onFingerUp = function(){
