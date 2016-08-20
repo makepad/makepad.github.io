@@ -188,9 +188,13 @@ pp.parseExprOp = function(left, leftStartPos, minPrec, noIn) {
 
 			node.left = left
 			var type = this.type
-			node.leftSpace = this.skippedSpace
+			if(!this.skippedNewlines){
+				node.leftSpace = this.skippedSpace
+			}
 			this.next()
-			node.rightSpace = this.skippedSpace
+			if(!this.skippedNewlines){
+				node.rightSpace = this.skippedSpace
+			}
 
 			if(this.storeComments){
 				this.commentAround(node, type)

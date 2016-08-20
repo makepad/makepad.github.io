@@ -39,11 +39,18 @@ module.exports = function(proto){
 
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
+		if(this.lastIsNewline()){
+			this.ann[this.ann.length - 3] = this.turtle.wx = this.turtle.sx
+		}
+	}
+
+	proto.lastIsNewline = function(){
 		var text = this.ann[this.ann.length - 5]
 		var last = text.charCodeAt(text.length - 1)
 		if(last === 10 || last === 13){
-			this.ann[this.ann.length - 3] = this.turtle.wx = this.turtle.sx
+			return true
 		}
+		return false
 	}
 
 	proto.indentOut = function(delta){
@@ -51,9 +58,7 @@ module.exports = function(proto){
 		this.currentIndent -= this.indentSize * this.$fastTextFontSize
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
-		var text = this.ann[this.ann.length - 5]
-		var last = text.charCodeAt(text.length - 1)
-		if(last === 10 || last === 13){
+		if(this.lastIsNewline()){
 			this.ann[this.ann.length - 3] = this.turtle.wx = this.turtle.sx
 		}
 	}
@@ -705,8 +710,8 @@ module.exports = function(proto){
 		var x2 = turtle.wx 
 		this.trace += node.operator
 		if(node.leftSpace || node.rightSpace){
-			for(var ls = '', i = node.leftSpace; i>0; --i) ls += ' '
-			for(var rs = '', i = node.rightSpace; i>0; --i) rs += ' '
+			for(var ls = '', i = node.leftSpace; i > 0; --i) ls += ' '
+			for(var rs = '', i = node.rightSpace; i > 0; --i) rs += ' '
 			this.fastText(ls+node.operator+rs, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
 		}
 		else this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
