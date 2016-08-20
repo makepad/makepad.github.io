@@ -80,7 +80,7 @@ function requestHandler(req, res){
 	}
 
 	// return filename 
-	var fileext = ((filename.match(/\.[a-zA-Z0-9]+$/) || [''])[0]).toLowerCase()
+	var fileext = ((filename.match(/\.[a-zA-Z0-9]+$|\?/) || [''])[0]).toLowerCase()
 	if(!fileext) fileext = '.html', filename += '.html'
 	var filemime = mimetable[fileext] || 'application/octet-stream'
 

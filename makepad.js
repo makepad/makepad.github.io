@@ -2,10 +2,12 @@
 module.exports = require('app').extend(function(proto){
 	var storage = require('storage')
 
-	var editFile = "storage/livecode2.js"
+	var editFile = storage.search?storage.search.slice(1):"storage/livecode2.js"
+
 	//var editFile = "storage/livecode2.js"
 	//var editFile = "storage/livecode4.js"
 	// var editFile = "views/codeview.js"
+	//var editFile = "storage/treeview.js"
 
 	var Worker = require('worker')
 	var CodeView = require('views/codeview')

@@ -46,6 +46,8 @@ exports.onRequire = function(args, resolve, moduleurl){
 		}
 	}
 
+	storage.search = service.args.search
+
 	requires[moduleurl] = storage
 	return storage
 }

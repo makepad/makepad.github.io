@@ -8,14 +8,20 @@
 			watchFileChange()
 
 		var canvasses =	document.getElementsByClassName('makepad')
-		
+		var hrefSearch = location.href.indexOf('?')
+		var href = location.href
+		if(hrefSearch !== -1) href = href.slice(0, hrefSearch)
 		//!TODO multiple canvasses boot up cycle fix
 		for(var i = 0; i < canvasses.length; i++){
 			var canvas = canvasses[i]
-			var mainUrl = buildURL(rootUrl, location.href, canvas.getAttribute('main'), 'code')
+			var mainUrl = buildURL(rootUrl, href, canvas.getAttribute('main'), 'code')
 			WorkerClass = canvas.getAttribute("noworker")?FakeWorker:Worker
 			// boot it up!
-			runWorker(mainUrl, canvas)
+			runWorker(mainUrl, canvas, undefined, undefined, {
+				storage:{
+					search:location.search
+				}
+			})
 		}
 	}
 

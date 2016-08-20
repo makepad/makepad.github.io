@@ -1,5 +1,7 @@
 var bus = service.bus
 
+service.args.search = service.workerArgs && service.workerArgs.search
+
 var userMessage = {
 	loadText:function(msg){
 		var req = new XMLHttpRequest()
