@@ -16,6 +16,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	proto.padding = [0,0,0,4]
 
 	proto.tools = {
+
 		Text:require('shaders/codefontshader').extend({
 			tween:2.,
 			ease:[0, 10, 1.0, 1.0],
@@ -922,7 +923,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		if(text === '{' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
 		if(text === '[' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
-		if(text === '(' && (!this.error || this._text.charAt(offset)!==')')) text = '()'
+
+		if(text === '(' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!==')')) text = '()'
+
 		if(text === '"' && (!this.error || this._text.charAt(offset)!=='"')) text = '""'
 		if(text === "'" && (!this.error || this._text.charAt(offset)!=="'")) text = "''"
 
@@ -968,8 +971,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				break
 			}
 		}
-
 		this.redraw()
+	}
+
+	proto.serializeWithFormatting = function(){
+		for(var i = 0, len = ann.length; i < len; i+=5){
+			var txt = ann[i]
+			var style = ann[i+1]
+			var sx = ann[i+2]
+			pos += txt.length
+		}
 	}
 
 	proto.removeText = function(start, end){
