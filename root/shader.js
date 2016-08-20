@@ -10,6 +10,8 @@ module.exports = require('class').extend(function Shader(proto){
 	// allocate the nameids for attribute ranges
 	for(var i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
+	proto.propAllocLimit = 150000
+
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
@@ -73,6 +75,18 @@ module.exports = require('class').extend(function Shader(proto){
 		return 0
 	}
 
+	// finger over
+	proto.isFingerOverView = function(pos){$
+		for(var i = 0; i < 4; i++){
+			var f = this.fingerInfo[i]
+			var f2 = abs(f[2])
+			if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.)){
+				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+				return i+1
+			}
+		}
+		return 0
+	}
 	proto.animateUniform = function(uni){$
 		return clamp((this.animTime - uni.x)/uni.y, 0., 1.) * (uni.w-uni.z) + uni.z
 	}
@@ -690,8 +704,8 @@ module.exports = require('class').extend(function Shader(proto){
 		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent + '}\n'
 		code += indent + 'var $propslength = $props.length\n\n'
-		code += indent + 'var $need = $propslength + '+need+'\n'
-		code += indent + 'if($need > $props.allocated) $props.alloc($need)\n'
+		code += indent + 'var $need = min($propslength + '+need+',$proto.propAllocLimit)\n'
+		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need)\n'
 		if(!fastWrite){
 			code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
 			code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
@@ -1296,7 +1310,8 @@ module.exports = require('class').extend(function Shader(proto){
 		'LN10':'2.302585092994046',
 		'LOG2E':'1.4426950408889634',
 		'LOG10E':'0.4342944819032518',
-		'SQRT1_2':'0.70710678118654757'
+		'SQRT1_2':'0.70710678118654757',
+		'TODEG':'0.017453292519943295'
 	}
 
 

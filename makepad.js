@@ -1,9 +1,13 @@
 // the makepad App
 module.exports = require('app').extend(function(proto){
-	var load = require('load')
+	var storage = require('storage')
+
+	var editFile = "storage/livecode2.js"
+	//var editFile = "storage/livecode2.js"
+	//var editFile = "storage/livecode4.js"
+	// var editFile = "views/codeview.js"
 
 	var Worker = require('worker')
-
 	var CodeView = require('views/codeview')
 
 	//var Splitter = require('views/splitter')
@@ -19,7 +23,7 @@ module.exports = require('app').extend(function(proto){
 	})
 
 	proto.onInit = function(){
-		load.text("tests/livecode2.js").then(function(text){
+		storage.loadText(editFile).then(function(text){
 			this.find('CodeView').text = text
 		}.bind(this))
 	}
@@ -41,6 +45,11 @@ module.exports = require('app').extend(function(proto){
 		return [
 			CodeView({
 				//text:'',
+				onKeyS:function(e){
+					if(!e.meta && !e.ctrl) return true
+					// lets save it
+					storage.saveText(editFile, this.text)
+				},
 				onText:function(){
 					if(!this.error && this.text){
 						this.app.runUserApp(this.text)

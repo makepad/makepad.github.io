@@ -93,6 +93,44 @@ function requestHandler(req, res){
 	// lookup filename
 	var filefull = httproot + filename
 
+	// file write interface
+	if(req.method == 'POST'){
+
+		if(filename.indexOf('/storage/') !== 0) {
+			res.writeHead(404)
+			res.end()
+			return 
+		}
+		var buf = new Uint8Array(req.headers['content-length'])
+		var off = 0
+		req.on('data', function(data){
+			for(var i = 0; i < data.length; i ++, off++){
+				buf[off] = data[i]
+			}
+		})
+		req.on('end', function(){
+			// lets write it
+			Fs.writeFile(filefull, Buffer(buf), function(err){
+				if(err){
+					console.log("Error saving ", filefull)
+					res.writeHead(500)
+					res.end("")
+					return
+				}
+
+				Fs.stat(filefull, function(err, stat){
+					stat.atime = null
+					tags[filefull] = JSON.stringify(stat)
+				})
+
+				console.log("Saved ", filefull)
+				res.writeHead(200)
+				res.end()
+			})
+		})
+		return
+	}
+
 	// stat the file
 	Fs.stat(filefull, function(err, stat){
 		if(err || !stat.isFile()){

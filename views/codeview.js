@@ -545,19 +545,31 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					if(oldtext.charCodeAt(start) !== newtext.charCodeAt(start))break
 				}
 				for(var oldend = oldlen-1, newend = newlen-1; oldend > start && newend > start; oldend--, newend--){
-					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)) break
+					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)){
+						break
+					}
 				}
 
-				this.cs.scanChange(start, oldtext, newtext)
-
+				this.wasNoopChange = false
 				if(start !== newlen){
-					// if something changed before our cursor, we have to scan
-					// forward for our old char
-
 					// this gets tacked onto the undo with the same group
 					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext)
 					this.addUndoDelete(start, newlen)
+					// lets check what we did
+					var oldrem = oldtext.slice(start, oldend)
+					var newins = newtext.slice(start,newend)
+
+					// if we removed ; or space make it stop jiggling
+					if((oldrem === ' ' || oldrem === ';') && newins === ''){
+						var lengthText = this.lengthText()
+						this.wasNoopChange = true
+						for(var i =0 ; i < lengthText; i++){
+							this.$setTweenStartText(i, 0)
+						}
+					}
 				}
+				
+				this.cs.scanChange(start, oldtext, newtext)
 				this.cs.clampCursor(0, newlen)
 
 				// overwrite tweenstarts when blocks are different

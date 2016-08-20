@@ -96,8 +96,10 @@ module.exports = function(proto){
 		var shader = shaders[classname] = new painter.Shader(info)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
 		props.name = classname
-		props.xOffset = info.instanceProps.this_DOT_x.offset
-		props.yOffset = info.instanceProps.this_DOT_y.offset
+		var xProp = info.instanceProps.this_DOT_x
+		props.xOffset = xProp && xProp.offset
+		var yProp = info.instanceProps.this_DOT_y 
+		props.yOffset = yProp && yProp.offset
 		var wProp = info.instanceProps.this_DOT_w
 		props.wOffset = wProp && wProp.offset
 		var hProp = info.instanceProps.this_DOT_h

@@ -95,18 +95,19 @@ function initializeGLContext(canvas){
 			// delete it
 			localStorage.removeItem(cacheid)
 			--i
-
-			gl.useProgram(shader.program)
-			// set up some fake textures
-			for(var t = 0; t< 8; t++){
-				gl.activeTexture(gl.TEXTURE0 + t)
-				gl.bindTexture(gl.TEXTURE_2D, gltex)
+			if(shader){
+				gl.useProgram(shader.program)
+				// set up some fake textures
+				for(var t = 0; t< 8; t++){
+					gl.activeTexture(gl.TEXTURE0 + t)
+					gl.bindTexture(gl.TEXTURE_2D, gltex)
+				}
+				gl.drawArrays(gl.TRIANGLES,0,1)
 			}
-			gl.drawArrays(gl.TRIANGLES,0,1)
 		}
 	}
 	// wait a bit and fire it up
-	setTimeout(bootCache, 10)
+	//setTimeout(bootCache, 10)
 
 	gl.OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
 	gl.ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
@@ -596,6 +597,7 @@ var isScrollBarMove = 0
 var scrollDelta
 exports.onFingerDown = function(f){
 	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerDown(f)
+
 	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
@@ -691,7 +693,7 @@ exports.onFingerUp = function(f){
 
 exports.onFingerHover = function(f){
 	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerHover(f)
-
+	
 	var o = (f.digit-1) * 4
 	fingerInfo[o+0] = f.x
 	fingerInfo[o+1] = f.y
@@ -701,7 +703,7 @@ exports.onFingerHover = function(f){
 }
 
 exports.onFingerWheel = function(f){
-	if(f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerWheel(f)
+	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerWheel(f)
 
 	var todo = todoIds[f.todoId]
 	if(!todo) return

@@ -147,17 +147,8 @@ module.exports = require('shader').extend(function Rect9Shader(proto){
 		begin:function(overload){
 			this.$STYLEPROPS(overload, 2)
 			this.$ALLOCDRAW()
-			var t = this. turtle
-			var bw = t._borderWidth
-			if(bw){
-				var pad = t.$bwPadding || (t.$bwPadding = [0,0,0,0])
-				var op = t._padding
-				pad[0] = op[0] + bw
-				pad[1] = op[1] + bw
-				pad[2] = op[2] + bw
-				pad[3] = op[3] + bw
-				t._padding = pad
-			}
+			var t = this.turtle
+			t.shiftPadding(t._borderWidth)
 			this.beginTurtle()
 		},
 		end:function(){

@@ -818,12 +818,14 @@ module.exports = function(proto){
 		this[test.type](test,1)
 		this.trace += '))'
 		this.fastText(')', this.style.Paren.IfStatement.right)
+		if(node.after1) this.fastText(node.after1, this.style.Comment.above)
 		var cq = node.consequent
 		this[cq.type](cq, this.style.Block.IfStatement.if)
 		var alt = node.alternate
 		if(alt){
 			this.trace += '\nelse '
 			this.fastText('\nelse ', this.style.IfStatement.else)
+			if(node.after2) this.fastText(node.after2, this.style.Comment.above)
 			this[alt.type](alt, this.style.Block.IfStatement.else)
 		}
 	}

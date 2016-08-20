@@ -56,7 +56,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 			tween:2,
 			color:'#fff',
 			vertexStyle:function(){
-
+				
 				var time = this.normalTween
 				var v = sin(time*PI)
 				this.y -= v*2.
@@ -412,8 +412,12 @@ module.exports = require('view').extend(function EditView(proto, base){
 				else{
 					oc1 = oldText.charCodeAt(this.end)
 					// find something better than a newline to hold on to
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+					if(!this.editor.wasNoopChange){
+						var ocm1 = oldText.charCodeAt(this.end-1)
+						if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
+						if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
+						if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+					}
 				}
 
 				for(var i = pos; i > 0; i--){
@@ -428,7 +432,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 						break
 					}
 				}
-
+				
 				if(Math.abs(pos-i) < Math.abs(pos-j)){
 					this.start = this.end = i
 				}
@@ -438,6 +442,36 @@ module.exports = require('view').extend(function EditView(proto, base){
 
 		proto.invalidateMax = function(){
 			this.max = -1
+		}
+
+		proto.toggleSlashComment = function(){
+			// toggle a line comment on or off
+			var start = this.end
+			var ct = 0
+			for(var i = this.end; i > 0; i--){
+				var code = this.editor.charCodeAt(i)
+				if(code === 47) ct++
+				else ct = 0
+				if(ct === 2) break
+				if(code === 10 || code === 13) break
+			}
+			var d = 0
+			if(ct === 2){
+				this.editor.addUndoInsert(i, i+2)
+				this.editor.removeText(i, i+2)
+				d = -2
+			}
+			else{
+				this.editor.insertText(i+1, '//')
+				this.cursorSet.delta += 2
+				this.editor.addUndoDelete(i+1, i+3)
+				d = 2
+			}
+
+			this.cursorSet.delta = d
+			this.start += d
+			this.end += d
+			this.editor.cursorChanged()
 		}
 	})
 
@@ -845,6 +879,12 @@ module.exports = require('view').extend(function EditView(proto, base){
 		// select all
 		var cur = this.cs.clearCursors()
 		cur.select(0, this.textLength())
+	}
+
+	proto.onKeySlash = function(k){
+		if(!k.ctrl && !k.meta) return true
+		// lets scan for // at the beg of the line
+		this.cs.toggleSlashComment(k.shift)
 	}
 
 	proto.onKeyDown = function(k){

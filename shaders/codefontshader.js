@@ -62,6 +62,10 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 	}
 
 	proto.toolMacros = {
+		$setTweenStart:function(o, v){
+			this.$PROPVARDEF()
+			this.$PROP(o, 'tweenStart') = v
+		},
 		fast:function(txt, style, head){
 			var out = this.$fastNAMEOutput			
 			var len = txt.length - 1

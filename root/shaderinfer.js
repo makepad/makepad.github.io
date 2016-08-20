@@ -757,7 +757,7 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					if(param.type === types.gen){
 						gentype = arg.infer.type
 					}
-					else if(param.type !== types.genfloat && param.type !== arg.infer.type){
+					else if(param.type !== types.genfloat && param.type !== arg.infer.type && param.type !== types.genopt){
 						throw this.InferErr(arg, "GLSL Builtin wrong arg " +fnname+' arg '+i+' -> ' +param.name)
 					}
 				}

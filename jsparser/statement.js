@@ -208,10 +208,21 @@ pp.parseFunctionStatement = function(node) {
 pp.parseIfStatement = function(node) {
 	this.next()
 	node.test = this.parseParenExpression()
+
+	// lets parse the above
+	if(this.storeComments){
+		var after1 = this.commentAfter(tt.parenR)
+		if(after1 && after1.length) node.after1 = after1
+	}
+
 	node.consequent = this.parseStatement(false)
 	// lets remove the newline from the comment
 	if(this.eat(tt._else)){
-		if(this.storeComments) this.commentBegin()
+		// lets parse the above
+		if(this.storeComments){
+			var after2 = this.commentAfter(tt._else)
+			if(after2 && after2.length) node.after1 = after2
+		}
 		node.alternate = this.parseStatement(false)
 	}
 	return this.finishNode(node, "IfStatement")
@@ -478,6 +489,11 @@ pp.parseForIn = function(node, init) {
 	node.left = init
 	node.right = this.parseExpression()
 	this.expect(tt.parenR)
+// lets parse the above
+	if(this.storeComments){
+		var after = this.commentAfter(tt.parenR)
+		if(after && after.length) node.after = after
+	}	
 	node.body = this.parseStatement(false)
 	this.labels.pop()
 	return this.finishNode(node, type)
