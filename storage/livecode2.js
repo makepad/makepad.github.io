@@ -4,7 +4,7 @@ tools:{
 Rect:{color:'#005'},
 Branch:require('shaders/quadshader').extend({
 path:{noTween:1,value:0},
-depth:{noTween:1,value:0},
+depth:0,
 leaf:0,
 tween:3,
 duration:2.,
