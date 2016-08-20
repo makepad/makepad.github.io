@@ -51,6 +51,11 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// fingerdown
+	proto.getFinger = function(i){
+		var f = this.fingerInfo[i]
+		return (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+	}
+
 	proto.checkFingerDown = function(f, pos){
 		if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && (this.pickId < 0. || this.pickId == f[3]) ){
 			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)

@@ -16,7 +16,9 @@ v.x*sa+v.y*ca
 },
 pixel:function(){$
 if(this.depth>12.){
-var d=length(this.mesh.xy-vec2(.5))*2
+var d=length(
+this.mesh.xy-vec2(.5)
+)*2
 var col=mix('#0f0','#f0f',this.leaf)
 return mix(col,vec4(col.rgb,0),d)
 }
@@ -29,9 +31,9 @@ sin(this.mesh.y*PI)*s
 },
 vertex:function(){$
 var depth=int(this.depth)
-var fpos=vec2()
-this.pickId=-1.
-this.isFingerOver(fpos)
+
+var f1=this.getFinger(0)
+var f2=this.getFinger(1)
 
 var pos=vec2(200,300)
 var scale=vec2(50.,50)
@@ -50,8 +52,11 @@ angle=-1.*angle
 if(i>6){
 angle+=sin(this.time+0.02*pos.x)*20.
 }
-var dist=max(50.-length(fpos-pos),0.)
-angle+=dist*1.
+var d1=max(50.-length(f1-pos),0.)
+angle+=d1*1.
+
+var d2=max(50.-length(f2-pos),0.)
+angle-=d2*1.
 //angle+=sin(pos.x+this.time)*2
 
 dir=this.rotate2d(dir,angle*TODEG)
