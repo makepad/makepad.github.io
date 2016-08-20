@@ -392,7 +392,12 @@ module.exports = function(proto){
 			this.indentOut()
 		}
 		this.trace += ')'
-		this.fastText(')', this.style.Paren.ParenthesizedExpression)
+		if(node.rightSpace){
+			for(var i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
+			this.fastText(')'+rs, this.style.Paren.ParenthesizedExpression)
+		}
+		else this.fastText(')', this.style.Paren.ParenthesizedExpression)
+
 	}
 
 	//Literal:{raw:0, value:0},
@@ -519,7 +524,12 @@ module.exports = function(proto){
 		}
 		this.$fastTextDelta += dy
 		this.trace += '))'
-		this.fastText(')', this.style.Paren.CallExpression)
+		
+		if(node.rightSpace){
+			for(var i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
+			this.fastText(')'+rs, this.style.Paren.CallExpression)
+		}
+		else this.fastText(')', this.style.Paren.CallExpression)
 	}
 
 	//NewExpression:{callee:1, arguments:2},
@@ -694,7 +704,12 @@ module.exports = function(proto){
 
 		var x2 = turtle.wx 
 		this.trace += node.operator
-		this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
+		if(node.leftSpace || node.rightSpace){
+			for(var ls = '', i = node.leftSpace; i>0; --i) ls += ' '
+			for(var rs = '', i = node.rightSpace; i>0; --i) rs += ' '
+			this.fastText(ls+node.operator+rs, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
+		}
+		else this.fastText(node.operator, this.style.BinaryExpression[node.operator] || this.style.BinaryExpression)
 		var x3 = turtle.wx 
 
 		if(node.around2) this.fastText(node.around2, this.style.Comment.around)

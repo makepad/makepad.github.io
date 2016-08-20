@@ -188,8 +188,9 @@ pp.parseExprOp = function(left, leftStartPos, minPrec, noIn) {
 
 			node.left = left
 			var type = this.type
-
+			node.leftSpace = this.skippedSpace
 			this.next()
+			node.rightSpace = this.skippedSpace
 
 			if(this.storeComments){
 				this.commentAround(node, type)
@@ -280,6 +281,10 @@ pp.parseSubscripts = function(base, startPos, noCalls) {
 			var node = this.startNodeAt(startPos)
 			node.callee = base
 			node.arguments = this.parseExprList(tt.parenR, false, false, false, node)
+			if(this.skippedNewlines){
+				node.rightSpace = this.skippedSpace
+			}
+
 			base = this.finishNode(node, "CallExpression")
 		} else if (this.type === tt.backQuote) {
 			var node = this.startNodeAt(startPos)
@@ -449,6 +454,9 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 		var par = this.startNodeAt(startPos)
 		par.expression = val
 		if(top && top.length) par.top = top
+		if(this.skippedNewlines){
+			par.rightSpace = this.skippedSpace
+		}
 		return this.finishNode(par, "ParenthesizedExpression")
 	} else {
 		return val

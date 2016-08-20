@@ -388,8 +388,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			color:'#ff9f00'
 		},
 		BinaryExpression:{
-			head:0.5,
-			tail:0.5,
+			head:0.,
+			tail:0.,
 			color:'#ff9f00'
 		},
 		AssignmentExpression:{

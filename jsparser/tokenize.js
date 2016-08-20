@@ -137,12 +137,14 @@ pp.skipLineComment = function(startSkip) {
 
 pp.skipSpace = function() {
 	this.skippedNewlines = 0
+	this.skippedSpace = 0
 	loop: while (this.pos < this.input.length) {
 		var ch = this.input.charCodeAt(this.pos)
 		var is13
 		switch (ch) {
 			case 32: case 160: // ' '
 				++this.pos
+				this.skippedSpace++
 				break
 			case 13:
 				is13 = true
