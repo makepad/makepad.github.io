@@ -492,6 +492,13 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 					return fullname
 				}
 
+				// turn it into a property
+				if(typeof value === 'object' && value.constructor === Object){
+					var propgen = {}
+					propgen[propname] = value
+					this.root.props = propgen
+				}
+
 				var props = this.root._props
 				var config = props[propname]
 
@@ -660,7 +667,6 @@ module.exports = require('class').extend(function ShaderInfer(proto){
 
 				// default to instanced property
 				var type = types.typeFromValue(value)
-
 				if(type){
 					this.instanceProps[fullname] = {
 						type:type,

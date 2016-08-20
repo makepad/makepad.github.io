@@ -1,10 +1,15 @@
 module.exports=require('apps/drawapp').extend({
+props:{autumn:0},
 tools:{
 Rect:{color:'#005'},
 Branch:require('shaders/quadshader').extend({
-path:0,
-depth:0,
+path:{noTween:1,value:0},
+depth:{noTween:1,value:0},
 leaf:0,
+tween:3,
+duration:2.,
+autumn:0,
+ease:[0.2,10,0,0],
 rotate2d:function(v,a){$
 var ca=cos(a)
 var sa=sin(a)
@@ -19,7 +24,7 @@ if(this.depth>12.){
 var d=length(
 this.mesh.xy-vec2(.5)
 )*2
-var col=mix('#0c0','#130',this.leaf)
+var col=mix(mix('#0c0','#630',this.autumn),'#130',this.leaf)
 return mix(col,vec4(col.rgb,0),pow(d,8.))
 }
 var s=(14.-(this.depth))*0.2
@@ -51,9 +56,7 @@ angle=-1.*angle
 if(i>6){
 angle+=sin(this.time+0.02*pos.x)*20.
 }
-if(i>11){
-nodesize=vec2(2.,3.)
-}
+
 var d1=max(50.-length(f1-pos),0.)
 angle+=d1*1.
 
@@ -65,6 +68,11 @@ dir=this.rotate2d(dir,angle*TODEG)
 pos+=dir*scale
 scale=scale*smaller
 path=floor(path/2.)
+if(i>11){
+nodesize=vec2(2.,3.)
+pos+=vec2((1-this.autumn)*sin(pos.x*0.1)*50.*this.autumn,this.autumn*300.)
+pos.y=min(380.,pos.y)
+}
 }
 
 var m=this.rotate2d(
@@ -85,11 +93,21 @@ return v*this.viewPosition*this.camPosition*this.camProjection
 }
 })
 },
+onFingerDown:function(){
+this.autumn=1
+this.redraw()
+},
+onFingerUp:function(){
+this.autumn=0
+this.redraw()
+},
 onDraw:function (){
 var p=this
+console.log(this.autumn)
 this.drawRect(this.viewGeom)
 function recur(path,depth){
 p.drawBranch({
+autumn:p.autumn,
 leaf:random(),
 path:path,
 depth:depth
