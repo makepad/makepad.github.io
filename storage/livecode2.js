@@ -30,7 +30,8 @@ sin(this.mesh.y*PI)*s
 vertex:function(){$
 var depth=int(this.depth)
 var fpos=vec2()
-this.isFingerOverView(fpos)
+this.pickId=-1.
+this.isFingerOver(fpos)
 
 var pos=vec2(200,300)
 var scale=vec2(50.,50)

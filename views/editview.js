@@ -980,7 +980,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 	}
 
 	proto.onFingerMove = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId >= this.$scrollPickIds || !this.fingerCursor)return
+		if(f.digit!== 1 || f.button !== 1 || f.pickId >= this.$scrollPickIds || (!f.touch && !this.fingerCursor))return
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount < 1){
 			return
@@ -1010,7 +1010,9 @@ module.exports = require('view').extend(function EditView(proto, base){
 	}
 
 	proto.onFingerUp = function(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId >=this.$scrollPickIds|| !this.fingerCursor)return
+		console.log("FINGERUP")
+
+		if(f.digit!== 1 || f.button !== 1 || f.pickId >=this.$scrollPickIds|| (!f.touch && !this.fingerCursor))return
 		this.fingerCursor = undefined
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){

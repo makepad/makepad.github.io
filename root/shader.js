@@ -51,43 +51,42 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// fingerdown
-	proto.isFingerDown = function(pos){$
-		for(var i = 0; i < 4; i++){
-			var f = this.fingerInfo[i]
-			if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && this.pickId == f[3] ){
-				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
-				return i+1
-			}
+	proto.checkFingerDown = function(f, pos){
+		if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && (this.pickId < 0. || this.pickId == f[3]) ){
+			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+			return true
 		}
+		false
+	}
+
+	proto.isFingerDown = function(pos){$
+		pos = vec2(0.)
+		if(this.checkFingerDown(this.fingerInfo[0], pos)) return 1
+		if(this.checkFingerDown(this.fingerInfo[1], pos)) return 2
+		if(this.checkFingerDown(this.fingerInfo[2], pos)) return 3
+		if(this.checkFingerDown(this.fingerInfo[3], pos)) return 4
 		return 0
+	}
+
+	proto.checkFingerOver = function(f, pos){
+		var f2 = abs(f[2])
+		if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.) && (this.pickId < 0. || this.pickId == f[3]) ){
+			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+			return true
+		}
+		return false
 	}
 
 	// finger over
 	proto.isFingerOver = function(pos){$
-		for(var i = 0; i < 4; i++){
-			var f = this.fingerInfo[i]
-			var f2 = abs(f[2])
-			if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.) && this.pickId == f[3] ){
-				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
-				return i+1
-			}
-		}
+		pos = vec2(0.)
+		if(this.checkFingerOver(this.fingerInfo[0], pos)) return 1
+		if(this.checkFingerOver(this.fingerInfo[1], pos)) return 2
+		if(this.checkFingerOver(this.fingerInfo[2], pos)) return 3
+		if(this.checkFingerOver(this.fingerInfo[3], pos)) return 4
 		return 0
 	}
 
-	// finger over
-	proto.isFingerOverView = function(pos){$
-		pos = vec2(0.)
-		for(var i = 0; i < 4; i++){
-			var f = this.fingerInfo[i]
-			var f2 = abs(f[2])
-			if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.)){
-				pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
-				return i+1
-			}
-		}
-		return 0
-	}
 	proto.animateUniform = function(uni){$
 		return clamp((this.animTime - uni.x)/uni.y, 0., 1.) * (uni.w-uni.z) + uni.z
 	}

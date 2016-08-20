@@ -67,6 +67,7 @@ var userMessage = {
 	},
 	setKeyboardFocus:function(msg){
 		hasKeyboardFocus = msg.focus
+
 		if(msg.focus){
 			if(isTouchDevice){
 				cliptext.style.top = -15
@@ -246,6 +247,9 @@ window.addEventListener('orientationchange', function(e){
 
 	defaultHeight = window.innerHeight
 	cliptext.blur()
+	if(isTouchDevice){
+		cliptext.style.top = 0
+	}
 	if(hasKeyboardFocus){
 		bus.postMessage({
 			fn:'onKeyboardClose'
