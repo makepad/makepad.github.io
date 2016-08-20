@@ -51,7 +51,7 @@ module.exports = require('class').extend(function Shader(proto){
 	}
 
 	// fingerdown
-	proto.getFinger = function(i){
+	proto.fingerPos = function(i){
 		var f = this.fingerInfo[i]
 		return (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
 	}

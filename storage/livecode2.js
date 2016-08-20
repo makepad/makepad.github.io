@@ -32,15 +32,14 @@ sin(this.mesh.y*PI)*s
 vertex:function(){$
 var depth=int(this.depth)
 
-var f1=this.getFinger(0)
-var f2=this.getFinger(1)
+var f1=this.fingerPos(0)
+var f2=this.fingerPos(1)
 
 var pos=vec2(200,300)
 var scale=vec2(50.,50)
 var dir=vec2(0,-0.8)
 var smaller=vec2(.85,.85)
 var path=this.path
-
 
 for(var i=0;i<14;i++){
 if(i>=depth)break
