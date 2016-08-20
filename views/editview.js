@@ -1010,8 +1010,6 @@ module.exports = require('view').extend(function EditView(proto, base){
 	}
 
 	proto.onFingerUp = function(f){
-		console.log("FINGERUP")
-
 		if(f.digit!== 1 || f.button !== 1 || f.pickId >=this.$scrollPickIds|| (!f.touch && !this.fingerCursor))return
 		this.fingerCursor = undefined
 		var touchdy = 0//f.touch?-20:0
