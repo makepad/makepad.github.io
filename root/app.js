@@ -61,6 +61,10 @@ module.exports = require('view').extend(function App(proto, base){
 			var view = viewTodoMap[todoId]
 			if(!view) return
 			var xyLocal = [0,0,0,0]
+
+			msg.x -= painter.x
+			msg.y -= painter.y
+
 			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
 			msg.xAbs = msg.x
 			msg.yAbs = msg.y

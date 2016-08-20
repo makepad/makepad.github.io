@@ -29,14 +29,15 @@ sin(this.mesh.y*PI)*s
 },
 vertex:function(){$
 var depth=int(this.depth)
-var pos=vec2(220.,290)
+var fpos=vec2()
+this.isFingerOverView(fpos)
+
+var pos=vec2(200,300)
 var scale=vec2(50.,50)
 var dir=vec2(0,-0.8)
 var smaller=vec2(.85,.85)
 var path=this.path
 
-var fpos=vec2()
-this.isFingerOver(fpos)
 
 for(var i=0;i<14;i++){
 if(i>=depth)break
@@ -48,8 +49,8 @@ angle=-1.*angle
 if(i>6){
 angle+=sin(this.time+0.02*pos.x)*20.
 }
-//var dist=max(100.-length(fpos-pos),0.)
-//angle+=dist*0.1
+var dist=max(50.-length(fpos-pos),0.)
+angle+=dist*1.
 //angle+=sin(pos.x+this.time)*2
 
 dir=this.rotate2d(dir,angle*TODEG)

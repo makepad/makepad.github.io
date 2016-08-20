@@ -140,21 +140,32 @@ exports.connectWorkerToFramebuffer = function(subWorker, fbId){
 		glfb:fb.glfb,
 		glpfb: fb.glpfb,
 		timeBoot: args.timeBoot,
-		todoId:undefined
+		todoId:undefined,
+		xStart:fb.xStart,
+		yStart:fb.yStart
 	}
 }
 // ok someone wants to hot reload
 exports.onHotReload = function(){
 }
 
-exports.onFbResize = function(attach, glfb, glpfb){
+exports.onFbResize = function(attach, glfb, glpfb, xStart, yStart){
 	mainFramebuffer.attach = attach
 	mainFramebuffer.glfb = glfb
 	mainFramebuffer.glpfb = glpfb
 	args.pixelRatio = attach.color0.pixelRatio
+	args.x = xStart
+	args.y = yStart
 	args.w = attach.color0.w / args.pixelRatio
 	args.h = attach.color0.h / args.pixelRatio
-	bus.postMessage({fn:'onResize', pixelRatio:args.pixelRatio, w:args.w, h:args.h})
+	bus.postMessage({
+		fn:'onResize', 
+		pixelRatio:args.pixelRatio,
+		x:args.x,
+		y:args.y,
+		w:args.w,
+		h:args.h
+	})
 }
 
 var gl
@@ -173,10 +184,14 @@ if(ownerServices && ownerServices.painter){
 	args.pixelRatio = attach.color0.pixelRatio
 	args.w = attach.color0.w / args.pixelRatio
 	args.h = attach.color0.h / args.pixelRatio
+	args.x = parentFramebuffer.xStart
+	args.y = parentFramebuffer.yStart
 	args.timeBoot = parentFramebuffer.timeBoot
 	args.isSub = true
 }
 else{
+	args.x = 0
+	args.y = 0
 	args.timeBoot = Date.now()
 	gl = initializeGLContext(canvas)
 	exports.resizeCanvas(0)
@@ -364,7 +379,11 @@ function renderPickWindow(digit, x, y, force){
 
 		// render deps after framebuffer pick
 		for(var deps = todo.deps, i = 0; i < deps.length; i++){
-			renderPickDep(framebufferIds[deps[i]])
+			var fb = framebufferIds[deps[i]]
+			if(fb.subWorker){
+				fb.subWorker.renderSubPick(repaintTime, frameId)
+			}
+			else renderPickDep()
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, pick.framebuffer)
@@ -478,7 +497,6 @@ function renderColor(framebuffer, todoId){
 exports.renderSubColor = function(time, fid){
 	repaintTime = time
 	frameId = fid
-
 	if(!mainFramebuffer || !mainFramebuffer.todoId) return
 	// render the main scene
 	return renderColor(mainFramebuffer)
@@ -596,11 +614,12 @@ function processScrollState(todo){
 var isScrollBarMove = 0
 var scrollDelta
 exports.onFingerDown = function(f){
+
 	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerDown(f)
 
 	var o = (f.digit-1) * 4
-	fingerInfo[o+0] = f.x
-	fingerInfo[o+1] = f.y
+	fingerInfo[o+0] = f.x - args.x
+	fingerInfo[o+1] = f.y - args.y
 	fingerInfo[o+2] = f.workerId*256 + f.todoId
 	fingerInfo[o+3] = f.pickId
 	// check if we are down on a scrollbar
@@ -647,8 +666,8 @@ exports.onFingerMove = function(f){
 
 	// store finger pos
 	var o = (f.digit-1) * 4
-	fingerInfo[o+0] = f.x
-	fingerInfo[o+1] = f.y
+	fingerInfo[o+0] = f.x - args.x
+	fingerInfo[o+1] = f.y - args.y
 
 	if(f.tapCount > 0) return
 	var todo = todoIds[f.todoId]
@@ -677,8 +696,8 @@ exports.onFingerUp = function(f){
 	requestRepaint()
 
 	var o = (f.digit-1) * 4
-	fingerInfo[o+0] = f.x
-	fingerInfo[o+1] = f.y
+	fingerInfo[o+0] = f.x - args.x
+	fingerInfo[o+1] = f.y - args.y
 	fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
 	fingerInfo[o+3] = f.pickId
 
@@ -695,8 +714,8 @@ exports.onFingerHover = function(f){
 	if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerHover(f)
 	
 	var o = (f.digit-1) * 4
-	fingerInfo[o+0] = f.x
-	fingerInfo[o+1] = f.y
+	fingerInfo[o+0] = f.x - args.x
+	fingerInfo[o+1] = f.y - args.y
 	fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
 	fingerInfo[o+3] = f.pickId
 	requestRepaint()
@@ -905,7 +924,7 @@ todofn[40] = function clear(i32, f32, o){
 		if(!pickPass){
 			gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
 		} else {
-			gl.clearColor(currentTodo.todoId/255,0,0,0)
+			gl.clearColor(currentTodo.todoId/255,0,0,painterWorkerId/255)
 		}
 		clr |= gl.COLOR_BUFFER_BIT
 	}
@@ -1298,6 +1317,17 @@ userfn.newFramebuffer = function(msg){
 	// delete previous if its there
 	
 	if(prev){
+		if(prev.w == msg.w && prev.h === msg.h){
+			// signal the child their framebuffer has moved
+			// but not resized
+			prev.xStart = msg.xStart
+			prev.yStart = msg.yStart
+			if(prev && prev.subWorker){
+				fb.subWorker = prev.subWorker
+				prev.subWorker.onFbResize(prev.attach, prev.glfb, prev.glpfb, msg.xStart, msg.yStart)
+			}
+			return
+		}
 		for(var key in prev.attach){
 			var sam = prev.attach[key].samplers
 			for(var samkey in sam){
@@ -1383,13 +1413,15 @@ userfn.newFramebuffer = function(msg){
 		glpfb:glpfb,
 		glfb:glfb,
 		todoId: prev && prev.todoId || undefined,
-		attach:attach
+		attach:attach,
+		xStart:msg.xStart,
+		yStart:msg.yStart
 	}
 
 	// signal the child their framebuffer has resized
 	if(prev && prev.subWorker){
 		fb.subWorker = prev.subWorker
-		prev.subWorker.onFbResize(attach, glfb, glpfb)
+		prev.subWorker.onFbResize(attach, glfb, glpfb, fb.xStart, fb.yStart)
 	}
 }
 

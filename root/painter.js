@@ -9,6 +9,8 @@ var painter = module.exports = new Painter()
 
 // initialize w/h
 var args = service.args
+painter.x = args.x
+painter.y = args.y
 painter.w = args.w
 painter.h = args.h
 painter.pixelRatio = args.pixelRatio
@@ -917,7 +919,7 @@ var framebufferIds = {}
 
 painter.Framebuffer = require('class').extend(function Framebuffer(proto){
 
-	proto.onConstruct = function(w, h, attachments){
+	proto.onConstruct = function(w, h, attachments, xStart, yStart){
 		var fbId = framebufferIdsAlloc ++
 		framebufferIds[fbId] = this
 
@@ -940,17 +942,21 @@ painter.Framebuffer = require('class').extend(function Framebuffer(proto){
 			fbId: fbId,
 			attach: attach,
 			w:w,
-			h:h
+			h:h,
+			xStart:xStart,
+			yStart:yStart,
 		})
 	}
 
-	proto.resize = function(w, h){
+	proto.resize = function(w, h, xStart, yStart){
 		bus.batchMessage({
 			fn:'newFramebuffer',
 			fbId: this.fbId,
 			attach: this.attachments,
 			w:w,
-			h:h
+			h:h,
+			xStart:xStart,
+			yStart:yStart,
 		})
 	}
 

@@ -133,11 +133,11 @@ module.exports = require('class').extend(function View(proto){
 			pass.color0 = new painter.Texture(painter.RGBA, colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
 			if(hasPick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
 			if(hasZBuf) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, 0, 0)
-			pass.framebuffer = new painter.Framebuffer(sw, sh, {
+			pass.framebuffer = new painter.Framebuffer(sw, sh,{
 				color0:pass.color0,
 				pick:pass.pick,
-				depth:pass.depth
-			})
+				depth:pass.depth,
+			}, this.$xAbs, this.$yAbs)
 			pass.todo = new painter.Todo()
 			// store the view reference
 			this.app.$viewTodoMap[pass.todo.todoId] = this
@@ -159,8 +159,10 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.clearTodo()
 
 		// see if we need to resize buffers
-		if(pass.sw !== sw || pass.sh !== sh){
-			pass.framebuffer.resize(sw, sh)
+		if(pass.sw !== sw || pass.sh !== sh || pass.sx !== this.$xAbs || pass.sy !== this.$yAbs){
+			pass.framebuffer.resize(sw, sh, this.$xAbs, this.$yAbs)
+			pass.sx = this.$xAbs
+			pass.sy = this.$yAbs			
 			pass.w = w
 			pass.h = h
 			pass.sw = sw
@@ -324,6 +326,8 @@ module.exports = require('class').extend(function View(proto){
 		this.todo.yView = th
 		this.todo.scrollMomentum = 0.92
 		this.todo.scrollToSpeed = 0.5
+		this.todo.xsScroll = this.$xAbs
+		this.todo.ysScroll = this.$yAbs
 		
 		// use the last 2 stampIds for the scroller
 		this.$stampId = this.$scrollPickIds
@@ -339,7 +343,6 @@ module.exports = require('class').extend(function View(proto){
 			})
 
 			this.todo.xScrollId = this.$xScroll.$stampId
-			this.todo.xsScroll = this.$xAbs
 		}
 
 		if(tw < this.$wDraw){ // we need a vertical scrollbar
@@ -355,7 +358,6 @@ module.exports = require('class').extend(function View(proto){
 			})
 
 			this.todo.yScrollId = this.$yScroll.$stampId
-			this.todo.ysScroll = this.$yAbs
 		}
 
 		// if we are a surface, end the pass and draw it to ourselves

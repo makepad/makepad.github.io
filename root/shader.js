@@ -77,6 +77,7 @@ module.exports = require('class').extend(function Shader(proto){
 
 	// finger over
 	proto.isFingerOverView = function(pos){$
+		pos = vec2(0.)
 		for(var i = 0; i < 4; i++){
 			var f = this.fingerInfo[i]
 			var f2 = abs(f[2])
