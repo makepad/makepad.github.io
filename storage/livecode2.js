@@ -19,8 +19,8 @@ if(this.depth>12.){
 var d=length(
 this.mesh.xy-vec2(.5)
 )*2
-var col=mix('#0f0','#f0f',this.leaf)
-return mix(col,vec4(col.rgb,0),d)
+var col=mix('#0c0','#130',this.leaf)
+return mix(col,vec4(col.rgb,0),pow(d,8.))
 }
 var s=(14.-(this.depth))*0.2
 return mix(
@@ -40,7 +40,7 @@ var scale=vec2(50.,50)
 var dir=vec2(0,-0.8)
 var smaller=vec2(.85,.85)
 var path=this.path
-
+var nodesize=vec2(1.)
 for(var i=0;i<14;i++){
 if(i>=depth)break
 var turnRight=mod(path,2.)
@@ -50,6 +50,9 @@ angle=-1.*angle
 }
 if(i>6){
 angle+=sin(this.time+0.02*pos.x)*20.
+}
+if(i>11){
+nodesize=vec2(2.,3.)
 }
 var d1=max(50.-length(f1-pos),0.)
 angle+=d1*1.
@@ -65,7 +68,7 @@ path=floor(path/2.)
 }
 
 var m=this.rotate2d(
-vec2(1.,0.2)*(this.mesh.xy-vec2(1,0.5)),
+vec2(1.,0.3)*(this.mesh.xy*nodesize-vec2(1,0.5)),
 atan(
 dir.y,
 dir.x
@@ -98,3 +101,4 @@ recur(path+pow(2,depth),depth+1)
 recur(0,0)
 }
 })
+
