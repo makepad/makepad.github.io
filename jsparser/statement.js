@@ -221,7 +221,7 @@ pp.parseIfStatement = function(node) {
 		// lets parse the above
 		if(this.storeComments){
 			var after2 = this.commentAfter(tt._else)
-			if(after2 && after2.length) node.after1 = after2
+			if(after2 && after2.length) node.after2 = after2
 		}
 		node.alternate = this.parseStatement(false)
 	}

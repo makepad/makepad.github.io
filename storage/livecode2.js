@@ -4,6 +4,7 @@ Rect:{color:'#005'},
 Branch:require('shaders/quadshader').extend({
 path:0,
 depth:0,
+leaf:0,
 rotate2d:function(v,a){$
 var ca=cos(a)
 var sa=sin(a)
@@ -16,7 +17,8 @@ v.x*sa+v.y*ca
 pixel:function(){$
 if(this.depth>12.){
 var d=length(this.mesh.xy-vec2(.5))*2
-return mix('#090','#0903',d)
+var col=mix('#0f0','#f0f',this.leaf)
+return mix(col,vec4(col.rgb,0),d)
 }
 var s=(14.-(this.depth))*0.2
 return mix(
@@ -79,6 +81,7 @@ var p=this
 this.drawRect(this.viewGeom)
 function recur(path,depth){
 p.drawBranch({
+leaf:random(),
 path:path,
 depth:depth
 })
