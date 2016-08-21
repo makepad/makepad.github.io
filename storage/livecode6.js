@@ -57,10 +57,10 @@ L=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
 var f=this.unionField(I,L)
 if(this.isFolder>.5){
 // draw a little plus
-var P=this.boxField(p,2.,4.,this.w-3.,this.w-4.,1.)
+var P=this.boxField(p,1.,3.,this.w-2.,this.w-2.,1.)
 
 f=this.unionField(f,P)
-var D=this.boxField(p,4.,6.,4.,2.,1.)
+var D=this.boxField(p,2.,6.5,6.,1.,1.)
 f=this.subtractField(D,f)
 //return 'red'
 }
