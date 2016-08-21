@@ -1,4 +1,4 @@
-module.exports = require('shaders/sdffontshader').extend(function(proto, base){
+module.exports = require('shaders/fontshader').extend(function(proto, base){
 
 	var types = require('types')
 	var painter = require('painter')
@@ -66,7 +66,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			this.$PROPVARDEF()
 			this.$PROP(o, 'tweenStart') = v
 		},
-		fast:function(txt, style, head){
+		fast:function(txt, style, ihead, itail){
 			var out = this.$fastNAMEOutput			
 			var len = txt.length - 1
 			var turtle = this.turtle
@@ -87,7 +87,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var sx = turtle.sx
 
 			if(this.$fastNAMEWrite){
-				out.ann.push(txt, style, sx, head, fontSize)
+				out.ann.push(txt, style, sx, ihead, fontSize)
 			}
 
 			var changeOffset = this.$fastNAMEOffset
@@ -95,7 +95,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 			var changeDelta = this.$fastNAMEDelta
 
 			var advance = 0
-			var head = head || style.head, tail = 0
+			var head = ihead!==undefined? ihead: style.head, tail = 0
 			var tweenDelta
 			if(base >= changeOffset){
 				tweenDelta = -changeDelta
@@ -124,7 +124,7 @@ module.exports = require('shaders/sdffontshader').extend(function(proto, base){
 				var g = glyphs[unicode] || glyphs[63]
 				//var d = displace[unicode] || displace[0]
 
-				if(i ===len) tail = style.tail
+				if(i ===len) tail = itail!==undefined?itail:style.tail
 				var advance = g.advance
 
 				this.$WRITEPROPS({

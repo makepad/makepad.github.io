@@ -59,7 +59,7 @@ module.exports = require('app').extend(function(proto){
 				},
 				Text:{
 					color:'white',
-					font:require('fonts/ubuntu_monospace_256.sdffont'),
+					font:require('fonts/ubuntu_monospace_256.font'),
 				},
 				w:'50%',
 				h:'100%'

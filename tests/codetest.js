@@ -5,10 +5,10 @@ var App = require('app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			Code({
-				text:require.module(require('./codetestinput')).source,
+				text:require.module(require('views/codeview')).source,
 				Text:{
 					color:'white',
-					font:require('fonts/ubuntu_monospace_256.sdffont'),
+					font:require('fonts/ubuntu_monospace_256.font'),
 				},
 				w:'100%',
 				h:'100%'

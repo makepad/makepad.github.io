@@ -267,6 +267,7 @@ for(var hexl = 0; hexl <10; hexl++){
 
 types.colorFromString = function(str, alpha, ar, o){
 	if(str.charCodeAt(0) === 35){ // starts with #
+		var len = str.length
 		if(str.length === 4){
 			var r = hex[str.charCodeAt(1)]
 			var g = hex[str.charCodeAt(2)]
@@ -274,6 +275,14 @@ types.colorFromString = function(str, alpha, ar, o){
 			ar[o] = (r|r<<4)/255
 			ar[o+1] = (g|g<<4)/255
 			ar[o+2] = (b|b<<4)/255
+			ar[o+3] = alpha
+			return true
+		}
+		else if(len === 2){
+			var r = hex[str.charCodeAt(1)]
+			ar[o] = (r|r<<4)/255
+			ar[o+1] = (r|r<<4)/255
+			ar[o+2] = (r|r<<4)/255
 			ar[o+3] = alpha
 			return true
 		}
@@ -317,7 +326,8 @@ types.colorFromString = function(str, alpha, ar, o){
 
 types.colorFromStringPacked = function(str, alpha, ar, o){
 	if(str.charCodeAt(0) === 35){ // starts with #
-		if(str.length === 4){
+		var len = str.length
+		if(len === 4){
 			var r = hex[str.charCodeAt(1)]
 			var g = hex[str.charCodeAt(2)]
 			var b = hex[str.charCodeAt(3)]
@@ -325,7 +335,13 @@ types.colorFromStringPacked = function(str, alpha, ar, o){
 			ar[o+1] = ((b|b<<4)<<16) + ((alpha*4095)|0)
 			return true
 		}
-		else if(str.length === 5){
+		else if(len === 2){
+			var r = hex[str.charCodeAt(1)]
+			ar[o] = ((r|r<<4)<<16) + (((r|r<<4))<<4)
+			ar[o+1] = ((r|r<<4)<<16) + ((alpha*4095)|0)
+			return true
+		}
+		else if(len === 5){
 			var r = hex[str.charCodeAt(1)]
 			var g = hex[str.charCodeAt(2)]
 			var b = hex[str.charCodeAt(3)]
@@ -334,14 +350,14 @@ types.colorFromStringPacked = function(str, alpha, ar, o){
 			ar[o+1] = ((b|b<<4)*alpha<<16) + (((t|t<<4))<<4)
 			return true
 		}
-		else if(str.length === 7){
+		else if(len === 7){
 			ar[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))<<16) + 
 				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))<<4)
 			ar[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))<<16)+
 				((alpha*4095)|0)
 			return true
 		}
-		else if(str.length === 9){
+		else if(len === 9){
 			ar[o] = ((hex[str.charCodeAt(2)] | (hex[str.charCodeAt(1)]<<4))*alpha<<16) + 
 				((hex[str.charCodeAt(4)] | (hex[str.charCodeAt(3)]<<4))*alpha<<4)
 			ar[o+1] = ((hex[str.charCodeAt(6)] | (hex[str.charCodeAt(5)]<<4))*alpha<<16)+

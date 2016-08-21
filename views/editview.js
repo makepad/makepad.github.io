@@ -23,8 +23,8 @@ module.exports = require('view').extend(function EditView(proto, base){
 			borderWidth:1,
 			borderColor:'red'
 		}),
-		Text:require('shaders/sdffontshader').extend({
-			font:require('fonts/ubuntu_medium_256.sdffont'),
+		Text:require('shaders/fontshader').extend({
+			font:require('fonts/ubuntu_medium_256.font'),
 			fontSize:24,
 			color:'#ccc',
 			drawDiscard:'y'
@@ -271,6 +271,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 		
 		proto.moveTo = function(x, y, onlyEnd){
 			var end = this.editor.offsetFromPos(x, y)
+			//console.log(end, this.end)
 			if(this.end === end) return
 			this.end = end
 			var rect = this.editor.cursorRect(this.end)
@@ -953,16 +954,17 @@ module.exports = require('view').extend(function EditView(proto, base){
 
 		if(f.meta){
 			this.fingerCursor = this.cs.addCursor()
+			this.fingerCursor.end = -1
 		}
 		else{
 			var oldstart = this.cs.cursors[0].start
 			this.fingerCursor = this.cs.clearCursors()
 			this.fingerCursor.start = oldstart
+			this.fingerCursor.end = oldstart
 		}
 
 		var touchdy = 0//f.touch?-20:0
 		this.fingerCursor.moveTo(f.x, f.y + touchdy, f.shift)
-		
 		var tapDiv = f.touch? 4: 3
 		var tapStart = f.touch? 2: 1
 		if(f.tapCount % tapDiv === tapStart+0){ // select word under finger

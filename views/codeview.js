@@ -13,6 +13,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.textClean = false
 	}
 
+	proto.allowOperatorSpaces = 0
+
 	proto.padding = [0,0,0,4]
 
 	proto.tools = {
@@ -94,8 +96,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.borderColor = this.bgColor*1.4
 			}
 		}),
-		ErrorText:require('shaders/sdffontshader').extend({
-			font:require('fonts/ubuntu_medium_256.sdffont'),
+		ErrorText:require('shaders/fontshader').extend({
+			font:require('fonts/ubuntu_medium_256.font'),
 			color:'#cbb',
 			boldness: -.5,
 			lockScroll:0.,
@@ -112,7 +114,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			this.style = protoFlatten({}, this._protoStyles)
 		}
 	})
-
+	
 	proto.styles = {
 		boldness:0.,
 		color:'white',
@@ -388,8 +390,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			color:'#ff9f00'
 		},
 		BinaryExpression:{
-			head:0.,
-			tail:0.,
+			head:0.5,
+			tail:0.5,
 			color:'#ff9f00'
 		},
 		AssignmentExpression:{
@@ -499,7 +501,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(this.error) this.reuseErrorText()
 		}
 		else{
-			//require.perf()
+			require.perf()
 			this.error = undefined
 			this.$fastTextDelay = 0			
 
@@ -634,7 +636,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			//require.perf()
+			require.perf()
 			this.$fastTextDelta = 0
 		}
 
@@ -921,10 +923,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		if(text === '\n' && this._text.charAt(offset-1) ==='{'&& this._text.charAt(offset) ==='}') text = '\n\n'
 
-		if(text === '{' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
-		if(text === '[' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
+		if(text === '{' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
+		if(text === '[' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
 
-		if(text === '(' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!==')')) text = '()'
+		if(text === '(' && this._text.charAt(offset) === '\n' && 
+			(!this.error || this._text.charAt(offset)!==')')) text = '()'
 
 		if(text === '"' && (!this.error || this._text.charAt(offset)!=='"')) text = '""'
 		if(text === "'" && (!this.error || this._text.charAt(offset)!=="'")) text = "''"

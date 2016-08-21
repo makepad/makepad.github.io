@@ -148,7 +148,14 @@ module.exports = function(proto){
 
 		var target = this
 		for(var macroName in macros){
-			var code = macros[macroName].toString().replace(comment1Rx,'').replace(comment2Rx,'')
+			var methodName = macroName + className
+			var thing = macros[macroName]
+			
+			if(typeof thing !== 'function'){
+				target[methodName] = thing
+				continue
+			}
+			var code = thing.toString().replace(comment1Rx,'').replace(comment2Rx,'')
 			// lets parse our args
 			var marg = code.match(mainArgRx)
 			var mainargs = marg[1].match(argSplitRx) || []
@@ -176,7 +183,7 @@ module.exports = function(proto){
 				console.log(outcode)
 			}
 
-			var methodName = macroName + className
+			
 			code = code.replace(fnnameRx, function(){
 				return 'function '+methodName+'('
 			})
