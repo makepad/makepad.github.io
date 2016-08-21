@@ -31,7 +31,11 @@ module.exports = require('shader').extend(function QuadShader(proto){
 	proto.vertexPost = function(){
 	}
 
+	proto.vertexPre = function(){$
+	}
+
 	proto.vertex = function(){$
+		this.vertexPre()
 		this.vertexStyle()
 
 		if(this.visible < 0.5){

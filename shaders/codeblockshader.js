@@ -17,7 +17,7 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		z: 0,
 		indent:0,
 		borderWidth: 1,
-		borderRadius: 8,
+		borderRadius: 4,
 		fontSize:12.,
 		bgColor: {pack:'float12', value:'gray'},
 		borderColor: {pack:'float12', value:'gray'},
@@ -112,7 +112,8 @@ module.exports = require('shader').extend(function QuadShader(proto){
 		// ok lets draw things
 		var p = this.p
 
-		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+		var aa = this.antialias(p)
+
 		// mini view
 		if(this.fontSize < 6.){
 			if(this.errorTime<0.5) return vec4(0.)
@@ -125,57 +126,56 @@ module.exports = require('shader').extend(function QuadShader(proto){
 
 		// background field
 		var lineRadius = 1.
-		var topNudgeT = 13.5
-		var topNudgeB = 13.5
-		var topNudgeW = 6.
-		var topNudgeL = 5.
-		var topSize = vec2(.5*(this.topSize.x-topNudgeW-topNudgeL), .5*(this.topSize.y-topNudgeB))
-		var topPos = vec2(topNudgeL,topNudgeT)
-		var topField = length(max(abs(p-topPos-topSize) - (topSize - vec2(lineRadius)), 0.)) - lineRadius
+		
+		var topField = this.boxField(
+			p, 
+			5., 
+			13.5, 
+			this.topSize.x - 6. - 5., 
+			this.topSize.y - 13.5, 
+			lineRadius
+		)
 
-		// top right
-		var sideNudgeL = this.topSize.x - 18.
-		var sideNudgeR = this.topSize.x - 18.
-		var sideNudgeT = 0.
-		var sideSize = vec2(.5*(this.topSize.x-sideNudgeL), .5*(this.topSize.y - sideNudgeT))
-		var sidePos = vec2(sideNudgeR,0.)
-		var sideField = length(max(abs(p-sidePos-sideSize) - (sideSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var sideField = this.boxField(
+			p,
+			this.topSize.x - 18.,
+			0.,
+			18.,
+			this.topSize.y - 0.,
+			this.borderRadius
+		)
 
-		// bottom
-		var botNudgeL = 12.
-		var botNudgeR = 16.
-		var botNudgeH = 1.
-		var botNudgeB = 10.
-		var botSize = vec2(.5*(this.bottomSize.x-botNudgeR), .5*(this.bottomSize.y-botNudgeB))
-		var botPos = vec2(botNudgeL, this.h-botNudgeH)
-		var botField = length(max(abs(p-botPos-botSize) - (botSize - vec2(lineRadius)), 0.)) - lineRadius
-
-		// the bottom grabber
-		var h3 = this.h*1.0
-		var grabSize = vec2(.5*(this.bottomSize.x), .5*(h3))
-		var grabPos = vec2(0., this.h2-2.)
-		var grabField = length(max(abs(p-grabPos-grabSize) - (grabSize - vec2(this.borderRadius)), 0.)) - this.borderRadius
+		var botField = this.boxField(
+			p,
+			12,
+			this.h - 1.,
+			this.bottomSize.x - 16.,
+			this.bottomSize.y - 10.,
+			lineRadius
+		)
+	
+		var grabField = this.boxField(
+			p,
+			0.,
+			this.h2 - 2.,
+			this.bottomSize.x,
+			this.h,
+			this.borderRadius
+		)
 
 		var gloop = 4.
 	
-		// so errorTime is normally 1.
-		// but once the error anim starts it will be 0. till it becomes 1.
-		// what we want is that 
-		var df = (1.-this.open* this.errorTime) 
-		sideField += df*14.
-		grabField += df*14.
-		topField += pow(df,4.) * abs(p.x)// - this.topSize.x)
-		botField += pow(df,4.) * abs(p.y)// - this.bottomSize.y)
+		var df = 1. - this.open * this.errorTime
+		sideField += df * 14.
+		grabField += df * 14.
+		topField += pow(df, 4.) * abs(p.x)// - this.topSize.x)
+		botField += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
 
 		// blend the fields
-		var field = this.blend(this.blend(this.blend(topField,botField, .5), sideField, gloop),grabField,gloop)
+		var field = this.blendField(this.blendField(this.blendField(topField,botField, .5), sideField, gloop), grabField, gloop)
 
 		// compute color
-		var finalBg = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(field*antialias+1.,0.,1.))
-		var finalBorder = mix(this.bgColor, finalBg, clamp((field+this.borderWidth) * antialias + 1., 0., 1.))
-
-		return finalBorder
-		//return mix(this.opColor, finalBorder, clamp(opField * antialias + 1., 0., 1.))
+		return this.colorBorderField(aa, field, this.borderWidth, this.bgColor, this.borderColor )
 	}
 
 	proto.toolMacros = {

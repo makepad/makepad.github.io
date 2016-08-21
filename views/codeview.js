@@ -44,7 +44,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		}),
 		Block:require('shaders/codeblockshader').extend({
-			borderRadius:5,
+			borderRadius:2.5,
 			tween:2.,
 			ease: [0,10,1.0,1.0],
 			duration:0.3,
@@ -128,7 +128,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			borderColor:'white',
 			bgColor:'red',
 			borderWidth:1,
-			borderRadius:7.5,
+			borderRadius:3.75,
 			FunctionDeclaration:{
 				bgColor:'#363b',
 				open:{open:1},
@@ -168,7 +168,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 		},
 		Marker:{
-			borderRadius:7,
+			borderRadius:3.5,
 			opColor:'gray',
 			borderColor:'gray',
 			bgColor:'#7778',

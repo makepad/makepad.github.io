@@ -34,7 +34,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 			fieldPush:0.8,
 			borderWidth:0,//0.25,
 			gloop:6,
-			borderRadius:6,
+			borderRadius:3,
 			borderColor:'#458',
 			drawDiscard:'y',
 			vertexStyle:function(){

@@ -92,8 +92,56 @@ module.exports = require('class').extend(function Shader(proto){
 		return 0
 	}
 
+	// simple distance field drawing api
+	proto.unionField = function(f1, f2){
+		return min(f1, f2)
+	}
+
+	proto.intersectField = function(f1, f2){
+		return max(f1, f2)
+	}
+
+	proto.subtractField = function(f1, f2){
+		return max(-f1, f2)
+	}
+
+	proto.blendField = function(a, b, k){
+	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
+	    return mix(b, a, h) - k * h * (1.0 - h)
+	}
+
+	proto.boxField = function(p, x, y, w, h, r){
+		var size = vec2(.5*w, .5*h)
+		return length(max(abs(p - vec2(x, y)-size) - (size - vec2(2.*r)), 0.)) - 2.*r
+	}
+
+	proto.circleField = function(p, x, y, r){
+		return distance(p, vec2(x,y)) - r
+	}
+
+	proto.lineField = function(p, x1, y1, x2, y2, r){
+		var a = vec2(x1, y1)
+		var b = vec2(x2, y2)
+		var pa = p - a
+		var ba = b - a
+		return length(pa - ba * clamp(dot(pa,ba)/dot(ba,ba), 0., 1.)) - r
+	}
+
+	proto.antialias = function(p){
+		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+	}
+
+	proto.colorSolidField = function(antialias, field, fill){
+		return mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
+	}
+
+	proto.colorBorderField = function(antialias, field, borderWidth, fill, border){
+		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1.,0.,1.))
+		return mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.))
+	}
+
 	proto.animateUniform = function(uni){$
-		return clamp((this.animTime - uni.x)/uni.y, 0., 1.) * (uni.w-uni.z) + uni.z
+		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w-uni.z) + uni.z
 	}
 
 	proto.onextendclass = function(){
