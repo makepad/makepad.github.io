@@ -64,7 +64,7 @@ var d2=max(50.-length(f2-pos),0.)
 angle-=d2*1.
 //angle+=sin(pos.x+this.time)*2
 
-dir=this.rotate2d(dir,angle*TODEG)
+dir=this.rotate2d(dir,angle*TORAD)
 pos+=dir*scale
 scale=scale*smaller
 path=floor(path/2.)
