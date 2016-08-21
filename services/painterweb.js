@@ -1086,7 +1086,7 @@ userfn.newShader = function(msg){
 
 	var cacheid = vertexcode + '@@@@' + pixelcode
 
-	localStorage.setItem(cacheid, 1)
+	//localStorage.setItem(cacheid, 1)
 
 	var shader = localShaderCache[cacheid]
 	if(shader){

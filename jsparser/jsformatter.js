@@ -599,7 +599,7 @@ module.exports = function(proto){
 				var name = param.name
 				this.scope[name] = 2
 				this.trace += name
-				this.fastText(name, this.styles.Identifier)
+				this.fastText(name, this.styles.Identifier.localArg)
 			}
 			else this[param.type](param)
 			
@@ -633,7 +633,7 @@ module.exports = function(proto){
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
-	proto.VariableDeclaration = function(node, level, scopeId){
+	proto.VariableDeclaration = function(node, level){
 		if(node.space !== undefined) this.fastText('var'+node.space+'\n', this.styles.VariableDeclaration)
 		else this.fastText('var ', this.styles.VariableDeclaration)
 		this.trace += 'var '
@@ -642,17 +642,17 @@ module.exports = function(proto){
 		var declslen = decls.length - 1
 		for(var i = 0; i <= declslen; i++){
 			var decl = decls[i]
-			this[decl.type](decl, scopeId)
+			this[decl.type](decl)
 			if(i !== declslen) this.fastText(',', this.styles.Comma.VariableDeclaration)
 		}
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	proto.VariableDeclarator = function(node, scopeId){
+	proto.VariableDeclarator = function(node){
 		var id = node.id
 		if(id.type === 'Identifier'){
-			this.scope[id.name] = scopeId || 1
-			this.fastText(id.name, this.styles.Identifier)
+			this.scope[id.name] = 1//scopeId || 1
+			this.fastText(id.name, this.styles.Identifier.local)
 			this.trace += id.name
 		}
 		else this[id.type](id, node)
@@ -697,7 +697,7 @@ module.exports = function(proto){
 		var right = node.right
 		var turtle = this.turtle
 		// draw a marker
-		var m = this.startMarker(turtle.wy, level, this.style.Marker[node.operator] || this.style.Marker)
+		//var m = this.startMarker(turtle.wy, level, this.style.Marker[node.operator] || this.style.Marker)
 		// we have to draw a backdrop 
 		var x1 = turtle.wx 
 		var ys = turtle.wy
@@ -724,8 +724,8 @@ module.exports = function(proto){
 		this.trace + ')'
 		this.indentOut()
 
-		if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
-		else this.stopMarker(m, 0,0,0,0,0)
+		//if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
+		//else this.stopMarker(m, 0,0,0,0,0)
 	}
 
 	//AssignmentExpression: {left:1, operator:0, right:1},
@@ -733,12 +733,7 @@ module.exports = function(proto){
 		var left = node.left
 		var right = node.right
 		var leftype = left.type
-		if(leftype === 'Identifier'){
-			var name = left.name
-			this.trace += name
-			this.fastText(name, this.style.Identifier)
-		}
-		else this[left.type](left)
+		this[left.type](left)
 		if(node.around1) this.fastText(node.around1, this.style.Comment.around)
 		this.trace += node.operator
 		this.fastText(node.operator, this.style.AssignmentExpression[node.operator] || this.style.AssignmentExpression)
@@ -777,22 +772,24 @@ module.exports = function(proto){
 			this.fastText(op, this.style.UpdateExpression[op] || this.style.UpdateExpression)
 			var arg = node.argument
 			var argtype = arg.type
-			if(argtype === 'Identifier'){
-				var name = arg.name
-				this.trace += name
-				this.fastText(name, this.style.Identifier)
-			}
-			else this[argtype](arg)
+			//if(argtype === 'Identifier'){
+			//	var name = arg.name
+			//	this.trace += name
+			//	this.fastText(name, this.style.Identifier)
+			//}
+			//else 
+			this[argtype](arg)
 		}
 		else{
 			var arg = node.argument
 			var argtype = arg.type
-			if(argtype === 'Identifier'){
-				var name = arg.name
-				this.trace += name
-				this.fastText(name, this.style.Identifier)
-			}
-			else this[argtype](arg)
+			//if(argtype === 'Identifier'){
+			//	var name = arg.name
+			//	this.trace += name
+			//	this.fastText(name, this.style.Identifier)
+			//}
+			//else 
+			this[argtype](arg)
 			var op = node.operator
 			this.trace += op
 			this.fastText(op, this.style.UpdateExpression[op] || this.style.UpdateExpression)
@@ -808,22 +805,24 @@ module.exports = function(proto){
 			this.fastText(op, this.style.UnaryExpression[op] || this.style.UnaryExpression)
 			var arg = node.argument
 			var argtype = arg.type
-			if(argtype === 'Identifier'){
-				var name = arg.name
-				this.trace += name
-				this.fastText(name, this.style.Identifier)
-			}
-			else this[argtype](arg)
+			//if(argtype === 'Identifier'){
+			//	var name = arg.name
+			//	this.trace += name
+			//	this.fastText(name, this.style.Identifier)
+			//}
+			//else 
+			this[argtype](arg)
 		}
 		else{
 			var arg = node.argument
 			var argtype = arg.type
-			if(argtype === 'Identifier'){
-				var name = arg.name
-				this.trace += name
-				this.fastText(name, this.style.Identifier)
-			}
-			else this[argtype](arg)
+			//if(argtype === 'Identifier'){
+			//	var name = arg.name
+			//	this.trace += name
+			//	this.fastText(name, this.style.Identifier)
+			//}
+			//else 
+			this[argtype](arg)
 			var op = node.operator
 			this.fastText(op, this.style.UnaryExpression[op] || this.style.UnaryExpression)
 		}

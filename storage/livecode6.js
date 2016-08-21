@@ -36,6 +36,7 @@ h:16,
 isLast:0,
 isFolder:0,
 isSide:0,
+isFiller:0,
 lineColor:'#7',
 myfn:function(a,b){$
 return 1.0/sqrt(a+b)
@@ -44,6 +45,7 @@ pixel:function(){$
 var p=vec2(this.w,this.h)*this.mesh.xy
 var aa=this.antialias(p)
 var hh=this.h+4
+if(this.isFiller>.5)return vec4(0.)
 if(this.isLast>.5){
 hh=this.h*.5+2
 }
@@ -53,8 +55,17 @@ if(this.isSide<0.5){
 L=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
 }
 var f=this.unionField(I,L)
-return this.colorSolidField(aa,f,this.lineColor)
+if(this.isFolder>.5){
+// draw a little plus
+var P=this.boxField(p,2.,4.,this.w-3.,this.w-4.,1.)
 
+f=this.unionField(f,P)
+var D=this.boxField(p,4.,6.,4.,2.,1.)
+f=this.subtractField(D,f)
+//return 'red'
+}
+
+return this.colorSolidField(aa,f,this.lineColor)
 }
 }
 },
@@ -65,11 +76,12 @@ var drawText=function(nodes,depth){
 for(var i=0,len=nodes.length-1;i<=len;i++){
 var node=nodes[i]
 
-for(var j=0;j<=depth;j++){
+for(var j=0,dl=depth.length-1;j<=dl;j++){
 this.drawQuad({
-isLast:j==depth&&i===len?1:0,
-isFolder:node.child?1:0,
-isSide:j<depth?1:0
+isFiller:j==dl?0:depth[j+1],
+isLast:j==dl&&i===len?1:0,
+isFolder:j==dl&&node.child?1:0,
+isSide:j<dl?1:0
 })
 }
 
@@ -86,10 +98,12 @@ text:node.name
 this.turtle.lineBreak()
 
 if(node.child){
-drawText(node.child,depth+1)
+depth.push(i==len?1:0)
+drawText(node.child,depth)
+depth.pop()
 }
 }
 }.bind(this)
-drawText(this.data,0)
+drawText(this.data,[0])
 }
 })

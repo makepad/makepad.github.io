@@ -58,6 +58,9 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				if(this.isFingerOver(pos)>0){
 					this.bgColor.rgb += vec3(0.2)
 				}
+				else{
+					this.bgColor.a*=.25
+				}
 				// lets figure out a hover anim here?
 				this.bgColor.rgb += vec3(this.indent*0.05)
 				this.borderColor = this.bgColor
@@ -302,7 +305,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				color:'#ff9'
 			},
 			localArg:{
-				color:'#f70'
+				color:'#beb'
 			},
 			iterator:{
 				color:'#bb0'
