@@ -29,7 +29,7 @@ color:'white'
 },
 Icon:require('shaders/fontawesomeshader').extend({
 color:'#a',
-padding:[0,0,0,5]
+margin:[0,4,0,0]
 }),
 Quad:{
 myfn:function(a,b){$
@@ -57,14 +57,16 @@ for(var i=0;i<nodes.length;i++){
 var node=nodes[i]
 this.turtle.wx=indent
 this.drawIcon({
-text:this.lookupIcon.folder
+text:node.child?
+this.lookupIcon.folder:
+this.lookupIcon.fileText
 })
 this.drawText({
 text:node.name
 })
 this.turtle.lineBreak()
 if(node.child){
-drawText(node.child,indent+10)
+drawText(node.child,indent+20)
 }
 }
 }.bind(this)
