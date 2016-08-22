@@ -461,6 +461,12 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 		if(this.skippedNewlines){
 			par.rightSpace = this.skippedSpace
 		}
+		if(this.storeComments){
+			// remove our paren otherwise the matcher goes wrong
+			if(this.storeComments[0] === tt.parenR){
+				this.storeComments.shift()
+			}
+		}
 		return this.finishNode(par, "ParenthesizedExpression")
 	} else {
 		return val
@@ -787,7 +793,10 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
  			this.unexpected()
  		}
 	}
-	if(this.storeComments && node) this.commentBottom(close, node)
+
+	if(this.storeComments && node){
+		this.commentBottom(close, node)
+	}
 
 	return elts
 }

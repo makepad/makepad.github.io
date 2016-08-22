@@ -150,6 +150,7 @@ exports.onHotReload = function(){
 }
 
 exports.onFbResize = function(attach, glfb, glpfb, xStart, yStart){
+	if(!mainFramebuffer) return
 	mainFramebuffer.attach = attach
 	mainFramebuffer.glfb = glfb
 	mainFramebuffer.glpfb = glpfb

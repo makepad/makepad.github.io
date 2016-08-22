@@ -9,8 +9,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		base._onInit.call(this)
 		this.$fastTextOutput = this
 		this.ann = []
+		this.ann.step = 6
 		this.oldText = ''
 		this.textClean = false
+		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
 	proto.allowOperatorSpaces = 1
@@ -539,7 +541,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var oldtext = this._text
 				this.oldText = oldtext
 				// first we format the code
-				this.formatJS(this.Text.prototype.font.fontmap.glyphs[32].advance * 3, this.ast)
+				this.formatJS(this.indentSize, this.ast)
 
 				// make undo operation for reformat
 				var newtext = this._text
@@ -591,6 +593,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					}
 				}
 				if(this.onText) setImmediate(this.onText.bind(this))
+				if(this.onParsed) setImmediate(this.onParsed.bind(this))
 			}
 			else{
 				var ann = this.ann
@@ -609,25 +612,32 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.orderErrorMarker()
 
 				this.$fastTextWrite = false
-				this._text = ''
-				for(var i = 0, len = ann.length; i < len; i+=5){
-					this.turtle.sx = ann[i+2]
-					this.$fastTextFontSize = ann[i+4]
-					this.fastText(ann[i], ann[i+1], ann[i+3])
+				if(!ann.length && this._text){
+					var txt = this._text
+					this._text = ''
+					this.fastText(txt, this.styles.Identifier.unknown, 0)
 				}
-				
-				var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
-				var rd = this.$readOffsetText(epos)
-				if(rd){
-					this.drawErrorMarker({
-						x1:0,
-						x2:rd.x,
-						x3:rd.x + rd.w,
-						x4:100000,
-						y:rd.y,
-						h:rd.fontSize * rd.lineSpacing,
-						closed: 0
-					})
+				else{
+					this._text = ''
+					for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+						this.turtle.sx = ann[i+5]
+						this.$fastTextFontSize = ann[i+4]
+						this.fastText(ann[i], ann[i+1], ann[i+2], ann[i+3])
+					}
+
+					var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
+					var rd = this.$readOffsetText(epos)
+					if(rd){
+						this.drawErrorMarker({
+							x1:0,
+							x2:rd.x,
+							x3:rd.x + rd.w,
+							x4:100000,
+							y:rd.y,
+							h:rd.fontSize * rd.lineSpacing,
+							closed: 0
+						})
+					}
 				}
 
 				// lets draw the error
@@ -923,7 +933,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(text === ']' && char ===']') return
 		if(text === ')' && char ===')') return
 		if(text === '\n' && prev ==='{'&& char ==='}') text = '\n\n'
-		if(text === '{' && (char === '\n' || char === ',') && (!this.error || char!=='}')) text = '{}'
+		if(text === '{' && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char!=='}')) text = '{}'
 		if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
 		if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
 		if(text === '"' && (!this.error || char !== '"')) text = '""'
@@ -948,7 +958,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		var ann = this.ann
 		// process insert into annotated array
 		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=5){
+		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			pos += txt.length
 			if(offset<=pos){
@@ -959,18 +969,19 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				else{
 					ann[i] = txt.slice(0, idx)
 					// lets choose a style
-					ann.splice(i+5,0,
+					ann.splice(i+step,0,
 						text,
 						this.styles.Identifier.unknown,
 						ann[i+2],
 						ann[i+3],
 						ann[i+4],
-
+						ann[i+5],
 						txt.slice(idx) ,
 						ann[i+1],
 						ann[i+2],
 						ann[i+3],
-						ann[i+4]
+						ann[i+4],
+						ann[i+5]
 					)
 				}
 				break
@@ -980,12 +991,25 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 	}
 
 	proto.serializeWithFormatting = function(){
-		for(var i = 0, len = ann.length; i < len; i+=5){
+		var ann = this.ann
+		var s =''
+		var fs = this.$fastTextFontSize
+		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			var style = ann[i+1]
-			var sx = ann[i+2]
-			pos += txt.length
+			//var fs = ann[i+4]
+			var sx = ann[i+5]
+			if(txt.indexOf('\n') !== -1){
+				var indent = Array(1+Math.ceil((sx - this.padding[3]) / (this.indentSize*fs))).join('\t')
+				var out = txt.split('\n')
+				for(var j = 0; j < out.length - 1;j++){
+					s += out[j] + '\n' + indent
+				}
+				s += out[j]
+			}
+			else s += txt
 		}
+		return s
 	}
 
 	proto.removeText = function(start, end){
@@ -997,8 +1021,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(end === start + 1){
 			var delchar = text.slice(start, end)
 			if(delchar === '\n'){
-				this.wasNewlineChange = 
-				this.wasFirstNewlineChange = true
+				// check if we removed a singleton newline
+				if(text.charAt(start-1) !== '\n' &&
+					text.charAt(end) !== '\n'){
+					this.wasFirstNewlineChange = true
+				}
+				else this.wasFirstNewlineChange = false
+				this.wasNewlineChange = true
 				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
 				else if(text.charAt(start-1) === ','){
 					start --
@@ -1021,7 +1050,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		// process a remove from the annotated array
 		var ann = this.ann
 		var pos = 0
-		for(var i = 0, len = ann.length; i < len; i+=5){
+		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			pos += txt.length
 			if(start<pos){
@@ -1032,7 +1061,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					ann[i] += txt.slice(idx)
 				}
 				else{ // end is in the next one
-					for(; i < len; i+=5){
+					for(i+=step; i < len; i+=step){
 						var txt = ann[i]
 						pos += txt.length
 						if(end<pos){
@@ -1040,12 +1069,16 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 							ann[i] = txt.slice(idx)
 							break
 						}
-						else ann[i] = ''
+						else {
+							ann[i] = ''
+						}
+
 					}
 				}
 				break
 			}
 		}
+
 		this.redraw()
 		return delta
 	}

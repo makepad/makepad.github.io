@@ -4,11 +4,6 @@ module.exports = require('app').extend(function(proto){
 
 	var editFile = storage.search?storage.search.slice(1):"storage/livecode2.js"
 
-	//var editFile = "storage/livecode2.js"
-	//var editFile = "storage/livecode4.js"
-	// var editFile = "views/codeview.js"
-	//var editFile = "storage/treeview.js"
-
 	var Worker = require('worker')
 	var CodeView = require('views/codeview')
 
@@ -46,16 +41,15 @@ module.exports = require('app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			CodeView({
-				//text:'',
 				onKeyS:function(e){
 					if(!e.meta && !e.ctrl) return true
 					// lets save it
-					storage.saveText(editFile, this.text)
+					this.serializeWithFormatting()
+
+					storage.saveText(editFile, this.serializeWithFormatting())
 				},
-				onText:function(){
-					if(!this.error && this.text){
-						this.app.runUserApp(this.text)
-					}
+				onParsed:function(){
+					this.app.runUserApp(this.text)
 				},
 				Text:{
 					color:'white',

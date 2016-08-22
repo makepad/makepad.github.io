@@ -40,12 +40,12 @@ module.exports = function(proto){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 3] = this.turtle.wx = this.turtle.sx
+			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
 		}
 	}
 
 	proto.lastIsNewline = function(){
-		var text = this.ann[this.ann.length - 5]
+		var text = this.ann[this.ann.length - this.ann.step]
 		var last = text.charCodeAt(text.length - 1)
 		if(last === 10 || last === 13){
 			return true
@@ -59,7 +59,7 @@ module.exports = function(proto){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 3] = this.turtle.wx = this.turtle.sx
+			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
 		}
 	}
 
@@ -258,10 +258,9 @@ module.exports = function(proto){
 		var turtle = this.turtle
 		var props = node.properties
 		var propslen = props.length - 1
-		var unfold = false
+
 		// make space for our expanded or collapsed view
 		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
-			unfold = true
 			this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
 		}
 		// make room for inserted commas
@@ -504,7 +503,7 @@ module.exports = function(proto){
 		var argslen = args.length - 1
 
 		var dy = 0
-		if(this.$lengthText() === this.$fastTextOffset && this.wasNewlineChange){
+		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
 			dy = this.$fastTextDelta
 			this.$fastTextDelta += argslen * dy
 		}

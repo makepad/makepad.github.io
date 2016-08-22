@@ -87,7 +87,7 @@ module.exports = require('shaders/fontshader').extend(function(proto, base){
 			var sx = turtle.sx
 
 			if(this.$fastNAMEWrite){
-				out.ann.push(txt, style, sx, ihead, fontSize)
+				out.ann.push(txt, style, ihead, itail, fontSize, sx)
 			}
 
 			var changeOffset = this.$fastNAMEOffset
