@@ -575,13 +575,13 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 			}
 			break
 		}
-		if(this.eat(tt.comma) || this.insertCommas && this.skippedNewlines){
-			
+		var inserted = false
+		if(this.eat(tt.comma) || (inserted = this.insertCommas && this.skippedNewlines)){
 			if(this.storeComments){
+				if(inserted) node.insCommas  = (node.insCommas || 0)+1
 				this.commentEndSplit(prop, above, close, tt.comma)
 			}
 			if(this.eat(tt.braceR)){
-				
 				node.trail = true
 				break
 			}

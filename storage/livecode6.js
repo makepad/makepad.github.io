@@ -31,16 +31,13 @@ color:'#a',
 margin:[0,4,0,0]
 }),
 Quad:{
-w:10,
+w:11,
 h:16,
 isLast:0,
 isFolder:0,
 isSide:0,
 isFiller:0,
-lineColor:'#7',
-myfn:function(a,b){$
-return 1.0/sqrt(a+b)
-},
+lineColor:'#8',
 pixel:function(){$
 var p=vec2(this.w,this.h)*this.mesh.xy
 var aa=this.antialias(p)
@@ -56,13 +53,12 @@ L=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
 }
 var f=this.unionField(I,L)
 if(this.isFolder>.5){
-// draw a little plus
-var P=this.boxField(p,1.,3.,this.w-2.,this.w-2.,1.)
-
+// box
+var P=this.boxField(p,1.,3.,8.,8.,1.)
 f=this.unionField(f,P)
+// minus
 var D=this.boxField(p,2.,6.5,6.,1.,1.)
 f=this.subtractField(D,f)
-//return 'red'
 }
 
 return this.colorSolidField(aa,f,this.lineColor)

@@ -416,8 +416,8 @@ module.exports = require('view').extend(function EditView(proto, base){
 					if(!this.editor.wasNoopChange){
 						var ocm1 = oldText.charCodeAt(this.end-1)
 						if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
-						if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
 						if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+						if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
 					}
 				}
 

@@ -109,6 +109,7 @@ module.exports = require('shaders/fontshader').extend(function(proto, base){
 			else{
 				turtle._delay = -100000
 			}
+
 			var color = style.color
 			var boldness = style.boldness
 			for(var i = 0; i <= len; i++){

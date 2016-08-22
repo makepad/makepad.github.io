@@ -504,7 +504,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(this.error) this.reuseErrorText()
 		}
 		else{
-			require.perf()
+			//require.perf()
 			this.error = undefined
 			this.$fastTextDelay = 0			
 
@@ -539,7 +539,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				this.orderSelection()
 
 				var oldtext = this._text
-
+				this.oldText = oldtext
 				// first we format the code
 				this.formatJS(this.Text.prototype.font.fontmap.glyphs[32].advance * 3, this.ast)
 
@@ -557,6 +557,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				}
 
 				this.wasNoopChange = false
+
 				if(start !== newlen){
 					// this gets tacked onto the undo with the same group
 					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext)
@@ -565,13 +566,15 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					var oldrem = oldtext.slice(start, oldend)
 					var newins = newtext.slice(start,newend)
 
-					// if we removed ; or space make it stop jiggling
+					// jiggle fixes
+					//var lengthText = this.lengthText()
+					//if(oldrem === '' && newins === ','){
+					//	for(var i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
+					//}
+					//else 
 					if((oldrem === ' ' || oldrem === ';') && newins === ''){
-						var lengthText = this.lengthText()
 						this.wasNoopChange = true
-						for(var i =0 ; i < lengthText; i++){
-							this.$setTweenStartText(i, 0)
-						}
+						for(var i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
 					}
 				}
 				
@@ -639,7 +642,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					text:this.error.msg
 				})
 			}
-			require.perf()
+			//require.perf()
 			this.$fastTextDelta = 0
 		}
 
@@ -941,6 +944,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 		if(text === '\n') this.wasNewlineChange = 1
 		else this.wasNewlineChange = 0
+		
+		if(this.wasNewlineChang && this._text.charAt(offset) !== '\n'&& this._text.charAt(offset+1) !== '\n'){
+			this.wasFirstNewlineChange = 1
+		}
+		else this.wasFirstNewlineChange = 0
 
 		this.textClean = false
 		this._text = this._text.slice(0, offset) + text + this._text.slice(offset)
@@ -1000,7 +1008,10 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			if(delchar === '\n'){
 				this.wasNewlineChange = true
 				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
-				else if(text.charAt(start-1) === ',') start--, delta = -1
+				else if(text.charAt(start-1) === ','){
+					start --
+					delta = -1
+				} 
 			}
 			else if(delchar === '{' && text.charAt(end) === '}') end ++
 			else if(delchar === '[' && text.charAt(end) === ']') end ++

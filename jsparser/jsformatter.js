@@ -256,11 +256,16 @@ module.exports = function(proto){
 		var turtle = this.turtle
 		var props = node.properties
 		var propslen = props.length - 1
-
+		var unfold = false
 		// make space for our expanded or collapsed view
-		if(this.$lengthText() === this.$fastTextOffset && this.wasNewlineChange){
+		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
+			unfold = true
 			this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
 		}
+		// make room for inserted commas
+		var insCommas = node.insCommas
+		if(insCommas) this.$fastTextDelta += insCommas
+
 		var top = node.top
 		//this.newLine()
 		if(top){
@@ -307,6 +312,10 @@ module.exports = function(proto){
 			if(node.trail || i < propslen){
 				this.trace += ','
 				this.fastText(',', commaStyle)
+				//if(prop.inserted){
+				//	console.log("INSERTEZ")
+				//	this.$fastTextDelta++
+				//}
 			}
 
 			if(top){
