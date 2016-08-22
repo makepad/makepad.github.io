@@ -10,7 +10,7 @@ data:[{name:'folder1',child:[
 ]},
 ]},
 {name:'folder2',child:[]},
-{name:'folder3',child:[
+{name:'folder3',closed:true,child:[
 {name:'file4'},
 {name:'file5'},
 {name:'file6'}
@@ -68,29 +68,39 @@ return this.colorSolidField(aa,f,this.lineColor)
 }
 },
 lineHeight:16,
+onFingerDown:function(e){
+console.log(e.pickId,this.pickMap[e.pickId])
+},
 onDraw:function(){
 // lets draw the text
+this.pickMap={}
+this.pickId=1
 var p=this
-var drawText=function(nodes,depth){
+var drawText=function(nodes,depth,closed){
 for(var i=0,len=nodes.length-1;i<=len;i++){
 var node=nodes[i]
-
+var pickId=this.pickId++
+this.pickMap[pickId]={node:node}
 for(var j=0,dl=depth.length-1;j<=dl;j++){
+var isFolder=j==dl&&node.child?1:0
+var pid=pickId
+if(isFolder)this.pickMap[pid=++this.pickId]={folder:node}
+this.setPickId(pid)
 this.drawQuad({
 isFiller:j==dl?0:depth[j+1],
 isLast:j==dl&&i===len?1:0,
-isFolder:j==dl&&node.child?1:0,
+isFolder:isFolder,
 isSide:j<dl?1:0,
 h:this.lineHeight
 })
 }
-
+this.setPickId(pickId)
 this.drawIcon({
 text:node.child?
 this.lookupIcon.folder:
 this.lookupIcon.fileO
 })
-
+this.setPickId(pickId)
 this.drawText({
 text:node.name
 })
@@ -99,7 +109,7 @@ this.turtle.lineBreak()
 
 if(node.child){
 depth.push(i==len?1:0)
-drawText(node.child,depth)
+drawText(node.child,depth,closed||node.closed)
 depth.pop()
 }
 }

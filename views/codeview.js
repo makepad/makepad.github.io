@@ -13,7 +13,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.textClean = false
 	}
 
-	proto.allowOperatorSpaces = 0
+	proto.allowOperatorSpaces = 1
 
 	proto.padding = [0,0,0,4]
 
@@ -401,9 +401,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			boldness:0.1,
 			head:0.5,
 			tail:0.5,
-			'=':{
-				color:'#ff9f00'
-			}
+			color:'#ff9f00'
 		},
 		ConditionalExpression:{
 			head:0.5,
@@ -620,16 +618,17 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				
 				var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
 				var rd = this.$readOffsetText(epos)
-
-				this.drawErrorMarker({
-					x1:0,
-					x2:rd.x,
-					x3:rd.x + rd.w,
-					x4:100000,
-					y:rd.y,
-					h:rd.fontSize * rd.lineSpacing,
-					closed: 0
-				})
+				if(rd){
+					this.drawErrorMarker({
+						x1:0,
+						x2:rd.x,
+						x3:rd.x + rd.w,
+						x4:100000,
+						y:rd.y,
+						h:rd.fontSize * rd.lineSpacing,
+						closed: 0
+					})
+				}
 
 				// lets draw the error
 				this.drawErrorText({
@@ -954,7 +953,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			pos += txt.length
 			if(offset<=pos){
 				var idx = offset - (pos - txt.length)
-				if(ann[i+1] === this.styles.newText){
+				if(ann[i+1] === this.styles.Identifier.unknown){
 					ann[i] = txt.slice(0, idx) + text + txt.slice(idx)
 				}
 				else{
@@ -962,7 +961,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					// lets choose a style
 					ann.splice(i+5,0,
 						text,
-						this.styles.NewText,
+						this.styles.Identifier.unknown,
 						ann[i+2],
 						ann[i+3],
 						ann[i+4],

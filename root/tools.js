@@ -88,6 +88,10 @@ module.exports = function(proto){
 		}
 	}
 
+	proto.setPickId = function(pickId){
+		this.turtle._pickId = pickId
+	}
+
 	// internal API used by canvas macros
 	proto.$allocShader = function(classname){
 		var shaders = this.$shaders

@@ -671,7 +671,7 @@ module.exports = function(proto){
 			if(node.around1) this.fastText(node.around1, this.style.Comment.around)
 
 			this.trace += '='
-			this.fastText('=', this.styles.AssignmentExpression['='])
+			this.fastText('=', this.styles.AssignmentExpression['='] || this.styles.AssignmentExpression)
 		
 			if(node.around2) this.fastText(node.around2, this.style.Comment.around)
 
