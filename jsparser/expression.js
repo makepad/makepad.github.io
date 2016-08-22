@@ -771,9 +771,10 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
 			break
 		}
 
-		if(this.eat(tt.comma) || allowTrailingComma && this.insertCommas && this.skippedNewlines){
-			
+		var inserted = false
+		if(this.eat(tt.comma) || allowTrailingComma && (inserted = this.insertCommas && this.skippedNewlines)){
 			if(this.storeComments){
+				if(inserted) node.insCommas  = (node.insCommas || 0)+1
 				this.commentEndSplit(elt, above, close, tt.comma)
 			}
 			if(this.eat(close)){

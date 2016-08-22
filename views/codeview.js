@@ -945,7 +945,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(text === '\n') this.wasNewlineChange = 1
 		else this.wasNewlineChange = 0
 		
-		if(this.wasNewlineChang && this._text.charAt(offset) !== '\n'&& this._text.charAt(offset+1) !== '\n'){
+		if(this.wasNewlineChange && this._text.charAt(offset) !== '\n'&& this._text.charAt(offset+1) !== '\n'){
 			this.wasFirstNewlineChange = 1
 		}
 		else this.wasFirstNewlineChange = 0
@@ -1006,7 +1006,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		if(end === start + 1){
 			var delchar = text.slice(start, end)
 			if(delchar === '\n'){
-				this.wasNewlineChange = true
+				this.wasNewlineChange = 
+				this.wasFirstNewlineChange = true
 				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
 				else if(text.charAt(start-1) === ','){
 					start --

@@ -176,6 +176,8 @@ module.exports = function(proto){
 		//	dy = this.$fastTextDelta
 			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
 		}
+		var insCommas = node.insCommas
+		if(insCommas) this.$fastTextDelta += insCommas
 
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
@@ -265,7 +267,6 @@ module.exports = function(proto){
 		// make room for inserted commas
 		var insCommas = node.insCommas
 		if(insCommas) this.$fastTextDelta += insCommas
-
 		var top = node.top
 		//this.newLine()
 		if(top){
