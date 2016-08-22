@@ -566,13 +566,8 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					var oldrem = oldtext.slice(start, oldend)
 					var newins = newtext.slice(start,newend)
 
-					// jiggle fixes
-					//var lengthText = this.lengthText()
-					//if(oldrem === '' && newins === ','){
-					//	for(var i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
-					//}
-					//else 
 					if((oldrem === ' ' || oldrem === ';') && newins === ''){
+						var lengthText = this.lengthText()
 						this.wasNoopChange = true
 						for(var i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
 					}
@@ -920,23 +915,20 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 
 	proto.insertText = function(offset, text){
 
-		if(text === "'" && this._text.charAt(offset) ==="'") return
-		if(text === '"' && this._text.charAt(offset) ==='"') return
-		
-		if(text === '}' && this._text.charAt(offset) ==='}') return
-		if(text === ']' && this._text.charAt(offset) ===']') return
-		if(text === ')' && this._text.charAt(offset) ===')') return
+		var char = this._text.charAt(offset)
+		var prev = this._text.charAt(offset-1)
 
-		if(text === '\n' && this._text.charAt(offset-1) ==='{'&& this._text.charAt(offset) ==='}') text = '\n\n'
-
-		if(text === '{' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!=='}')) text = '{}'
-		if(text === '[' && this._text.charAt(offset) === '\n' && (!this.error || this._text.charAt(offset)!==']')) text = '[]'
-
-		if(text === '(' && this._text.charAt(offset) === '\n' && 
-			(!this.error || this._text.charAt(offset)!==')')) text = '()'
-
-		if(text === '"' && (!this.error || this._text.charAt(offset)!=='"')) text = '""'
-		if(text === "'" && (!this.error || this._text.charAt(offset)!=="'")) text = "''"
+		if(text === "'" && char ==="'") return
+		if(text === '"' && char ==='"') return
+		if(text === '}' && char ==='}') return
+		if(text === ']' && char ===']') return
+		if(text === ')' && char ===')') return
+		if(text === '\n' && prev ==='{'&& char ==='}') text = '\n\n'
+		if(text === '{' && (char === '\n' || char === ',') && (!this.error || char!=='}')) text = '{}'
+		if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
+		if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
+		if(text === '"' && (!this.error || char !== '"')) text = '""'
+		if(text === "'" && (!this.error || char !== "'")) text = "''"
 
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 

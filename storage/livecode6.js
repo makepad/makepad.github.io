@@ -38,6 +38,7 @@ isFolder:0,
 isSide:0,
 isFiller:0,
 lineColor:'#8',
+vertexStyle:function(){},
 pixel:function(){$
 var p=vec2(this.w,this.h)*this.mesh.xy
 var aa=this.antialias(p)
@@ -46,6 +47,7 @@ if(this.isFiller>.5)return vec4(0.)
 if(this.isLast>.5){
 hh=this.h*.5+2
 }
+
 var I=this.boxField(p,4.,-2,2.,hh,0.5)
 var L=0.
 if(this.isSide<0.5){
@@ -65,6 +67,7 @@ return this.colorSolidField(aa,f,this.lineColor)
 }
 }
 },
+lineHeight:16,
 onDraw:function(){
 // lets draw the text
 var p=this
@@ -77,7 +80,8 @@ this.drawQuad({
 isFiller:j==dl?0:depth[j+1],
 isLast:j==dl&&i===len?1:0,
 isFolder:j==dl&&node.child?1:0,
-isSide:j<dl?1:0
+isSide:j<dl?1:0,
+h:this.lineHeight
 })
 }
 
