@@ -1,13 +1,12 @@
 module.exports=require('apps/drawapp').extend({
-	data:[
-		{name:'folder1',child:[
+	data:[{name:'folder1',child:[
 			{name:'file1'},
 			{name:'file2'},
 			{name:'file3'},
 			{name:'folder6',child:[
-				{name:'file10'},
-				{name:'file11'},
-				{name:'file12'}
+			{name:'file10'},
+			{name:'file11'},
+			{name:'file12'}
 			]},
 		]},
 		{name:'folder2',child:[]},
@@ -23,26 +22,26 @@ module.exports=require('apps/drawapp').extend({
 			{name:'file9'},
 			
 			{name:'folder1',child:[
-				{name:'file1'},
-				{name:'file2'},
-				{name:'file3'},
-				{name:'folder6',child:[
-					{name:'file10'},
-					{name:'file11'},
-					{name:'file12'}
-				]},
+			{name:'file1'},
+			{name:'file2'},
+			{name:'file3'},
+			{name:'folder6',child:[
+			{name:'file10'},
+			{name:'file11'},
+			{name:'file12'}
+			]},
 			]},
 			{name:'folder2',child:[]},
 			{name:'folder3',closed:true,child:[
-				{name:'file4'},
-				{name:'file5'},
-				{name:'file6'}
+			{name:'file4'},
+			{name:'file5'},
+			{name:'file6'}
 			]},
 			{name:'folder4',child:[]},
 			{name:'folder5',child:[
-				{name:'file7'},
-				{name:'file8'},
-				{name:'file9'}
+			{name:'file7'},
+			{name:'file8'},
+			{name:'file9'}
 			]},
 		]},
 	],
@@ -79,11 +78,10 @@ module.exports=require('apps/drawapp').extend({
 				var p=vec2(this.w,this.h)*this.mesh.xy
 				var aa=this.antialias(p)
 				var hh=this.h+4
-				if(this.isFiller>.5)return vec4(0.)
+				if(this.isFiller>.99)return vec4(0.)
 				if(this.isLast>.5){
 					hh=this.h*.5+2
 				}
-				
 				
 				var B=0.
 				var cen=this.h*.5
@@ -163,19 +161,18 @@ module.exports=require('apps/drawapp').extend({
 						this.lookupIcon.folder:
 						this.lookupIcon.fileO
 				})
-				this.setPickId(pickId)
 				this.drawText({
 					fontSize:closed?0:this.fontSize,
 					text:node.name
 				})
-				
 				this.turtle.lineBreak()
-				
 				if(node.child){
 					depth.push(i==len?1:0)
+					
 					drawText(node.child,depth,closed||node.closed)
 					depth.pop()
 				}
+				
 			}
 		}.bind(this)
 		drawText(this.data,[0],false)

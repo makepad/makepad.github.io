@@ -15,7 +15,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
-	proto.allowOperatorSpaces = 0
+	proto.allowOperatorSpaces = 1
 
 	proto.padding = [0,0,0,4]
 
@@ -624,9 +624,13 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 						this.$fastTextFontSize = ann[i+4]
 						this.fastText(ann[i], ann[i+1], ann[i+2], ann[i+3])
 					}
-
+					// lets do a paren match analysis
+					if(this.error.msg === 'Unexpected token'){
+						this.error.pos = this.indentFindParenError()
+					}
 					var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
 					var rd = this.$readOffsetText(epos)
+
 					if(rd){
 						this.drawErrorMarker({
 							x1:0,
@@ -685,6 +689,31 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		}
 		
 		this.endBackground()
+	}
+
+	proto.indentFindParenError = function(){
+		var ann = this.ann
+		var stack = []
+		var close = {'{':'}','(':')','[':']'}
+		var pos = 0
+		for(var i = 0, l = ann.length, step = ann.step; i < l; i += step){
+			var txt = ann[i]
+			var sx = ann[i+5]
+			if(txt === '{' || txt === '[' || txt === '(') stack.push(txt, sx, pos)
+			if(txt === '}' || txt === ']' || txt === ')'){
+				var opos = stack.pop()
+				var osx = stack.pop()
+				var otxt = stack.pop()
+				if(sx !== osx){ // indent change
+					return pos + 1
+				}
+				if(close[otxt] !== txt){
+					return opos + 1
+				}
+			}
+			pos += txt.length
+		}
+		return pos
 	}
 
 	proto.onFingerDown = function(f){
