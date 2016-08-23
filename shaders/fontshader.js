@@ -273,6 +273,8 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			var wrapping = turtle._wrapping
 			var fontSize = turtle._fontSize
+		
+
 			var off = 0
 
 			turtle._h = fontSize * lineSpacing
@@ -318,35 +320,35 @@ module.exports = require('shader').extend(function SdfFontShader(proto, base){
 					}
 					off = b
 				}
-				if(width){
+				//if(width){
 					// run the turtle
-					turtle._w = width
-					if(!absx) turtle._x = NaN
-					if(!absy) turtle._y = NaN
-					absx = absy = false
-					//console.log("MARK")
-					turtle.walk()
-					//console.log("END")
-					// output
-					for(var i = start; i < off; i++){
-						var unicode = txt.charCodeAt(i)
-						var g = glyphs[unicode] || glyphs[63]
-						this.$WRITEPROPS({
-							advance:g.advance,
-							head:0.,
-							tx1: g.tx1,
-							ty1: g.ty1,
-							tx2: g.tx2,
-							ty2: g.ty2,
-							x1: g.x1,
-							y1: g.y1,
-							x2: g.x2,
-							y2: g.y2,
-							unicode: unicode
-						})
-						turtle._x += g.advance * fontSize
-					}
+				turtle._w = width
+				if(!absx) turtle._x = NaN
+				if(!absy) turtle._y = NaN
+				absx = absy = false
+				//console.log("MARK")
+				turtle.walk()
+				//console.log("END")
+				// output
+				for(var i = start; i < off; i++){
+					var unicode = txt.charCodeAt(i)
+					var g = glyphs[unicode] || glyphs[63]
+					this.$WRITEPROPS({
+						advance:g.advance,
+						head:0.,
+						tx1: g.tx1,
+						ty1: g.ty1,
+						tx2: g.tx2,
+						ty2: g.ty2,
+						x1: g.x1,
+						y1: g.y1,
+						x2: g.x2,
+						y2: g.y2,
+						unicode: unicode
+					})
+					turtle._x += g.advance * fontSize
 				}
+				//}
 				if(unicode===10){
 					this.turtle.lineBreak()
 				}

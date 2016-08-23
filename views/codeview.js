@@ -15,7 +15,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
-	proto.allowOperatorSpaces = 1
+	proto.allowOperatorSpaces = 0
 
 	proto.padding = [0,0,0,4]
 
