@@ -454,7 +454,15 @@ module.exports = require('view').extend(function EditView(proto, base){
 			// toggle a line comment on or off
 			var start = this.end
 			var ct = 0
-			for(var i = this.end; i > 0; i--){
+			// lets find the end of the line
+			for(var i = this.end, l = this.editor.textLength();i<l;i++){
+				var code = this.editor.charCodeAt(i)
+				if(code === 10){
+					i--
+					break
+				}
+			}
+			for(;i >= 0; i--){
 				var code = this.editor.charCodeAt(i)
 				if(code === 47) ct++
 				else ct = 0
@@ -465,7 +473,7 @@ module.exports = require('view').extend(function EditView(proto, base){
 			if(ct === 2){
 				this.editor.addUndoInsert(i, i+2)
 				this.editor.removeText(i, i+2)
-				d = -2
+				d = -min(abs(i-this.end), 2.)
 			}
 			else{
 				this.editor.insertText(i+1, '//')
