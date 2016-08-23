@@ -38,12 +38,14 @@ module.exports=require('apps/drawapp').extend({
 		}),
 		Quad:{
 			tween:2,
+			pickAlpha:-1,
 			duration:0.2,
 			ease:[0,10,0,0],
 			w:11,
 			h:16,
 			isLast:0,
 			isFolder:0,
+			isOpen:1,
 			isSide:0,
 			isFiller:0,
 			lineColor:'#8',
@@ -57,19 +59,22 @@ module.exports=require('apps/drawapp').extend({
 					hh=this.h*.5+2
 				}
 				
-				var I=this.boxField(p,4.,-2,2.,hh,0.5)
-				var L=0.
+				var B=this.boxField(p,4.,-2,2.,hh,0.5)
+				var A=0.
 				if(this.isSide<0.5){
-					L=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
+					A=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
 				}
-				var f=this.unionField(I,L)
+				var f=this.unionField(B,A)
 				if(this.isFolder>.5){
 					// box
-					var P=this.boxField(p,1.,3.,8.,8.,1.)
-					f=this.unionField(f,P)
+					var C=this.boxField(p,1.,3.,8.,8.,1.)
+					f=this.unionField(f,C)
 					// minus
 					var D=this.boxField(p,2.,6.5,6.,1.,1.)
 					f=this.subtractField(D,f)
+					// plus
+					var E=this.boxField(p,4.5,4.,1.,6.,1.)
+					f=this.subtractField(E+this.isOpen,f)
 				}
 				
 				return this.colorSolidField(aa,f,this.lineColor)
@@ -109,6 +114,7 @@ module.exports=require('apps/drawapp').extend({
 						isLast:j==dl&&i===len?1:0,
 						isFolder:isFolder,
 						isSide:j<dl?1:0,
+						isOpen:node.closed?0:1,
 						h:closed?0:this.lineHeight
 					})
 				}
