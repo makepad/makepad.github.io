@@ -20,7 +20,30 @@ module.exports=require('apps/drawapp').extend({
 		{name:'folder5',child:[
 			{name:'file7'},
 			{name:'file8'},
-			{name:'file9'}
+			{name:'file9'},
+			
+			{name:'folder1',child:[
+				{name:'file1'},
+				{name:'file2'},
+				{name:'file3'},
+				{name:'folder6',child:[
+					{name:'file10'},
+					{name:'file11'},
+					{name:'file12'}
+				]},
+			]},
+			{name:'folder2',child:[]},
+			{name:'folder3',closed:true,child:[
+				{name:'file4'},
+				{name:'file5'},
+				{name:'file6'}
+			]},
+			{name:'folder4',child:[]},
+			{name:'folder5',child:[
+				{name:'file7'},
+				{name:'file8'},
+				{name:'file9'}
+			]},
 		]},
 	],
 	tools:{
