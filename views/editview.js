@@ -775,12 +775,12 @@ module.exports = require('view').extend(function EditView(proto, base){
 			if(item.group !== lastGroup) break
 			if(item.type === 'insert'){
 				this.addUndoDelete(item.start, item.start + item.data.length, stack2)
-				this.insertText(item.start, item.data)
+				this.insertText(item.start, item.data, 1)
 				lastCursors = item.cursors
 			}
 			else{
 				this.addUndoInsert(item.start, item.end, stack2)
-				this.removeText(item.start, item.end)
+				this.removeText(item.start, item.end, 1)
 				lastCursors = item.cursors
 			}
 		}

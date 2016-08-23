@@ -399,10 +399,19 @@ module.exports = function(proto){
 		}
 
 		var exp = node.expression
+
+		if(node.top && exp.above){
+			this.fastText(exp.above, this.style.Comment.above)
+		}
+
 		this[exp.type](exp, level+1)
+
 		if(node.top){
+			if(exp.side){
+				this.fastText(exp.side, this.style.Comment.side)
+			}
 			if(node.bottom) this.fastText(node.bottom, this.style.Comment.bottom)
-			else this.fastText('\n', this.style.Comment.bottom)
+			if(!exp.side && !node.bottom) this.fastText('\n', this.style.Comment.bottom)
 			this.indentOut()
 		}
 		this.trace += ')'

@@ -406,14 +406,19 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 		this.next()
 
 		if(this.storeComments){
-			top = this.commentTop()
+			var top = this.commentTop()
 		}
 
 		var innerStartPos = this.start
-		var exprList = [], first = true
+		var exprList = []//, first = true
 		var refDestructuringErrors = new DestructuringErrors, spreadStart, innerParenStart
 		while (this.type !== tt.parenR) {
-			first ? first = false : this.expect(tt.comma)
+
+			if(this.storeComments){
+				var above = this.commentBegin()
+			}
+
+			//first ? first = false : this.expect(tt.comma)
 			if (this.type === tt.ellipsis) {
 				spreadStart = this.start
 				exprList.push(this.parseParenItem(this.parseRest()))
@@ -422,16 +427,30 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 				if (this.type === tt.parenL && !innerParenStart) {
 					innerParenStart = this.start
 				}
-				exprList.push(this.parseMaybeAssign(false, refDestructuringErrors, this.parseParenItem))
+				var expr = this.parseMaybeAssign(false, refDestructuringErrors, this.parseParenItem)
+				exprList.push(expr)
+			}
+
+			if(this.eat(tt.comma)){
+				if(this.storeComments){
+					this.commentEndSplit(expr, above, tt.parenR, tt.comma)
+				}
+			}
+			else if(this.type !== tt.parenR){
+				this.unexpected()
 			}
 		}
 		var innerEndPos = this.start
 
 		if(this.storeComments){
-			bottom = this.commentBottom()
+			this.commentEnd(expr, above, tt.parenR)
 		}
 
 		this.expect(tt.parenR)
+
+		if(this.storeComments){
+			bottom = this.commentBottom(tt.parenR)
+		}
 
 		if (canBeArrow && !this.canInsertSemicolon() && this.eat(tt.arrow)) {
 			this.checkPatternErrors(refDestructuringErrors, true)
@@ -457,15 +476,17 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 	if (this.options.preserveParens) {
 		var par = this.startNodeAt(startPos)
 		par.expression = val
-		if(top && top.length) par.top = top
 		if(this.skippedNewlines){
 			par.rightSpace = this.skippedSpace
 		}
 		if(this.storeComments){
+			if(top && top.length) par.top = top
+			if(bottom && bottom.length) par.bottom = bottom
+
 			// remove our paren otherwise the matcher goes wrong
-			if(this.storeComments[0] === tt.parenR){
-				this.storeComments.shift()
-			}
+			//if(this.storeComments[0] === tt.parenR){
+			//	this.storeComments.shift()
+			//}
 		}
 		return this.finishNode(par, "ParenthesizedExpression")
 	} else {

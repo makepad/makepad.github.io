@@ -960,22 +960,24 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		'undefined':2
 	}
 
-	proto.insertText = function(offset, text){
+	proto.insertText = function(offset, text, isUndo){
 
 		var char = this._text.charAt(offset)
 		var prev = this._text.charAt(offset-1)
 
-		if(text === "'" && char ==="'") return
-		if(text === '"' && char ==='"') return
-		if(text === '}' && char ==='}') return
-		if(text === ']' && char ===']') return
-		if(text === ')' && char ===')') return
-		if(text === '\n' && prev ==='{'&& char ==='}') text = '\n\n'
-		if(text === '{' && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char!=='}')) text = '{}'
-		if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
-		if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
-		if(text === '"' && (!this.error || char !== '"')) text = '""'
-		if(text === "'" && (!this.error || char !== "'")) text = "''"
+		if(!isUndo){
+			if(text === "'" && char ==="'") return
+			if(text === '"' && char ==='"') return
+			if(text === '}' && char ==='}') return
+			if(text === ']' && char ===']') return
+			if(text === ')' && char ===')') return
+			if(text === '\n' && prev ==='{'&& char ==='}') text = '\n\n'
+			if(text === '{' && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char!=='}')) text = '{}'
+			if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
+			if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
+			if(text === '"' && (!this.error || char !== '"')) text = '""'
+			if(text === "'" && (!this.error || char !== "'")) text = "''"
+		}
 
 		this.$fastTextDelta += text.length
 		this.$fastTextOffset = offset 
@@ -1050,33 +1052,35 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 		return s
 	}
 
-	proto.removeText = function(start, end){
+	proto.removeText = function(start, end, isUndo){
 		this.textClean = false
 		var delta = 0
 		this.wasNewlineChange = 0
 		var text = this._text
 
-		if(end === start + 1){
-			var delchar = text.slice(start, end)
-			if(delchar === '\n'){
-				// check if we removed a singleton newline
-				if(text.charAt(start-1) !== '\n' &&
-					text.charAt(end) !== '\n'){
-					this.wasFirstNewlineChange = true
+		if(!isUndo){
+			if(end === start + 1){
+				var delchar = text.slice(start, end)
+				if(delchar === '\n'){
+					// check if we removed a singleton newline
+					if(text.charAt(start-1) !== '\n' &&
+						text.charAt(end) !== '\n'){
+						this.wasFirstNewlineChange = true
+					}
+					else this.wasFirstNewlineChange = false
+					this.wasNewlineChange = true
+					if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
+					else if(text.charAt(start-1) === ','){
+						start --
+						delta = -1
+					} 
 				}
-				else this.wasFirstNewlineChange = false
-				this.wasNewlineChange = true
-				if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
-				else if(text.charAt(start-1) === ','){
-					start --
-					delta = -1
-				} 
+				else if(delchar === '{' && text.charAt(end) === '}') end ++
+				else if(delchar === '[' && text.charAt(end) === ']') end ++
+				else if(delchar === '(' && text.charAt(end) === ')') end ++
+				else if(delchar === "'" && text.charAt(end) === "'") end ++
+				else if(delchar === '"' && text.charAt(end) === '"') end ++
 			}
-			else if(delchar === '{' && text.charAt(end) === '}') end ++
-			else if(delchar === '[' && text.charAt(end) === ']') end ++
-			else if(delchar === '(' && text.charAt(end) === ')') end ++
-			else if(delchar === "'" && text.charAt(end) === "'") end ++
-			else if(delchar === '"' && text.charAt(end) === '"') end ++
 		}
 
 		this._text = text.slice(0, start) + text.slice(end)

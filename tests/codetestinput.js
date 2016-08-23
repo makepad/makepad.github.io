@@ -1,11 +1,13 @@
-exports.test=console.log({
-tools:{
-Quad:function(){
-return mix(
-'white',
-'pink',
-abs(((pow(tuncol,32.0)*d)*pow(((tan(d))),122.0)))
-)
+function test(){
+
+	var x = (//1
+		//2
+		(//3
+			(//4
+				1//5
+			)//6
+		)//7
+		//8
+	)//9
+	//19
 }
-}
-})
