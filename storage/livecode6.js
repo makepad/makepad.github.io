@@ -1,12 +1,13 @@
 module.exports=require('apps/drawapp').extend({
-	data:[{name:'folder1',child:[
+	data:[
+		{name:'folder1',child:[
 			{name:'file1'},
 			{name:'file2'},
 			{name:'file3'},
 			{name:'folder6',child:[
-			{name:'file10'},
-			{name:'file11'},
-			{name:'file12'}
+				{name:'file10'},
+				{name:'file11'},
+				{name:'file12'}
 			]},
 		]},
 		{name:'folder2',child:[]},
@@ -44,6 +45,7 @@ module.exports=require('apps/drawapp').extend({
 			w:11,
 			h:16,
 			isLast:0,
+			isFirst:0,
 			isFolder:0,
 			isOpen:1,
 			isSide:0,
@@ -59,21 +61,30 @@ module.exports=require('apps/drawapp').extend({
 					hh=this.h*.5+2
 				}
 				
-				var B=this.boxField(p,4.,-2,2.,hh,0.5)
+				
+				var B=0.
+				var cen=this.h*.5
+				if(this.isFirst<0.5){
+					B=this.boxField(p,4.,-2,2.,hh,0.5)
+				}
+				else {
+					B=this.boxField(p,4.,cen,2.,hh,0.5)
+				}
 				var A=0.
+				
 				if(this.isSide<0.5){
-					A=this.boxField(p,4.,this.h*.5-2,this.w-4.,2.,0.5)
+					A=this.boxField(p,4.,cen-2,this.w-4.,2.,0.5)
 				}
 				var f=this.unionField(B,A)
 				if(this.isFolder>.5){
 					// box
-					var C=this.boxField(p,1.,3.,8.,8.,1.)
+					var C=this.boxField(p,1.,cen-5,8.,8.,1.)
 					f=this.unionField(f,C)
 					// minus
-					var D=this.boxField(p,2.,6.5,6.,1.,1.)
+					var D=this.boxField(p,2.,cen-1.5,6.,1.,1.)
 					f=this.subtractField(D,f)
 					// plus
-					var E=this.boxField(p,4.5,4.,1.,6.,1.)
+					var E=this.boxField(p,4.5,cen-4.,1.,6.,1.)
 					f=this.subtractField(E+this.isOpen,f)
 				}
 				
@@ -84,18 +95,12 @@ module.exports=require('apps/drawapp').extend({
 	fontSize:12,
 	onFingerDown:function(e){
 		var node=this.pickMap[e.pickId]
-		
 		if(node&&node.folder){
-			console.log(node.folder)
 			node.folder.closed=!node.folder.closed
 			this.redraw()
 		}
-		
-	//console.log(e.pickId,)
-	
 	},
 	onDraw:function(){
-		// lets draw the text
 		this.pickMap={}
 		this.pickId=1
 		var p=this
@@ -115,8 +120,18 @@ module.exports=require('apps/drawapp').extend({
 						isFolder:isFolder,
 						isSide:j<dl?1:0,
 						isOpen:node.closed?0:1,
-						h:closed?0:this.lineHeight
+						h:closed?0:this.fontSize+6
 					})
+					if(isFolder){// add the first line from a folder
+						var x=this.turtle.wx// make sure the turtle doesnt move
+						this.drawQuad({
+							isFiller:node.closed?1:0,
+							isFirst:1,
+							isSide:1,
+							h:closed?0:this.fontSize+6
+						})
+						this.turtle.wx=x
+					}
 				}
 				this.setPickId(pickId)
 				this.drawIcon({
