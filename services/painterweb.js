@@ -1165,16 +1165,17 @@ userfn.updateMesh = function(msg){
 		glbuffer.hOffset = msg.hOffset
 	}
 
-	glbuffer.array = msg.array
 	glbuffer.length = msg.length
 	glbuffer.updateId = frameId
 	// check the type
 
 	if(msg.arrayType === 'uint16'){
+		glbuffer.array = new Uint16Array(msg.array)
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	}
 	else{
+		glbuffer.array = new Float32Array(msg.array)
 		gl.bindBuffer(gl.ARRAY_BUFFER, glbuffer)
 		gl.bufferData(gl.ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 	}

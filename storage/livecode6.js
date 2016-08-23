@@ -47,12 +47,14 @@ module.exports=require('apps/drawapp').extend({
 	],
 	tools:{
 		Text:{
+			drawDiscard:'y',
 			tween:2,
 			duration:0.2,
 			ease:[0,10,0,0],
 			color:'white'
 		},
 		Icon:require('shaders/fontawesomeshader').extend({
+			drawDiscard:'y',
 			tween:2,
 			duration:0.2,
 			ease:[0,10,0,0],
@@ -60,6 +62,7 @@ module.exports=require('apps/drawapp').extend({
 			margin:[0,4,0,0]
 		}),
 		Quad:{
+			drawDiscard:'y',
 			tween:2,
 			pickAlpha:-1,
 			duration:0.2,

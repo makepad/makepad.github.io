@@ -626,7 +626,11 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 					}
 					// lets do a paren match analysis
 					if(this.error.msg === 'Unexpected token'){
-						this.error.pos = this.indentFindParenError()
+						var pos = this.indentFindParenError()
+						if(pos >= 0){
+							this.error.msg = 'Matching ({[ error'
+							this.error.pos = pos
+						}
 					}
 					var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
 					var rd = this.$readOffsetText(epos)
@@ -705,7 +709,12 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 				var osx = stack.pop()
 				var otxt = stack.pop()
 				if(sx !== osx){ // indent change
-					return pos + 1
+					if(sx > osx){
+						return pos + 1
+					}
+					else{
+						return opos + 1
+					}
 				}
 				if(close[otxt] !== txt){
 					return opos + 1
@@ -713,7 +722,7 @@ module.exports = require('views/editview').extend(function CodeView(proto, base)
 			}
 			pos += txt.length
 		}
-		return pos
+		return -1
 	}
 
 	proto.onFingerDown = function(f){

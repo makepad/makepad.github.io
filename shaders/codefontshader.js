@@ -159,6 +159,7 @@ module.exports = require('shaders/fontshader').extend(function(proto, base){
 				if(unicode === 10 || unicode ===13){
 					turtle.mh = 0
 					if(posx>turtle.x2) turtle.x2 = posx
+					// lets output indenting
 					posx = turtle.sx, posy += nh
 					turtle.wy += nh
 				}
