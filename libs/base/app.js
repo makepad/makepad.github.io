@@ -184,8 +184,12 @@ module.exports = require('base/view').extend(function App(proto, base){
 		keyboard.setCharacterAccentMenuPos(x,y)
 	}
 
-	proto.setKeyboardFocus = function(focus){
-		keyboard.setKeyboardFocus(focus)
+	proto.setWorkerKeyboardFocus = function(focus){
+		keyboard.setWorkerKeyboardFocus()
+	}
+
+	proto.setTextInputFocus = function(focus){
+		keyboard.setTextInputFocus(focus)
 	}
 
 	proto._onDestroy = function(){

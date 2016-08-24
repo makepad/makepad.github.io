@@ -48,10 +48,12 @@ module.exports = require('base/shader').extend(function RectShader(proto){
 		0, 1, 1,
 		1, 1, 1
 	)
+	proto.vertexPre = function(){}
 	proto.vertexStyle = function(){}
 	proto.pixelStyle = function(){}
 
 	proto.vertex = function(){$
+		this.vertexPre()
 		this.vertexStyle()
 
 		if (this.visible < 0.5) return vec4(0.0)

@@ -1,9 +1,5 @@
 module.exports = require('base/shader').extend(function Rect9Shader(proto){
 	
-	// cheap round border rectangle for backdrops in UI
-	// tries to make the compute per filled pixel minimal
-	// for GPUs that don't seem to take the fastpaths in rectshader
-
 	var types = require('base/types')
 	var painter = require('services/painter')
 
@@ -90,28 +86,30 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 
     proto.fieldSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, csize, csize, circleu8)
 
+    proto.vertexPre = function(){}
 	proto.vertexStyle = function(){}
 	proto.pixelStyle = function(){}
 
 	proto.vertex = function(){$
+		this.vertexPre()
 		this.vertexStyle()
 		this.borderRadius = max(1., this.borderRadius)
 		
 		if(this.mesh.x == 0.2){
-			this.mesh.x = this.borderRadius / this.w
+			this.mesh.x = clamp(this.borderRadius / this.w,0.,1.)
 		}
 		else if(this.mesh.x == 0.8){
-			this.mesh.x = 1. - this.borderRadius / this.w
+			this.mesh.x = clamp(1. - this.borderRadius / this.w,0.,1.)
 		}
 		if(this.mesh.y == 0.2){
-			this.mesh.y = this.borderRadius / this.h
+			this.mesh.y = clamp(this.borderRadius / this.h,0.,1.)
 		}
 		else if(this.mesh.y == 0.8){
-			this.mesh.y = 1. - this.borderRadius / this.h
+			this.mesh.y = clamp(1. - this.borderRadius / this.h,0.,1.)
 		}
 
 		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
-		var size = vec2(this.w, this.h)
+		var size = vec2(max(0.,this.w), max(0.,this.h))
 
 		this.mesh.xy = (clamp(
 			this.mesh.xy * size + shift, 
@@ -130,11 +128,12 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 	proto.pixel = function(){$
 		var antialias = this.borderRadius*4.*this.pixelRatio
 		var field = (.5-texture2D(this.fieldSampler, this.mesh.zw).x)
+		var fieldaa = field*antialias+1.
 		if(this.borderWidth < 0.1){
-			return vec4(this.color.rgb,1.0-clamp(field*antialias+1., 0., 1.))
+			return  mix(this.color,vec4(this.color.rgb,0.), clamp(fieldaa, 0., 1.))
 		}
-		var borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(field*antialias+1.,0.,1.))
-		return mix(this.color, borderfinal, clamp(field * antialias + 1. + this.borderWidth, 0., 1.))
+		var borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(fieldaa,0.,1.))
+		return mix(this.color, borderfinal, clamp(fieldaa + this.borderWidth, 0., 1.))
 	}
 
 	proto.toolMacros = {

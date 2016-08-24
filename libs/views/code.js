@@ -1070,7 +1070,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 					else this.wasFirstNewlineChange = false
 					this.wasNewlineChange = true
 					if(text.charAt(start-1) === '{' && text.charAt(end) === '\n' && text.charAt(end +1) ==='}') end++
-					else if(text.charAt(start-1) === ',' && text.charAt(start+1) === ','){
+					else if(text.charAt(start-1) === ',' && (text.charAt(start+1) === ','||text.charAt(start+1) !== '\n')){
 						start --
 						delta = -1
 					} 

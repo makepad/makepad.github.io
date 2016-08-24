@@ -51,13 +51,18 @@ keyboard.setCharacterAccentMenuPos = function(x, y){
 }
 
 
-keyboard.setKeyboardFocus = function(focus){
+keyboard.setWorkerKeyboardFocus = function(){
 	service.bus.postMessage({
-		fn:'setKeyboardFocus',
-		focus:focus
+		fn:'setWorkerKeyboardFocus'
 	})
 }
 
+keyboard.setTextInputFocus = function(focus){
+	service.bus.postMessage({
+		fn:'setTextInputFocus',
+		focus:focus
+	})
+}
 
 service.bus.onMessage = function(msg){
 	if(msg.code) msg.name = idToKeyName[msg.code] || 'unknown'

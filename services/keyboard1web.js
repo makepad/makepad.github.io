@@ -3,10 +3,101 @@ var canvas = service.canvas
 var services = service.others
 var ownerServices = service.ownerServices
 
-if(ownerServices && ownerServices.fingers1){
-	ownerServices.fingers1.addSubWorker(exports, service.workerId)
+bus.onMessage = function(msg){
+	if(!userMessage[msg.fn]) console.error('cant find '+msg.fn)
+	userMessage[msg.fn](msg)
+}
+
+var userMessage = {
+	setClipboardText:function(msg){
+		if(ownerKeyboard)return ownerKeyboard.userMessage.setClipboardText(msg)
+
+		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
+
+		// lets wait for a mouse up to set selection
+		if(hasTextInputFocus || !isTouchDevice){
+
+			lastStart = cliptext.selectionStart = msg.text.length?3:ignoreFirstIosClipboard?3:defaultStart
+			lastEnd = cliptext.selectionEnd = msg.text.length + 3
+			ignoreFirstIosClipboard = false
+		}
+		//cliptext.focus()
+	},
+	useSystemEditMenu:function(msg){
+		if(ownerKeyboard)return ownerKeyboard.userMessage.useSystemEditMenu(msg)
+
+		useSystemEditMenu = msg.capture
+		if(useSystemEditMenu && isIOSDevice && !arrowCursorPollInterval){
+			arrowCursorPollInterval = setInterval(arrowCursorPoll, 30)
+		}
+		else if(arrowCursorPollInterval){
+			clearInterval(arrowCursorPollInterval)
+			arrowCursorPollInterval = undefined
+		}
+	},
+	setCharacterAccentMenuPos:function(msg){
+		if(ownerKeyboard)return ownerKeyboard.userMessage.setCharacterAccentMenuPos(msg)
+
+		characterAccentMenuPos = msg
+	},
+	setWorkerKeyboardFocus:function(msg, workerId){
+		if(ownerKeyboard)return ownerKeyboard.userMessage.setWorkerKeyboardFocus(msg, service.workerId)
+		focussedWorkerId = workerId
+	},
+	setTextInputFocus:function(msg){
+		if(ownerKeyboard)return ownerKeyboard.userMessage.setTextInputFocus(msg)
+
+		hasTextInputFocus = msg.focus
+
+		if(msg.focus){
+			if(isTouchDevice){
+				cliptext.style.top = -15
+			}
+			cliptext.focus()
+		}
+		else{
+			if(isTouchDevice){
+				cliptext.style.top = 0
+			}
+			cliptext.blur()
+		}
+	}
+}
+
+exports.userMessage = userMessage
+
+var subWorkers = {}
+var focussedWorkerId = 0
+var ownerKeyboard = ownerServices && ownerServices.keyboard1
+
+exports.addSubWorker = function(worker, bus, workerId){
+	if(ownerKeyboard){
+		ownerKeyboard.addSubWorker(worker, bus, workerId)
+		return
+	}
+	subWorkers[workerId] = {
+		worker:worker,
+		bus:bus
+	}
+}
+
+if(ownerKeyboard){
+	ownerKeyboard.addSubWorker(exports, bus, service.workerId)
 	return
 }
+
+function postAllEvent(msg){
+	bus.postMessage(msg)
+}
+
+function postKeyEvent(msg){
+	if(focussedWorkerId){
+		return subWorkers[focussedWorkerId].bus.postMessage(msg)
+	}
+	bus.postMessage(msg)
+}
+
+
 //
 //
 // Device specialisation variables
@@ -30,64 +121,14 @@ var androidBackspace = '\n\u00A0\u00B7\n'
 //
 //
 
-bus.onMessage = function(msg){
-	if(!userMessage[msg.fn]) console.error('cant find '+msg.fn)
-	userMessage[msg.fn](msg)
-}
-
 // service state
 var lastClipboard = ''
 var lastEnd = 0, lastStart = 0
 var useSystemEditMenu = false
 var characterAccentMenuPos
 var arrowCursorPollInterval
-var hasKeyboardFocus
+var hasTextInputFocus
 var ignoreFirstIosClipboard
-
-var userMessage = {
-	setClipboardText:function(msg){
-		lastClipboard = cliptext.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
-
-		// lets wait for a mouse up to set selection
-		if(hasKeyboardFocus || !isTouchDevice){
-
-			lastStart = cliptext.selectionStart = msg.text.length?3:ignoreFirstIosClipboard?3:defaultStart
-			lastEnd = cliptext.selectionEnd = msg.text.length + 3
-			ignoreFirstIosClipboard = false
-		}
-		//cliptext.focus()
-	},
-	useSystemEditMenu:function(msg){
-		useSystemEditMenu = msg.capture
-		if(useSystemEditMenu && isIOSDevice && !arrowCursorPollInterval){
-			arrowCursorPollInterval = setInterval(arrowCursorPoll, 30)
-		}
-		else if(arrowCursorPollInterval){
-			clearInterval(arrowCursorPollInterval)
-			arrowCursorPollInterval = undefined
-		}
-	},
-	setCharacterAccentMenuPos:function(msg){
-		characterAccentMenuPos = msg
-	},
-	setKeyboardFocus:function(msg){
-		hasKeyboardFocus = msg.focus
-
-		if(msg.focus){
-			if(isTouchDevice){
-				cliptext.style.top = -15
-			}
-			cliptext.focus()
-		}
-		else{
-			if(isTouchDevice){
-				cliptext.style.top = 0
-			}
-			cliptext.blur()
-		}
-	}
-
-}
 
 // finalize the selection (selection is lazy sometimes)
 function finalizeSelection(){
@@ -102,14 +143,14 @@ var lastIdlePoll = Date.now()
 setInterval(function(){
 	var now = Date.now()	
 	if(now - lastIdlePoll > 500 ){
-		bus.postMessage({
+		postAllEvent({
 			fn:'onIdleResume'
 		})
 		// fix ios bug
-		if(hasKeyboardFocus || isIOSDevice) services.painter.resizeCanvas()
-		if(hasKeyboardFocus){
-			hasKeyboardFocus = false
-			bus.postMessage({
+		if(hasTextInputFocus || isIOSDevice) services.painter.resizeCanvas()
+		if(hasTextInputFocus){
+			hasTextInputFocus = false
+			postAllEvent({
 				fn:'onKeyboardClose'
 			})
 		}
@@ -145,12 +186,12 @@ function arrowCursorPoll(){
 
 		if(key == 0) return
 
-		bus.postMessage({
+		postKeyEvent({
 			fn:'onKeyDown',
 			repeat: 1,
 			code: key
 		})
-		bus.postMessage({
+		postKeyEvent({
 			fn:'onKeyUp',
 			repeat: 1,
 			code: key
@@ -255,18 +296,18 @@ window.addEventListener('orientationchange', function(e){
 	if(isTouchDevice){
 		cliptext.style.top = 0
 	}
-	if(hasKeyboardFocus){
-		bus.postMessage({
+	if(hasTextInputFocus){
+		postAllEvent({
 			fn:'onKeyboardClose'
 		})
-		hasKeyboardFocus = false
+		hasTextInputFocus = false
 	}
 	if(isIOSDevice){
 		document.body.scrollLeft = 0
 		document.body.scrollTop = 0
 		services.painter.resizeCanvas()
 	}
-	bus.postMessage({
+	postAllEvent({
 		fn:'onOrientationChange'
 	})
 })
@@ -274,19 +315,19 @@ window.addEventListener('orientationchange', function(e){
 exports.onWindowResize = function(){
 	if(isTouchDevice){
 		if(window.innerHeight < defaultHeight){
-			hasKeyboardFocus = true
-			bus.postMessage({
+			hasTextInputFocus = true
+			postAllEvent({
 				fn:'onKeyboardOpen'
 			})
 		}
 		else{
 			cliptext.blur()
-			hasKeyboardFocus = false
+			hasTextInputFocus = false
 			if(isTouchDevice){
 				cliptext.style.top = 0
 				//cliptext.style.visibility = 'hidden'
 			}			
-			bus.postMessage({
+			postAllEvent({
 				fn:'onKeyboardClose'
 			})
 		}
@@ -296,10 +337,10 @@ exports.onWindowResize = function(){
 if(isIOSDevice){
 	document.addEventListener('focusout', function(e) {
 		cliptext.blur()
-		hasKeyboardFocus = false
+		hasTextInputFocus = false
 		cliptext.style.top = 0
 		services.painter.resizeCanvas()
-		bus.postMessage({
+		postAllEvent({
 			fn:'onKeyboardClose'
 		})
 	})
@@ -358,7 +399,7 @@ function onKeyDown(e){
 		cliptext.style.top = y
 	}
 	//cliptext.focus()
-	bus.postMessage({
+	postKeyEvent({
 		fn:'onKeyDown',
 		repeat: e.repeat,
 		code:code,
@@ -380,7 +421,7 @@ function onKeyUp(e){
 	// do the selection
 	finalizeSelection()
 
-	bus.postMessage({
+	postKeyEvent({
 		fn:'onKeyUp',
 		repeat: e.repeat,
 		code:code,
@@ -395,13 +436,13 @@ function onCut(e){
 	lastClipboard = ''
 	if(keyboardCut) return keyboardCut = false
 	//if(cliptext.value.length<5)return
-	bus.postMessage({
+	postKeyEvent({
 		fn:'onKeyDown',
 		meta: true,
 		repeat: 1,
 		code: 88
 	})
-	bus.postMessage({
+	postKeyEvent({
 		fn:'onKeyUp',
 		meta: true,
 		repeat: 1,
@@ -410,7 +451,7 @@ function onCut(e){
 }
 
 function onPaste(e){
-	bus.postMessage({
+	postKeyEvent({
 		fn:'onKeyPaste',
 		text: e.clipboardData.getData('text/plain')
 	})
@@ -421,13 +462,13 @@ function onSelect(e){
 	//console.log('selectall?', keyboardSelectAll, mouseIsDown)
 	if(keyboardSelectAll) return keyboardSelectAll = false
 	if(cliptext.selectionStart === 0 && cliptext.selectionEnd === cliptext.value.length){
-		bus.postMessage({
+		postKeyEvent({
 			fn:'onKeyDown',
 			meta: true,
 			repeat: 1,
 			code: 65
 		})
-		bus.postMessage({
+		postKeyEvent({
 			fn:'onKeyUp',
 			meta: true,
 			repeat: 1,
@@ -448,12 +489,12 @@ function onInput(){
 		cliptext.selectionEnd = defaultEnd
 		if(keyDownTriggered){
 			keyDownTriggered = false
-			bus.postMessage({
+			postKeyEvent({
 				fn:'onKeyDown',
 				repeat: 1,
 				code: 8
 			})
-			bus.postMessage({
+			postKeyEvent({
 				fn:'onKeyUp',
 				repeat: 1,
 				code: 8
@@ -469,7 +510,7 @@ function onInput(){
 		lastEnd = cliptext.selectionEnd = defaultEnd
 		// special character accent popup 
 		if(defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
-			bus.postMessage({
+			postKeyEvent({
 				fn:'onKeyPress',
 				char:value.charCodeAt(2),
 				special:1,
@@ -493,7 +534,7 @@ function onInput(){
 				msg.groupLen = len
 			}
 			// ignore newlines and magicClip values
-			if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) bus.postMessage(msg)
+			if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) postKeyEvent(msg)
 		}
 	}
 }
@@ -568,7 +609,7 @@ exports.onTouchEnd = function(x, y, tapCount){
 	}
 
 	ignoreCursorPoll = false
-	if(isIOSDevice && tapCount === 1 && !hasKeyboardFocus){
+	if(isIOSDevice && tapCount === 1 && !hasTextInputFocus){
 		ignoreFirstIosClipboard = true
 		keyboardAnimPlaying = true
 		cliptext.focus()
@@ -579,8 +620,8 @@ exports.onTouchEnd = function(x, y, tapCount){
 				clearInterval(itvpoll)
 				// lets clear the canvas
 				services.painter.resizeCanvas(st - 15)
-				hasKeyboardFocus = true
-				bus.postMessage({
+				hasTextInputFocus = true
+				postAllEvent({
 					fn:'onKeyboardOpen'
 				})
 
@@ -590,5 +631,5 @@ exports.onTouchEnd = function(x, y, tapCount){
 		},16)
 	}
 	// lets make the selection now
-	if(hasKeyboardFocus) finalizeSelection()
+	if(hasTextInputFocus) finalizeSelection()
 }

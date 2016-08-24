@@ -401,6 +401,7 @@ module.exports = require('base/class').extend(function View(proto){
 
 	proto.setFocus = function(){
 		var old = this.app.$focusView
+		this.app.setWorkerKeyboardFocus()
 		if(old !== this){
 			this.app.$focusView = this
 			old.hasFocus = false

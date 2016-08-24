@@ -247,6 +247,7 @@ module.exports = require('base/class').extend(function Shader(proto){
 						tweenrep += 'floor('+p3+'/4096.0)'
 						tweenrep += ',mod('+p3+',4096.0)'
 						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
+						else if(pack === 'int12') tweenrep += '),T)-2048.0;\n'
 						else tweenrep += '),T);\n'
 					}
 				}
@@ -261,6 +262,7 @@ module.exports = require('base/class').extend(function Shader(proto){
 						vpre += ',floor('+p2+'/4096.0)' 
 						vpre += ',mod('+p2+',4096.0)' 
 						if(pack === 'float12') vpre += ')/4095.0;\n'
+						else if(pack === 'int12') vpre += ')-2048.0;\n'
 						else vpre += ');\n'
 					}
 					else{
@@ -282,6 +284,7 @@ module.exports = require('base/class').extend(function Shader(proto){
 						tweenrep += ',floor('+p4+'/4096.0)'
 						tweenrep += ',mod('+p4+',4096.0)'
 						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
+						else if(pack === 'int12') tweenrep += '),T)-2048.0;\n'
 						else tweenrep += '),T);\n'
 					}
 				}
@@ -962,8 +965,8 @@ module.exports = require('base/class').extend(function Shader(proto){
 			var propsource = '$turtle._' + prop.name
 
 			if(prop.name === 'tweenStart'){
-				if(macroargs[0].delay) propsource = '($view._time +'+macroargs[0].delay+')'
-				else propsource = '($view._time + $turtle._delay)'
+				if(macroargs[0].delay) propsource = '($tweenStart !== 0?$view._time +'+macroargs[0].delay+':-Infinity)'
+				else propsource = '($tweenStart !== 0?$view._time + $turtle._delay:-Infinity)'
 			}
 			if(typeof macroargs[0] === 'object'){
 				var marg = macroargs[0][prop.name]
@@ -1000,14 +1003,14 @@ module.exports = require('base/class').extend(function Shader(proto){
 					}
 					else{ // int packing
 						if(fastWrite || prop.config.noCast){
-							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
+							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]+2048<<12) + (_'+prop.name+'[3]+2048|0)\n'
 						}
 						else{
 							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]<<12) + (_'+prop.name+'[3]|0)\n'
-							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0])<<12) + ((_'+prop.name+'[0])|0)\n'
+							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]+2048<<12) + (_'+prop.name+'[3]+2048|0)\n'
+							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]+2048)<<12) + ((_'+prop.name+'[0]+2048)|0)\n'
 							propcode += indent + '}\n'
-							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'+2048)<<12) + ((_'+prop.name+'+2048)|0)\n'
 						}
 					}
 				}
@@ -1045,13 +1048,13 @@ module.exports = require('base/class').extend(function Shader(proto){
 					}
 					else{ // int packing
 						if(fastWrite || prop.config.noCast){
-							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
+							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0)\n'
 						}
 						else{
 							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]<<12) + (_'+prop.name+'[1]|0)\n'
+							propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0)\n'
 							propcode += indent + '}\n'
-							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')<<12) + ((_'+prop.name+')|0)\n'
+							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')+2048<<12) + ((_'+prop.name+')+2048|0)\n'
 						}
 					}
 				}
@@ -1099,7 +1102,8 @@ module.exports = require('base/class').extend(function Shader(proto){
 			else{
 				code += indent + '	var $duration = $proto.duration\n'
 			}			
-			code += indent + '	if(!$proto.noInterrupt && $view._time < $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] +  $duration){\n'
+			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + '	if(!$proto.noInterrupt && $view._time < $tweenStart +  $duration){\n'
 			code += indent + '	var $ease = $proto.ease\n'
 			code += indent + '	var $time = $proto.tweenTime($proto.tween'
 			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/ $duration))'
@@ -1112,7 +1116,7 @@ module.exports = require('base/class').extend(function Shader(proto){
 			code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
 			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
 			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
-			code += indent +'	if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+			code += indent +'	if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 			code += indent + '	if($view._time < $tweenStart + $duration){\n'
 			code += indent + '		var $time = $proto.tweenTime($tween'
 			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
@@ -1141,9 +1145,9 @@ module.exports = require('base/class').extend(function Shader(proto){
 		code += propcode
 
 		if(!instanceProps.this_DOT_tween){
-			code += indent + 'var $timeMax = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'] + '
+			code += indent + 'var $timeMax = $tweenStart + '
 			code += (instanceProps.this_DOT_duration?'$a[$o + ' + instanceProps.this_DOT_duration.offset +']':'$proto.duration')+'\n'
-			code += indent + 'if($timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
+			code += indent + 'if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 		}
 
 		return code

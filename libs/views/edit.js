@@ -1031,7 +1031,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){
 			var cursor = this.cs.clearCursors()
 			cursor.moveTo(f.x, f.y+touchdy, false)
-			this.app.setKeyboardFocus(true)
+			this.app.setTextInputFocus(true)
 		}
 		//this.redraw()
 	}

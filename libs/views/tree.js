@@ -9,18 +9,38 @@ module.exports = require('base/view').extend({
 		]
 	},
 	padding:[2,0,0,2],
-
+	normalCursor:{
+	},
+	selectedCursor:{
+		color:'#7'
+	},
+	hoverCursor:{
+		color:'#5'
+	},
 	tools:{
 		Background:require('tools/background').extend({
 			color:'#2',
 			wrap:false,
 		}),
-		Selection:require('tools/rect').extend({
-
+		Cursor:require('tools/hover').extend({
+			color:'#0000',
+			wrap:false,
+			selectedColor:'#779',
+			hoverColor:'#4',
+			borderRadius:5,
+			pickAlpha:-1,
+			tween:2,
+			duration:0.2,
+			displace:[0,-1],
+			ease:[0,10,0,0],
+			w:'100%-2',
+			padding:[0,0,0,2]
 		}),
 		Text:require('tools/font').extend({
 			font:require('fonts/ubuntu_monospace_256.font'),
 			tween:2,
+			shadowOffset:[1,1],
+			shadowBlur:1,
 			duration:0.2,
 			ease:[0,10,0,0],
 			color:'white'
@@ -28,17 +48,20 @@ module.exports = require('base/view').extend({
 		Icon:require('tools/icon').extend({
 			tween:2,
 			duration:0.2,
+			shadowOffset:[1,1],
+			shadowBlur:1,
 			ease:[0,10,0,0],
 			color:'#a',
 			margin:[0,4,0,0]
 		}),
-		Quad:require('tools/quad').extend({
+		Quad:require('tools/shadowquad').extend({
 			tween:2,
 			pickAlpha:-1,
 			duration:0.2,
 			ease:[0,10,0,0],
 			w:11,
 			h:16,
+			shadowOffset:[1,1],
 			isLast:0,
 			isFirst:0,
 			isFolder:0,
@@ -81,22 +104,31 @@ module.exports = require('base/view').extend({
 					var E=this.boxField(p,4.5,cen-4.,1.,6.,1.)
 					f=this.subtractField(E+this.isOpen,f)
 				}
-				
-				return this.colorSolidField(aa,f,this.lineColor)
+				var col=this.lineColor
+				if(this.mesh.z<.5)col=this.shadowColor
+				return this.colorSolidField(aa,f,col)
 			}
 		})
 	},
 	fontSize:11,
 	onFingerDown:function(e){
-		var node = this.pickMap[e.pickId]
-		if(node && node.folder){
-			node.folder.closed=!node.folder.closed
+		var node=this.pickMap[e.pickId]
+		if(node&&node.folder){
+			node.closed=!node.closed
 			this.redraw()
 		}
 		// lets select something
-		
+		if(this.selected!==node){
+			this.selected=node
+			this.redraw()
+		}
+	},
+	onKeyDown:function(e){
+		console.log(e)
 	},
 	onDraw:function(){
+		//alright so how are we going to select things
+		
 		this.beginBackground(this.viewGeom)
 		this.pickMap={}
 		this.pickId=1
@@ -105,24 +137,28 @@ module.exports = require('base/view').extend({
 			for(var i=0,len=nodes.length-1;i<=len;i++){
 				var node=nodes[i]
 				var pickId=this.pickId++
-				this.pickMap[pickId]={node:node}
+				this.pickMap[pickId]=node
+				this.setPickId(pickId)
+				this.beginCursor({
+					selected:this.selected===node
+				})
 				for(var j=0,dl=depth.length-1;j<=dl;j++){
 					var isFolder=j==dl&&node.folder&&node.folder.length?1:0
 					var pid=pickId
-					if(isFolder)this.pickMap[pid=this.pickId++]={folder:node}
+					if(isFolder)this.pickMap[pid=this.pickId++]=node
 					this.setPickId(pid)
 					this.drawQuad({
 						isFiller:j==dl?0:depth[j+1],
-						isLast:j==dl&&i===len?1:0,
+						isLast:j==dl&&i===len,
 						isFolder:isFolder,
-						isSide:j<dl?1:0,
-						isOpen:node.closed?0:1,
+						isSide:j<dl,
+						isOpen:!node.closed,
 						h:closed?0:this.fontSize+6
 					})
 					if(isFolder){// add the first line from a folder
 						var x=this.turtle.wx// make sure the turtle doesnt move
 						this.drawQuad({
-							isFiller:node.closed?1:0,
+							isFiller:node.closed,
 							isFirst:1,
 							isSide:1,
 							h:closed?0:this.fontSize+6
@@ -139,14 +175,15 @@ module.exports = require('base/view').extend({
 							this.lookupIcon.fileO
 					})
 				}
-				else this.turtle.wx += 2
+				else this.turtle.wx+=2
 				this.drawText({
 					fontSize:closed?0:this.fontSize,
 					text:node.name
 				})
+				this.endCursor()
 				this.turtle.lineBreak()
 				if(node.folder){
-					depth.push(i==len?1:0)
+					depth.push(i==len)
 					
 					drawText(node.folder,depth,closed||node.closed)
 					depth.pop()
@@ -154,7 +191,7 @@ module.exports = require('base/view').extend({
 				
 			}
 		}.bind(this)
-		if(this.data && this.data.folder) drawText(this.data.folder,[0],false)
+		if(this.data&&this.data.folder)drawText(this.data.folder,[0],false)
 		this.endBackground()
 	}
 })

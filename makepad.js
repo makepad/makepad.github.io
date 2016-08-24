@@ -52,7 +52,7 @@ module.exports = require('base/app').extend(function(proto){
 		return [
 			Tree({
 				data:[],
-				w:'0%',
+				w:'12%',
 				h:'100%'
 			}),
 			Code({
@@ -70,11 +70,11 @@ module.exports = require('base/app').extend(function(proto){
 					color:'white',
 					font:require('fonts/ubuntu_monospace_256.font'),
 				},
-				w:'50%',
+				w:'43%',
 				h:'100%'
 			}),
 			User({
-				w:'50%',
+				w:'45%',
 				h:'100%'
 			})
 			
