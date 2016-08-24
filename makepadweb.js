@@ -18,7 +18,7 @@
 			WorkerClass = canvas.getAttribute("noworker")?FakeWorker:Worker
 			// boot it up!
 			runWorker(mainUrl, canvas, undefined, undefined, {
-				storage:{
+				storage1:{
 					search:location.search
 				}
 			})
@@ -61,7 +61,7 @@
 			var userArgs = {}
 
 			initKernelServices(handle.resources.services, handle.kernelBusses, handle.kernelServices, handle.canvas, handle.worker, userArgs, handle.owner, workerArgs)
-			
+
 			handle.worker.postMessage({
 				$:'initworker', 
 				msg:{
@@ -368,8 +368,8 @@
 
 	function buildURL(rootUrl, parenturl, path){
 
-		if(path.indexOf('services/') == 0){
-			path = path+'web.js'
+		if(path.indexOf('$services/') == 0){
+			return rootUrl + '/services/' + path.slice(10) + 'web.js'
 		}
 		var sidx = path.lastIndexOf('/')
 		var didx = path.lastIndexOf('.') 
@@ -388,7 +388,9 @@
 				return parenturl.slice(0,parenturl.lastIndexOf('/')) + path.slice(1)
 			}
 		}
-		else if(path.indexOf('/') === -1) path = 'root/'+path
+		else {
+			path = 'libs/' + path
+		}
 		//else if(path.indexOf('services/') !== 0){
 		//	path = 'home/' + path
 		//}
@@ -397,9 +399,9 @@
 
 	function createRequire(rootUrl, moduleurl, modules, binarylut, worker, userbusses, userArgs){
 		function require(path, args){
-			if(path.indexOf('services/') === 0){
+			if(path.indexOf('$services/') === 0){
 				//!TODO lock down this require to root/ modules
-				var serviceName = path.slice(9)
+				var serviceName = path.slice(10)
 				// return a user service interface
 				var service = {
 					args:userArgs[serviceName],
@@ -559,8 +561,7 @@
 				var suburl = buildURL(rootUrl, resourceurl, path)
 		
 				var deptype = 'code'
-
-				if(path.indexOf('services/') === 0) deptype = 'service'
+				if(path.indexOf('$services/') === 0) deptype = 'service'
 				var ext = suburl.slice(suburl.lastIndexOf('.')).toLowerCase()
 				if(ext !== '.js') deptype = 'binary'
 

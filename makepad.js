@@ -1,15 +1,17 @@
-// the makepad App
-module.exports = require('app').extend(function(proto){
-	var storage = require('storage')
+module.exports = require('base/app').extend(function(proto){
 
-	var editFile = storage.search?storage.search.slice(1):"storage/livecode2.js"
+	var storage = require('services/storage')
+	var Worker = require('services/worker')
+	var Code = require('views/code')
+	var Tree = require('views/tree')
 
-	var Worker = require('worker')
-	var CodeView = require('views/codeview')
+	var projectFile = "./makepad.json"
+	var currentFile = "./examples/windtree.js"
+	// which file to load
+	if(storage.search) currentFile = storage.search.slice(1)
 
-	//var Splitter = require('views/splitter')
-	var UserCode = require('views/drawview').extend({
-		name:'UserCode',
+	var User = require('views/draw').extend({
+		name:'User',
 		surface:true,
 		Background:{
 			color:'#333'
@@ -20,16 +22,24 @@ module.exports = require('app').extend(function(proto){
 	})
 
 	proto.onInit = function(){
-		storage.loadText(editFile).then(function(text){
-			this.find('CodeView').text = text
+		storage.loadText(projectFile).then(function(text){
+			var proj = JSON.parse(text)
+			//console.log(JSON.stringify(proj, true, 2))
+			this.find('Tree').data = proj
+			//this.find('CodeView').text = text
 		}.bind(this))
+
+		storage.loadText(currentFile).then(function(text){
+			this.find('Code').text = text
+		}.bind(this))
+		
 	}
 
 	proto.runUserApp = function(source){
-		var userview = this.find('UserCode')
+		var user = this.find('User')
 		var args = {
-			painter:{
-				fbId: userview.$renderPasses.surface.framebuffer.fbId
+			painter1:{
+				fbId: user.$renderPasses.surface.framebuffer.fbId
 			}
 		}
 		if(!this.userApp){
@@ -40,13 +50,18 @@ module.exports = require('app').extend(function(proto){
 
 	proto.onCompose = function(){
 		return [
-			CodeView({
+			Tree({
+				data:[],
+				w:'0%',
+				h:'100%'
+			}),
+			Code({
 				onKeyS:function(e){
 					if(!e.meta && !e.ctrl) return true
 					// lets save it
 					this.serializeWithFormatting()
 
-					storage.saveText(editFile, this.serializeWithFormatting())
+					storage.saveText(currentFile, this.serializeWithFormatting())
 				},
 				onParsed:function(){
 					this.app.runUserApp(this.text)
@@ -58,7 +73,7 @@ module.exports = require('app').extend(function(proto){
 				w:'50%',
 				h:'100%'
 			}),
-			UserCode({
+			User({
 				w:'50%',
 				h:'100%'
 			})
