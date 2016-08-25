@@ -2,11 +2,11 @@
 module.exports = require('base/app').extend(function DrawApp(proto){
 
 	proto.tools = {
-		Background:require('tools/background'),
+		Bg:require('tools/bg'),
 		Rect:require('tools/rect'),
 		Quad:require('tools/quad'),
 		Line:require('tools/line'),
-		Text:require('tools/font').extend({
+		Text:require('tools/text').extend({
 			font:require('fonts/ubuntu_medium_256.font')
 		})
 	}

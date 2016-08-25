@@ -136,6 +136,7 @@ module.exports = require('base/class').extend(function Shader(proto){
 	}
 
 	proto.colorBorderField = function(antialias, field, borderWidth, fill, border){
+		if(borderWidth<0.001) return mix(fill, vec4(fill.rgb,0.), clamp(field * antialias + 1., 0., 1.))
 		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1.,0.,1.))
 		return mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.))
 	}

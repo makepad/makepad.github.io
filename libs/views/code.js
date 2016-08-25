@@ -15,13 +15,16 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
-	proto.allowOperatorSpaces = 1
+	proto.allowOperatorSpaces = 0
 
 	proto.padding = [0,0,0,4]
 
+	proto.$fastTextFontSize = 12
+
 	proto.tools = {
 
-		Text:require('tools/codefont').extend({
+		Text:require('tools/codetext').extend({
+			font:require('fonts/ubuntu_monospace_256.font'),
 			tween:2.,
 			ease:[0, 10, 1.0, 1.0],
 			duration:0.3,
@@ -101,7 +104,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				this.borderColor = this.bgColor*1.4
 			}
 		}),
-		ErrorText:require('tools/font').extend({
+		ErrorText:require('tools/text').extend({
 			font:require('fonts/ubuntu_medium_256.font'),
 			color:'#cbb',
 			boldness: -.5,
@@ -467,8 +470,6 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		WithStatement:{}
 	}
 
-	proto.$fastTextFontSize = 12
-
 	// abuse a flag as a listener so we keep onText clean without having to use
 	// on('text') API
 	proto._onText = 8
@@ -492,7 +493,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 
 	proto.onDraw = function(){
 
-		this.beginBackground(this.viewGeom)
+		this.beginBg(this.viewGeom)
 		// ok lets parse the code
 		if(this.textClean){
 			this.reuseDrawSize()
@@ -688,11 +689,11 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 					w:2,
 					h:t.h
 				})
-				this.showLastCursor()
+				//this.showLastCursor()
 			}
 		}
 		
-		this.endBackground()
+		this.endBg()
 	}
 
 	proto.indentFindParenError = function(){
@@ -966,17 +967,18 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var prev = this._text.charAt(offset-1)
 
 		if(!isUndo){
-			if(text === "'" && char ==="'") return
-			if(text === '"' && char ==='"') return
-			if(text === '}' && char ==='}') return
-			if(text === ']' && char ===']') return
-			if(text === ')' && char ===')') return
+			if(text === "'" && char ==="'" ) return 0
+			if(text === '"' && char ==='"') return 0
+			if(text === '}' && char ==='}') return 0
+			if(text === ']' && char ===']') return 0
+			if(text === ')' && char ===')') return 0
 			if(text === '\n' && prev ==='{'&& char ==='}') text = '\n\n'
 			if(text === '{' && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char!=='}')) text = '{}'
 			if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
 			if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
-			if(text === '"' && (!this.error || char !== '"')) text = '""'
-			if(text === "'" && (!this.error || char !== "'")) text = "''"
+
+			if(text === '"' && (!this.error || char !== '"') && prev !=='"') text = '""'
+			if(text === "'" && (!this.error || char !== "'") && prev !=="'") text = "''"
 		}
 
 		this.$fastTextDelta += text.length
@@ -1028,6 +1030,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			}
 		}
 		this.redraw()
+		return text.length
 	}
 
 	proto.serializeWithFormatting = function(){

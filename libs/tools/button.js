@@ -1,18 +1,21 @@
 module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 
 	proto.props = {
-		text:'Button'
+		text:'Button',
+		icon:''
 	}
 
 	proto.inPlace = 1
 	
 	proto.tools = {
-		Bg: require('shaders/rectshader').extend({
+		Bg: require('tools/rect').extend({
 			color:'gray',
 			padding:[10,10,10,10]
 		}),
-		Text: require('shaders/fontshader').extend({
+		Text: require('tools/text').extend({
 			font:require('fonts/ubuntu_monospace_256.font')
+		}),
+		Icon: require('tools/icon').extend({
 		})
 	}
 
@@ -20,24 +23,40 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		default:{
 			Bg:{color:'gray'}
 		},
-		click:{
+		clicked:{
 			Bg:{color:'red'}
 		}
 	}
 
 	proto.onFingerDown = function(){
-		this.state = this.states.click
+		this.state = this.states.clicked
 	}
 
-	proto.onFingerUp = function(){
+	proto.onFingerUp = function(e){
+		this.state = this.states.default
+		if(e.samePick && this.onClick) this.onClick(e)
+	}
+
+	proto.onFingerOver = function(){
+		this.state = this.states.over
+	}
+
+	proto.onFingerOut = function(){
 		this.state = this.states.default
 	}
 
 	proto.onDraw = function(){
 		this.beginBg(this)
-		this.drawText({
-			text:this.text
-		})
+		if(this.icon){
+			this.drawIcon({
+				text:this.lookupIcon[this.icon]
+			})
+		}
+		if(this.text){
+			this.drawText({
+				text:this.text
+			})
+		}
 		this.endBg()
 	}
 

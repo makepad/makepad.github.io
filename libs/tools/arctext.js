@@ -1,4 +1,4 @@
-module.exports = require('base/shader').extend(function(proto, base){
+module.exports = require('tools/text').extend(function(proto, base){
 
 	var types = require('base/types')
 	var painter = require('services/painter')

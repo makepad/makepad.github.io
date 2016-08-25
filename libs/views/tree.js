@@ -9,24 +9,16 @@ module.exports = require('base/view').extend({
 		]
 	},
 	padding:[2,0,0,2],
-	normalCursor:{
-	},
-	selectedCursor:{
-		color:'#7'
-	},
-	hoverCursor:{
-		color:'#5'
-	},
 	tools:{
-		Background:require('tools/background').extend({
-			color:'#2',
+		Background:require('tools/quad').extend({
+			color:'#6',
 			wrap:false,
 		}),
 		Cursor:require('tools/hover').extend({
 			color:'#0000',
 			wrap:false,
 			selectedColor:'#779',
-			hoverColor:'#4',
+			hoverColor:'#5',
 			borderRadius:5,
 			pickAlpha:-1,
 			tween:2,
@@ -36,10 +28,11 @@ module.exports = require('base/view').extend({
 			w:'100%-2',
 			padding:[0,0,0,2]
 		}),
-		Text:require('tools/font').extend({
+		Text:require('tools/text').extend({
 			font:require('fonts/ubuntu_monospace_256.font'),
 			tween:2,
 			shadowOffset:[1,1],
+			shadowColor:'#0005',
 			shadowBlur:1,
 			duration:0.2,
 			ease:[0,10,0,0],
@@ -49,6 +42,7 @@ module.exports = require('base/view').extend({
 			tween:2,
 			duration:0.2,
 			shadowOffset:[1,1],
+			shadowColor:'#0005',
 			shadowBlur:1,
 			ease:[0,10,0,0],
 			color:'#a',
@@ -62,6 +56,7 @@ module.exports = require('base/view').extend({
 			w:11,
 			h:16,
 			shadowOffset:[1,1],
+			shadowColor:'#0005',
 			isLast:0,
 			isFirst:0,
 			isFolder:0,
@@ -111,20 +106,69 @@ module.exports = require('base/view').extend({
 		})
 	},
 	fontSize:11,
+	computePath:function(find){
+		function walker(nodes){
+			for(var i=0;i<nodes.length;i++){
+				var node=nodes[i]
+				if(node === find) return [node]
+				if(node.folder&&!node.closed){
+					var path = walker(node.folder)
+					if(path){
+						path.unshift(node)
+						return path
+					}
+				}
+			}
+		}
+		return walker(this.data.folder, find)
+	},
 	onFingerDown:function(e){
+		this.setFocus()
 		var node=this.pickMap[e.pickId]
 		if(node&&node.folder){
 			node.closed=!node.closed
 			this.redraw()
 		}
+	
 		// lets select something
+		if((this.selected!==node || e.tapCount > 0) && node && !node.folder && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node))
+
 		if(this.selected!==node){
 			this.selected=node
 			this.redraw()
 		}
+
 	},
 	onKeyDown:function(e){
-		console.log(e)
+		var list=[]
+		function flattenTree(nodes){
+			for(var i=0;i<nodes.length;i++){
+				var node=nodes[i]
+				list.push(nodes[i])
+				if(node.folder&&!node.closed){
+					flattenTree(node.folder)
+				}
+			}
+		}
+		flattenTree(this.data.folder)
+		var sel=this.selected
+		
+		// lets find the next or prev treenode
+		if(e.name==='downArrow'){
+			var idx=list.indexOf(sel)+1
+			this.selected=list[idx]||list[list.length-1]
+		}
+		else if(e.name==='upArrow'){
+			var idx=list.indexOf(sel)-1
+			this.selected=list[idx]||list[0]
+		}
+		else if(e.name==='rightArrow'){
+			if(sel&&sel.folder)sel.closed=false
+		}
+		else if(e.name==='leftArrow'){
+			if(sel&&sel.folder)sel.closed=true
+		}
+		this.redraw()
 	},
 	onDraw:function(){
 		//alright so how are we going to select things
@@ -136,17 +180,16 @@ module.exports = require('base/view').extend({
 		var drawText=function(nodes,depth,closed){
 			for(var i=0,len=nodes.length-1;i<=len;i++){
 				var node=nodes[i]
-				var pickId=this.pickId++
-				this.pickMap[pickId]=node
-				this.setPickId(pickId)
+				this.pickMap[this.addPickId()]=node
+
 				this.beginCursor({
 					selected:this.selected===node
 				})
 				for(var j=0,dl=depth.length-1;j<=dl;j++){
 					var isFolder=j==dl&&node.folder&&node.folder.length?1:0
-					var pid=pickId
-					if(isFolder)this.pickMap[pid=this.pickId++]=node
-					this.setPickId(pid)
+					//var pid=pickId
+					//if(isFolder)this.pickMap[pid=this.pickId++]=node
+					//this.setPickId(pid)
 					this.drawQuad({
 						isFiller:j==dl?0:depth[j+1],
 						isLast:j==dl&&i===len,
@@ -166,7 +209,7 @@ module.exports = require('base/view').extend({
 						this.turtle.wx=x
 					}
 				}
-				this.setPickId(pickId)
+				//this.setPickId(pickId)
 				if(node.folder){
 					this.drawIcon({
 						fontSize:closed?0:this.fontSize+1,

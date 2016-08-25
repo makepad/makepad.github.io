@@ -1,4 +1,4 @@
-module.exports = require('tools/background').extend(function Hover(proto){
+module.exports = require('tools/bg').extend(function Hover(proto){
 
 	proto.props = {
 		selected: {noTween:1, value:0},

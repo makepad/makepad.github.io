@@ -136,7 +136,7 @@ function onFingerDown(fingers){
 		var dt = Date.now()
 
 		// post it twice, first is the immediate message
-		f.fn = 'onImmediateFingerDown'
+		f.fn = 'onFingerDownNow'
 		postMessage(f)
 
 		services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
@@ -227,7 +227,7 @@ function onFingerUp(fingers){
 
 		f.sx = oldf.sx
 		f.sy = oldf.sy
-		f.fn = 'onFingerUp'
+		f.fn = 'onFingerUpNow'
 		f.digit = oldf.digit
 		f.pickId = oldf.pickId
 		f.todoId = oldf.todoId
@@ -257,7 +257,16 @@ function onFingerUp(fingers){
 			queue.push(f)
 		}
 		else{
-			postMessage(f)
+			services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
+				f.fn = 'onFingerUp'
+				if(f.workerId === pick.workerId &&
+					f.pickId === pick.pickId &&
+					f.todoId === pick.todoId){
+					f.samePick = true
+				}
+				else f.samePick = false
+				postMessage(f)
+			}.bind(null, f))
 		}
 
 		return f.tapCount

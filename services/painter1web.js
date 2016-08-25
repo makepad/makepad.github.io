@@ -124,7 +124,7 @@ var subWorkers = {}
 
 exports.regSubWorker = function(subWorker, workerId){
 	if(ownerServices){
-		return ownerServices.painter.regSubWorker(subWorker, workerId)
+		return ownerServices.painter1.regSubWorker(subWorker, workerId)
 	}
 	subWorkers[workerId] = subWorker
 }

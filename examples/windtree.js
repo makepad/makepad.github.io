@@ -103,7 +103,6 @@ module.exports=require('base/drawapp').extend({
 	},
 	onDraw:function (){
 		var p=this
-		console.log(this.autumn)
 		this.drawRect(this.viewGeom)
 		function recur(path,depth){
 			p.drawBranch({

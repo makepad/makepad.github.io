@@ -58,6 +58,8 @@ module.exports = require('base/class').extend(function Stamp(proto){
 	proto.$isStamp = true
 	proto.inPlace = false
 
+	proto.stateExt = ''
+
 	proto.props = {
 		x:NaN,
 		y:NaN,
@@ -84,7 +86,8 @@ module.exports = require('base/class').extend(function Stamp(proto){
 
 		var code = ''
 		code += indent + 'var $view = this.view\n\n'
-		code += indent + 'var $stampId = $view.$stampId++\n'
+		code += indent + 'var $turtle = this.turtle\n'
+		code += indent + 'var $stampId = ++$view.$pickId\n'
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
 		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+'){\n'
@@ -93,11 +96,13 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + '	$stamp.view = $view\n'
 		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
 		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
-		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
 		code += indent + '	if($stamp._states) $stamp._state = $stamp._states.default\n'
+		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
 		code += indent + '}\n'
-		code += indent + '$stamp.turtle = this.turtle\n'
-		code += indent + '$stamp.turtle._pickId = $stampId\n'
+		code += indent + 'var $state = '+mainargs[0]+' && '+mainargs[0]+'.state\n'
+		code += indent + 'if($state) $stamp._state = $stamp._states[$state+$stamp.stateExt]\n'
+		code += indent + '$turtle._pickId = $stampId\n'
+		code += indent + '$stamp.turtle = $turtle\n'
 		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
 		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
 

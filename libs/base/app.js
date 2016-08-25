@@ -64,7 +64,6 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 			msg.x -= painter.x
 			msg.y -= painter.y
-
 			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
 			msg.xAbs = msg.x
 			msg.yAbs = msg.y
@@ -95,6 +94,10 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 		fingers.onFingerUp = function(msg){
 			fingerMessage('onFingerUp', msg.todoId, msg.pickId, msg)
+		}
+
+		fingers.onFingerUpNow = function(msg){
+			fingerMessage('onFingerUpNow', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerForce = function(msg){
@@ -231,7 +234,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			if(oldchild._onDestroy) oldchild._onDestroy()
 		}
 
-		if(node.onComposed) node.onComposed()
+		if(node.onAfterCompose) node.onAfterCompose()
 	}
 
 	/*

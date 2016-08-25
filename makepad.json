@@ -85,8 +85,9 @@
 				{"name":"jswhitespace.js"}
 			]}
 		]},
-		{"name":"examples", "closed":true, "folder":[
-			{"name":"windtree.js"}
+		{"name":"examples", "closed":false, "folder":[
+			{"name":"windtree.js"},
+			{"name":"shiny.js"}
 		]},
 		{"name":"makepad.js"}
 	]

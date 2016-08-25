@@ -12,10 +12,10 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	//
 	//
 	proto.tools = {
-		Background:require('tools/background').extend({
+		Bg:require('tools/bg').extend({
 			borderRadius:0,
 			padding:2,
-			color:'#1'//0c2141'
+			color:'#0c2141'
 		}),
 		Debug:require('tools/rect').extend({
 			color:[0,0,0,0],
@@ -23,7 +23,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			borderWidth:1,
 			borderColor:'red'
 		}),
-		Text:require('tools/font').extend({
+		Text:require('tools/text').extend({
 			font:require('fonts/ubuntu_medium_256.font'),
 			fontSize:24,
 			color:'#ccc',
@@ -38,6 +38,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			borderColor:'#458',
 			drawDiscard:'y',
 			vertexStyle:function(){
+				if(this.w<0.001) return
 				var dx = 2.
 				var dy = 0.75
 				this.xp -= dx
@@ -140,7 +141,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 	proto.onDraw = function(){
 
-		this.beginBackground(this.viewGeom)
+		this.beginBg(this.viewGeom)
 
 		this.drawSelection()
 
@@ -201,7 +202,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				})
 			}
 		}
-		this.endBackground()
+		this.endBg()
 	}
 
 	//
@@ -320,7 +321,9 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.cursorSet.delta -= this.span()
 			var len = text.length
 			if(len){
-				this.editor.insertText(lo, text)
+				
+				len = this.editor.insertText(lo, text)
+				
 				this.cursorSet.delta += len
 				this.editor.addUndoDelete(lo, lo +len)
 			}

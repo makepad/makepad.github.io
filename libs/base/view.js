@@ -17,11 +17,12 @@ module.exports = require('base/class').extend(function View(proto){
 
 	// lets define some props
 	proto.props = {
+		visible:true,
 		x:NaN,
 		y:NaN,
 		z:NaN,
-		w:NaN,
-		h:NaN,
+		w:'100%',
+		h:'100%',
 		d:NaN,
 		clip:true,
 		xCenter:0.5,
@@ -57,7 +58,7 @@ module.exports = require('base/class').extend(function View(proto){
 
 		// shader tree and stamp array
 		this.$shaders = {}
-		this.$stampId = 0
+		//this.$stampId = 0
 		this.$stamps = [0]
 
 		this.view = this
@@ -173,6 +174,21 @@ module.exports = require('base/class').extend(function View(proto){
 		return pass
 	}
 
+	proto.addChild = function(child, index){
+		if(index === undefined) index = this.children.length
+		this.children.splice(index, 0, child)
+		child.app = this.app
+		child.parent = this
+		this.app.$composeTree(child)
+		//this.redraw()
+		this.relayout()
+	}
+
+	proto.removeChild = function(index){
+		this.children.splice(index, 1)
+		this.relayout()
+	}
+
 	Object.defineProperty(proto, 'viewGeom', {
 		get:function(){
 			return {
@@ -223,22 +239,19 @@ module.exports = require('base/class').extend(function View(proto){
 			var hw = this.$w * this.xCenter
 			var hh = this.$h * this.yCenter
 			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
-			if(this.parent && !this.parent.surface){
-				mat4.multiply(this.viewPosition, this.viewPosition, this.parent.viewPosition)
-			}
-			// keep total and inverse
 			if(this.parent){
-				mat4.multiply(this.viewTotal, this.viewPosition, this.parent.viewPosition)
+				mat4.multiply(this.viewTotal, this.parent.viewPosition, this.viewPosition)
 				mat4.invert(this.viewInverse, this.viewTotal)
-			}
-			else{
-				mat4.invert(this.viewInverse, this.viewPosition)
+				if(!this.parent.surface){
+					mat4.multiply(this.viewPosition, this.parent.viewPosition, this.viewPosition)
+				}
 			}
 		}
 		
 		// begin a new todo stack
 		var todo = this.todo
 		todo.clearTodo()
+		if(!this._visible) return
 		// lets set some globals
 		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 		//todo.viewInverse = this.viewInverse
@@ -286,7 +299,8 @@ module.exports = require('base/class').extend(function View(proto){
 		}
 		turtle._turtleClip = [-50000,-50000,50000,50000]
 		turtle._pickId = 0
-		this.$stampId = 1
+		this.$pickId = 0
+		//this.$stampId = 1
 
 		this.beginTurtle()
 
@@ -330,7 +344,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.ysScroll = this.$yAbs
 		
 		// use the last 2 stampIds for the scroller
-		this.$stampId = this.$scrollPickIds
+		this.$pickId = this.$scrollPickIds
 		if(th < this.$hDraw){
 			this.$xScroll = this.drawScrollBar({
 				lockScroll:0,

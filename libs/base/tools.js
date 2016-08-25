@@ -63,8 +63,9 @@ module.exports = function(proto){
 		this.turtle.end()
 		// pop the stack
 		var last = this.turtle
-		this.turtle = view.$turtleStack[--view.$turtleStack.len]
-		
+		var outer = this.turtle = view.$turtleStack[--view.$turtleStack.len]
+		// forward the pickId back down
+		//outer._pickId = last._pickId
 		return last
 	}
 
@@ -91,6 +92,10 @@ module.exports = function(proto){
 
 	proto.setPickId = function(pickId){
 		this.turtle._pickId = pickId
+	}
+
+	proto.addPickId = function(){
+		return this.turtle._pickId = ++this.$pickId
 	}
 
 	// internal API used by canvas macros

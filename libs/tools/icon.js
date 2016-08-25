@@ -1,4 +1,4 @@
-module.exports = require('tools/font').extend(function(proto, base){
+module.exports = require('tools/text').extend(function(proto, base){
 	proto.font = require('fonts/fontawesome_low.font')
 	proto.toolMacros = {
 		lookup:{
