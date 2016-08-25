@@ -631,6 +631,7 @@ exports.onFingerDown = function(f){
 		// the position of the scrollbar
 		var ysize = todo.yView
 		var delta = ((f.y - todo.ysScroll) / todo.yView) * todo.yTotal - (todo.ysScroll + todo.yScroll)
+		console.log(delta)
 		if(delta < 0){
 			todo.yScrollTo = Math.max(0,todo.yScroll - todo.yView)
 			isScrollBarMove = 0

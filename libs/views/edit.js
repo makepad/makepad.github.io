@@ -117,7 +117,6 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	proto._onInit = function(){
 		base._onInit.call(this)
 		this.cs = new CursorSet(this)
-		this.setFocus()
 		this.$undoStack = []
 		this.$redoStack = []
 		this.$undoGroup = 0

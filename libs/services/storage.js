@@ -11,12 +11,9 @@ bus.onMessage = function(msg){
 }
 
 function makePromise(final){
-	var res, rej
-	var prom = new Promise(function(s, j){res = s, rej = j})
+	var prom = Promise.defer()
 	if(promises[final]) return reject('already loading')
 	promises[final] = prom
-	prom.resolve = res
-	prom.reject = rej
 	return prom
 }
 

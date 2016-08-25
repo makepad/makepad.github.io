@@ -342,10 +342,10 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.scrollToSpeed = 0.5
 		this.todo.xsScroll = this.$xAbs
 		this.todo.ysScroll = this.$yAbs
-		
 		// use the last 2 stampIds for the scroller
 		this.$pickId = this.$scrollPickIds
 		if(th < this.$hDraw){
+
 			this.$xScroll = this.drawScrollBar({
 				lockScroll:0,
 				isHorizontal:1.,
@@ -425,7 +425,6 @@ module.exports = require('base/class').extend(function View(proto){
 
 	proto.clearFocus = function(){
 		var old = this.app.$focusView		
-		console.error('clearfocus')
 		this.app.$focusView = undefined
 		if(old){
 			old.hasFocus = false

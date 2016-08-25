@@ -9,8 +9,6 @@ module.exports = require('base/app').extend(function(proto){
 	var projectFile = "./makepad.json"
 	var currentFile = "./examples/windtree.js"
 	// which file to load
-	if(storage.search) currentFile = storage.search.slice(1)
-
 
 	var User = require('views/draw').extend({
 		name:'User',
