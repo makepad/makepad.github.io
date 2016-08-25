@@ -630,8 +630,7 @@ exports.onFingerDown = function(f){
 	if(f.pickId === todo.yScrollId){
 		// the position of the scrollbar
 		var ysize = todo.yView
-		var delta = ((f.y - todo.ysScroll) / todo.yView) * todo.yTotal - (todo.ysScroll + todo.yScroll)
-		console.log(delta)
+		var delta = ((f.y - todo.ysScroll) / todo.yView) * todo.yTotal - todo.yScroll
 		if(delta < 0){
 			todo.yScrollTo = Math.max(0,todo.yScroll - todo.yView)
 			isScrollBarMove = 0
@@ -646,13 +645,14 @@ exports.onFingerDown = function(f){
 	else if(f.pickId === todo.xScrollId){
 		// the position of the scrollbar
 		var ysize = todo.xView
-		var delta = ((f.x - todo.xsScroll) / todo.xView) * todo.xTotal - (todo.xsScroll + todo.xScroll)
+		var delta = ((f.x - todo.xsScroll) / todo.xView) * todo.xTotal - todo.xScroll
+
 		if(delta < 0){
-			todo.yScrollTo = Math.max(0,todo.xScroll - todo.xView)
+			todo.xScrollTo = Math.max(0,todo.xScroll - todo.xView)
 			isScrollBarMove = 0
 		}
 		else if(delta > ysize){
-			todo.yScrollTo = Math.min(Math.max(0.,todo.xTotal - todo.xView),todo.xScroll + todo.xView)
+			todo.xScrollTo = Math.min(Math.max(0.,todo.xTotal - todo.xView),todo.xScroll + todo.xView)
 			isScrollBarMove = 0
 		}
 		else isScrollBarMove = 2
@@ -680,7 +680,7 @@ exports.onFingerMove = function(f){
 		return
 	}
 	if(isScrollBarMove === 2){
-		var xs =  ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal - scrollDelta
+		var xs =  ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal -scrollDelta
 		doScroll(todo,xs, todo.yScroll)
 		return
 	}
