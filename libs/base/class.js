@@ -72,7 +72,7 @@ function extend(body){
 		Constructor.extend = extend
 	}
 
-	if(this.prototype.onextendclass) this.prototype.onextendclass.call(proto)
+	if(this.prototype.onExtendClass) this.prototype.onExtendClass.call(proto)
 	Constructor.body = body
 	return Constructor
 }

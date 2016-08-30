@@ -1,5 +1,4 @@
-module.exports = require('base/shader').extend(function SdfFontShader(proto, base){
-
+module.exports = require('base/shader').extend(function Text(proto, base){
 	var types = require('base/types')
 	var painter = require('services/painter')
 	var fontloader = require('parsers/font')
@@ -238,6 +237,7 @@ module.exports = require('base/shader').extend(function SdfFontShader(proto, bas
 				var fs = this.$PROP(i, 'fontSize')
 				var advance = this.$PROP(i, 'advance')
 				var total = abs(advance) +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+
 				if(curBox && lty !== undefined && lty !== ty){
 					curBox.w = (ltx + lfs * lad) - curBox.x
 					curBox = undefined
@@ -336,6 +336,7 @@ module.exports = require('base/shader').extend(function SdfFontShader(proto, bas
 					this.$WRITEPROPS({
 						advance:g.advance,
 						head:0.,
+						tail:0.,
 						tx1: g.tx1,
 						ty1: g.ty1,
 						tx2: g.tx2,
@@ -356,7 +357,7 @@ module.exports = require('base/shader').extend(function SdfFontShader(proto, bas
 		}
 	}
 
-	proto.onextendclass = function(){
+	proto.onExtendClass = function(){
 		if(this.font){
 			if(!this.font.fontmap){
 				var map = this.font.fontmap = fontloader(this.font)
@@ -366,6 +367,6 @@ module.exports = require('base/shader').extend(function SdfFontShader(proto, bas
 			this.fontSampler = this.font.fontSampler
 		}
 
-		base.onextendclass.apply(this, arguments)
+		base.onExtendClass.apply(this, arguments)
 	}
 })

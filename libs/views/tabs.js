@@ -1,10 +1,6 @@
 module.exports=require('base/view').extend({
 	name:'Tabs',
-	data:[
-		{name:'folder/file1'},
-		{name:'tools/file2'},
-		{name:'view/file3'}
-	],
+	data:[],
 	padding:[23,0,0,0],
 	tools:{
 		Tab:require('tools/tab').extend({

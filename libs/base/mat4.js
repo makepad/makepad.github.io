@@ -25,8 +25,8 @@ var glMatrix = require('./glmatrix')
  * @name mat4
  */
 var mat4 = exports
-this.scalar = {}
-this.SIMD = {}
+exports.scalar = {}
+exports.SIMD = {}
 
 /**
  * Creates a new identity mat4

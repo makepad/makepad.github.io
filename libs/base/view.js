@@ -247,7 +247,6 @@ module.exports = require('base/class').extend(function View(proto){
 				}
 			}
 		}
-		
 		// begin a new todo stack
 		var todo = this.todo
 		todo.clearTodo()
@@ -387,6 +386,7 @@ module.exports = require('base/class').extend(function View(proto){
 				pickSampler: pass.pick
 			})
 		}
+		if(this.onAfterDraw) this.onAfterDraw()
 	}
 
 	proto.reuseDrawSize = function(){
@@ -548,10 +548,10 @@ module.exports = require('base/class').extend(function View(proto){
 		}),
 		Surface:require('base/shader').extend(function Surface(proto){
 			proto.props = {
-				x: NaN,
-				y: NaN,
-				w: NaN,
-				h: NaN,
+				x: {noTween:1, value:NaN},
+				y: {noTween:1, value:NaN},
+				w: {noTween:1, value:NaN},
+				h: {noTween:1, value:NaN},
 				z: 0,
 				mesh:{kind:'geometry', type:types.vec2},
 				colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
@@ -570,7 +570,6 @@ module.exports = require('base/class').extend(function View(proto){
 					gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 				else{
-
 					gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 				}
 			}

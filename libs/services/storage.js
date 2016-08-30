@@ -1,42 +1,42 @@
-var service = require('$services/storage1')
-var bus = service.bus
+var service = require('$storage1')
 
 var requires = {}
 var promises = {}
 
-bus.onMessage = function(msg){
-	var prom = promises[msg.url]
-	promises[msg.url] = undefined
+service.onMessage = function(msg){
+	var prom = promises[msg.path]
+	promises[msg.path] = undefined
 	prom.resolve(msg.response)
 }
 
 function makePromise(final){
 	var prom = Promise.defer()
-	if(promises[final]) return reject('already loading')
+	if(promises[final]) throw new Error('Already loading '+final)
 	promises[final] = prom
 	return prom
 }
 
-exports.onRequire = function(args, resolve, moduleurl){
+exports.onRequire = function(args, absParent, buildPath){
 
-	if(requires[moduleurl]) return requires[moduleurl]
+	if(requires[absParent]) return requires[absParent]
 
 	var storage = {
-		loadText:function(url){
-			var final = resolve(url)
+		load:function(path, binary){
+			var final = buildPath(absParent, path)
 			var prom = makePromise(final)
-			bus.postMessage({
-				fn:'loadText',
-				url:final
+			service.postMessage({
+				fn:'load',
+				binary:binary,
+				path:final
 			})
 			return prom
 		},
-		saveText:function(url, data){
-			var final = resolve(url)
+		save:function(path, data){
+			var final = buildPath(absParent, path)
 			var prom = makePromise(final)
-			bus.postMessage({
-				fn:'saveText',
-				url:final,
+			service.postMessage({
+				fn:'save',
+				path:final,
 				data:data
 			})
 			return prom
@@ -45,6 +45,6 @@ exports.onRequire = function(args, resolve, moduleurl){
 
 	storage.search = service.args.search
 
-	requires[moduleurl] = storage
+	requires[absParent] = storage
 	return storage
 }

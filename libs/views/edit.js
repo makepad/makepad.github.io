@@ -66,46 +66,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				this.w += v*1.
 				this.shadowOffset = vec2(-v,v)*4.
 			}
-		})/*,
-		SelectHandle:require('stamp').extend(function SelectHandle(proto){
-
-			proto.props = {
-				text:'Button',
-			}
-			proto.inPlace = 1
-
-			proto.tools = {
-				Shape: require('shaders/rectshader').extend({
-					color:'red'
-				})
-			}
-
-			proto.states = {
-				default:{
-					Shape:{color:'gray'}
-				},
-				hover:{
-					Shape:{color:'red'},
-				}
-			}
-
-			proto.onFingerDown = function(){
-				this.state = this.states.hover
-			}
-
-			// we should drag the selection start
-			proto.onFingerMove = function(e){
-
-			}
-
-			proto.onFingerUp = function(){
-				this.state = this.states.default
-			}
-
-			proto.onDraw = function(){
-				this.drawShape(this)
-			}
-		})*/
+		})
 	}
 
 	//
@@ -162,6 +123,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 					var box = boxes[j]
 					var pbox = boxes[j-1]
 					var nbox = boxes[j+1]
+
 					this.fastSelection(
 						box.x,
 						box.y,

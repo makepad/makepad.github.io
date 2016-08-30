@@ -7,15 +7,15 @@
 module.exports = {
 	// main structures
 	Program:{ body:2 },
-	EmptyStatement:{}
+	EmptyStatement:{},
 	ExpressionStatement:{expression:1},
 	BlockStatement:{body:2},
-	SequenceExpression:{expressions:2}
-	ParenthesizedExpression:{expression:1}
+	SequenceExpression:{expressions:2},
+	ParenthesizedExpression:{expression:1},
 
 	// returning / throwing
 	ReturnStatement:{argument:1},
-	YieldExpression:{argument:1, delegate:0}
+	YieldExpression:{argument:1, delegate:0},
 
 	// exceptions
 	ThrowStatement:{argument:1},

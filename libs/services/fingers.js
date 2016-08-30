@@ -1,4 +1,4 @@
-var service = require('$services/fingers1')
+var service = require('$fingers1')
 
 var Fingers = require('base/class').extend(function Fingers(proto){
 	require('base/events')(proto)
@@ -13,8 +13,6 @@ fingers.setCursor = function(cursor){
 	})
 }
 
-var bus = service.bus
-
-bus.onMessage = function(msg){
+service.onMessage = function(msg){
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }

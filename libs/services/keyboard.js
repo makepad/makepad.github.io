@@ -1,4 +1,4 @@
-var service = require('$services/keyboard1')
+var service = require('$keyboard1')
 
 var idToKeyName = {
 	8:'backSpace',9:'tab',13:'enter',16:'shift',17:'ctrl',18:'alt',
@@ -30,21 +30,21 @@ var Keyboard = require('base/class').extend(function Keyboard(proto){
 var keyboard = module.exports = new Keyboard()
 
 keyboard.setClipboardText = function(text){
-	service.bus.postMessage({
+	service.postMessage({
 		fn:'setClipboardText',
 		text:text
 	})
 }
 
 keyboard.useSystemEditMenu = function(capture){
-	service.bus.postMessage({
+	service.postMessage({
 		fn:'useSystemEditMenu',
 		capture:capture
 	})
 }
 
 keyboard.setCharacterAccentMenuPos = function(x, y){
-	service.bus.postMessage({
+	service.postMessage({
 		fn:'setCharacterAccentMenuPos',
 		x:x,y:y
 	})
@@ -52,19 +52,19 @@ keyboard.setCharacterAccentMenuPos = function(x, y){
 
 
 keyboard.setWorkerKeyboardFocus = function(){
-	service.bus.postMessage({
+	service.postMessage({
 		fn:'setWorkerKeyboardFocus'
 	})
 }
 
 keyboard.setTextInputFocus = function(focus){
-	service.bus.postMessage({
+	service.postMessage({
 		fn:'setTextInputFocus',
 		focus:focus
 	})
 }
 
-service.bus.onMessage = function(msg){
+service.onMessage = function(msg){
 	if(msg.code) msg.name = idToKeyName[msg.code] || 'unknown'
 	if(keyboard[msg.fn]) keyboard[msg.fn](msg)
 }

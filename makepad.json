@@ -1,5 +1,6 @@
 {
-	"name":"Makepad",
+	"project":"Makepad",
+	"name":"",
 	"folder":[
 		{"name":"libs","closed":true,"folder":[
 			{"name":"base","closed":true,"folder":[
@@ -9,6 +10,7 @@
 				{"name":"stamp.js"},
 				{"name":"shader.js"},
 				{"name":"events.js"},
+				{"name":"compiler.js"},
 				{"name":"props.js"},
 				{"name":"tools.js"},
 				{"name":"turtle.js"},
@@ -23,24 +25,30 @@
 				{"name":"vec4.js"},
 				{"name":"quat.js"},
 				{"name":"glmatrix.js"},
-				{"name":"sha256.js"}
+				{"name":"sha256.js"},
+				{"name":"types.js"}
 			]},
 			{"name":"tools","closed":true,"folder":[
-				{"name":"background.js"},
-				{"name":"font.js"},
+				{"name":"bg.js"},
+				{"name":"text.js"},
 				{"name":"icon.js"},
 				{"name":"line.js"},
 				{"name":"quad.js"},
 				{"name":"rect.js"},
+				{"name":"hover.js"},
+				{"name":"shadowquad.js"},
 				{"name":"button.js"},
+				{"name":"tab.js"},
 				{"name":"slider.js"},
-				{"name":"arcfont.js"},
+				{"name":"arctext.js"},
 				{"name":"codeblock.js"},
-				{"name":"codefont.js"},
+				{"name":"codetext.js"},
 				{"name":"codemarker.js"},
 				{"name":"selection.js"}
 			]},
 			{"name":"views","closed":true,"folder":[
+				{"name":"button.js"},
+				{"name":"tabs.js"},
 				{"name":"code.js"},
 				{"name":"draw.js"},
 				{"name":"edit.js"},

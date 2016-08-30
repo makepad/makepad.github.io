@@ -1,0 +1,642 @@
+module.exports = require('/platform/service').extend(function keyboard1(proto){
+
+	proto.onConstruct = function(){
+
+		if(this.parent){
+			this.parentKeyboard = this.parent.services[this.name]
+			return this.parentKeyboard.addChild(this)
+		}
+
+		this.children = []
+
+		// IOS uses a default selection and the rest does not
+		this.defaultStart = this.root.isIOSDevice?2:3
+		this.defaultEnd = 3
+		this.lastClipboard = ''
+		this.lastEnd = 0
+		this.lastStart = 0
+		this.useSystemEditMenu = false
+		this.characterAccentMenuPos = undefined
+		this.arrowCursorPollInterval = undefined
+		this.hasTextInputFocus = false
+		this.ignoreFirstIosClipboard = false
+		this.ignoreCursorPoll = false
+
+		// store state flags so we can manage the textarea
+		this.keyboardCut
+		this.keyboardSelectAll
+		this.keyDownTriggered
+
+		// bind the poll timers
+		this.arrowCursorPoll = this.arrowCursorPoll.bind(this)
+		this.idlePoll = this.idlePoll.bind(this)
+
+		this.keyboardAnimPlaying = false
+		this.lastIdlePoll = Date.now()
+
+		setInterval(this.idlePoll, 125)
+
+		this.defaultHeight = window.innerHeight
+
+		window.addEventListener('orientationchange', this.orientationChange.bind(this))
+
+		if(this.root.isIOSDevice){
+			document.addEventListener('focusout', this.onFocusOut.bind(this))
+		}
+
+		//
+		// Initialization of text area
+		//
+		//
+
+		var ta = this.textArea = document.createElement('textarea')
+		ta.className = "makepad"
+		ta.style.position = 'relative'
+		ta.style.top = 0//-15
+		ta.style.height = 15
+		ta.style.width = 50
+		ta.setAttribute('autocomplete','off')
+		ta.setAttribute('autocorrect','off')
+		ta.setAttribute('autocapitalize','off')
+		ta.setAttribute('spellcheck','false')
+
+		ta.style.zIndex = 100000
+		//::selection { background:transparent; color:transparent; }\n\
+
+		var style = document.createElement('style')
+		style.innerHTML = "\n\
+		textarea.makepad{\n\
+			opacity: 0;\n\
+			border-radius:4px;\n\
+			color: white;\n\
+			font-size:6;\n\
+			background: gray;\n\
+			-moz-appearance: none;\n\
+			appearance: none;\n\
+			border: none;\n\
+			resize: none;\n\
+			outline: none;\n\
+			overflow: hidden;\n\
+			text-indent:0px;\n\
+			padding: 0 0px;\n\
+			margin: 0 -1px;\n\
+			text-indent: 0px;\n\
+			-ms-user-select: text;\n\
+			-moz-user-select: text;\n\
+			-webkit-user-select: text;\n\
+			user-select: text;\n\
+			white-space: pre!important;\n\
+			\n\
+		}\n\
+		textarea:focus.makepad{\n\
+			outline:0px !important;\n\
+			-webkit-appearance:none;\n\
+		}"
+		document.body.appendChild(style)
+
+		if(!this.root.isTouchDevice){
+			ta.style.position = 'absolute'
+			ta.style.left = -100
+			ta.style.top = -100
+			ta.style.opacity = 0.
+		}
+		else{
+			ta.style.position = 'relative'
+			ta.style.top = 0
+		}
+
+		if(this.root.isIOSDevice){
+			ta.style.textAlign = 'center'
+			ta.style.opacity = 0.5
+			ta.style.fontSize = 1
+		}
+		if(!this.root.isIOSDevice && this.root.isTouchDevice){
+			ta.style.opacity = 0.5
+		}
+
+		ta.value = magicClip
+		ta.selectionStart = this.defaultStart
+		ta.selectionEnd = this.defaultEnd
+
+		ta.addEventListener('cut', this.onCut.bind(this))
+		ta.addEventListener('paste', this.onPaste.bind(this))
+		ta.addEventListener('select', this.onSelect.bind(this))
+		ta.addEventListener('input', this.onInput.bind(this))
+		ta.addEventListener('touchmove', this.onTouchMove.bind(this))
+		ta.addEventListener('blur', this.onBlur.bind(this))
+		ta.addEventListener('keydown', this.onKeyDown.bind(this))
+		ta.addEventListener('keyup', this.onKeyUp.bind(this))
+
+		document.body.appendChild(ta)
+	}
+
+	var magicClip = '\n\u00A0\u00A0\u00B7\n'
+	var androidBackspace = '\n\u00A0\u00B7\n'
+	
+	//
+	//
+	// Polling
+	//
+	//
+
+	proto.idlePoll = function(){
+		var now = Date.now()	
+		if(now - this.lastIdlePoll > 500 ){
+			this.postAllEvent({
+				fn:'onIdleResume'
+			})
+			// fix ios bug
+			if(this.hasTextInputFocus || this.root.isIOSDevice) this.worker.services.painter1.onScreenResize()
+			if(this.hasTextInputFocus){
+				this.hasTextInputFocus = false
+				this.postAllEvent({
+					fn:'onKeyboardClose'
+				})
+			}
+		}
+		this.lastIdlePoll = now
+	}
+
+	// poll for arrow keys on iOS. Yes this is horrible, but the only way
+	// we watch how the selection changes in a time loop poll
+	proto.arrowCursorPoll = function(){
+		if(!this.keyboardAnimPlaying && document.body.scrollTop)document.body.scrollTop = 0
+		if(this.ignoreCursorPoll) return
+		if((this.lastEnd !== this.textArea.selectionEnd || this.lastStart !== this.textArea.selectionStart)){
+
+			if(this.textArea.value !== magicClip){
+				// reselect
+				this.lastStart = this.textArea.selectionStart = 3 
+				this.lastEnd = this.textArea.selectionEnd = this.textArea.value.length - magicClip.length + 3
+				return
+			} 
+
+			var key = 0
+			var dir = this.textArea.selectionStart
+			if(dir == 0) key = 38 // up
+			if(dir == 5) key = 40 // down
+			if(dir == 2) key = 37 // left
+			if(dir == 3) key = 39 // right
+			// reset selection
+			this.lastStart = this.textArea.selectionStart = this.defaultStart
+			this.lastEnd = this.textArea.selectionEnd = this.defaultEnd
+
+			if(key == 0) return
+
+			this.postKeyEvent({
+				fn:'onKeyDown',
+				repeat: 1,
+				code: key
+			})
+			this.postKeyEvent({
+				fn:'onKeyUp',
+				repeat: 1,
+				code: key
+			})
+		}
+	}
+	
+	//
+	//
+	// Parent child
+	//
+	//
+
+	proto.addChild = function(child){
+		if(this.parentKeyboard){
+			return this.parentKeyboard.addChild(this)
+		}
+		this.children[child.worker.workerId] = child
+	}
+
+	proto.postKeyEvent = function(msg){
+		if(!this.focussedWorkerId){
+			return this.postMessage(msg)
+		}
+		// otherwise post to a child
+		this.children[this.focussedWorkerId].postMessage(msg)
+	}
+
+	proto.postAllEvent = function(msg){
+		this.postMessage(msg)
+		for(var key in this.children){
+			this.children[key].postMessage(msg)
+		}
+	}
+
+	//
+	//
+	// User api
+	//
+	//
+
+	proto.user_setClipboardText = function(msg){
+		
+		if(this.parentKeyboard) return this.parentKeyboard.user_setClipboardText(msg)
+
+		this.lastClipboard = this.textArea.value = magicClip.slice(0,3)+ msg.text + magicClip.slice(3)
+
+		// lets wait for a mouse up to set selection
+		if(this.hasTextInputFocus || !this.root.isTouchDevice){
+
+			this.lastStart = this.textArea.selectionStart = msg.text.length?3:this.ignoreFirstIosClipboard?3:this.defaultStart
+			this.lastEnd = this.textArea.selectionEnd = msg.text.length + 3
+			this.ignoreFirstIosClipboard = false
+		}
+
+	}
+
+	proto.user_useSystemEditMenu = function(msg){
+		if(this.parentKeyboard)return this.parentKeyboard.user_useSystemEditMenu(msg)
+
+		this.useSystemEditMenu = msg.capture
+		if(this.useSystemEditMenu && this.root.isIOSDevice && !this.arrowCursorPollInterval){
+			this.arrowCursorPollInterval = setInterval(this.arrowCursorPoll, 30)
+		}
+		else if(this.arrowCursorPollInterval){
+			clearInterval(this.arrowCursorPollInterval)
+			this.arrowCursorPollInterval = undefined
+		}
+	}
+
+	proto.user_setCharacterAccentMenuPos = function(msg){
+		if(this.parentKeyboard)return this.parentKeyboard.user_setCharacterAccentMenuPos(msg)
+
+		this.characterAccentMenuPos = msg
+	}
+
+	proto.user_setWorkerKeyboardFocus = function(msg, workerId){
+		if(this.parentKeyboard)return this.parentKeyboard.user_setWorkerKeyboardFocus(msg, workerId)
+		this.focussedWorkerId = workerId
+	}
+
+	proto.user_setTextInputFocus = function(msg){
+		if(this.parentKeyboard)return this.parentKeyboard.user_setTextInputFocus(msg)
+
+		this.hasTextInputFocus = msg.focus
+
+		if(msg.focus){
+			this.showTextArea()
+		}
+		else{
+			this.hideTextArea()
+		}
+	}
+
+	//
+	//
+	//  Text area manipulation
+	//
+	//
+
+	proto.showTextArea = function(){
+		if(this.root.isTouchDevice){
+			this.textArea.style.top = -15
+		}
+		this.textArea.focus()
+		this.hasTextInputFocus = true
+	}
+
+	proto.hideTextArea = function(){
+		if(this.root.isTouchDevice){
+			this.textArea.style.top = 0
+		}
+		this.textArea.blur()
+		this.hasTextInputFocus = false
+	}
+
+	proto.moveTextArea = function(x, y){
+		this.textArea.style.left = x
+		this.textArea.style.top = y
+	}
+
+	proto.textAreaMouseMode = function(){
+		this.textArea.style.position = 'absolute'
+		this.textArea.style.left = -100
+	}
+
+	proto.textAreaTouchMode = function(){
+		this.textArea.style.position = 'relative'
+		this.textArea.style.top = 0
+	}
+
+	proto.finalizeSelection = function(){
+
+		var len = this.textArea.value.length
+		if(len > 5) this.textArea.selectionStart = 3
+		else this.textArea.selectionStart = this.defaultStart
+		this.textArea.selectionEnd = len - 2
+	}
+
+
+	//
+	//
+	// Text area listeners
+	//
+	//
+
+
+	proto.orientationChange = function(e){
+
+		this.defaultHeight = window.innerHeight
+		this.hideTextArea()
+		if(this.hasTextInputFocus){
+			this.postAllEvent({
+				fn:'onKeyboardClose'
+			})
+			this.hasTextInputFocus = false
+		}
+		if(this.root.isIOSDevice){
+			document.body.scrollLeft = 0
+			document.body.scrollTop = 0
+			this.worker.services.painter1.onScreenResize()
+		}
+		this.postAllEvent({
+			fn:'onOrientationChange'
+		})
+	}
+
+	proto.onFocusOut = function(e) {
+		this.hideTextArea()
+		this.worker.services.painter1.onScreenResize()
+		this.postAllEvent({
+			fn:'onKeyboardClose'
+		})
+	}
+
+	proto.onWindowResize = function(){
+		if(this.root.isTouchDevice){
+			if(window.innerHeight < this.defaultHeight){
+				this.postAllEvent({
+					fn:'onKeyboardOpen'
+				})
+			}
+			else{
+				this.hideTextArea()
+				this.postAllEvent({
+					fn:'onKeyboardClose'
+				})
+			}
+		}
+	}
+
+
+	// firefox has a different keymap, remap keys.
+	var fireFoxKeyRemap = {
+		91:93,
+		92:93,
+		224:93, // right meta
+		61:187, // equals
+		173:189, // minus
+		59:186 // semicolon
+	}
+
+	proto.onKeyDown = function(e){
+
+		this.keyDownTriggered = true
+		var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
+
+		// we only wanna block backspace 
+		if(code === 8 || code === 9) e.preventDefault() // backspace/tab
+		if(code === 88 && (e.metaKey || e.ctrlKey)) this.keyboardCut = true // x cut
+		if(code === 65 && (e.metaKey || e.ctrlKey)) this.keyboardSelectAll = true	 // all (select all)	
+		if(code === 90 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
+		if(code === 89 && (e.metaKey || e.ctrlKey)) e.preventDefault() // all (select all)	
+		if(code === 83 && (e.metaKey || e.ctrlKey)) e.preventDefault() // ctrl s
+
+		// move the text area for the character accent menu
+		if(!this.root.isTouchDevice && this.characterAccentMenuPos){
+			var x = Math.max(0,Math.min(document.body.offsetWidth -  this.textArea.offsetWidth, this.characterAccentMenuPos.x + 6))
+			var y = Math.max(0,Math.min(document.body.offsetHeight -  this.textArea.offsetHeight, this.characterAccentMenuPos.y + 4))
+			this.moveTextArea(x,y)
+		}
+		//cliptext.focus()
+		this.postKeyEvent({
+			fn:'onKeyDown',
+			repeat: e.repeat,
+			code:code,
+			shift: e.shiftKey?true:false,
+			alt: e.altKey?true:false,
+			ctrl: e.ctrlKey?true:false,
+			meta: e.metaKey?true:false
+		})
+	}
+
+
+	proto.onKeyUp = function(e){
+		var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
+		
+		// Put the text area back (the character accent menu)
+		if(!this.root.isTouchDevice && this.characterAccentMenuPos){
+			this.moveTextArea(-100,-100)
+		}
+		// do the selection
+		this.finalizeSelection()
+
+		this.postKeyEvent({
+			fn:'onKeyUp',
+			repeat: e.repeat,
+			code:code,
+			shift: e.shiftKey?true:false,
+			alt: e.altKey?true:false,
+			ctrl: e.ctrlKey?true:false,
+			meta: e.metaKey?true:false
+		})
+	}
+
+	proto.onCut = function(e){
+		this.lastClipboard = ''
+		if(this.keyboardCut) return this.keyboardCut = false
+		//if(cliptext.value.length<5)return
+		this.postKeyEvent({
+			fn:'onKeyDown',
+			meta: true,
+			repeat: 1,
+			code: 88
+		})
+		this.postKeyEvent({
+			fn:'onKeyUp',
+			meta: true,
+			repeat: 1,
+			code: 88
+		})
+	}
+
+	proto.onPaste = function(e){
+		this.postKeyEvent({
+			fn:'onKeyPaste',
+			text: e.clipboardData.getData('text/plain')
+		})
+		e.preventDefault()
+	}
+
+	proto.onSelect = function(e){
+		//console.log('selectall?', keyboardSelectAll, mouseIsDown)
+		if(this.keyboardSelectAll) return this.keyboardSelectAll = false
+		if(this.textArea.selectionStart === 0 && this.textArea.selectionEnd === this.textArea.value.length){
+			this.postKeyEvent({
+				fn:'onKeyDown',
+				meta: true,
+				repeat: 1,
+				code: 65
+			})
+			this.postKeyEvent({
+				fn:'onKeyUp',
+				meta: true,
+				repeat: 1,
+				code: 65
+			})
+		}
+	}
+
+	proto.onInput = function(){
+		
+		var value = this.textArea.value
+		// we seem to have pressed backspace on android	
+		if(value.length === 4 && value === androidBackspace){
+			this.textArea.value = magicClip
+			this.textArea.selectionStart = this.defaultStart
+			this.textArea.selectionEnd = this.defaultEnd
+			if(this.keyDownTriggered){
+				this.keyDownTriggered = false
+				this.postKeyEvent({
+					fn:'onKeyDown',
+					repeat: 1,
+					code: 8
+				})
+				this.postKeyEvent({
+					fn:'onKeyUp',
+					repeat: 1,
+					code: 8
+				})
+			}
+			return
+		}
+		// Something changed from our clipboard-set to now
+		if(value !== this.lastClipboard){
+			this.lastClipboard = ''
+			this.textArea.value = magicClip
+			this.lastStart = this.textArea.selectionStart = this.defaultStart
+			this.lastEnd = this.textArea.selectionEnd = this.defaultEnd
+			// special character accent popup 
+			if(this.defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
+				this.postKeyEvent({
+					fn:'onKeyPress',
+					char:value.charCodeAt(2),
+					special:1,
+					repeat: 1
+				})
+			}
+			// the main keypress entry including multiple characters
+			// like swipe android keyboards 
+			else for(var i = 0, len = value.length - 2 - this.defaultStart; i < len; i++){
+				var charcode = value.charCodeAt(i + this.defaultStart)
+
+				var msg = {
+					fn:'onKeyPress',
+					char:charcode,
+					repeat: 1
+				}
+				// if we are more than one character let the otherside know
+				// about this (for instance for undo handling)
+				if(len>1){
+					msg.groupIndex = i
+					msg.groupLen = len
+				}
+				// ignore newlines and magicClip values
+				if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) this.postKeyEvent(msg)
+			}
+		}
+	}
+
+	proto.onTouchMove = function(e){
+		e.preventDefault()
+		return false
+	}
+
+
+	proto.onBlur = function(){
+		this.hideTextArea()
+	}
+
+	//
+	//
+	// Interaction with fingers service
+	//
+	//
+
+	proto.onMouseDown = function(e){
+		if(this.root.isTouchDevice){
+			this.textAreaMouseMode()
+			this.finalizeSelection()
+			//console.log(cliptext.style.left)
+		}
+		if(e.button !==2){ // defocus the text input for a sec to hide character popup menu
+			this.textArea.blur()
+			this.textArea.focus()
+		}
+		if(e.button !==2 || !this.useSystemEditMenu) return
+		this.moveTextArea(e.pageX - 10, e.pageY - 10)
+
+		setTimeout(function(){
+			if(this.root.isTouchDevice){
+				this.textAreaTouchMode()
+			}
+			else{
+				this.moveTextArea(-20,-20)
+			}
+		}.bind(this), 0)
+		return true
+	}
+
+	proto.onMouseUp = function(e){
+		if(e.button !==2 || !this.useSystemEditMenu) return
+		this.textArea.focus()
+		return true
+	}
+
+	proto.onMouseWheel = function(e){
+		this.textArea.blur()
+		this.textArea.focus()
+	}
+
+	proto.onTouchStart = function(x, y){
+		this.ignoreCursorPoll = true
+		return true
+	}
+
+	proto.onTouchEnd = function(x, y, tapCount){
+		if(this.root.isTouchDevice && tapCount === 1){
+			this.textAreaTouchMode()
+			this.showTextArea()
+			//this.textArea.style.position = 'relative'
+			//this.textArea.style.left = 0
+			//this.textArea.style.top = -15
+		}
+
+		this.ignoreCursorPoll = false
+		if(this.root.isIOSDevice && tapCount === 1 && !this.hasTextInputFocus){
+			this.ignoreFirstIosClipboard = true
+			this.keyboardAnimPlaying = true
+			this.textArea.focus()
+			var itvpoll = setInterval(function(){
+				var st = document.body.scrollTop
+				if(st!==0){
+					this.keyboardAnimPlaying = false
+					clearInterval(itvpoll)
+					// lets clear the canvas
+					this.services.painter1.onScreenResize(st - 15)
+					this.hasTextInputFocus = true
+					this.postAllEvent({
+						fn:'onKeyboardOpen'
+					})
+
+					document.body.scrollTop = 0
+					document.body.scrollLeft = 0
+				}
+			}.bind(this),16)
+		}
+		// lets make the selection now
+		if(this.hasTextInputFocus) this.finalizeSelection()
+	}
+})

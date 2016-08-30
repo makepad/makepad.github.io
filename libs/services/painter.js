@@ -1,10 +1,10 @@
-var service = require('$services/painter1')
+var service = require('$painter1')
 var types = require('base/types')
-var bus = service.bus
 
 var Painter = require('base/class').extend(function Painter(proto){
 	require('base/events')(proto)
 })
+
 var painter = module.exports = new Painter()
 
 // initialize w/h
@@ -15,9 +15,8 @@ painter.w = args.w
 painter.h = args.h
 painter.pixelRatio = args.pixelRatio
 painter.timeBoot = args.timeBoot
-painter.isSub = args.isSub
 
-bus.onMessage = function(msg){
+service.onMessage = function(msg){
 	if(msg.fn === 'onResize'){
 		painter.w = msg.w
 		painter.h = msg.h
@@ -29,11 +28,10 @@ bus.onMessage = function(msg){
 painter.sync = function(){
 	// we send the painter a request for a 'sync'
 	// if there is still a previous sync waiting we wait till thats fired
-	bus.postMessage({
+	service.postMessage({
 		fn:'sync'
 	})
 }
-
 
 var nameIds = {}
 var nameIdsAlloc = 1
@@ -42,7 +40,7 @@ painter.nameId = function(name){
 	var nameId = nameIds[name]
 	if(nameId) return nameId
 	var nameId = nameIds[name] = nameIdsAlloc++
-	bus.postMessage({
+	service.postMessage({
 		fn:'newName',
 		name: name,
 		nameId: nameId
@@ -70,7 +68,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 		var todoId = todoIdsAlloc++
 
-		bus.postMessage({
+		service.postMessage({
 			fn:'newTodo',
 			todoId:todoId
 		})
@@ -96,7 +94,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 	}
 
 	proto.updateTodoTime = function(){
-		bus.batchMessage({
+		service.batchMessage({
 			fn:'updateTodoTime',
 			todoId:this.todoId,
 			timeStart:this.timeStart,
@@ -140,7 +138,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 	proto.scrollTo = function(x, y, scrollToSpeed){
 		this.xScroll = x
 		this.yScroll = y
-		bus.postMessage({
+		service.postMessage({
 			fn:'scrollTo',
 			todoId:this.todoId,
 			x:x,
@@ -167,7 +165,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		this.last = -1
 		this.w = painter.w
 		this.h = painter.h
-		bus.batchMessage(this)
+		service.batchMessage(this)
 	}
 
 	proto.dependOnFramebuffer = function(framebuffer){
@@ -206,7 +204,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		// use the mesh message for lazy serialization
 
 		if(mesh.dirty){
-			bus.batchMessage(mesh)
+			service.batchMessage(mesh)
 		}
 
 		i32[o+0] = 3
@@ -226,7 +224,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
-			bus.batchMessage(mesh)
+			service.batchMessage(mesh)
 		}
 		i32[o+0] = 4
 		i32[o+1] = 6
@@ -246,7 +244,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 		// use the mesh message for lazy serialization
 		if(mesh.dirty){
-			bus.batchMessage(mesh)
+			service.batchMessage(mesh)
 		}
 
 		i32[o+0] = 5
@@ -291,7 +289,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 		if(texture.dirty){
 			texture.dirty = false
-			bus.batchMessage(texture)
+			service.batchMessage(texture)
 		}
 
 		// its owned by a framebuffer
@@ -662,7 +660,7 @@ painter.Shader = require('base/class').extend(function Shader(proto){
 		parseShaderUniforms(code.pixel, refs)
 		for(var name in refs) if(!nameIds[name]) painter.nameId(name)
 
-		bus.postMessage({
+		service.postMessage({
 			fn:'newShader',
 			code:{
 				vertex:code.vertex,
@@ -718,7 +716,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 	}
 
 	proto.updateMesh = function(){
-		bus.batchMessage(this)
+		service.batchMessage(this)
 	}
 
 	proto.onConstruct = function(type, initalloc){
@@ -734,7 +732,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 
 		var meshId = meshIdsAlloc++
 
-		bus.postMessage({
+		service.postMessage({
 			fn:'newMesh',
 			meshId:meshId
 		})
@@ -901,11 +899,11 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 		this.array = array
 		this.texId = texId
 
-		bus.batchMessage(this)
+		service.batchMessage(this)
 	}
 
 	proto.resize = function(w, h){
-		bus.batchMessage({
+		service.batchMessage({
 			fn:'resizeTexture',
 			id: this.texId,
 			w:w,
@@ -937,7 +935,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 		this.fbId = fbId
 		this.attachments = attach
 
-		bus.batchMessage({
+		service.batchMessage({
 			fn:'newFramebuffer',
 			fbId: fbId,
 			attach: attach,
@@ -949,7 +947,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 	}
 
 	proto.resize = function(w, h, xStart, yStart){
-		bus.batchMessage({
+		service.batchMessage({
 			fn:'newFramebuffer',
 			fbId: this.fbId,
 			attach: this.attachments,
@@ -963,7 +961,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 	// attach a todo to the framebuffer
 	// the main framebuffer is the first 
 	proto.assignTodo = function(todo){
-		bus.batchMessage({
+		service.batchMessage({
 			fn:'assignTodoToFramebuffer',
 			fbId:this.fbId,
 			todoId:todo.todoId

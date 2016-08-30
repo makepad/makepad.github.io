@@ -68,7 +68,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			padding:[4,1,3,5],
 			margin:[0,1,0,0],
 			pickAlpha:-1,
-			shadowOffset:[2,2],
+			//shadowOffset:[2,2],
 			borderRadius:3.,
 			borderWidth:0,
 			borderColor:{noTween:1,pack:'float12',value:'#f'},

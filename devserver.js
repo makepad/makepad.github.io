@@ -139,6 +139,14 @@ function requestHandler(req, res){
 			return
 		}
 
+		// lets check the etag
+		var etag = stat.mtime.getTime() + '_' + stat.size
+		if(req.headers['if-none-match'] === etag){
+			res.writeHead(304)
+			res.end()
+			return
+		}
+
 		// mark as watched
 		watchfiles[filefull] = true
 
@@ -148,7 +156,7 @@ function requestHandler(req, res){
 			"Connection": "Close",
 			"Cache-control": 'max-age=0',
 			"Content-Type": filemime,
-			"etag": stat.mtime.getTime() + '_' + stat.size,
+			"etag": etag,
 			"mtime": stat.mtime.getTime()
 		})
 		stream.pipe(res)
