@@ -121,7 +121,8 @@
 		req.send()
 	}
 
-	watchFileChange()
+	if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.indexOf('10.') === 0)
+		watchFileChange()
 
 	function cleanWebWorker(){
 		var clean = {
