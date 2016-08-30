@@ -58,13 +58,9 @@ module.exports = function painterUser(proto){
 		
 		if(prev){
 			if(prev.w == msg.w && prev.h === msg.h){
-				/*
 				prev.xStart = msg.xStart
 				prev.yStart = msg.yStart
-				if(prev && prev.subWorker){
-					fb.subWorker = prev.subWorker
-					prev.subWorker.onFbResize(prev.attach, prev.glfb, prev.glpfb, msg.xStart, msg.yStart)
-				}*/
+				if(prev.child) this.resizeChild(prev.child, msg.fbId)
 				return
 			}
 			for(var key in prev.attach){
@@ -158,9 +154,8 @@ module.exports = function painterUser(proto){
 
 		// signal the child their framebuffer has resized
 		if(prev && prev.child){
-			console.log("TODO SUBWORKER")
-		//	fb.subWorker = prev.subWorker
-		//	prev.subWorker.onFbResize(attach, glfb, glpfb, fb.xStart, fb.yStart)
+			fb.child = prev.child
+			this.resizeChild(prev.child, msg.fbId)
 		}
 	}
 

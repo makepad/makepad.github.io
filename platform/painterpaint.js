@@ -37,6 +37,28 @@ module.exports = function painterPaint(proto){
 		fb.child = child
 	}
 
+	proto.resizeChild = function(child, fbId){
+		var fb = this.framebufferIds[fbId]
+		var cfb = child.parentFramebuffer
+		cfb.attach = fb.attach
+		cfb.glfb = fb.glfb
+		cfb.glpfb = fb.glpfb
+		var ca = child.args
+		ca.pixelRatio = this.args.pixelRatio
+		ca.x = fb.xStart
+		ca.y = fb.yStart
+		ca.w = fb.attach.color0.w / ca.pixelRatio
+		ca.h = fb.attach.color0.h / ca.pixelRatio 
+		child.postMessage({
+			fn:'onResize', 
+			pixelRatio:ca.pixelRatio, 
+			x:ca.x,
+			y:ca.y,
+			w:ca.w, 
+			h:ca.h
+		})	
+	}
+
 	proto.renderChildColor = function(time, fid){
 		this.repaintTime = time
 		this.frameId = fid
