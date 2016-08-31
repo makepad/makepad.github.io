@@ -47,6 +47,7 @@ var workerSrc =
 	buildPath.toString() + '\n' +
 	workerRequire.toString() + '\n' +
 	mathLib.toString() + '\n' +
+	traceLib.toString() + '\n' + 
 	timerLib.toString() + '\n' + 
 	promiseLib.toString() +'\n' + 
 	createOnMessage.toString() + '\n'+
@@ -269,6 +270,7 @@ function workerBoot(){
 	timerLib(global)
 	mathLib(global)
 	promiseLib(global)
+	traceLib(global)
 }
 
 //
@@ -419,6 +421,24 @@ function buildPath(parent, path){
 	return 'libs/' + path
 }
 
+
+//
+//
+// support tracing
+//
+//
+
+function traceLib(g){
+	g.__ = {}
+	function set(v){
+		console.error("Trace", v)
+		return v
+	}
+	Object.defineProperty(g.__, 'T', {
+		get:function(){return set},
+		set:set
+	})
+}
 
 //
 //

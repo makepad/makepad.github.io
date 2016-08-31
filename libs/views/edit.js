@@ -233,8 +233,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		
 		proto.moveTo = function(x, y, onlyEnd){
 			var end = this.editor.offsetFromPos(x, y)
-			//console.log(end, this.end)
-			if(this.end === end) return
+			if(this.end === end && (onlyEnd || this.start === end)) return
 			this.end = end
 			var rect = this.editor.cursorRect(this.end)
 			this.max = rect?rect.x:0

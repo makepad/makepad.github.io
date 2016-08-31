@@ -52,6 +52,8 @@ module.exports = function(proto){
 		if(!turtle){
 			turtle = this.turtle = view.$turtleStack[len] = new view.Turtle(view)
 		}
+		turtle.view = view
+		turtle.context = view
 		turtle._pickId = outer._pickId
 		turtle.begin(outer)
 		return turtle

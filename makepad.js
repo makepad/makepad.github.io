@@ -3,6 +3,8 @@ module.exports = require('base/app').extend(function(proto){
 	var storage = require('services/storage')
 	var Worker = require('services/worker')
 
+	var Splitter = require('views/splitter')
+	var Fill = require('views/fill')
 	var Tabs = require('views/tabs')
 	var Tree = require('views/tree')
 	var Button = require('views/button')
@@ -173,6 +175,7 @@ module.exports = require('base/app').extend(function(proto){
 	}
 
 	proto.onAfterCompose = function(){
+		//return
 		// we need to load all other files in the project
 		loadProjectTree(projectFile).then(function(project){
 			this.projectData = project
@@ -278,6 +281,28 @@ module.exports = require('base/app').extend(function(proto){
 
 	proto.onCompose = function(){
 		return [
+		/*
+			Splitter({
+					split:'vertical',
+					pos:100,
+					w:'100%',
+					h:'100%'
+				},
+				Fill({
+					color:'red'
+				}),
+				Fill({
+					color:'green'
+				}),
+				Fill({
+					x:'$10',
+					y:'$10',
+					w:20,
+					h:20,
+					color:'blue'
+				})
+			)*/
+		
 			SideTabs({
 				onInit:function(){
 					this.selectTab(0)
@@ -309,6 +334,7 @@ module.exports = require('base/app').extend(function(proto){
 				name:'userTabs',
 				w:'45%'
 			})
+			
 		]
 	}
 

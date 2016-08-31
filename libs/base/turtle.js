@@ -6,7 +6,19 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		this.x2 = this.y2 = -Infinity
 		this.mh = 0
 	}
-
+	proto.dump = function(){
+		console.log(
+		'sx:'+this.sx+
+		',sy:'+this.sy+
+		',width:'+this.width+
+		',height:'+this.height+
+		',_x:'+this._x+
+		',_y:'+this._y+
+		//',ix:'+this.ix+
+		//',iy:'+this.iy+
+		',wx:'+this.wx+
+		',wy:'+this.wy)
+	}
 	proto.begin = function(outer){
 		this.outer = outer
 
@@ -32,22 +44,34 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		this._turtleClip = outer._turtleClip
 		// read the x
 		var _x = outer._x, _y = outer._y, _w = outer._w, _h = outer._h
-
+		
+		this.width = outer.width
 		if(typeof _w === 'string'){
-			this.width = outer.width
-			this.width = this.evalw(_w) - padding[1] - padding[3]
+			this._w = (outer._w = this.evalw(_w)) - padding[1] - padding[3]
 		}
-		else this.width = _w - padding[1] - padding[3]
+		else this._w = _w - padding[1] - padding[3]
+		if(typeof _x === 'string'){
+			this.sx = outer.sx
+			_x = (outer._x = this.evalx(_x))
+		}
+		this.width = this._w
 
+		this.height = outer.height
 		if(typeof _h === 'string'){
-			this.height = outer.height
-			this.height = this.evalh(_h) - padding[0] - padding[2]
+			this._h = (outer._h = this.evalh(_h)) - padding[0] - padding[2]
 		}
-		else this.height = _h - padding[0] - padding[2]
-
-		this.ix = typeof _x === 'string'? this.evalx(_x): _x
-		this.iy = typeof _y === 'string'? this.evaly(_y): _y
+		else{
+			this._h = _h - padding[0] - padding[2]
+		}
+		if(typeof _y === 'string'){
+			this.sy = outer.sy
+			_y = (outer._y = this.evaly(_y))
+		}
+		this.height = this._h
+		this.ix = _x
+		this.iy = _y
 	
+		//console.log(this.ix, _x)
 		if(isNaN(this.ix)) this.ix = outer.wx
 		if(isNaN(this.iy)) this.iy = outer.wy
 
@@ -65,15 +89,21 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		if(this.view.$inPlace) return
 
 		var _w = this._w
-		if(typeof _w === 'string') this._w = this.evalw(_w)
+		if(typeof _w === 'string'){
+			this._w = this.evalw(_w)
+		}
 		var _h = this._h
-		if(typeof _h === 'string') this._h = this.evalh(_h)
-
+		if(typeof _h === 'string'){
+			this._h = this.evalh(_h)
+		}
 		var _x = this._x
-		if(typeof _x === 'string') this._x = this.evalx(_x)
+		if(typeof _x === 'string'){
+			this._x = this.evalx(_x)
+		}
 		var _y = this._y
-		if(typeof _y === 'string') this._y = this.evaly(_y)
-		if(this._h === 142) debugger
+		if(typeof _y === 'string'){
+			this._y = this.evaly(_y)
+		}
 		// process the margin argument type
 		var margin = this._margin
 		if(typeof margin !== 'object'){
@@ -82,11 +112,15 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		}
 
 		// walk it
-		if(isNaN(this._x) || isNaN(this._y)){
+		var isNaNx = isNaN(this._x)
+		var isNaNy = isNaN(this._y)
+		if(isNaNx || isNaNy){
 			// only wrap now
 			if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
 				var dx = this.sx - this.wx 
 				var dy = this.mh
+				if(!isNaNx) dx = 0
+				if(!isNaNy) dy = 0
 				this.wx = this.sx
 				this.wy += this.mh
 				this.mh = 0
@@ -95,9 +129,9 @@ module.exports = require('base/class').extend(function Turtle(proto){
 					this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
 				}
 			}
-			if(isNaN(this._x)) this._x = this.wx + margin[3]
-			if(isNaN(this._y)) this._y = this.wy + margin[0]
-			this.wx += (isNaN(this._w)?0:this._w) +margin[3] + margin[1]
+			if(isNaNx) this._x = this.wx + margin[3]
+			if(isNaNy) this._y = this.wy + margin[0]
+			this.wx += (isNaN(this._w)?0:this._w) + margin[3] + margin[1]
 			// compute new max height
 			var nh = this._h +margin[0] + margin[2]
 			if(nh > this.mh) this.mh = nh
@@ -140,7 +174,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 			var dy = isNaN(this.height)? 0: (this.height - (this.y2 - this.sy)) * this.align[1]
 			if(isNaN(dx) || dx === Infinity) dx = 0
 			if(isNaN(dy) || dy === Infinity) dy = 0
-			if(dx !== 0 || dy !== 0) this.view.$moveWritten(this.writeStart, dx, dy)		
+			if(dx !== 0 || dy !== 0) this.view.$moveWritten(this.$writeStart, dx, dy)		
 		}
 	}
 
@@ -181,13 +215,12 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evalx = function(str){
 		var cache = xcache[str]
 		if(!cache){
-			var rep = str.replace(/[\$\^]/g,'')
-			var code
-			if(str.indexOf('$') !== -1) code = 'this.turtle.sx + this.turtle.width-this.turtle._w - '+rep
-			else code = 'this.turtle.sx + '+rep
-			cache = xcache[str] = new Function('return '+code)
+			var code = 'turtle.sx + '+ str
+				.replace(/\$/g, 'turtle.width - turtle._w - turtle.padding[3] -')
+				.replace(/\%/g, '*0.01*turtle.width - turtle.margin[1] - turtle.margin[3]')
+			cache = xcache[str] = new Function('turtle', 'return '+code)
 		}
-		var ret = cache.call(this.view)
+		var ret = cache.call(this.context,this)
 		return ret
 	}
 
@@ -195,33 +228,32 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evaly = function(str){
 		var cache = ycache[str]
 		if(!cache){
-			var rep = str.replace(/[\$\^]/g,'')
-			var code
-			if(str.indexOf('$') !== -1) code = 'this.turtle.sy + this.turtle.height-this.turtle._h - '+rep
-			else code = 'this.turtle.sy + '+rep
-			cache = ycache[str] = new Function('return '+code)
+			var code = 'turtle.sy + '+  str
+				.replace(/\$/g, 'turtle.height - turtle._h - turtle.padding[0] -')
+				.replace(/\%/g, '*0.01*turtle.height - turtle.margin[0] - turtle.margin[2]')
+			cache = ycache[str] = new Function('turtle', 'return '+code)
 		} 
-		return cache.call(this.view)
+		return cache.call(this.context,this)
 	}
 
 	var wcache = {}
 	proto.evalw = function(str){
 		var cache = wcache[str]
 		if(!cache){
-			var code = str.replace(/\%/g, '*0.01*this.turtle.width - this.turtle.margin[1] - this.turtle.margin[3]')
-			cache = wcache[str] = new Function('return '+code)
+			var code = str.replace(/\%/g, '*0.01*turtle.width - turtle.margin[1] - turtle.margin[3]')
+			cache = wcache[str] = new Function('turtle', 'return '+code)
 		} 
-		return cache.call(this.view)
+		return cache.call(this.context,this)
 	}
 
 	var hcache = {}
 	proto.evalh = function(str){
 		var cache = hcache[str]
 		if(!cache){
-			var code = str.replace(/\%/g, '*0.01*this.turtle.height - this.turtle.margin[0] - this.turtle.margin[2]')
-			cache = hcache[str] = new Function('return '+code)
+			var code = str.replace(/\%/g, '*0.01*turtle.height - turtle.margin[0] - turtle.margin[2]')
+			cache = hcache[str] = new Function('turtle', 'return '+code)
 		} 
-		var r= cache.call(this.view)
+		var r= cache.call(this.context,this)
 		return r
 	}
 })

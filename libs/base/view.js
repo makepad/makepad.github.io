@@ -37,6 +37,7 @@ module.exports = require('base/class').extend(function View(proto){
 		surface:false,
 		margin:[0,0,0,0],
 		padding:[0,0,0,0],
+		drawPadding:[0,0,0,0],
 		align:[0,0],
 		wrap:true		
 	}
@@ -282,7 +283,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.$turtleStack.len = 0
 		var turtle = this.turtle
 		turtle._margin = zeroMargin
-		turtle._padding = zeroMargin// this._padding
+		turtle._padding = this.drawPadding// this._padding
 		turtle._align = this._align
 		turtle._wrap = this._wrap
 		turtle._x = 0

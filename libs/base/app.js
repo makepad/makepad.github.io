@@ -22,10 +22,11 @@ module.exports = require('base/view').extend(function App(proto, base){
 		var layout = this.$turtleLayout = {
 			$writeList: [],
 			Turtle:this.Turtle,
-			beginTurtle:function(){
+			beginTurtle:function(context){
 				var len = ++this.$turtleStack.len
 				var outer = this.turtle
 				var turtle = this.turtle = (this.$turtleStack[len] || (this.$turtleStack[len] = new this.Turtle(this)))
+				turtle.context = context
 				turtle.begin(outer)
 				return turtle
 			},
@@ -271,13 +272,13 @@ module.exports = require('base/view').extend(function App(proto, base){
 		// reset the write list
 		layout.$writeList.length = 0
 		layout.$turtleStack.len = 0
-		layout.view = layout
+		//layout.view = layout
 
 		iter._x = 0
 		iter._y = 0
 		iter._w = painter.w
 		iter._h = painter.h
-
+		var turtle = layout.turtle
 		while(iter){
 			var turtle = layout.turtle
 
@@ -286,6 +287,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			// copy the props from the iterator node to the turtle
 			turtle._x = iter._x
 			turtle._y = iter._y
+
 			if(iter.$drawDependentLayout){
 				iter.$drawDependentLayout = false
 				turtle._w = iter.$wDraw
@@ -307,23 +309,25 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 			layout.$writeList.push(iter, level)
 
-			layout.beginTurtle()
+
+			layout.beginTurtle(iter)
 			turtle = layout.turtle
 
-			turtle.view_iter = iter
+			//console.log(iter.name, turtle._x, iter._x)
+			
 
 			// depth first recursion free walk
 			var next = iter.children[0]
 			if(next) next.$childIndex = 0
 			else while(!next){ // skip to parent next
-				var view = turtle.view_iter
+				var view = turtle.context
 				
 				var ot = layout.endTurtle()
-
-				//if(!layout.turtle.outer)debugger
-				layout.turtle.walk(ot)
-
+				
 				turtle = layout.turtle
+		
+				//if(!layout.turtle.outer)debugger
+				turtle.walk(ot)
 				
 				// copy the layout from the turtle to the view
 				view.$xAbs = turtle._x 
