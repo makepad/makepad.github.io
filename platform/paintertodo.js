@@ -80,7 +80,7 @@ module.exports = function painterTodo(proto){
 			var ret = fn.call(this, i32, f32, o)
 			if(ret) repaint = true
 		}
-		this.currentTodo = this.lastTodo
+		this.currentTodo = lastTodo
 		if(!this.inPickPass && this.processScrollState(todo))return true
 		if(repaint || todo.animLoop || todo.timeMax > this.repaintTime)return true
 	}
@@ -89,7 +89,13 @@ module.exports = function painterTodo(proto){
 
 	todofn[1] = function addChildTodo(i32, f32, o){
 		var todo = this.todoIds[i32[o+2]]
-		return this.runTodo(todo)
+		this.runTodo(todo)
+		var todo = this.currentTodo
+		var nameIds = this.nameIds
+		// put back previous todo globals
+		this.floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
+		this.vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
+		this.vec4fGlobal(nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 	}
 
 	todofn[2] = function useShader(i32, f32, o){

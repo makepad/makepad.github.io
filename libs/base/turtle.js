@@ -73,7 +73,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		if(typeof _x === 'string') this._x = this.evalx(_x)
 		var _y = this._y
 		if(typeof _y === 'string') this._y = this.evaly(_y)
-
+		if(this._h === 142) debugger
 		// process the margin argument type
 		var margin = this._margin
 		if(typeof margin !== 'object'){
@@ -81,21 +81,20 @@ module.exports = require('base/class').extend(function Turtle(proto){
 			margin[0] = margin[1] = margin[2] = margin[3] = this._margin
 		}
 
-		// check if we wrap around
-		//console.log(this.wx, this._w + margin[3] + margin[1], this.sx, this.width)
-		if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
-			var dx = this.sx - this.wx 
-			var dy = this.mh
-			this.wx = this.sx
-			this.wy += this.mh
-			this.mh = 0
-			// move the body of the wrapped thing
-			if(oldturtle){
-				this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
-			}
-		}
 		// walk it
 		if(isNaN(this._x) || isNaN(this._y)){
+			// only wrap now
+			if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
+				var dx = this.sx - this.wx 
+				var dy = this.mh
+				this.wx = this.sx
+				this.wy += this.mh
+				this.mh = 0
+				// move the body of the wrapped thing
+				if(oldturtle){
+					this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
+				}
+			}
 			if(isNaN(this._x)) this._x = this.wx + margin[3]
 			if(isNaN(this._y)) this._y = this.wy + margin[0]
 			this.wx += (isNaN(this._w)?0:this._w) +margin[3] + margin[1]
@@ -222,6 +221,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 			var code = str.replace(/\%/g, '*0.01*this.turtle.height - this.turtle.margin[0] - this.turtle.margin[2]')
 			cache = hcache[str] = new Function('return '+code)
 		} 
-		return cache.call(this.view)
+		var r= cache.call(this.view)
+		return r
 	}
 })

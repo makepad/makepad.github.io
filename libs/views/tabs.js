@@ -19,7 +19,7 @@ module.exports=require('base/view').extend({
 		if(this.onCloseTab(index)){
 			return
 		}
-		this.removeChild(index)			
+		this.removeChild(index)
 	
 		this.data.splice(index, 1)
 		// lets select another tab
@@ -38,7 +38,6 @@ module.exports=require('base/view').extend({
 		}
 	},
 	onSelectTab:function(index){
-		
 	},
 	onCloseTab:function(index){
 	},
@@ -50,9 +49,9 @@ module.exports=require('base/view').extend({
 			h:this.$h
 		})
 
-		var tabs=this.data
+		var tabs = this.data
 
-		for(var i=0,len=tabs.length-1;i<=len;i++){
+		for(var i = 0,len = tabs.length - 1; i <= len; i++){
 			var tab=tabs[i]
 			this.drawTab({
 				index:i,

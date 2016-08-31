@@ -320,7 +320,7 @@ module.exports = require('base/class').extend(function View(proto){
 		var ty2 = this.turtle.y2
 		this.$x2Old = tx2
 		this.$y2Old = ty2
-		
+	
 		// lets compute if we need scrollbars
 		if(ty2 > th){
 			tw -= this.$scrollBarSize
@@ -343,13 +343,13 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.ysScroll = this.$yAbs
 		// use the last 2 stampIds for the scroller
 		this.$pickId = this.$scrollPickIds
-		if(th < this.$hDraw){
 
+		if(th < this.$hDraw){
 			this.$xScroll = this.drawScrollBar({
 				lockScroll:0,
 				isHorizontal:1.,
 				x:0,
-				y:this.$hDraw - this.$scrollBarSize,// / painter.pixelRatio,
+				y:this.$hDraw - this.$scrollBarSize-this.padding[0],// / painter.pixelRatio,
 				w:tw,
 				h:this.$scrollBarSize,// / painter.pixelRatio,
 				borderRadius:this.$scrollBarRadius// / painter.pixelRatio
@@ -363,7 +363,7 @@ module.exports = require('base/class').extend(function View(proto){
 			this.$yScroll = this.drawScrollBar({
 				lockScroll:0,
 				isHorizontal:0.,
-				x:this.$wDraw - this.$scrollBarSize, /// painter.pixelRatio,
+				x:this.$wDraw - this.$scrollBarSize-this.padding[3], /// painter.pixelRatio,
 				y:0,
 				w:this.$scrollBarSize,// / painter.pixelRatio,
 				h:th,
@@ -462,13 +462,13 @@ module.exports = require('base/class').extend(function View(proto){
 						var pos = vec2()
 						if(this.isHorizontal > .5){
 							this.y += 1.///this.pixelRatio
-							this.handleSize = this.viewSpace.x / this.viewSpace.z
-							this.handlePos = this.viewScroll.x / this.viewSpace.z
+							this.handleSize = clamp(this.viewSpace.x / this.viewSpace.z,.5,1.)
+							this.handlePos = 0.//this.viewScroll.x / this.viewSpace.z
 						}
 						else{
-							this.x += 1.///this.pixelRatio
-							this.handleSize = this.viewSpace.y / this.viewSpace.w
-							this.handlePos = this.viewScroll.y / this.viewSpace.w
+							//this.x += 1.///this.pixelRatio
+							this.handleSize = 1.//this.viewSpace.y / this.viewSpace.w
+							this.handlePos = 0.//this.viewScroll.y / this.viewSpace.w
 						}
 					},
 					pixelStyle:function(){},
