@@ -1,5 +1,6 @@
 module.exports=require('base/view').extend({
 	name:'Tabs',
+	overflow:'none',
 	data:[],
 	padding:[23,0,0,0],
 	tools:{

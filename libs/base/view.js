@@ -23,6 +23,7 @@ module.exports = require('base/class').extend(function View(proto){
 		z:NaN,
 		w:'100%',
 		h:'100%',
+		overflow:'scroll',
 		d:NaN,
 		clip:true,
 		xCenter:0.5,
@@ -322,13 +323,15 @@ module.exports = require('base/class').extend(function View(proto){
 		this.$y2Old = ty2
 	
 		// lets compute if we need scrollbars
-		if(ty2 > th){
-			tw -= this.$scrollBarSize
-			if(tx2 > tw) th -= this.$scrollBarSize // add vert scrollbar
-		}
-		else if(tx2 > tw){
-			th -= this.$scrollBarSize
-			if(ty2 > th) tw -= this.$scrollBarSize
+		if(this.overflow === 'scroll'){
+			if(ty2 > th){
+				tw -= this.$scrollBarSize
+				if(tx2 > tw) th -= this.$scrollBarSize // add vert scrollbar
+			}
+			else if(tx2 > tw){
+				th -= this.$scrollBarSize
+				if(ty2 > th) tw -= this.$scrollBarSize
+			}
 		}
 
 		// store the total and view heights for scrolling on the todo
@@ -343,34 +346,35 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.ysScroll = this.$yAbs
 		// use the last 2 stampIds for the scroller
 		this.$pickId = this.$scrollPickIds
+		if(this.overflow === 'scroll'){
+			if(th < this.$hDraw){
+				this.$xScroll = this.drawScrollBar({
+					lockScroll:0,
+					isHorizontal:1.,
+					x:0,
+					y:this.$hDraw - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
+					w:tw,
+					h:this.$scrollBarSize,// / painter.pixelRatio,
+					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
+				})
 
-		if(th < this.$hDraw){
-			this.$xScroll = this.drawScrollBar({
-				lockScroll:0,
-				isHorizontal:1.,
-				x:0,
-				y:this.$hDraw - this.$scrollBarSize-this.padding[0],// / painter.pixelRatio,
-				w:tw,
-				h:this.$scrollBarSize,// / painter.pixelRatio,
-				borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-			})
+				this.todo.xScrollId = this.$xScroll.$stampId
+			}
 
-			this.todo.xScrollId = this.$xScroll.$stampId
-		}
+			if(tw < this.$wDraw){ // we need a vertical scrollbar
 
-		if(tw < this.$wDraw){ // we need a vertical scrollbar
+				this.$yScroll = this.drawScrollBar({
+					lockScroll:0,
+					isHorizontal:0.,
+					x:this.$wDraw - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
+					y:0,
+					w:this.$scrollBarSize,// / painter.pixelRatio,
+					h:th,
+					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
+				})
 
-			this.$yScroll = this.drawScrollBar({
-				lockScroll:0,
-				isHorizontal:0.,
-				x:this.$wDraw - this.$scrollBarSize-this.padding[3], /// painter.pixelRatio,
-				y:0,
-				w:this.$scrollBarSize,// / painter.pixelRatio,
-				h:th,
-				borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-			})
-
-			this.todo.yScrollId = this.$yScroll.$stampId
+				this.todo.yScrollId = this.$yScroll.$stampId
+			}
 		}
 
 		// if we are a surface, end the pass and draw it to ourselves
@@ -462,13 +466,13 @@ module.exports = require('base/class').extend(function View(proto){
 						var pos = vec2()
 						if(this.isHorizontal > .5){
 							this.y += 1.///this.pixelRatio
-							this.handleSize = clamp(this.viewSpace.x / this.viewSpace.z,.5,1.)
-							this.handlePos = 0.//this.viewScroll.x / this.viewSpace.z
+							this.handleSize = this.viewSpace.x / this.viewSpace.z
+							this.handlePos = this.viewScroll.x / this.viewSpace.z
 						}
 						else{
-							//this.x += 1.///this.pixelRatio
-							this.handleSize = 1.//this.viewSpace.y / this.viewSpace.w
-							this.handlePos = 0.//this.viewScroll.y / this.viewSpace.w
+							this.x += 1.///this.pixelRatio
+							this.handleSize = this.viewSpace.y / this.viewSpace.w
+							this.handlePos = this.viewScroll.y / this.viewSpace.w
 						}
 					},
 					pixelStyle:function(){},
