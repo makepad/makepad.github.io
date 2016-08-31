@@ -89,13 +89,14 @@ module.exports = function painterTodo(proto){
 
 	todofn[1] = function addChildTodo(i32, f32, o){
 		var todo = this.todoIds[i32[o+2]]
-		this.runTodo(todo)
+		var ret = this.runTodo(todo)
 		var todo = this.currentTodo
 		var nameIds = this.nameIds
 		// put back previous todo globals
 		this.floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
 		this.vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
 		this.vec4fGlobal(nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
+		return ret
 	}
 
 	todofn[2] = function useShader(i32, f32, o){
