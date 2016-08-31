@@ -8,7 +8,7 @@ module.exports=require('base/drawapp').extend({
 					2*length(this.mesh.xy-.5))
 			}
 		}
-	}
+	},
 	onDraw:function(){
 		this.drawQuad(this.viewGeom)
 	}
