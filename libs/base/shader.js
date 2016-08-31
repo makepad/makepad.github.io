@@ -329,7 +329,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 			return this.$PROPLEN()
 		},
 		order:function(overload){
-			this.$ALLOCDRAW()
+			this.$ALLOCDRAW(0)
 		},
 		reuse:function(overload){
 			// make sure we are drawn

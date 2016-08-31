@@ -556,7 +556,22 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
 			var last = this.$lengthText() - 1//this._text.length - 1
+			if(last <0){ // first cursor, make it up from initial props
+				var ls = this.Text.prototype.lineSpacing
+				var fs = this.Text.prototype.fontSize
+				return {
+					lineSpacing: ls,
+					fontSize:fs,
+					tail:0,
+					head:0,
+					advance:0,
+					x:0,
+					y:0 + this.cursorTrim * fs,
+					h:fs * ls - 2.* this.cursorTrim * fs
+				}
+			}
 			var cr = this.cursorRect(last, 1)
+
 			if(this._text.charCodeAt(last) === 10){
 				cr.y += cr.fontSize * cr.lineSpacing
 				cr.x = 0
@@ -581,6 +596,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	}
 
 	proto.offsetFromPos = function(x, y){
+
 		var t = this.$seekPosText(x, y)
 
 		if(t === -1) t = 0
@@ -608,6 +624,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	proto.removeText = function(start, end){
 		this._text = this._text.slice(0, start) + this._text.slice(end)
 		this.redraw()
+		return 0
 	}
 
 	proto.serializeSlice = function(start, end, arg){

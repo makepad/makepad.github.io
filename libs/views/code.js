@@ -486,7 +486,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			})
 		}
 		catch(e){
-			//console.log(e, e.stack)
+			console.log(e, e.stack)
 			this.error = e
 		}
 	}
@@ -495,6 +495,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 
 		this.beginBg(this.viewGeom)
 		// ok lets parse the code
+	
 		if(this.textClean){
 			this.reuseDrawSize()
 			this.reuseBlock()
@@ -538,6 +539,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				this.orderMarker()
 				this.reuseErrorMarker()
 				this.orderSelection()
+				this.orderText()
 
 				var oldtext = this._text
 				this.oldText = oldtext
@@ -964,6 +966,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 	proto.insertText = function(offset, text, isUndo){
 
 		var char = this._text.charAt(offset)
+
 		var prev = this._text.charAt(offset-1)
 
 		if(!isUndo){
@@ -994,6 +997,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		else this.wasFirstNewlineChange = 0
 
 		this.textClean = false
+
 		this._text = this._text.slice(0, offset) + text + this._text.slice(offset)
 
 		// alright lets find the insertion spot in ann

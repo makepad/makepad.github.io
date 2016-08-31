@@ -200,7 +200,9 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			var len = this.$PROPLEN()
 			var lineSpacing = this._NAME.prototype.lineSpacing
 			this.$PROPVARDEF()
-
+			if(len === 0){
+				return 0
+			}
 			for(var i = 0; i < len; i++){
 				var tx = this.$PROP(i, 'x')
 				var ty = this.$PROP(i, 'y')

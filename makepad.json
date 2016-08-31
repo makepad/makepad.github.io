@@ -95,7 +95,8 @@
 		]},
 		{"name":"examples", "closed":false, "folder":[
 			{"name":"windtree.js"},
-			{"name":"shiny.js"}
+			{"name":"shiny.js"},
+			{"name":"tiny.js"}
 		]},
 		{"name":"makepad.js"}
 	]
