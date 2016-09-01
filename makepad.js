@@ -283,8 +283,8 @@ module.exports = require('base/app').extend(function(proto){
 		return [
 			/*
 			Splitter({
-					split:'vertical',
-					pos:100,
+					split:'horizontal',
+					pos:-100,
 					w:'100%',
 					h:'100%'
 				},
@@ -292,11 +292,11 @@ module.exports = require('base/app').extend(function(proto){
 					color:'red'
 				}),
 				Fill({
-					color:'green'
+					color:'blue'
 				}),
 				Fill({
-					x:'$10',
-					y:'$10',
+					x:'@0',
+					y:'@0',
 					w:20,
 					h:20,
 					color:'blue'

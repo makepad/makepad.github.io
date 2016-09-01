@@ -1,6 +1,8 @@
 module.exports = require('base/stamp').extend(function Split(proto){
 
-	proto.props = {}
+	proto.props = {
+		offset:0
+	}
 	proto.inPlace = 1
 
 	proto.tools = {
@@ -20,8 +22,8 @@ module.exports = require('base/stamp').extend(function Split(proto){
 	}
 
 	proto.onFingerDown = function(e){
-		this.xStart = e.xView
-		this.yStart = e.yView
+		this.xStart = e.x + this.offset
+		this.yStart = e.y + this.offset
 		this.state = this.states.clicked 
 	}
 

@@ -34,7 +34,6 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 
 		window.addEventListener('webkitmouseforcewillbegin', this.onCheckMacForce.bind(this), false)
 		window.addEventListener('webkitmouseforcechanged', this.onCheckMacForce.bind(this), false)
-
 	}
 
 	proto.addChild = function(child){
@@ -67,9 +66,49 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 	// User api
 	// 
 	// 
+	var cursors = {
+		'none':1,
+		'auto':1,
+		'default':1, 
+		'contextMenu':1,
+		'help':1,
+		'alias':1,
+		'copy':1,
+		'progress':1,
+		'wait':1,
+		'not-allowed':1,
+		'pointer':1,
+		'no-drop':1,
+		'grab':1,
+		'grabbing':1,
+		'zoom-in':1,
+		'zoom-out':1,
+		'move':1,
+		'all-scroll':1,
+		'text':1,
+		'vertical-text':1,
+		'cell':1,
+		'crosshair':1,
+		'col-resize':1,
+		'row-resize':1,
+		'n-resize':1,
+		'e-resize':1,
+		's-resize':1,
+		'w-resize':1,
+		'ne-resize':1,
+		'nw-resize':1,
+		'se-resize':1,
+		'sw-resize':1,
+		'ew-resize':1,
+		'ns-resize':1,
+		'nesw-resize':1,
+		'nwse-resize':1,
+	}
 
 	proto.user_setCursor = function(msg){
-		this.worker.app.canvas.style.cursor = msg.cursor
+		if(!cursors[msg.cursor]) return
+		// use the body as the cursor container
+		document.body.style.cursor = msg.cursor
 	}
 
 	// 
@@ -207,8 +246,8 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				continue
 			}
 
-			f.sx = oldf.sx
-			f.sy = oldf.sy
+			f.xDown = oldf.xDown
+			f.yDown = oldf.yDown
 			f.fn = 'onFingerUpNow'
 			f.digit = oldf.digit
 			f.pickId = oldf.pickId
@@ -218,17 +257,18 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 			f.dx = oldf.dx
 			f.dy = oldf.dy
 			if(oldf.move === 1){
-				if(!f.dx) f.dx = (f.sx - f.x)/3
-				if(!f.dy) f.dy = (f.sy - f.y)/3
+				if(!f.dx) f.dx = (f.xDown - f.x)/3
+				if(!f.dy) f.dy = (f.yDown - f.y)/3
 			}
 
 			this.fingerMap[oldf.digit] = undefined
 
 			// store it for tap counting
 			this.tapMap[oldf.digit] = f
-			var dx = f.sx - f.x
-			var dy = f.sy - f.y
+			var dx = f.xDown - f.x
+			var dy = f.yDown - f.y
 			var isTap = f.time - oldf.time < this.TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?this.TAP_DIST_TOUCH:this.TAP_DIST_MOUSE)
+
 			if(isTap) f.tapCount = oldf.tapCount + 1
 			else f.tapCount = 0
 

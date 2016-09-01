@@ -215,8 +215,10 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evalx = function(str){
 		var cache = xcache[str]
 		if(!cache){
+			var pf = parseFloat(str)
+			if(str == pf) return this.sx + pf
 			var code = 'turtle.sx + '+ str
-				.replace(/\$/g, 'turtle.width - turtle._w - turtle.padding[3] -')
+				.replace(/\@/g, 'turtle.width - turtle._w - turtle.padding[3] -')
 				.replace(/\%/g, '*0.01*turtle.width - turtle.margin[1] - turtle.margin[3]')
 			cache = xcache[str] = new Function('turtle', 'return '+code)
 		}
@@ -228,8 +230,10 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evaly = function(str){
 		var cache = ycache[str]
 		if(!cache){
+			var pf = parseFloat(str)
+			if(str == pf) return this.sy + pf
 			var code = 'turtle.sy + '+  str
-				.replace(/\$/g, 'turtle.height - turtle._h - turtle.padding[0] -')
+				.replace(/\@/g, 'turtle.height - turtle._h - turtle.padding[0] -')
 				.replace(/\%/g, '*0.01*turtle.height - turtle.margin[0] - turtle.margin[2]')
 			cache = ycache[str] = new Function('turtle', 'return '+code)
 		} 
@@ -240,6 +244,8 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evalw = function(str){
 		var cache = wcache[str]
 		if(!cache){
+			var pf = parseFloat(str)
+			if(str == pf) return pf
 			var code = str.replace(/\%/g, '*0.01*turtle.width - turtle.margin[1] - turtle.margin[3]')
 			cache = wcache[str] = new Function('turtle', 'return '+code)
 		} 
@@ -250,6 +256,8 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	proto.evalh = function(str){
 		var cache = hcache[str]
 		if(!cache){
+			var pf = parseFloat(str)
+			if(str == pf) return pf
 			var code = str.replace(/\%/g, '*0.01*turtle.height - turtle.margin[0] - turtle.margin[2]')
 			cache = hcache[str] = new Function('turtle', 'return '+code)
 		} 

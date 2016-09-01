@@ -11,7 +11,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 	// lets define some props
 	proto.props = {
 	}
-
+	proto.cursor = 'default'
 	proto._onConstruct = function(){
 		base._onConstruct.call(this)
 		
@@ -58,7 +58,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 		
 		this._frameId = 0
 
-		function fingerMessage(event, todoId, pickId, msg){
+		function fingerMessage(event, todoId, pickId, msg, isOut){
 			var view = viewTodoMap[todoId]
 			if(!view) return
 			var xyLocal = [0,0,0,0]
@@ -73,15 +73,31 @@ module.exports = require('base/view').extend(function App(proto, base){
 			msg.x = msg.xView = xyLocal[0] + (view.todo.xScroll || 0)
 			msg.y = msg.yView = xyLocal[1] + (view.todo.yScroll || 0)
 			if(view[event]) view[event](msg)
+			// lets find the right cursor
 			var stamp = view.$stamps[pickId]
-			if(!stamp) return
-			msg.x = msg.xLocal - stamp.$x
-			msg.y = msg.yLocal - stamp.$y
-			if(stamp.lockScroll){
-				msg.x += view.todo.xScroll || 0
-				msg.y += view.todo.yScroll || 0
+
+			if(stamp){
+				msg.x = msg.xLocal - stamp.$x
+				msg.y = msg.yLocal - stamp.$y
+				if(stamp.lockScroll){
+					msg.x += view.todo.xScroll || 0
+					msg.y += view.todo.yScroll || 0
+				}
+				if(stamp[event]) stamp[event](msg)
 			}
-			if(stamp[event]) stamp[event](msg)
+			if(isOut) return
+			// set the mousecursor
+			if(stamp){
+				if(stamp.state && stamp.state.cursor) return fingers.setCursor(stamp.state.cursor)
+				if(stamp.cursor) return fingers.setCursor(stamp.cursor)
+			}
+			var iter = view
+			while(iter){
+				if(iter.cursor){
+					return fingers.setCursor(iter.cursor)
+				}
+				iter = iter.parent
+			}
 		}
 
 		// dispatch mouse events
@@ -112,7 +128,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			var todoId = msg.todoId
 			var pickId = msg.pickId
 			if(todoId !== lastTodoId || pickId !== lastPickId){
-				fingerMessage('onFingerOut', lastTodoId, lastPickId, msg)
+				fingerMessage('onFingerOut', lastTodoId, lastPickId, msg, true)
 				fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
 			}
 			lastTodoId = todoId
@@ -308,14 +324,13 @@ module.exports = require('base/view').extend(function App(proto, base){
 			)?-1:0)
 
 			layout.$writeList.push(iter, level)
-
-
 			layout.beginTurtle(iter)
 			turtle = layout.turtle
-
-			//console.log(iter.name, turtle._x, iter._x)
-			
-
+			// define width/height for any expressions depending on it
+			iter.$wInside = turtle.width 
+			iter.$hInside = turtle.height
+			iter.$w = turtle.width + turtle.padding[3] + turtle.padding[1]
+			iter.$h = turtle.height+ turtle.padding[0] + turtle.padding[2]
 			// depth first recursion free walk
 			var next = iter.children[0]
 			if(next) next.$childIndex = 0
