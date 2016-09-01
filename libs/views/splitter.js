@@ -3,25 +3,28 @@ module.exports=require('base/view').extend({
 	props:{
 		split:'vertical',
 		pos:100,
-		size:10,
+		size:5,
 		color:'red'
 	},
-	//padding:[10,10,10,10],
-	//drawPadding:[10,10,10,10],
+	padDrawing:true,
+	padding:[10,10,10,10],
 	tools:{
 		Split:require('tools/split').extend({
 		})
 	},
 	onSplitMove:function(e){
-		console.log("SPLITMOVING", e)
+		this.pos = e.xSplit
 	},
 	onDraw:function(){
+		//this.turtle._padding = this.padding
+		//this.beginTurtle()
 		this.drawSplit({
-			x:this.pos,
-			y:0,
+			x:''+this.pos,
+			y:'0',
 			w:this.size,
-			h:this.$h
+			h:'100%'//this.$h
 		})
+		//this.endTurtle()
 	},
 	onAfterCompose:function(){
 		var c0 = this.children[0]

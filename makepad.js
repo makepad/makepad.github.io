@@ -281,7 +281,7 @@ module.exports = require('base/app').extend(function(proto){
 
 	proto.onCompose = function(){
 		return [
-		/*
+			/*
 			Splitter({
 					split:'vertical',
 					pos:100,
@@ -302,7 +302,7 @@ module.exports = require('base/app').extend(function(proto){
 					color:'blue'
 				})
 			)*/
-		
+			
 			SideTabs({
 				onInit:function(){
 					this.selectTab(0)

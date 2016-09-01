@@ -40,6 +40,7 @@
 				{"name":"button.js"},
 				{"name":"tab.js"},
 				{"name":"slider.js"},
+				{"name":"split.js"},
 				{"name":"arctext.js"},
 				{"name":"codeblock.js"},
 				{"name":"codetext.js"},
@@ -52,7 +53,9 @@
 				{"name":"code.js"},
 				{"name":"draw.js"},
 				{"name":"edit.js"},
-				{"name":"tree.js"}
+				{"name":"tree.js"},
+				{"name":"fill.js"},
+				{"name":"splitter.js"}
 			]},
 			{"name":"services","closed":true,"folder":[
 				{"name":"painter.js"},

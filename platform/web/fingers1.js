@@ -129,8 +129,8 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				f.pickId = pick.pickId
 				f.todoId = pick.todoId
 				f.workerId = pick.workerId
-				f.sx = f.x
-				f.sy = f.y
+				f.xDown = f.x
+				f.yDown = f.y
 				f.dx = 0
 				f.dy = 0
 				f.move = 0
@@ -169,13 +169,13 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				console.log('Move finger without matching finger', f)
 				continue
 			}
-			f.sx = oldf.sx
-			f.sy = oldf.sy
-			oldf.dx = f.dx = isNaN(oldf.lx)?0:oldf.lx - f.x
-			oldf.dy = f.dy = isNaN(oldf.ly)?0:oldf.ly - f.y
+			f.xDown = oldf.xDown
+			f.yDown = oldf.yDown
+			oldf.dx = f.dx = isNaN(oldf.xLast)?0:oldf.xLast - f.x
+			oldf.dy = f.dy = isNaN(oldf.yLast)?0:oldf.yLast - f.y
 			oldf.move++
-			oldf.lx = f.x
-			oldf.ly = f.y
+			oldf.xLast = f.x
+			oldf.yLast = f.y
 			f.fn = 'onFingerMove'
 			f.digit = oldf.digit
 			f.workerId = oldf.workerId
