@@ -65,7 +65,8 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		y:NaN,
 		w:NaN,
 		h:NaN,
-		margin:undefined
+		margin:undefined,
+		cursor:undefined
 	}
 
 	function styleStampCode(indent, inobj, props, noif){
@@ -90,20 +91,28 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + 'var $stampId = ++$view.$pickId\n'
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
-		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+'){\n'
+		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+' || $stamp.$layer !== '+macroargs[0]+'.$layer){\n'
 		code += indent + '	$stamp = $view.$stamps[$stampId] = Object.create(this._'+classname+'.prototype)\n'
 		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
-		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
-		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
+		code += indent + '	var $layer = '+macroargs[0]+'.$layer\n'
+		code += indent + '	if($layer){\n'
+		code += indent + '      var $l = $layer + "'+classname+'"\n'
+		code += indent + '		$stamp.$layer = $layer\n'
+		code += indent + '		$stamp.$shaders = this.$shaders[$l]\n'
+		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders[$l] = {})\n'
+		code += indent + '	} else {\n'
+		code += indent + '		$stamp.$shaders = this.$shaders.'+classname+'\n'
+		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
+		code += indent + '	}'
 		code += indent + '	if($stamp._states) $stamp._state = $stamp._states.default\n'
 		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
 		code += indent + '}\n'
 		code += indent + 'var $state = '+mainargs[0]+' && '+mainargs[0]+'.state\n'
-		code += indent + 'if($state) $stamp._state = $stamp._states[$state+$stamp.stateExt]\n'
+		code += indent + 'if($state) $stamp._state = $stamp._states[$state.indexOf($stamp.stateExt)!==-1?$state:$state+$stamp.stateExt]\n'
 		code += indent + '$turtle._pickId = $stampId\n'
 		code += indent + '$stamp.turtle = $turtle\n'
-		code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
+		if(macroargs[0]) code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
 		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
 
 		var stack = [
@@ -122,9 +131,11 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		}
 		code += '\n'
 
-		code += indent +'if('+macroargs[0]+'){\n'
-		code += styleStampCode(indent+'	', macroargs[0], props, true)
-		code += indent +'}\n'
+		if(macroargs[0]){
+			code += indent +'if('+macroargs[0]+'){\n'
+			code += styleStampCode(indent+'	', macroargs[0], props, true)
+			code += indent +'}\n'
+		}
 
 		code += indent +'var $p0=this._state && this._state.'+classname+'\n'
 		code += indent +'if($p0){\n'

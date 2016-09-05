@@ -140,9 +140,15 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(16), gl.STATIC_DRAW)
 		gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, 0)
 		gl.enableVertexAttribArray(0)
+
 		var gltex = gl.createTexture()
 		gl.bindTexture(gl.TEXTURE_2D, gltex)
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+
 		var dt = Date.now()
 		for ( var i = 0, len = localStorage.length; i < len; ++i ) {
 
@@ -157,7 +163,6 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 			--i
 			if(shader){
 				gl.useProgram(shader.program)
-				// set up some fake textures
 				for(var t = 0; t< 8; t++){
 					gl.activeTexture(gl.TEXTURE0 + t)
 					gl.bindTexture(gl.TEXTURE_2D, gltex)

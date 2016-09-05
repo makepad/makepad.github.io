@@ -200,6 +200,17 @@ module.exports = require('base/shader').extend(function RectShader(proto){
 	}
 
 	proto.toolMacros = {
+		$readOffset:function(o){
+			this.$PROPVARDEF()
+			var len = this.$PROPLEN()
+			if(o < 0 || o >= len) return
+			return {
+				x:this.$PROP(o, 'x'),
+				y:this.$PROP(o, 'y'),
+				w:this.$PROP(o, 'w'),
+				h:this.$PROP(o, 'h')
+			}
+		},
 		draw:function(overload){
 			this.$STYLEPROPS(overload, 1)
 			this.$ALLOCDRAW()

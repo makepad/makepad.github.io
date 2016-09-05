@@ -4,7 +4,7 @@ module.exports=require('base/view').extend({
 		color:'red'
 	},
 	tools:{
-		Bg:require('tools/bg').extend({
+		Bg:require('tools/quad').extend({
 			color:''
 		})
 	},

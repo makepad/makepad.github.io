@@ -313,7 +313,7 @@ types.colorFromString = function(str, alpha, ar, o){
 		}
 		return false
 	}
-	var col = types.colorwikipedia[str]
+	var col = str === 'random'?floor(Math.random()*16777215):types.colorwikipedia[str]
 	if(col !== undefined){
 		ar[o] = (col>>16)/255
 		ar[o+1] = ((col>>8)&0xff)/255
@@ -366,7 +366,7 @@ types.colorFromStringPacked = function(str, alpha, ar, o){
 		}
 		return false
 	}
-	var col = types.colorwikipedia[str]
+	var col = str === 'random'?floor(Math.random()*16777215):types.colorwikipedia[str]
 	if(col !== undefined){
 		var dx = 4095/255
 		ar[o] = (((col>>16)*dx)<<12)+ ((((col>>8)&0xff)*dx)|0)

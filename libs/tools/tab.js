@@ -4,47 +4,13 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		text:'',
 		icon:'',
 		index:0,
-		canClose:false,
-		selected:false
+		h:26,
+		canDrag:false,
+		canClose:false
 	}
 
-	proto.inPlace = 0
-	
+	proto.inPlace = 0	
 	proto.tools = {
-		Button:require('tools/button').extend({
-			Bg:{
-				borderRadius:8,
-				padding:[0,2,0,2],
-			},
-			Icon:{
-				fontSize:10,
-				color:'#c'
-			},
-			states:{
-				default:{
-					Bg:{
-						pickAlpha:-1,
-						color:'#0000'
-					}
-				},
-				over:{
-					Bg:{
-						color:'#c00'
-					}
-				},
-				clicked:{
-					Bg:{
-						color:'#a00'
-					}
-				}
-			},
-			margin:[1,2,0,0],
-			text:'',
-			icon:'close',
-			onClick:function(){
-				this.view.onTabStampClose(this.index)
-			}
-		}),
 		Text:require('tools/text').extend({
 			font:require('fonts/ubuntu_monospace_256.font'),
 			shadowOffset:[1,1],
@@ -53,7 +19,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			shadowBlur:1,
 			duration:0.2,
 			margin:[0,4,0,0],
-			color:'white'
+			color:'#9'
 		}),
 		Icon:require('tools/icon').extend({
 			shadowOffset:[1,1],
@@ -63,40 +29,28 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			color:'#a',
 			margin:[0,4,0,0]
 		}),
-		Bg:require('tools/shadowquad').extend({
-			tween:2,
-			padding:[4,1,3,5],
-			margin:[0,1,0,0],
-			pickAlpha:-1,
-			//shadowOffset:[2,2],
-			borderRadius:3.,
-			borderWidth:0,
-			borderColor:{noTween:1,pack:'float12',value:'#f'},
-			color:{noTween:1,pack:'float12',value:'#4'},
-			pixel:function(){$
-				var p=vec2(this.w,this.h)*this.mesh.xy
-				var aa=this.antialias(p)
-				var hh=this.h+4
-				
-				var f=0.
-				
-				var A=this.boxField(p,0,0.,this.w,this.h+8,this.borderRadius)
-				f=A
-
-				if(this.mesh.z<.5){
-					return this.colorSolidField(aa,f, this.shadowColor)
-				}
-				var col=this.color
-				var bor = this.borderColor
-				return this.colorBorderField(aa,f,this.borderWidth, col, bor)
-			}
+		Bg:require('tools/rect').extend({
+			borderRadius:[1,1,6,6],
+			padding:[6,1,3,4],
+			color:'#3'
 		})
 	}
 
 	proto.states = {
 		default:{
 			Bg:{
-				color:'#2'
+				
+			},
+			Text:{
+				
+			}
+		},
+		slide:{
+			tween:2,
+			ease:[0,10,0,0],
+			duration:0.3,
+			Bg:{
+				color:'#3'
 			},
 			Text:{
 				color:'#9'
@@ -104,7 +58,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		},
 		defaultOver:{
 			Bg:{
-				color:'#3'
+				color:'#4'
 			},
 			Text:{
 				color:'#c'
@@ -112,15 +66,26 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		},
 		selected:{
 			Bg:{
-				color:'#4'
+				color:'#5'
 			},
 			Text:{
 				color:'#e'
 			}
 		},
+		selectedSlide:{
+			tween:2,
+			ease:[0,10,0,0],
+			duration:0.3,
+			Bg:{
+				color:'#8'
+			},
+			Text:{
+				color:'#f'
+			}
+		},		
 		selectedOver:{
 			Bg:{
-				color:'#4'
+				color:'#8'
 			},
 			Text:{
 				color:'#f'
@@ -128,29 +93,36 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		}
 	}
 
-	proto.onFingerDown = function(){
-		if(this.view.onTabStampSelected) this.view.onTabStampSelected(this.index)
+	proto.onFingerDown = function(e){
+		if(this.onTabSelected) this.onTabSelected(e)
 		this.state = this.states.selectedOver
+		this.stateExt = 'Over'
+		// lets start dragging it
+	}
+
+	proto.onFingerMove = function(e){
+		// we have to choose an injection point
+		if(this.onTabSlide) this.onTabSlide(e)
+		//this.x = e.xView
 	}
 
 	proto.onFingerUp = function(e){
-		//this.state = this.states.selected
+		if(this.onTabReleased) this.onTabReleased()
+		//this.x = undefined
+		this.stateExt = ''
+		this.state = this.states.selected
 	}
 
-	proto.isSelected = function(){
-		return this.state === this.states.selected || this.state === this.states.selectedOver
-	}
 	proto.onFingerOver = function(){
+		if(this.state === this.states.selected || this.state === this.states.selectedOver){
+			this.state = this.states.selectedOver
+		}
+		else this.state = this.states.defaultOver
 		this.stateExt = 'Over'
-		this.state = this.isSelected()?this.states.selectedOver:this.states.defaultOver
 	}
 
 	proto.onFingerOut = function(){
 		this.stateExt = ''
-		this.state = this.isSelected()?this.states.selected:this.states.default
-	}
-
-	proto.deselect = function(){
 		this.state = this.states.default
 	}
 
@@ -166,15 +138,20 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 				text:this.text
 			})
 		}
-		if(this.canClose){
-			this.drawButton({
-				icon:'close'
-			}).index = this.index
-		}
 		this.endBg()
 	}
 
+	proto.stampGeom = function(){
+		return this.$readOffsetBg(this.$propsLenBg)
+	}
+
 	proto.toolMacros = {
+		order:function(overload){
+			this.$STYLESTAMP(overload)
+			$stamp.orderBg()
+			$stamp.orderIcon()
+			$stamp.orderText()
+		},
 		draw:function(overload){
 			this.$STYLESTAMP(overload)
 			this.$DRAWSTAMP()

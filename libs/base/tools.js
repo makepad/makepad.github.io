@@ -42,8 +42,27 @@ module.exports = function(proto){
 		}
 	})
 
+	var zeroMargin = [0,0,0,0]
+	var zeroAlign = [0,0]
+	proto.beginLayout = function(opts){
+		var turtle = this.turtle
+		if(opts){
+			turtle._margin = opts.margin || zeroMargin
+			turtle._padding = opts.padding || zeroMargin
+			turtle._align = opts.align || zeroAlign
+			turtle._wrap = opts.wrap || true
+			if(opts.w !== undefined) turtle._w = opts.w
+			if(opts.h !== undefined) turtle._h = opts.h
+		}
+		this.beginTurtle(1)
+	}
 
-	proto.beginTurtle = function(){
+	proto.endLayout = function(){
+		var ot = this.endTurtle()
+		this.turtle.walk(ot)
+	}
+
+	proto.beginTurtle = function(dump){
 		var view = this.view
 		// add a turtle to the stack
 		var len = ++view.$turtleStack.len
@@ -55,7 +74,7 @@ module.exports = function(proto){
 		turtle.view = view
 		turtle.context = view
 		turtle._pickId = outer._pickId
-		turtle.begin(outer)
+		turtle.begin(outer, dump)
 		return turtle
 	}
 
@@ -69,6 +88,10 @@ module.exports = function(proto){
 		// forward the pickId back down
 		//outer._pickId = last._pickId
 		return last
+	}
+
+	proto.lineBreak = function(){
+		this.turtle.lineBreak()
 	}
 
 	proto.$moveWritten = function(start, dx, dy){

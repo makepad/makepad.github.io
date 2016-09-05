@@ -13,6 +13,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 	}
 	proto.cursor = 'default'
 	proto._onConstruct = function(){
+		
 		base._onConstruct.call(this)
 		
 		var viewTodoMap = this.$viewTodoMap = []
@@ -73,6 +74,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			msg.x = msg.xView = xyLocal[0] + (view.todo.xScroll || 0)
 			msg.y = msg.yView = xyLocal[1] + (view.todo.yScroll || 0)
 			if(view[event]) view[event](msg)
+
 			// lets find the right cursor
 			var stamp = view.$stamps[pickId]
 
@@ -100,17 +102,25 @@ module.exports = require('base/view').extend(function App(proto, base){
 			}
 		}
 
+		app.$fingerMove = {}
+
 		// dispatch mouse events
 		fingers.onFingerDown = function(msg){
+			app.$fingerMove[msg.digit] = {
+				todoId:msg.todoId,
+				pickId:msg.pickId
+			}
 			fingerMessage('onFingerDown', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerMove = function(msg){
-			fingerMessage('onFingerMove', msg.todoId, msg.pickId, msg)
+			var move = app.$fingerMove[msg.digit]
+			fingerMessage('onFingerMove', move.todoId, move.pickId, msg)
 		}
 
 		fingers.onFingerUp = function(msg){
-			fingerMessage('onFingerUp', msg.todoId, msg.pickId, msg)
+			var move = app.$fingerMove[msg.digit]
+			fingerMessage('onFingerUp', move.todoId, move.pickId, msg)
 		}
 
 		fingers.onFingerUpNow = function(msg){
@@ -190,6 +200,13 @@ module.exports = require('base/view').extend(function App(proto, base){
 		painter.mainFramebuffer.assignTodo(this.todo)
 		// first draw
 		this.$redrawViews(0,0)
+	}
+
+	proto.transferFingerMove = function(digit, todoId, pickId){
+		this.$fingerMove[digit] = {
+			todoId:todoId,
+			pickId:pickId
+		}
 	}
 
 	proto.setClipboardText = function(text){

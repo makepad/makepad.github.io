@@ -7,7 +7,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		this.mh = 0
 	}
 	proto.dump = function(){
-		console.log(
+		return (
 		'sx:'+this.sx+
 		',sy:'+this.sy+
 		',width:'+this.width+
@@ -19,7 +19,8 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		',wx:'+this.wx+
 		',wy:'+this.wy)
 	}
-	proto.begin = function(outer){
+	proto.begin = function(outer, dump){
+
 		this.outer = outer
 
 		var margin, padding
@@ -70,13 +71,13 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		this.height = this._h
 		this.ix = _x
 		this.iy = _y
-	
 		//console.log(this.ix, _x)
 		if(isNaN(this.ix)) this.ix = outer.wx
 		if(isNaN(this.iy)) this.iy = outer.wy
 
 		this.x1 = this.y1 = Infinity
 		this.x2 = this.y2 = -Infinity
+
 		this.mh = 0
 		// begin walking
 		this.sx = this.wx = this.ix + padding[3] + margin[3]
@@ -116,15 +117,19 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		var isNaNy = isNaN(this._y)
 		if(isNaNx || isNaNy){
 			// only wrap now
-			if(this.outer && this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width){
+			if(this.outer && (this.outer._wrap === 2 ||
+				this.outer._wrap && !isNaN(this.width) && this.wx + this._w + margin[3] + margin[1] > this.sx + this.width)){
+
 				var dx = this.sx - this.wx 
 				var dy = this.mh
+
 				if(!isNaNx) dx = 0
 				if(!isNaNy) dy = 0
 				this.wx = this.sx
 				this.wy += this.mh
 				this.mh = 0
 				// move the body of the wrapped thing
+				// but this changes our bounds randomly.
 				if(oldturtle){
 					this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
 				}
@@ -137,6 +142,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 			if(nh > this.mh) this.mh = nh
 			// compute x bounds
 			if(!this._noBounds){
+				// check if it wont wrap
 				if(this.wx > this.x2) this.x2 = this.wx
 				// compute y bounds
 				var ny = this.wy + nh
@@ -162,16 +168,17 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
 		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
 
-		// lets update x2 and y2
-		if(this.x1 < outer.x1) outer.x1 = this.x1
-		if(this.y1 < outer.y1) outer.y1 = this.y1
-		if(this.x2 > outer.x2) outer.x2 = this.x2
-		if(this.y2 > outer.y2) outer.y2 = this.y2
+		//if(!nobound){
+		//	if(this.x1 < outer.x1) outer.x1 = this.x1
+		//	if(this.y1 < outer.y1) outer.y1 = this.y1
+		//	if(this.x2 > outer.x2) outer.x2 = this.x2
+		//	if(this.y2 > outer.y2) outer.y2 = this.y2
+		//}
 
-		// align
 		if(this.align[0] !== 0 || this.align[1] !== 0){
 			var dx = isNaN(this.width)? 0: (this.width - (this.x2 - this.sx)) * this.align[0]
 			var dy = isNaN(this.height)? 0: (this.height - (this.y2 - this.sy)) * this.align[1]
+			//	dx = this.width - (this.x2 - this.sx  -15)
 			if(isNaN(dx) || dx === Infinity) dx = 0
 			if(isNaN(dy) || dy === Infinity) dy = 0
 			if(dx !== 0 || dy !== 0) this.view.$moveWritten(this.$writeStart, dx, dy)		

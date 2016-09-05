@@ -322,16 +322,13 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 					}
 					off = b
 				}
-				//if(width){
-					// run the turtle
+
 				turtle._w = width
 				if(!absx) turtle._x = NaN
 				if(!absy) turtle._y = NaN
 				absx = absy = false
-				//console.log("MARK")
 				turtle.walk()
-				//console.log("END")
-				// output
+
 				for(var i = start; i < off; i++){
 					var unicode = txt.charCodeAt(i)
 					var g = glyphs[unicode] || glyphs[63]

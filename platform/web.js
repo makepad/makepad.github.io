@@ -150,16 +150,19 @@
 			webkitResolveLocalFileSystemURL:2, webkitResolveLocalFileSystemUrl:2,  
 			escape:1, decodeURI:1, decodeURIComponent:1, encodeURI:1, encodeURIComponent:1, 
 			URL:1,crypto:1,onerror:1,onmessage:1,onrejectionhandled:1,
-			onunhandledrejection:1,self:1//,postMessage:2
+			onunhandledrejection:1//,self:1//,postMessage:2
 		}
 
 		var LocalFunction = self.Function
 		self.Function = function(){
+			
 			var args = []
 			var len = arguments.length
 			for(var i = 0; i < len - 1; i++) args.push(arguments[i])
 			args.push('caches')
-			args.push(arguments[len -1])
+			
+			var code = arguments[len -1]
+			args.push(code)
 			return LocalFunction.apply(null, args)
 		}
 		for(var key in clean){

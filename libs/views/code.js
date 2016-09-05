@@ -111,17 +111,9 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			lockScroll:0.,
 			fontSize:16,
 			y:2,
-			x:'$15'
+			x:'@15'
 		})
 	}
-	
-	Object.defineProperty(proto,'styles',{
-		get:function(){ return this.style },
-		set:function(inStyles){
-			this._protoStyles = protoInherit(this._protoStyles, inStyles)
-			this.style = protoFlatten({}, this._protoStyles)
-		}
-	})
 	
 	proto.styles = {
 		boldness:0.,
@@ -486,7 +478,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			})
 		}
 		catch(e){
-			console.log(e, e.stack)
+			//console.log(e, e.stack)
 			this.error = e
 		}
 	}
@@ -1009,7 +1001,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			pos += txt.length
 			if(offset<=pos){
 				var idx = offset - (pos - txt.length)
-				if(ann[i+1] === this.styles.Identifier.unknown){
+				if(ann[i+1] === this._styles.Identifier.unknown){
 					ann[i] = txt.slice(0, idx) + text + txt.slice(idx)
 				}
 				else{
@@ -1017,7 +1009,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 					// lets choose a style
 					ann.splice(i+step,0,
 						text,
-						this.styles.Identifier.unknown,
+						this._styles.Identifier.unknown,
 						ann[i+2],
 						ann[i+3],
 						ann[i+4],
@@ -1135,62 +1127,6 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 	proto.serializeSlice = function(start, end, arg){
 		if(arg) return arg.slice(start, end)
 		return this._text.slice(start, end)
-	}
-
-	// creates a prototypical inheritance overload from an object
-	function protoInherit(oldobj, newobj){
-		// copy oldobj
-		var outobj = oldobj?Object.create(oldobj):{}
-		// copy old object subobjects
-		for(var key in oldobj){
-			var item = oldobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(item, newobj[key])
-			}
-		}
-		// overwrite new object
-		for(var key in newobj){
-			var item = newobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(oldobj && oldobj[key], newobj[key])
-			}
-			else{
-				if(typeof item === 'string'){
-					item = proto.parseColor(item,1)
-				}
-				outobj[key] = item
-			}
-		}
-		return outobj
-	}
-
-	// copys all properties down the chain
-	function protoFlatten(outobj, inobj, parent){
-		var subobjs
-		// copy parent props
-		for(var key in parent){
-			var item = parent[key]
-			if(!item || item.constructor !== Object){
-				if(!inobj || inobj[key] === undefined) outobj[key] = item
-			}
-		}
-
-		// copy inobj props
-		for(var key in inobj){
-			var item = inobj[key]
-			if(!item || item.constructor !== Object){
-				outobj[key] = item
-			}
-		}
-
-		// copy inobj objs
-		for(var key in inobj){
-			var item = inobj[key]
-			if(item && item.constructor === Object){
-				protoFlatten(outobj[key] = {}, item, outobj)
-			}
-		}		
-		return outobj
 	}
 
 })

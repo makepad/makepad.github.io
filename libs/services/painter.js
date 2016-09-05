@@ -686,12 +686,11 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 
 	proto.toMessage = function(){
 
-		if(!this.dirty){
+		if(!this.dirty || !this.array){
 			return null
 		}
 		this.dirty = false
 
-		//console.log(this.array.length)
 		if(this.transferData){
 			sendarray = this.array
 			this.array = undefined
@@ -701,6 +700,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		else{
 			var sendarray = new this.arraytype(this.array)
 		}
+
 		return [{
 			fn:'updateMesh',
 			arrayType:this.type.name,

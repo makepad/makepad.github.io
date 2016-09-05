@@ -8,6 +8,9 @@ module.exports = require('base/app').extend(function DrawApp(proto){
 		Line:require('tools/line'),
 		Text:require('tools/text').extend({
 			font:require('fonts/ubuntu_medium_256.font')
+		}),
+		Icon:require('tools/icon').extend({
 		})
+
 	}
 })

@@ -30,7 +30,7 @@ return require('base/app').extend({
 				this.drawBg({w:35,h:15,margin:[0,0,10,10],color:'red'})
 				this.beginBg({
 					//y:'$0',
-					x:'$0',
+					x:'@0',
 					w:'100%',
 					//align:[0.5,0.5],
 					padding:[5,5,5,5],

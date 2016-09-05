@@ -82,6 +82,11 @@ root.startWorker = function(serviceList, platform, parent){
 				root.showParseError(msg.path)
 			}
 		},
+		debug:{
+			onMessage:function(msg){
+				console.log(msg)
+			}
+		},
 		pong:{
 			onMessage:function(msg){
 				if(parent) parent.services.worker1.pong(worker)
@@ -382,6 +387,8 @@ function createOnMessage(worker){
 	}
 
 	worker.onMessage = function(msg){
+		try{
+
 		if(msg.$ === 'batch'){
 			for(var i = 0, msgs = msg.msgs; i < msgs.length; i++){
 				msg = msgs[i]
@@ -396,6 +403,10 @@ function createOnMessage(worker){
 			if(service && service.onMessage) service.onMessage(msg.msg)
 		}
 		this.onAfterEntry()
+		}catch($$){
+			//console.log($$)
+			this.postMessage({$:"debug",msg:{msg:msg, data:JSON.stringify($$.line)}})
+		}
 	}
 }
 

@@ -606,6 +606,8 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	}
 
 	proto.onTouchEnd = function(x, y, tapCount){
+		//document.body.requestFullscreen();
+		return
 		if(this.root.isTouchDevice && tapCount === 1){
 			this.textAreaTouchMode()
 			this.showTextArea()
