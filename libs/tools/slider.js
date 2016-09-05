@@ -11,11 +11,11 @@ module.exports = require('base/stamp').extend(function ScrollBarStamp(proto){
 	}
 
 	proto.onFingerDown = function(){
-		this.state = this.states.hover
+		this.state = this.styles.hover
 	}
 
 	proto.onFingerUp = function(){
-		this.state = this.states.default
+		this.state = this.styles.default
 	}
 
 	proto.onDraw = function(){

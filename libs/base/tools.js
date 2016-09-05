@@ -51,6 +51,8 @@ module.exports = function(proto){
 			turtle._padding = opts.padding || zeroMargin
 			turtle._align = opts.align || zeroAlign
 			turtle._wrap = opts.wrap || true
+			if(opts.x !== undefined) turtle._x = opts.x
+			if(opts.y !== undefined) turtle._y = opts.y
 			if(opts.w !== undefined) turtle._w = opts.w
 			if(opts.h !== undefined) turtle._h = opts.h
 		}
@@ -163,6 +165,106 @@ module.exports = function(proto){
 			console.log("Cannot parse color "+str)
 		}
 	}
+
+	Object.defineProperty(proto,'styles',{
+		get:function(){ return this._styles },
+		set:function(inStyles){
+			// rewrite the styles system.
+			this._stylesProto = protoInherit(this._stylesProto, inStyles)
+			this._styles = protoProcess(this._stylesProto)
+		}
+	})
+
+	// creates a prototypical inheritance overload from an object
+	function protoInherit(oldobj, newobj){
+		// copy oldobj
+		var outobj = oldobj?Object.create(oldobj):{}
+		// copy old object subobjects
+		for(var key in oldobj){
+			var item = oldobj[key]
+			if(item && item.constructor === Object){
+				outobj[key] = protoInherit(item, newobj[key])
+			}
+		}
+		// overwrite new object
+		for(var key in newobj){
+			var item = newobj[key]
+			if(item && item.constructor === Object){
+				outobj[key] = protoInherit(oldobj && oldobj[key], newobj[key])
+			}
+			else{
+				if(typeof item === 'string' && item.charAt(0) === '#'){
+					item = proto.parseColor(item,1)
+				}
+				outobj[key] = item
+			}
+		}
+		return outobj
+	}
+
+	// we have to return a new objectect
+	function protoProcess(base, ovl, parent, incpy){
+		var cpy = incpy
+		var out = {_:parent}
+		// make sure our copy props are read first
+		for(var key in base){
+			var value = base[key]
+			var $index = key.indexOf('$')
+			if($index === 0){
+				cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
+				cpy[key.slice(1)] = value
+			}
+		}
+		for(var key in ovl){
+			var value = ovl[key]
+			var $index = key.indexOf('$')
+			if($index === 0){
+				cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
+				cpy[key.slice(1)] = value
+			}
+		}
+		for(var key in base){
+			if(key === '_') continue
+			var value = base[key]
+			var $index = key.indexOf('$')
+			if($index === 0){}
+			else if($index >0){
+				var keys = key.split('$')
+				var o = out, bc = keys[1]
+				while(o && !o[bc]) o = o._
+				out[keys[0]] = protoProcess(o && o[bc], value, out, cpy)
+			}
+			else if(value && value.constructor === Object){
+				out[key] = protoProcess(value, null, out, cpy)
+			}
+			else{
+				out[key] = value
+			}
+		}
+		for(var key in ovl){
+			if(key === '_') continue
+			var value = ovl[key]
+			var $index = key.indexOf('$')
+			if($index === 0){ }
+			else if($index>0){
+				var keys = key.split('$')
+				var o = out, bc = keys[1]
+				while(o && !o[bc]) o = o._
+				out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy), out, cpy)
+			}
+			else if(value && value.constructor === Object){
+				out[key] = protoProcess(out[key], value, out, cpy)
+			}
+			else{
+				out[key] = value
+			}
+		}
+		for(var key in cpy){
+			out[key] = cpy[key]
+		}
+		return out
+	}
+
 
 	var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 	var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)

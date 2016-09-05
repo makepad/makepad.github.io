@@ -21,6 +21,43 @@ module.exports=require('base/view').extend({
 			}
 		}),
 		Tabs:require('views/tabs').extend({
+			onSelectTab:function(idx){
+				// signal the connected splitters to go into config mode
+				var splitters = {}
+				var node = this.parent
+				var last = this
+				var dock = this.dock
+				while(node && node !== dock){
+					var isFirst = node.children[0] === last
+					if(node.vertical){
+						if(isFirst){
+							if(!splitters.right) splitters.right = node
+						}
+						else{
+							if(!splitters.left) splitters.left = node
+						}
+					}
+					else{
+						if(isFirst){
+							if(!splitters.bottom) splitters.bottom = node
+						}
+						else{
+							if(!splitters.top) splitters.top = node
+						}
+					}
+					last = node
+					node = node.parent
+				}
+				for(var key in splitters){
+					if(this.lastTabIdx !== 0 && idx === 0){
+						splitters[key].showSettings()
+					}
+					else if(this.lastTabIdx === 0 && idx !== 0){
+						splitters[key].hideSettings()
+					}
+				}
+				this.lastTabIdx = idx
+			},
 			onTabRip:function(child, e){
 				this.dock.onTabRip(child, e)
 			}
@@ -44,12 +81,12 @@ module.exports=require('base/view').extend({
 							}
 							else this.view.parent.selectTab(this.click.tab)
 						}
-						else if(this.click.radio !== undefined){
-							this.click.splitter.mode = this.click.radio
-						}
-						else if(this.click.flags !== undefined){
-							this.click.splitter.isLocked = this.click.flags?true:false
-						}
+						//else if(this.click.radio !== undefined){
+						//	this.click.splitter.mode = this.click.radio
+						//}
+						//else if(this.click.flags !== undefined){
+						//	this.click.splitter.isLocked = this.click.flags?true:false
+						//}
 					},
 					states:{
 						default:{Bg:{color:'#7'}},
@@ -64,6 +101,7 @@ module.exports=require('base/view').extend({
 					}
 				})
 			},
+			/*
 			onAfterCompose:function(){
 				// figure out which splitters border us
 				var splitters = this.splitters = {}
@@ -148,7 +186,7 @@ module.exports=require('base/view').extend({
 				this.drawButton(style.b3, mode)
 				this.drawButton(style.b4, lock)
 				this.endLayout()
-			},
+			},*/
 			onDraw:function(){
 				this.beginLayout({align:[1.,this.parent.isTop?0:1]})
 				this.drawButton({icon:this.parent.isTop?'arrow-down':'arrow-up'})
@@ -163,19 +201,19 @@ module.exports=require('base/view').extend({
 					}
 				}
 				this.endLayout()
-				this.sideMode = {}
-				this.sideLock = {}
-				var splitters = this.splitters
-				if(splitters.left) this.drawButtons('left')
-				if(splitters.right) this.drawButtons('right')
-				if(splitters.top) this.drawButtons('top')
-				if(splitters.bottom) this.drawButtons('bottom')
+				//this.sideMode = {}
+				//this.sideLock = {}
+				//var splitters = this.splitters
+				//if(splitters.left) this.drawButtons('left')
+				//if(splitters.right) this.drawButtons('right')
+				//if(splitters.top) this.drawButtons('top')
+				//if(splitters.bottom) this.drawButtons('bottom')
 			}
 		})
 	},
 	data:{
 		left:[
-			{text:'TLA',open:0,fill:'#f0f'},
+			{text:'TLA',open:1,fill:'#f0f'},
 			{text:'TL2',fill:'#ff0'}
 		],
 		mode:1,
@@ -194,7 +232,7 @@ module.exports=require('base/view').extend({
 			mode:2,
 			locked:false,
 			bottom:[
-				{text:'TR1',fill:'#0ff'},
+				{text:'TR1',open:1,fill:'#0ff'},
 				{text:'TR2',fill:'#00f'}
 			]
 		}
@@ -219,7 +257,9 @@ module.exports=require('base/view').extend({
  				args.push(this.composeFromData(page))
 			}
 			var tabs = this.Tabs.apply(null,args)
-			tabs.selectTab(selIndex)
+			tabs.onAfterCompose = function(){
+				tabs.selectTab(selIndex)
+			}
 			return tabs
 		}
 		else if(node.left || node.top){ // splitter

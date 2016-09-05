@@ -409,6 +409,8 @@ module.exports = require('base/class').extend(function View(proto){
 			todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 			todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 			this.beginTurtle()
+			this.turtle._x = 0
+			this.turtle._y = 0		
 			this.onFlag = 2
 			this.onOverlay()
 			this.onFlag = 0
@@ -465,80 +467,6 @@ module.exports = require('base/class').extend(function View(proto){
 	proto.animateUniform = function(value){
 		var timeMax = value[0] + value[1]
 		if(timeMax > this.todo.timeMax) this.todo.timeMax = timeMax
-	}
-
-	Object.defineProperty(proto,'styles',{
-		get:function(){ return this._styles },
-		set:function(inStyles){
-			// rewrite the styles system.
-			this._stylesProto = protoInherit(this._stylesProto, inStyles)
-			this._styles = protoProcess(this._stylesProto)
-		}
-	})
-
-	// creates a prototypical inheritance overload from an object
-	function protoInherit(oldobj, newobj){
-		// copy oldobj
-		var outobj = oldobj?Object.create(oldobj):{}
-		// copy old object subobjects
-		for(var key in oldobj){
-			var item = oldobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(item, newobj[key])
-			}
-		}
-		// overwrite new object
-		for(var key in newobj){
-			var item = newobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(oldobj && oldobj[key], newobj[key])
-			}
-			else{
-				if(typeof item === 'string' && item.charAt(0) === '#'){
-					item = proto.parseColor(item,1)
-				}
-				outobj[key] = item
-			}
-		}
-		return outobj
-	}
-
-	// we have to return a new objectect
-	function protoProcess(base, ovl, parent){
-		var out = {_:parent}
-		for(var key in base){
-			if(key === '_') continue
-			var value = base[key]
-			if(key.indexOf('$') !== -1){
-				var keys = key.split('$')
-				var o = out, bc = keys[1]
-				while(o && !o[bc]) o = o._
-				out[keys[0]] = protoProcess(o && o[bc], value, out)
-			}
-			else if(value && value.constructor === Object){
-				out[key] = protoProcess(value, null, out)
-			}
-			else{
-				out[key] = value
-			}
-		}
-		for(var key in ovl){
-			if(key === '_') continue
-			var value = ovl[key]
-			if(key.indexOf('$') !== -1){
-				var keys = key.split('$')
-				var o = out, bc = keys[1]
-				while(o && !o[bc]) o = o._
-				out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out), out)
-			}
-			else if(value && value.constructor === Object){
-				out[key] = protoProcess(out[key], value, out)
-			}
-			else{
-				out[key] = value
-			}
-		}
-		return out
 	}
 
 	proto.onFlag1 = proto.recompose
@@ -610,7 +538,7 @@ module.exports = require('base/class').extend(function View(proto){
 				})
 			}
 
-			proto.states = {
+			proto.styles = {
 				default:{
 					ScrollBar:{
 						tween:1,

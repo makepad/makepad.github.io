@@ -1,7 +1,12 @@
 module.exports = require('base/class').extend(function Stamp(proto){
 	//var types = require('types')
+
 	require('base/props')(proto)
 	require('base/tools')(proto)
+
+	proto._onConstruct = function(){
+		throw new Error("Cannot new a stamp")
+	}
 
 	proto.onFlag0 = 1
 	proto.onFlag1 =
@@ -105,11 +110,11 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + '		$stamp.$shaders = this.$shaders.'+classname+'\n'
 		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
 		code += indent + '	}'
-		code += indent + '	if($stamp._states) $stamp._state = $stamp._states.default\n'
+		code += indent + '	if($stamp._styles) $stamp._state = $stamp._styles.default\n'
 		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
 		code += indent + '}\n'
 		code += indent + 'var $state = '+mainargs[0]+' && '+mainargs[0]+'.state\n'
-		code += indent + 'if($state) $stamp._state = $stamp._states[$state.indexOf($stamp.stateExt)!==-1?$state:$state+$stamp.stateExt]\n'
+		code += indent + 'if($state) $stamp._state = $stamp._styles[$stamp.stateExt?($state.indexOf("_")!==-1?$state.slice(0,$state.indexOf("_")):$state)+$stamp.stateExt:$state]\n'
 		code += indent + '$turtle._pickId = $stampId\n'
 		code += indent + '$stamp.turtle = $turtle\n'
 		if(macroargs[0]) code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
@@ -187,7 +192,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		}
 	}
 
-	Object.defineProperty(proto, 'states', { 
+/*	Object.defineProperty(proto, 'states', { 
 		get:function(){
 			return this._states
 		},
@@ -197,7 +202,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 				deepOverlay(this._states, key, states[key])
 			}
 		}
-	})
+	})*/
 
 	Object.defineProperty(proto, 'state', { 
 		get:function(){

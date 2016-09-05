@@ -68,6 +68,10 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
+	proto._onConstruct = function(){
+		throw new Error("Cannot new a shader")
+	}
+
 	//
 	//
 	// Entrypoints

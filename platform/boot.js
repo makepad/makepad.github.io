@@ -387,7 +387,7 @@ function createOnMessage(worker){
 	}
 
 	worker.onMessage = function(msg){
-		try{
+		//try{
 
 		if(msg.$ === 'batch'){
 			for(var i = 0, msgs = msg.msgs; i < msgs.length; i++){
@@ -403,10 +403,10 @@ function createOnMessage(worker){
 			if(service && service.onMessage) service.onMessage(msg.msg)
 		}
 		this.onAfterEntry()
-		}catch($$){
+		//}catch($$){
 			//console.log($$)
-			this.postMessage({$:"debug",msg:{msg:msg, data:JSON.stringify($$.line)}})
-		}
+		//	this.postMessage({$:"debug",msg:{msg:msg, data:JSON.stringify($$.line)}})
+		//}
 	}
 }
 

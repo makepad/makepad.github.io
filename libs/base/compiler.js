@@ -449,7 +449,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		}
 		return code
 	}
-
+	/*
 	function styleTweenCode(indent, inobj){
 		var code = ''
 		code += indent+'if(_tween === undefined) _tween = '+inobj+'.tween\n'
@@ -457,7 +457,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += indent+'if(_delay === undefined) _delay = '+inobj+'.delay\n'
 		code += indent+'if(_ease === undefined) _ease = '+inobj+'.ease\n'
 		return code
-	}
+	}*/
 
 	proto.$STYLEPROPS = function(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
@@ -497,7 +497,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += 'if($p2){\n'
 		code += stylePropCode('	', '$p2', styleProps, styleLevel)
 		code += '}\n'
-
+		/*
 		if(styleProps.this_DOT_tween){
 			code += 'var $p3 = this.$stampArgs\n'
 			code += 'if($p3){\n'
@@ -516,6 +516,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 			code += styleTweenCode('', 'this')
 		}
+		*/
 		// last one is the class
 		code += 'var $p9 = this._'+classname+'.prototype\n'
 		code += stylePropCode('', '$p9', styleProps, styleLevel)

@@ -2,7 +2,7 @@ module.exports=require('base/view').extend({
 	name:'Tabs',
 	overflow:'none',
 	props:{
-		isTop:true,
+		isTop:true
 	},
 	onIsTop:function(){
 		if(this.isTop){
@@ -16,13 +16,13 @@ module.exports=require('base/view').extend({
 	tools:{
 		Tab:require('tools/tab').extend({
 			onTabSelected:function(e){
-				this.view.onTabSelected(this.index, e)
+				this.view._tabSelected(this.index, e)
 			},
 			onTabSlide:function(e){
-				this.view.onTabSlide(this, e)
+				this.view._tabSlide(this, e)
 			},
 			onTabReleased:function(e){
-				this.view.onTabReleased()
+				this.view._tabReleased()
 			}
 		}),
 		Background:require('tools/bg').extend({
@@ -43,7 +43,7 @@ module.exports=require('base/view').extend({
 		})
 	},
 	fontSize:11,
-	onTabSelected:function(index, e){
+	_tabSelected:function(index, e){
 		// deselect the other tab
 		this.selectTab(index)
 		this.slidePos = undefined
@@ -52,7 +52,7 @@ module.exports=require('base/view').extend({
 		this.slideDelta = e.x
 		this.slideStartY = e.yAbs
 	},
-	onTabSlide:function(tabStamp, e){
+	_tabSlide:function(tabStamp, e){
 		if(!this.children[tabStamp.index].canDragTab || this.slideStartY === undefined) return
 		this.slidePos = e.xView - this.slideDelta
 		this.defSliding = true
@@ -105,7 +105,7 @@ module.exports=require('base/view').extend({
 		this.selectedIndex = ins
 		this.redraw()
 	},
-	onTabReleased:function(){
+	_tabReleased:function(){
 		this.slidePos = NaN
 		this.defSliding = false
 		this.selSliding = true
@@ -129,6 +129,7 @@ module.exports=require('base/view').extend({
 				var child = this.children[i]
 				if(child) child.visible = i === index?true:false
 			}
+			this.onSelectTab(index)
 			this.redraw()
 		}
 	},
@@ -137,6 +138,7 @@ module.exports=require('base/view').extend({
 	onCloseTab:function(index){
 	},
 	onDraw:function(){
+
 		if(this.isTop){
 			this.beginBackground({
 				align:[0.,0.],
