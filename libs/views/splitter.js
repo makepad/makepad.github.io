@@ -2,11 +2,11 @@ module.exports=require('base/view').extend({
 	name:'Splitter',
 	props:{
 		vertical:true,
-		pos:NaN,
-		mode:NaN,
+		pos:.5,
+		mode:0,
 		lockedWidth:1,
 		unlockedWidth:4,
-		isLocked:true,
+		isLocked:false,
 		color:'red'
 	},
 	padDrawing:true,
@@ -26,12 +26,13 @@ module.exports=require('base/view').extend({
 	},
 	hideSettings:function(){
 		if(--this.refSettings)return
+		if(this.refSettings<0)this.refSettings = 0
 		this.doAnim = true
 		this.redraw()
 	},
 	onMode:function(e){
 		var pos
-		if(isNaN(e.old) || e.old === this.mode) return
+		if(this.$wInside === undefined || this.$hInside === undefined) return
 		if(e.old === 1){
 			pos = this.pos
 		}

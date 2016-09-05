@@ -11,6 +11,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 		this.children = {}
 		this.fingerMap = {}
+		this.dragMap = {}
 		this.tapMap = {}
 		this.fingerMapAlloc = 1
 		this.onForceInterval = this.onForceInterval.bind(this)
@@ -109,6 +110,10 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		if(!cursors[msg.cursor]) return
 		// use the body as the cursor container
 		document.body.style.cursor = msg.cursor
+	}
+
+	proto.user_startFingerDrag = function(msg){
+		this.dragMap[msg.digit] = 1
 	}
 
 	// 
@@ -228,7 +233,17 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				var queue = oldf.queue || (oldf.queue = [])
 				queue.push(f)
 			}
-			else this.postMessage(f)
+			else{
+				this.postMessage(f)
+				// lets check if we are dragging this digit
+				if(this.dragMap[f.digit]) this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
+					f.fn = 'onFingerDrag'
+					f.todoId = pick.todoId,
+					f.pickId = pick.pickId
+					f.workerId = pick.workerId
+					this.postMessage(f)
+				}.bind(this,f))
+			}
 		}
 	}
 
@@ -262,7 +277,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 			}
 
 			this.fingerMap[oldf.digit] = undefined
-
+			this.dragMap[oldf.digit] = undefined
 			// store it for tap counting
 			this.tapMap[oldf.digit] = f
 			var dx = f.xDown - f.x

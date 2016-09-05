@@ -183,14 +183,14 @@ module.exports = function(proto){
 		for(var key in oldobj){
 			var item = oldobj[key]
 			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(item, newobj[key])
+				outobj[key] = protoInherit(item, newobj && newobj[key])
 			}
 		}
 		// overwrite new object
 		for(var key in newobj){
 			var item = newobj[key]
 			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(oldobj && oldobj[key], newobj[key])
+				outobj[key] = protoInherit(oldobj && oldobj[key], newobj && newobj[key])
 			}
 			else{
 				if(typeof item === 'string' && item.charAt(0) === '#'){

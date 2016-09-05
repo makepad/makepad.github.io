@@ -176,13 +176,47 @@ module.exports = require('base/class').extend(function View(proto){
 		return pass
 	}
 
-	proto.addChild = function(child, index){
+	proto.addNewChild = function(child, index){
 		if(index === undefined) index = this.children.length
 		this.children.splice(index, 0, child)
 		child.app = this.app
 		child.parent = this
 		this.app.$composeTree(child)
+		if(this.onAfterCompose) this.onAfterCompose()
 		//this.redraw()
+		this.relayout()
+	}
+	
+	proto.replaceNewChild = function(child, index){
+		var oldChild = this.children[index]
+		this.children[index] = child
+		child.app = this.app
+		child.parent = this
+		this.app.$composeTree(child)
+		this.relayout()
+		if(this.onAfterCompose) this.onAfterCompose()
+		return oldChild
+	}
+
+	proto.replaceOldChild = function(child, index){
+		var oldChild = this.children[index] 
+		this.children[index] = child
+		child.app = this.app
+		child.parent = this
+		this.relayout()
+		if(this.onAfterCompose) this.onAfterCompose()
+		return oldChild
+	}
+
+	proto.addOldChild = function(child, index){
+		if(index === undefined) index = this.children.length
+		this.children.splice(index, 0, child)
+		child.parent = this
+		this.relayout()
+	}
+
+	proto.deleteChild = function(index){
+		this.children.splice(index, 1)
 		this.relayout()
 	}
 

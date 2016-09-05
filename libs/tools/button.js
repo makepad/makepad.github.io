@@ -107,8 +107,6 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		//console.log(this.turtle.dump())
 		this.beginBg(this)
 		if(this.icon){
-			if(this.marked)console.log(this.icon)
-
 			this.drawIcon({
 				text:this.lookupIcon[this.icon]
 			})

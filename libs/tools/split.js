@@ -122,9 +122,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 			settings:1,
 			Button:{
 				w:22,h:22,
-				Bg:{
-					
-				},
+				Bg:{},
 				$fontSize:14,
 				Text:{},
 				Icon:{}

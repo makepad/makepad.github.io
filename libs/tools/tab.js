@@ -56,7 +56,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 				color:'#9'
 			}
 		},
-		defaultOver:{
+		default_over:{
 			Bg:{
 				color:'#4'
 			},
@@ -72,7 +72,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 				color:'#e'
 			}
 		},
-		selectedSlide:{
+		selected_slide:{
 			$tween:2,
 			$ease:[0,10,0,0],
 			$duration:0.3,
@@ -83,7 +83,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 				color:'#f'
 			}
 		},		
-		selectedOver:{
+		selected_over:{
 			Bg:{
 				color:'#8'
 			},
@@ -95,8 +95,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 
 	proto.onFingerDown = function(e){
 		if(this.onTabSelected) this.onTabSelected(e)
-		this.state = this.styles.selectedOver
-		this.stateExt = 'Over'
+		this.state = this.styles.selected_over
+		this.stateExt = '_over'
 		// lets start dragging it
 	}
 
@@ -114,11 +114,11 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 	}
 
 	proto.onFingerOver = function(){
-		if(this.state === this.styles.selected || this.state === this.styles.selectedOver){
-			this.state = this.styles.selectedOver
+		if(this.state === this.styles.selected || this.state === this.styles.selected_over){
+			this.state = this.styles.selected_over
 		}
-		else this.state = this.styles.defaultOver
-		this.stateExt = 'Over'
+		else this.state = this.styles.default_over
+		this.stateExt = '_over'
 	}
 
 	proto.onFingerOut = function(){

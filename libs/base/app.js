@@ -103,6 +103,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 		}
 
 		app.$fingerMove = {}
+		app.$fingerDragObject = {}
 
 		// dispatch mouse events
 		fingers.onFingerDown = function(msg){
@@ -118,6 +119,22 @@ module.exports = require('base/view').extend(function App(proto, base){
 			fingerMessage('onFingerMove', move.todoId, move.pickId, msg)
 		}
 
+		var dragTodoId = {}
+		var dragPickId = {}
+		fingers.onFingerDrag = function(msg){
+			// we want mouse in/out messages to go to the right view and stamp.
+			var todoId = msg.todoId
+			var pickId = msg.pickId
+			msg.dragObject = app.$fingerDragObject
+			if(todoId !== dragTodoId[msg.digit] || pickId !== dragPickId[msg.digit]){
+				fingerMessage('onFingerDragOut', dragTodoId[msg.digit], dragPickId[msg.digit], msg, true)
+				fingerMessage('onFingerDragOver', msg.todoId, msg.pickId, msg)
+			}
+			dragTodoId[msg.digit] = todoId
+			dragPickId[msg.digit] = pickId
+			fingerMessage('onFingerDrag', msg.todoId, msg.pickId, msg)
+		}
+
 		fingers.onFingerUp = function(msg){
 			var move = app.$fingerMove[msg.digit]
 			fingerMessage('onFingerUp', move.todoId, move.pickId, msg)
@@ -131,18 +148,18 @@ module.exports = require('base/view').extend(function App(proto, base){
 			fingerMessage('onFingerForce', msg.todoId, msg.pickId, msg)
 		}
 
-		var lastTodoId = 0
-		var lastPickId = 0
+		var hoverTodoId = {}
+		var hoverPickId = {}
 		fingers.onFingerHover = function(msg){
 			// we want mouse in/out messages to go to the right view and stamp.
 			var todoId = msg.todoId
 			var pickId = msg.pickId
-			if(todoId !== lastTodoId || pickId !== lastPickId){
-				fingerMessage('onFingerOut', lastTodoId, lastPickId, msg, true)
+			if(todoId !== hoverTodoId[msg.digit] || pickId !== hoverPickId[msg.digit]){
+				fingerMessage('onFingerOut', hoverTodoId[msg.digit], hoverPickId[msg.digit], msg, true)
 				fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
 			}
-			lastTodoId = todoId
-			lastPickId = pickId
+			hoverTodoId[msg.digit] = todoId
+			hoverPickId[msg.digit] = pickId
 			fingerMessage('onFingerHover', msg.todoId, msg.pickId, msg)
 		}
 
@@ -209,6 +226,11 @@ module.exports = require('base/view').extend(function App(proto, base){
 		}
 	}
 
+	proto.startFingerDrag = function(digit, dragObject){
+		this.$fingerDragObject[digit] = dragObject
+		fingers.startFingerDrag(digit)
+	}
+
 	proto.setClipboardText = function(text){
 		keyboard.setClipboardText(text)
 	}
@@ -267,7 +289,6 @@ module.exports = require('base/view').extend(function App(proto, base){
 			if(oldchild.onDestroy) oldchild.onDestroy()
 			if(oldchild._onDestroy) oldchild._onDestroy()
 		}
-
 		if(node.onAfterCompose) node.onAfterCompose()
 	}
 

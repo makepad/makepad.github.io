@@ -238,6 +238,13 @@ fingers.setCursor = function(cursor){
 	})
 }
 
+fingers.startFingerDrag = function(digit){
+	service.postMessage({
+		fn:'startFingerDrag',
+		digit:digit
+	})	
+}
+
 service.onMessage = function(msg){
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }

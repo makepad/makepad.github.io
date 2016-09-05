@@ -6,6 +6,7 @@ module.exports=require('base/view').extend({
 		Tab:require('tools/tab').extend({
 			Bg:{
 				color:'#8',
+				borderRadius:2,
 				pickAlpha:2.
 			},
 			Text:{
@@ -13,12 +14,70 @@ module.exports=require('base/view').extend({
 				pickAlpha:2.
 			}
 		}),
-		Drop:require('tools/button').extend({
+		SplitZone:require('tools/rect').extend({
+			color:"#77f4"
+		}),
+		DropTab:require('tools/button').extend({
+			onFingerDragOver:function(e){
+				this.state = this.styles.dragOver
+				this.view.dragTabDrop = {split:0,tabs:this.tabs}
+			},
+			onFingerDragOut:function(){
+				this.state = this.styles.default
+				this.view.dragTabDrop = undefined
+			},
+			Bg:{
+				pickAlpha:-1.
+			},
+			styles:{
+				//$tween:2,
+				//$ease:[0,10,0,0],
+				default:{
+				//	$duration:0.3,
+					Bg:{
+						color:'#77f2'
+					}
+				},
+				dragOver:{
+				//	$duration:0.1,
+					Bg:{
+						color:'#77f6'
+					}
+				}
+			}
+		}),
+		DropSplit:require('tools/button').extend({
+			inPlace:false,
+			onFingerDragOver:function(){
+				this.state = this.styles.dragOver
+				this.view.dragTabDrop = {split:1,index:this.index, tabs:this.tabs}
+			},
+			onFingerDragOut:function(){
+				this.state = this.styles.default
+				this.view.dragTabDrop = undefined
+			},
 			Bg:{
 				align:[.5,.5],
 				shadowBlur:4,
-				shadowOffset:[4,4]
-			}
+				shadowOffset:[4,4],
+				padding:[10,10,10,10]	
+			},
+			styles:{
+				//$tween:2,
+				//$ease:[0,10,0,0],
+				default:{
+				//	$duration:0.3,
+					Bg:{
+						color:'#777f'
+					}
+				},
+				dragOver:{
+				//	$duration:0.1,
+					Bg:{
+						color:'#77ff'
+					}
+				}
+			},
 		}),
 		Tabs:require('views/tabs').extend({
 			onSelectTab:function(idx){
@@ -48,6 +107,7 @@ module.exports=require('base/view').extend({
 					last = node
 					node = node.parent
 				}
+
 				for(var key in splitters){
 					if(this.lastTabIdx !== 0 && idx === 0){
 						splitters[key].showSettings()
@@ -60,11 +120,19 @@ module.exports=require('base/view').extend({
 			},
 			onTabRip:function(child, e){
 				this.dock.onTabRip(child, e)
+			},
+			onCloseTab:function(index){
+				if(index !== 0) return
+				this.dock.onCloseFinalTab(this)
 			}
 		}),
 		Splitter:require('views/splitter'),
 		Fill:require('views/fill'),
 		Empty:require('base/view').extend({
+			canDragTab:false,
+			tabText:'',
+			tabIcon:'angle-up',
+			color:'red',
 			dontReuseStamps:true,
 			tools:{
 				Rect:require('tools/rect'),
@@ -81,12 +149,6 @@ module.exports=require('base/view').extend({
 							}
 							else this.view.parent.selectTab(this.click.tab)
 						}
-						//else if(this.click.radio !== undefined){
-						//	this.click.splitter.mode = this.click.radio
-						//}
-						//else if(this.click.flags !== undefined){
-						//	this.click.splitter.isLocked = this.click.flags?true:false
-						//}
 					},
 					states:{
 						default:{Bg:{color:'#7'}},
@@ -101,92 +163,7 @@ module.exports=require('base/view').extend({
 					}
 				})
 			},
-			/*
-			onAfterCompose:function(){
-				// figure out which splitters border us
-				var splitters = this.splitters = {}
-				var node = this.parent.parent // start at first splitter
-				var last = this.parent
-				var dock = this.dock
-				while(node && node !== dock){
-					var isFirst = node.children[0] === last
-					var listen = false
-					if(node.vertical){
-						if(isFirst){
-							if(!splitters.right) splitters.right = node, listen = true
-						}
-						else{
-							if(!splitters.left) splitters.left = node, listen = true
-						}
-					}
-					else{
-						if(isFirst){
-							if(!splitters.bottom) splitters.bottom = node, listen = true
-						}
-						else{
-							if(!splitters.top) splitters.top = node, listen = true
-						}
-					}
-					if(listen){
-						node.on('isLocked', function(){
-							this.redraw()
-						}.bind(this))
-						node.on('pos', this.redraw.bind(this))
-					}
 
-					last = node
-					node = node.parent
-				}
-			},
-			styles:{
-				buttons:{
-					b1:{index:1},
-					b2:{index:0,Bg:{borderRadius:0}},
-					b3:{index:2,Bg:{borderRadius:0}},
-					b4:{icon:'lock',index:0},
-				},
-				left$buttons:{
-					layout:{align:[0.,.5],wrap:2},
-					b1:{icon:'caret-left',Bg:{borderRadius:[0,6,0,0]},h:30},
-					b2:{text:'%',h:30},
-					b3:{icon:'caret-right',h:30},
-					b4:{Bg:{borderRadius:[0,0,6,0]},h:30},
-				},
-				right$buttons:{
-					layout:{align:[1.,.5],wrap:2},
-					b1:{icon:'caret-left',Bg:{borderRadius:[6,0,0,0]},h:30},
-					b2:{text:'%',h:30},
-					b3:{icon:'caret-right',h:30},
-					b4:{Bg:{borderRadius:[0,0,0,6]},h:30},
-				},
-				top$buttons:{
-					layout:{align:[.5,0.],wrap:0},
-					b1:{icon:'caret-up',Bg:{borderRadius:[0,0,0,6]},w:30},
-					b2:{text:'%',w:30},
-					b3:{icon:'caret-down',w:30},
-					b4:{Bg:{borderRadius:[0,0,6,0]},w:30},
-				},
-				bottom$buttons:{
-					layout:{align:[.5,1.],wrap:0},
-					b1:{icon:'caret-up',Bg:{borderRadius:[6,0,0,0]},w:30},
-					b2:{text:'%',w:30},
-					b3:{icon:'caret-down',w:30},
-					b4:{Bg:{borderRadius:[0,6,0,0]},w:30},
-				}
-			},
-			drawButtons:function(sideName){
-				var splitter = this.splitters[sideName]
-				var mode = this.sideMode[sideName] = {splitter:splitter,radio:splitter.mode}
-				var lock = this.sideLock[sideName] = {splitter:splitter,flags:splitter.isLocked?1:0}
-				var style = this.styles[sideName]
-
-				this.beginLayout(style.layout)
-				this.drawButton(style.b1, mode)
-				this.drawButton(style.b2, mode)
-				this.drawButton(style.b3, mode)
-				this.drawButton(style.b4, lock)
-				this.endLayout()
-			},*/
 			onDraw:function(){
 				this.beginLayout({align:[1.,this.parent.isTop?0:1]})
 				this.drawButton({icon:this.parent.isTop?'arrow-down':'arrow-up'})
@@ -201,13 +178,6 @@ module.exports=require('base/view').extend({
 					}
 				}
 				this.endLayout()
-				//this.sideMode = {}
-				//this.sideLock = {}
-				//var splitters = this.splitters
-				//if(splitters.left) this.drawButtons('left')
-				//if(splitters.right) this.drawButtons('right')
-				//if(splitters.top) this.drawButtons('top')
-				//if(splitters.bottom) this.drawButtons('bottom')
 			}
 		})
 	},
@@ -243,11 +213,7 @@ module.exports=require('base/view').extend({
 					dock:this
 				},
 				this.Empty({
-					dock:this,
-					canDragTab:false,
-					tabText:'',
-					tabIcon:'angle-up',
-					color:'red'
+					dock:this
 				})
 			]
 			var selIndex = 0
@@ -258,7 +224,8 @@ module.exports=require('base/view').extend({
 			}
 			var tabs = this.Tabs.apply(null,args)
 			tabs.onAfterCompose = function(){
-				tabs.selectTab(selIndex)
+				this.selectTab(selIndex)
+				this.onAfterCompose =null
 			}
 			return tabs
 		}
@@ -288,11 +255,29 @@ module.exports=require('base/view').extend({
 	onTabRip:function(tab, e){
 		// lets transfer the mouse capture to us
 		this.transferFingerMove(e.digit,0)
+		// start finger drag so we get onFingerDragOver and onFingerDragOut events
+		this.app.startFingerDrag(e.digit)
+
 		this.tabDragFinger = e
 		tab.tabGeom = tab.tabStamp.stampGeom()
 		// lets draw all drop options
 		this.dragTab = tab
 		this.redraw() 
+	},
+	onCloseFinalTab:function(tabs){
+		// remove the splitter and replace with the right child
+		var oldSplitter = tabs.parent
+		var splitter = oldSplitter.parent
+		var tgtIdx = splitter.children.indexOf(oldSplitter)
+		var srcIdx = oldSplitter.children.indexOf(tabs)
+		var otherSide = oldSplitter.children[srcIdx?0:1]
+		otherSide.x = '0'
+		otherSide.y = '0'
+		otherSide.w = '100%'
+		otherSide.h = '100%'
+		// make sure our splitter counters are ok
+		tabs.onSelectTab(1)
+		splitter.replaceOldChild(otherSide, tgtIdx)
 	},
 	findTabs:function(node, tabs){
 		// we need all the tabs objects in our tree
@@ -302,6 +287,7 @@ module.exports=require('base/view').extend({
 			this.findTabs(node.children[1], tabs)
 		}
 		else if(node.name === 'Tabs'){
+			//console.log(node.children[1].tabText, node.$yAbs, node.$h)
 			tabs.push(node)
 		}
 	},
@@ -310,51 +296,165 @@ module.exports=require('base/view').extend({
 		if(!this.dragTab) return
 		var dragTab = this.dragTab
 
-		var tabs = []
-		this.findTabs(this.children[0], tabs)
+		var allTabs = []
+		this.findTabs(this.children[0], allTabs)
 
-		for(var i = 0; i < tabs.length; i++){
+		for(var i = 0; i < allTabs.length; i++){
 			// ok lets draw a center drop in each tab
-			var tab = tabs[i]
-			var cx = tab.$xAbs+tab.$w
-			var cy = tab.$yAbs+tab.$h
-			var xs = 35
-			var ys = 35
-			this.drawDrop({
-				x:cx*.5-1.5*xs,
-				y:cy*.5-.5*ys,
+			var tabs = allTabs[i]
+
+			this.drawDropTab({
+				x:tabs.$xAbs,
+				y:tabs.$yAbs,
+				w:tabs.$w,
+				h:tabs.$h
+			}).tabs = tabs
+		}
+
+		var dtd = this.dragTabDrop
+		if(dtd){
+			var tabs = dtd.tabs
+			var dock = tabs.dock
+			if(dtd.split){
+				var zone = dtd.index
+				if(zone === 0){
+					this.drawSplitZone({
+						x:tabs.$xAbs,
+						y:tabs.$yAbs,
+						w:tabs.$w*.5,
+						h:tabs.$h
+					})
+				}
+				else if (zone === 1){
+					this.drawSplitZone({
+						x:tabs.$xAbs,
+						y:tabs.$yAbs,
+						w:tabs.$w,
+						h:tabs.$h*.5
+					})
+				}else if(zone === 2){
+					this.drawSplitZone({
+						x:tabs.$xAbs,
+						y:tabs.$yAbs+tabs.$h*.5,
+						w:tabs.$w,
+						h:tabs.$h*.5
+					})
+				}else if(zone ===3){
+					this.drawSplitZone({
+						x:tabs.$xAbs+tabs.$w*.5,
+						y:tabs.$yAbs,
+						w:tabs.$w*.5,
+						h:tabs.$h
+					})
+				}
+				else if(zone === 4){
+					this.drawSplitZone({
+						x:dock.$xAbs,
+						y:dock.$yAbs,
+						w:dock.$w*.5,
+						h:dock.$h
+					})
+				}
+				else if (zone === 5){
+					this.drawSplitZone({
+						x:dock.$xAbs,
+						y:dock.$yAbs,
+						w:dock.$w,
+						h:dock.$h*.5
+					})
+				}else if(zone === 6){
+					this.drawSplitZone({
+						x:dock.$xAbs,
+						y:dock.$yAbs+dock.$h*.5,
+						w:dock.$w,
+						h:dock.$h*.5
+					})
+				}else if(zone ===7){
+					this.drawSplitZone({
+						x:dock.$xAbs+dock.$w*.5,
+						y:dock.$yAbs,
+						w:dock.$w*.5,
+						h:dock.$h
+					})
+				}
+			}
+
+			var cx = tabs.$xAbs+tabs.$w*.5
+			var cy = tabs.$yAbs+tabs.$h*.5
+			var xs = 55
+			var ys = 55
+
+			this.drawDropSplit({
+				x:cx-2.0*xs,
+				y:cy-.5*ys,
+				w:xs*.5,
+				h:ys,
+				index:4,
+				icon:'arrow-left'
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx-1.5*xs,
+				y:cy-.5*ys,
 				w:xs,
 				h:ys,
+				index:0,
 				icon:'arrow-circle-left'
-			})			
-			this.drawDrop({
-				x:cx*.5-.5*xs,
-				y:cy*.5-1.5*ys,
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx-.5*xs,
+				y:cy-2.0*ys,
+				w:xs,
+				h:ys*.5,
+				index:5,
+				icon:'arrow-up'
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx-.5*xs,
+				y:cy-1.5*ys,
 				w:xs,
 				h:ys,
+				index:1,
 				icon:'arrow-circle-up'
-			})
-			this.drawDrop({
-				x:cx*.5-.5*xs,
-				y:cy*.5-.5*ys,
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx-.5*xs,
+				y:cy+.5*ys,
 				w:xs,
 				h:ys,
-				icon:'plus-square'
-			})
-			this.drawDrop({
-				x:cx*.5-.5*xs,
-				y:cy*.5+.5*ys,
-				w:xs,
-				h:ys,
+				index:2,
 				icon:'arrow-circle-down'
-			})
-			this.drawDrop({
-				x:cx*.5+.5*xs,
-				y:cy*.5-.5*ys,
+			}).tabs = tabs
+			
+			this.drawDropSplit({
+				x:cx-.5*xs,
+				y:cy+1.5*ys,
+				w:xs,
+				h:ys*.5,
+				index:6,
+				icon:'arrow-down'
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx+.5*xs,
+				y:cy-.5*ys,
 				w:xs,
 				h:ys,
+				index:3,
 				icon:'arrow-circle-right'
-			})					
+			}).tabs = tabs
+
+			this.drawDropSplit({
+				x:cx+1.5*xs,
+				y:cy-.5*ys,
+				w:xs*.5,
+				h:ys,
+				index:7,
+				icon:'arrow-right'
+			}).tabs = tabs
 
 		}
 
@@ -364,11 +464,6 @@ module.exports=require('base/view').extend({
 			y:e.yAbs - dragTab.tabGeom.h*.5,
 			text:dragTab.tabText
 		})
-		// ok where can we drop.
-		// the tab strip
-		// 1. the main rectangle
-		// the split rectangle
-		// lets draw the split rectangle
 	},
 	onFingerMove:function(e){
 		if(!this.dragTab)return
@@ -377,7 +472,80 @@ module.exports=require('base/view').extend({
 	},
 	onFingerUp:function(e){
 		if(!this.dragTab)return
-		this.dragTab = false
+		// splitting?
+		var dtd = this.dragTabDrop
+		if(dtd && dtd.split){
+			var oldTabs = dtd.tabs
+			var splitter = oldTabs.parent
+
+			if(dtd.index >= 4){ // we are splitting the dock
+				dtd.index -=4
+				splitter = this
+				oldTabs = this.children[0]		
+			}
+
+			var idx = splitter.children[0] === oldTabs?0:1
+
+			var newTabs = this.Tabs({
+					dock:this
+				},
+				this.Empty({
+					dock:this
+				}),
+				this.dragTab
+			)
+
+			newTabs.onAfterCompose = function(){
+				this.onAfterCompose = null
+				this.selectTab(1)
+			}
+			
+			var newSplitter
+			if(dtd.index === 0){
+				newSplitter = this.Splitter({
+						dock:this,
+						vertical:true,
+					},
+					newTabs,
+					oldTabs
+				)
+			}
+			else if(dtd.index === 1){
+				newSplitter = this.Splitter({
+						dock:this,
+						vertical:false,
+					},
+					newTabs,
+					oldTabs
+				)
+			}
+			else if(dtd.index === 2){
+				newSplitter = this.Splitter({
+						dock:this,
+						vertical:false,
+					},
+					oldTabs,
+					newTabs
+				)
+			}
+			else if(dtd.index === 3){
+				newSplitter = this.Splitter({
+						dock:this,
+						vertical:true,
+					},
+					oldTabs,
+					newTabs
+				)
+			}
+			splitter.replaceNewChild(newSplitter, idx)
+		}
+		else{
+			var tabs = dtd && dtd.tabs || this.dragTab.oldTabs
+			this.dragTab.parent = tabs
+			var id = tabs.children.push(this.dragTab) - 1
+			tabs.selectTab(id)
+		}
+		this.dragTab = undefined
 		this.redraw()
 	},
 	onCompose:function(){

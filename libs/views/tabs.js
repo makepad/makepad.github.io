@@ -12,7 +12,7 @@ module.exports=require('base/view').extend({
 			this.padding = [0,0,26,0]
 		}
 	},
-	isTop:false,
+	isTop:true,
 	tools:{
 		Tab:require('tools/tab').extend({
 			onTabSelected:function(e){
@@ -54,11 +54,16 @@ module.exports=require('base/view').extend({
 	},
 	_tabSlide:function(tabStamp, e){
 		if(!this.children[tabStamp.index].canDragTab || this.slideStartY === undefined) return
-		this.slidePos = e.xView - this.slideDelta
+		
+		var ts = tabStamp.stampGeom()
+		var xWant = e.xView - this.slideDelta
+		this.slidePos = clamp(xWant,0,this.$w-ts.w)
+
 		this.defSliding = true
 		// lets check if the y position is too far from the tab
 		var dy = abs(this.slideStartY - e.yAbs)
-		if(dy > 50 && this.onTabRip){
+		var dx = abs(this.slidePos - xWant)
+		if((dx > 30 || dy > 30) && this.onTabRip){
 			this.slideStartY = undefined
 			this.slidePos = NaN
 			this.defSliding = true
@@ -71,6 +76,7 @@ module.exports=require('base/view').extend({
 				this.selectedIndex = -1
 				this.selectTab(next)
 			}
+			child.oldTabs = this
 			this.onTabRip(child, e)
 			return
 		}
@@ -82,7 +88,7 @@ module.exports=require('base/view').extend({
 		item = set.splice(tabStamp.index, 1)[0]
 		
 		// find insertion point
-		var ts = tabStamp.stampGeom()
+		
 		//console.log(ts.x)
 		//var x = tabStamp.x
 		var ins = tabStamp.index
@@ -171,7 +177,7 @@ module.exports=require('base/view').extend({
 				},
 				index:i,
 				state:isSel?
-					(this.selSliding?'selectedSlide':'selectedOver'):
+					(this.selSliding?'selected_slide':'selected_over'):
 					(this.defSliding?'slide':'default'),
 				icon:child.tabIcon,
 				canClose:false,//child.tabCanClose,
