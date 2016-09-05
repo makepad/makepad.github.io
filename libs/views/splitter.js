@@ -25,8 +25,7 @@ module.exports=require('base/view').extend({
 		this.redraw()
 	},
 	hideSettings:function(){
-		if(--this.refSettings)return
-		if(this.refSettings<0)this.refSettings = 0
+		if(this.refSettings == 0 || --this.refSettings)return
 		this.doAnim = true
 		this.redraw()
 	},

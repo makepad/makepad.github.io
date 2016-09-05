@@ -176,51 +176,27 @@ module.exports = require('base/app').extend(function(proto){
 	}
 
 	proto.onAfterCompose = function(){
-		return
 		// we need to load all other files in the project
 		loadProjectTree(projectFile).then(function(project){
 			this.projectData = project
-			this.find('Tree').data = project
+			this.find('Dock').ids.tree.data = project
 		}.bind(this))
-
-		var mainTabs = this.find('mainTabs')
-		mainTabs.data = [
-			{name:'', icon:'home', canClose:0},
-		]
-		mainTabs.selectTab(0)
 	}
 
 	proto.onAfterDraw = function(){
-		
 		this.onAfterDraw = undefined
 	}
 
 	proto.addCodeTab = function(node, fileName){
-		// if file is already in tabs, focus it
-		var tabs = this.find('mainTabs')
-		for(var i = 0; i < tabs.data.length; i++){
-			var tab = tabs.data[i]
-			if(tab.fileName === fileName){
-				tabs.selectTab(i)
-				return
-			}
-		}
-		
-		var name = fileName
-		if(name.indexOf('.') === 0) name = name.slice(1)
-		if(name.indexOf('.js') === name.length-3) name = name.slice(0,-3)
-
-		var tabId = tabs.data.push(
-			{name:name, fileName:fileName, canClose:1}
-		)-1
-	
-		tabs.addChild(Code({
-			fileName:fileName,
+		console.log(this.find('Dock').ids.homeScreen.parent)
+		// alright. now for the fun. lets open a code tab.
+		this.find('Dock').ids.homeScreen.parent.addNewChild(Code({
+			tabText:fileName,
 			fileNode:node,
 			text:node.data
-		}), tabId)
+		}))
 
-		tabs.selectTab(tabId)
+		//tabs.selectTab(tabId)
 	}
 	
 	proto.updateProcess = function(fileName){
@@ -283,7 +259,22 @@ module.exports = require('base/app').extend(function(proto){
 	proto.onCompose = function(){
 		return [
 			Dock({
-
+				classes:{
+					HomeScreen:HomeScreen,
+					Code:Code,
+					FileTree:FileTree
+				},
+				data:{
+					left:[
+						{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true}
+					],
+					mode:1,
+					locked:false,
+					pos:100,
+					right:[
+						{type:'HomeScreen', id:'homeScreen', tabText:'Home', open:true, noCloseTab:true}
+					]
+				}
 			})
 			/*
 			Splitter({

@@ -15,7 +15,22 @@ module.exports = require('base/stamp').extend(function Split(proto){
 			onClick:function(){
 				this.view.onSplitButtonClick()
 			},
+			styles:{
+				default:{
+					Bg:{color:'#3c30'}
+				},
+				defaultOver:{
+					Bg:{color:'#ccc7'}
+				},
+				clicked:{
+					Bg:{color:'#3f37'}
+				},
+				clickedOver:{
+					Bg:{color:'#7f77'}
+				}
+			},
 			Bg:{
+				pickAlpha:-1,
 				align:[.5,.5],
 				padding:0
 			}
@@ -185,7 +200,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 			index:0
 		}, this.buttonClick)
 		this.drawButton({
-			icon:'lock',
+			icon:'eye-slash',
 			index:1
 		}, this.buttonClick)
 		this.endBg()

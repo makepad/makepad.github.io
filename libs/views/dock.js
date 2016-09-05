@@ -15,7 +15,10 @@ module.exports=require('base/view').extend({
 			}
 		}),
 		SplitZone:require('tools/rect').extend({
-			color:"#77f4"
+			color:"#77f4",
+			tween:2,
+			ease:[0,10,0,0],
+			duration:0.3
 		}),
 		DropTab:require('tools/button').extend({
 			onFingerDragOver:function(e){
@@ -30,19 +33,21 @@ module.exports=require('base/view').extend({
 				pickAlpha:-1.
 			},
 			styles:{
-				//$tween:2,
-				//$ease:[0,10,0,0],
+				$tween:2,
+				$ease:[0,10,0,0],
 				default:{
-				//	$duration:0.3,
+					$duration:0.3,
 					Bg:{
 						color:'#77f2'
-					}
+					},
+					Icon:{}
 				},
 				dragOver:{
-				//	$duration:0.1,
+					$duration:0.1,
 					Bg:{
 						color:'#77f6'
-					}
+					},
+					Icon:{}
 				}
 			}
 		}),
@@ -57,25 +62,28 @@ module.exports=require('base/view').extend({
 				this.view.dragTabDrop = undefined
 			},
 			Bg:{
+				pickAlpha:-1,
 				align:[.5,.5],
 				shadowBlur:4,
 				shadowOffset:[4,4],
 				padding:[10,10,10,10]	
 			},
 			styles:{
-				//$tween:2,
-				//$ease:[0,10,0,0],
+				$tween:2,
+				$ease:[0,10,0,0],
 				default:{
-				//	$duration:0.3,
+					$duration:0.3,
 					Bg:{
 						color:'#777f'
-					}
+					},
+					Icon:{}
 				},
 				dragOver:{
-				//	$duration:0.1,
+					$duration:0.1,
 					Bg:{
 						color:'#77ff'
-					}
+					},
+					Icon:{}
 				}
 			},
 		}),
@@ -127,8 +135,7 @@ module.exports=require('base/view').extend({
 			}
 		}),
 		Splitter:require('views/splitter'),
-		Fill:require('views/fill'),
-		Empty:require('base/view').extend({
+		Config:require('base/view').extend({
 			canDragTab:false,
 			tabText:'',
 			tabIcon:'angle-up',
@@ -163,7 +170,6 @@ module.exports=require('base/view').extend({
 					}
 				})
 			},
-
 			onDraw:function(){
 				this.beginLayout({align:[1.,this.parent.isTop?0:1]})
 				this.drawButton({icon:this.parent.isTop?'arrow-down':'arrow-up'})
@@ -174,14 +180,17 @@ module.exports=require('base/view').extend({
 					var child = children[i]
 					if(child.tabText){
 						this.drawButton({Bg:{align:[0,0]},text:child.tabText,w:'100%-20'},{tab:i})
-						this.drawButton({icon:'close'},{tab:i,close:true})
+						if(!child.noCloseTab) child.this.drawButton({icon:'close'},{tab:i,close:true})
 					}
 				}
 				this.endLayout()
 			}
 		})
 	},
-	data:{
+	onConstruct:function(){
+		this.ids = {}
+	},
+/*	data:{
 		left:[
 			{text:'TLA',open:1,fill:'#f0f'},
 			{text:'TL2',fill:'#ff0'}
@@ -206,13 +215,15 @@ module.exports=require('base/view').extend({
 				{text:'TR2',fill:'#00f'}
 			]
 		}
-	},
+	},*/
 	composeFromData:function(node){
 		if(Array.isArray(node)){
 			var args = [{
 					dock:this
 				},
-				this.Empty({
+				this.Config({
+					noDragTab: true,
+					noCloseTab: true,
 					dock:this
 				})
 			]
@@ -242,19 +253,21 @@ module.exports=require('base/view').extend({
 			)
 		}
 		else{ // other type
-			return this.Fill({
-				dock:this,
-				tabIcon: '',
-				tabText: node.text,
-				canDragTab: true,
-				canCloseTab: true,
-				color: node.fill
-			})
+			var pane = this.classes[node.type](
+				node,{
+					dock:this
+				}
+			)
+			if(node.id){
+				this.ids[node.id] = pane
+			}
+			return pane
 		}
 	},
 	onTabRip:function(tab, e){
 		// lets transfer the mouse capture to us
 		this.transferFingerMove(e.digit,0)
+		
 		// start finger drag so we get onFingerDragOver and onFingerDragOut events
 		this.app.startFingerDrag(e.digit)
 
@@ -271,6 +284,7 @@ module.exports=require('base/view').extend({
 		var tgtIdx = splitter.children.indexOf(oldSplitter)
 		var srcIdx = oldSplitter.children.indexOf(tabs)
 		var otherSide = oldSplitter.children[srcIdx?0:1]
+		// reset the coordinates
 		otherSide.x = '0'
 		otherSide.y = '0'
 		otherSide.w = '100%'
@@ -385,7 +399,7 @@ module.exports=require('base/view').extend({
 			var ys = 55
 
 			this.drawDropSplit({
-				x:cx-2.0*xs,
+				x:cx-2.0*xs+1,
 				y:cy-.5*ys,
 				w:xs*.5,
 				h:ys,
@@ -404,7 +418,7 @@ module.exports=require('base/view').extend({
 
 			this.drawDropSplit({
 				x:cx-.5*xs,
-				y:cy-2.0*ys,
+				y:cy-2.0*ys+1,
 				w:xs,
 				h:ys*.5,
 				index:5,
@@ -431,7 +445,7 @@ module.exports=require('base/view').extend({
 			
 			this.drawDropSplit({
 				x:cx-.5*xs,
-				y:cy+1.5*ys,
+				y:cy+1.5*ys-1,
 				w:xs,
 				h:ys*.5,
 				index:6,
@@ -448,14 +462,13 @@ module.exports=require('base/view').extend({
 			}).tabs = tabs
 
 			this.drawDropSplit({
-				x:cx+1.5*xs,
+				x:cx+1.5*xs-1,
 				y:cy-.5*ys,
 				w:xs*.5,
 				h:ys,
 				index:7,
 				icon:'arrow-right'
 			}).tabs = tabs
-
 		}
 
 		var e = this.tabDragFinger
@@ -489,7 +502,7 @@ module.exports=require('base/view').extend({
 			var newTabs = this.Tabs({
 					dock:this
 				},
-				this.Empty({
+				this.Config({
 					dock:this
 				}),
 				this.dragTab

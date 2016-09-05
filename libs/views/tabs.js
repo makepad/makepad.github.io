@@ -53,7 +53,7 @@ module.exports=require('base/view').extend({
 		this.slideStartY = e.yAbs
 	},
 	_tabSlide:function(tabStamp, e){
-		if(!this.children[tabStamp.index].canDragTab || this.slideStartY === undefined) return
+		if(this.children[tabStamp.index].noDragTab || this.slideStartY === undefined) return
 		
 		var ts = tabStamp.stampGeom()
 		var xWant = e.xView - this.slideDelta
@@ -186,7 +186,7 @@ module.exports=require('base/view').extend({
 		}
 		// lets draw the close button for the current tab
 		var clen = this.children.length
-		if(this.children[this.selectedIndex].canCloseTab || clen === 1){
+		if(!this.children[this.selectedIndex].noCloseTab || clen === 1){
 			if(clen>1){
 				this.drawCloseButton({
 					x:'@1',

@@ -116,114 +116,114 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 	}
 	
 	proto.styles = {
-		boldness:0.,
-		color:'white',
-		italic:0,
-		head:0,
-		tail:0,
+		$boldness:0.,
+		$color:'#fff',
+		$italic:0,
+		$head:0,
+		$tail:0,
 		NewText:{
-			color:'#ccc'
+			$color:'#ccc'
 		},
 		Block:{
-			borderColor:'white',
-			bgColor:'red',
-			borderWidth:1,
-			borderRadius:3.75,
+			$borderColor:'#fff',
+			$bgColor:'red',
+			$borderWidth:1,
+			$borderRadius:3.75,
 			FunctionDeclaration:{
-				bgColor:'#363b',
-				open:{open:1},
-				close:{open:0},
+				$bgColor:'#363b',
+				open:{$open:1},
+				close:{$open:0},
 			},
 			IfStatement:{
-				bgColor:'#335b',
+				$bgColor:'#335b',
 				if:{
-					open:{open:1},
-					close:{open:0},
+					open:{$open:1},
+					close:{$open:0},
 				},
 				else:{
-					bgColor:'#535b',
-					open:{open:1},
-					close:{open:0},
+					$bgColor:'#535b',
+					open:{$open:1},
+					close:{$open:0},
 				}
 			},
 			ForStatement:{
-				bgColor:'#550b',
-				open:{open:1},
-				close:{open:0},
+				$bgColor:'#550b',
+				open:{$open:1},
+				close:{$open:0},
 			},
 			BlockStatement:{
-				bgColor:'#533b',
-				open:{open:1},
-				close:{open:0},
+				$bgColor:'#533b',
+				open:{$open:1},
+				close:{$open:0},
 			},
 			ArrayExpression:{
-				bgColor:'#353b',
-				open:{open:1},
-				close:{open:0},
+				$bgColor:'#353b',
+				open:{$open:1},
+				close:{$open:0},
 			},
 			ObjectExpression:{
-				bgColor:'#537b',
-				open:{open:1},
-				close:{open:0}
+				$bgColor:'#537b',
+				open:{$open:1},
+				close:{$open:0}
 			}
 		},
 		Marker:{
-			borderRadius:3.5,
-			opColor:'gray',
-			borderColor:'gray',
-			bgColor:'#7778',
-			borderWidth:1.,
+			$borderRadius:3.5,
+			$opColor:'#7',
+			$borderColor:'#7',
+			$bgColor:'#7778',
+			$borderWidth:1.,
 			'+':{
-				bgColor:'#3739'
+				$bgColor:'#3739'
 			},
 			'-':{
-				bgColor:'#0779'
+				$bgColor:'#0779'
 			},
 			'/':{
-				bgColor:'#7379'
+				$bgColor:'#7379'
 			},
 			'*':{
-				bgColor:'#3379'
+				$bgColor:'#3379'
 			}
 		},
 		Comment:{
-			boldness:0.1,
-			color:'#0083f8',
+			$boldness:0.1,
+			$color:'#0083f8',
 			side:{
-				head:0.5
+				$head:0.5
 			},
 			above:{},
-			top:{head:0.5},
-			bottom:{head:0.},
+			top:{$head:0.5},
+			bottom:{$head:0.},
 			around:{}
 		},
 		Paren:{
-			boldness:0.,
+			$boldness:0.,
 			FunctionDeclaration:{
 				left:{},
-				right:{tail:0.5}
+				right:{$tail:0.5}
 			},
 			CallExpression:{
-				color:'#f70',
-				boldness:0.3,
+				$color:'#f70',
+				$boldness:0.3,
 			},
 			NewExpression:{},
 			ParenthesizedExpression:{},
 			IfStatement:{
 				left:{},
-				right:{tail:0.5}
+				right:{$tail:0.5}
 			},
 			ForStatement:{
 				left:{},
-				right:{tail:0.5}
+				right:{$tail:0.5}
 			},
 			SwitchStatement:{
 				left:{},
-				right:{tail:0.5}
+				right:{$tail:0.5}
 			},
 			CatchClause:{
 				left:{},
-				right:{tail:0.5}
+				right:{$tail:0.5}
 			},
 			DoWhileStatement:{
 				left:{},
@@ -231,49 +231,49 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			}
 		},
 		Comma:{
-			color:'#777',
-			FunctionDeclaration:{tail:0.5},
-			CallExpression:{tail:0.5},
+			$color:'#777',
+			FunctionDeclaration:{$tail:0.5},
+			CallExpression:{$tail:0.5},
 			ArrayExpression:{
-				open:{tail:0.},
-				close:{tail:0.5},
+				open:{$tail:0.},
+				close:{$tail:0.5},
 			},
 			ObjectExpression:{
-				open:{tail:0.},
-				close:{tail:0.5},
+				open:{$tail:0.},
+				close:{$tail:0.5},
 			},
 			VariableDeclaration:{},
-			SequenceExpression:{tail:0.5},
-			NewExpression:{tail:0.5}
+			SequenceExpression:{$tail:0.5},
+			NewExpression:{$tail:0.5}
 		},
 		Curly:{
 			BlockStatement:{},
-			ObjectExpression:{color:'#bac'},
+			ObjectExpression:{$color:'#bac'},
 			SwitchStatement:{}
 		},
 		Dot:{
 			MemberExpression:{}
 		},
 		SemiColon:{
-			ForStatement:{tail:0.5}
+			ForStatement:{$tail:0.5}
 		},
 		Bracket:{
 			MemberExpression:{},
 			ArrayExpression:{
-				boldness:0.
+				$boldness:0.
 			}
 		},
 		QuestionMark:{
-			tail:0.5
+			$tail:0.5
 		},
 		Colon:{
 			ObjectExpression:{
-				boldness:0.,
-				tail:0.5,
-				color:'#fff'
+				$boldness:0.,
+				$tail:0.5,
+				$color:'#fff'
 			},
 			ConditionalExpression:{
-				tail:0.5
+				$tail:0.5
 			},
 			SwitchCase:{}
 		},
@@ -290,55 +290,55 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		CatchClause:{},
 		// simple bits
 		Identifier:{
-			color:'#eee',
+			$color:'#eee',
 			glsl:{
-				color:'#3c9'
+				$color:'#3c9'
 			},
 			local:{
-				color:'#ccc'
+				$color:'#ccc'
 			},
 			closure:{
-				boldness:0.3,
-				color:'#ff9'
+				$boldness:0.3,
+				$color:'#ff9'
 			},
 			localArg:{
-				color:'#beb'
+				$color:'#beb'
 			},
 			iterator:{
-				color:'#bb0'
+				$color:'#bb0'
 			},
 			closureArg:{
 				boldness:0.3,
-				color:'#f70'
+				$color:'#f70'
 			},
 			unknown:{
 				//boldness:0.3,
-				color:'#f99'
+				$color:'#f99'
 			},
 			ObjectExpression:{
-				color:'#f77'
+				$color:'#f77'
 			},
 			FunctionDeclaration:{
-				color:"#bbb"
+				$color:"#bbb"
 			}
 		},
 		Literal:{
 			string:{
-				color:'#0d0'
+				$color:'#0d0'
 			},
 			num:{
 				boldness:0.1,
-				color:'#bbf'
+				$color:'#bbf'
 			},
 			boolean:{
-				color:'#f33'
+				$color:'#f33'
 			},
 			regexp:{},
 			object:{}
 		},
 		ThisExpression:{
-			boldness:0.1,
-			color:'#797'
+			$boldness:0.1,
+			$color:'#797'
 		},
 		Super:{},
 		// await
@@ -347,8 +347,8 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		// new and call
 		MetaProperty:{},
 		NewExpression:{
-			boldness:0.1,
-			color:'#ffdf00'
+			$boldness:0.1,
+			$color:'#ffdf00'
 		},
 		CallExpression:{},
 
@@ -356,77 +356,76 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		ArrayExpression:{},
 		ObjectExpression:{
 			key:{
-				alignLeft:0.,
-				alignRight:0.5,
-				boldness:0.1,
-				color:'#bac'
+				$alignLeft:0.,
+				$alignRight:0.5,
+				$boldness:0.1,
+				$color:'#bac'
 			}
 		},
 		ObjectPattern:{},
 		MemberExpression:{
-			color:'#eeb'
+			$color:'#eeb'
 		},
 
 		// functions
 		FunctionExpression:{},
 		ArrowFunctionExpression:{},
 		FunctionDeclaration:{
-			boldness:0.1,
-			color:'#797'
+			$boldness:0.1,
+			$color:'#797'
 		//	color:'#ffdf00'
 		},
 
 		// variable declarations
 		VariableDeclaration:{
-			boldness:0.1,
-			color:'#ffdf00'
+			$boldness:0.1,
+			$color:'#ffdf00'
 		},
 		VariableDeclarator:{},
 
 		// a+b
 		LogicalExpression:{
-			head:0.5,
-			tail:0.5,
-			color:'#ff9f00'
+			$head:0.5,
+			$tail:0.5,
+			$color:'#ff9f00'
 		},
 		BinaryExpression:{
-			head:0.5,
-			tail:0.5,
-			color:'#ff9f00'
+			$head:0.5,
+			$tail:0.5,
+			$color:'#ff9f00'
 		},
 		AssignmentExpression:{
-			boldness:0.1,
-			head:0.5,
-			tail:0.5,
-			color:'#ff9f00'
+			$boldness:0.1,
+			$head:0.5,
+			$tail:0.5,
+			$color:'#ff9f00'
 		},
 		ConditionalExpression:{
-			head:0.5,
-			tail:0.5
+			$head:0.5,
+			$tail:0.5
 		},
 		UpdateExpression:{
-			color:'#ff9f00'
+			$color:'#ff9f00'
 		},
 		UnaryExpression:{
-			color:'#ff9f00'
+			$color:'#ff9f00'
 		},
-
 
 		// if and for
 		IfStatement:{
-			if:{color:'#779'},
-			else:{color:'#979'}
+			if:{$color:'#779'},
+			else:{$color:'#979'}
 		},
 		ForStatement:{
-			color:'#bb0',
+			$color:'#bb0',
 			in:{}
 		},
 		ForInStatement:{},
 		ForOfStatement:{},
 		WhileStatement:{},
 		DoWhileStatement:{
-			do:{tail:0.5},
-			while:{head:0.5}
+			do:{$tail:0.5},
+			while:{$head:0.5}
 		},
 		BreakStatement:{},
 		ContinueStatement:{},
@@ -461,7 +460,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		LabeledStatement:{},
 		WithStatement:{}
 	}
-
+	console.log(proto._styles)
 	// abuse a flag as a listener so we keep onText clean without having to use
 	// on('text') API
 	proto._onText = 8
