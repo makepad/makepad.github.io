@@ -247,7 +247,10 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 					}.bind(this,f))
 				}
 				else{
-					this.postMessage(f)
+					// we need to throttle it
+					this.worker.services.painter1.frameSyncFinger(f.digit).then(function(run){
+						if(run) this.postMessage(f)
+					}.bind(this))
 				}
 			}
 		}

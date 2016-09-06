@@ -29,33 +29,34 @@
 				{"name":"types.js"}
 			]},
 			{"name":"tools","closed":true,"folder":[
+				{"name":"arctext.js"},
 				{"name":"bg.js"},
-				{"name":"text.js"},
+				{"name":"button.js"},
+				{"name":"codeblock.js"},
+				{"name":"codemarker.js"},
+				{"name":"codetext.js"},
+				{"name":"hover.js"},
 				{"name":"icon.js"},
 				{"name":"line.js"},
 				{"name":"quad.js"},
 				{"name":"rect.js"},
-				{"name":"hover.js"},
+				{"name":"selection.js"},
 				{"name":"shadowquad.js"},
-				{"name":"button.js"},
-				{"name":"tab.js"},
 				{"name":"slider.js"},
 				{"name":"split.js"},
-				{"name":"arctext.js"},
-				{"name":"codeblock.js"},
-				{"name":"codetext.js"},
-				{"name":"codemarker.js"},
-				{"name":"selection.js"}
+				{"name":"tab.js"},
+				{"name":"text.js"}
 			]},
 			{"name":"views","closed":true,"folder":[
 				{"name":"button.js"},
-				{"name":"tabs.js"},
 				{"name":"code.js"},
+				{"name":"dock.js"},
 				{"name":"draw.js"},
 				{"name":"edit.js"},
-				{"name":"tree.js"},
 				{"name":"fill.js"},
-				{"name":"splitter.js"}
+				{"name":"splitter.js"},
+				{"name":"tabs.js"},
+				{"name":"tree.js"}
 			]},
 			{"name":"services","closed":true,"folder":[
 				{"name":"painter.js"},

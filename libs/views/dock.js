@@ -200,7 +200,6 @@ module.exports=require('base/view').extend({
 			}
 			
 			var a = atan((fx - (tx+tw*.5))/tw, (fy - (ty+th*.5))/th)
-			console.log(a)
 			//var l = fx - tx
 			//var r = (tx + tw) - fx 
 			//var t = fy - ty
@@ -270,7 +269,8 @@ module.exports=require('base/view').extend({
 			var idx = splitter.children[0] === oldTabs?0:1
 
 			var newTabs = this.Tabs({
-					dock:this
+					dock:this,
+					isTop:this.dragTab.parent.isTop
 				},
 				this.dragTab
 			)
