@@ -20,115 +20,20 @@ module.exports=require('base/view').extend({
 			ease:[0,10,0,0],
 			duration:0.3
 		}),
-		DropTab:require('tools/button').extend({
-			onFingerDragOver:function(e){
-				this.state = this.styles.dragOver
-				this.view.dragTabDrop = {split:0,tabs:this.tabs}
-			},
-			onFingerDragOut:function(){
-				this.state = this.styles.default
-				this.view.dragTabDrop = undefined
-			},
-			tools:{
-				Bg:require('tools/quad').extend({
-					pickAlpha:-1.
-				})
-			},
-			styles:{
-				$tween:2,
-				$ease:[0,10,0,0],
-				default:{
-					$duration:0.3,
-					Bg:{
-						color:'#77f2'
-					},
-					Icon:{}
-				},
-				dragOver:{
-					$duration:0.1,
-					Bg:{
-						color:'#77f6'
-					},
-					Icon:{}
-				}
-			}
-		}),
-		DropSplit:require('tools/button').extend({
-			inPlace:false,
-			onFingerDragOver:function(){
-				this.state = this.styles.dragOver
-				this.view.dragTabDrop = {split:1,index:this.index, tabs:this.tabs}
-			},
-			onFingerDragOut:function(){
-				this.state = this.styles.default
-				this.view.dragTabDrop = undefined
-			},
-			Bg:{
-				pickAlpha:-1,
-				align:[.5,.5],
-				shadowBlur:4,
-				shadowOffset:[4,4],
-				padding:[10,10,10,10]	
-			},
-			styles:{
-				$tween:2,
-				$ease:[0,10,0,0],
-				default:{
-					$duration:0.3,
-					Bg:{
-						color:'#777f'
-					},
-					Icon:{}
-				},
-				dragOver:{
-					$duration:0.1,
-					Bg:{
-						color:'#77ff'
-					},
-					Icon:{}
-				}
-			},
-		}),
 		Tabs:require('views/tabs').extend({
 			onSelectTab:function(idx){
-				// signal the connected splitters to go into config mode
-				var splitters = {}
-				var node = this.parent
-				var last = this
-				var dock = this.dock
-				while(node && node !== dock){
-					var isFirst = node.children[0] === last
-					if(node.vertical){
-						if(isFirst){
-							if(!splitters.right) splitters.right = node
-						}
-						else{
-							if(!splitters.left) splitters.left = node
-						}
-					}
-					else{
-						if(isFirst){
-							if(!splitters.bottom) splitters.bottom = node
-						}
-						else{
-							if(!splitters.top) splitters.top = node
-						}
-					}
-					last = node
-					node = node.parent
+				var newSel = this.children[idx]
+				var lastSel = this.lastSelectedTab
+				if(lastSel !== newSel && lastSel && lastSel.onTabHide){
+					lastSel.onTabHide()
 				}
-
-				for(var key in splitters){
-					if(this.lastTabIdx !== 0 && idx === 0){
-						splitters[key].showSettings()
-					}
-					else if(this.lastTabIdx === 0 && idx !== 0){
-						splitters[key].hideSettings()
-					}
+				if(lastSel !== newSel && newSel && newSel.onTabShow){
+					newSel.onTabShow()
 				}
-				this.lastTabIdx = idx
+				this.lastSelectedTab = newSel
 			},
 			onTabRip:function(child, e){
+				if(this.children.length === 1) this.dock.onCloseFinalTab(this)
 				this.dock.onTabRip(child, e)
 			},
 			onCloseTab:function(index){
@@ -192,32 +97,6 @@ module.exports=require('base/view').extend({
 	onConstruct:function(){
 		this.ids = {}
 	},
-/*	data:{
-		left:[
-			{text:'TLA',open:1,fill:'#f0f'},
-			{text:'TL2',fill:'#ff0'}
-		],
-		mode:1,
-		locked:false,
-		pos:100,
-		right:{
-			top:[
-				{text:'T1',fill:'#3'},
-				{text:'T12',fill:'#3'},
-				{text:'T123',fill:'#3'},
-				{text:'T1234',fill:'#3'},
-				{text:'T12345',fill:'#3'},
-				{text:'T123456',fill:'#3'}
-			],
-			pos:100,
-			mode:2,
-			locked:false,
-			bottom:[
-				{text:'TR1',open:1,fill:'#0ff'},
-				{text:'TR2',fill:'#00f'}
-			]
-		}
-	},*/
 	composeFromData:function(node){
 		if(Array.isArray(node)){
 			var args = [{
@@ -269,10 +148,8 @@ module.exports=require('base/view').extend({
 	onTabRip:function(tab, e){
 		// lets transfer the mouse capture to us
 		this.transferFingerMove(e.digit,0)
-		
 		// start finger drag so we get onFingerDragOver and onFingerDragOut events
-		this.app.startFingerDrag(e.digit)
-
+		//this.app.startFingerDrag(e.digit)
 		this.tabDragFinger = e
 		tab.tabGeom = tab.tabStamp.stampGeom()
 		// lets draw all drop options
@@ -307,6 +184,21 @@ module.exports=require('base/view').extend({
 			tabs.push(node)
 		}
 	},
+	findSplitters:function(node, splitters){
+		if(!node)return
+		if(node.name === 'Splitter'){
+			splitters.push(node)
+			this.findSplitters(node.children[0], splitters)
+			this.findSplitters(node.children[1], splitters)
+		}
+	},
+	toggleSplitterSettings:function(show){
+		var splitters = []
+		this.findSplitters(this.children[0], splitters)
+		for(var i = 0; i < splitters.length; i++){
+			splitters[i].toggleSplitterSettings(show)
+		}
+	},
 	onOverlay:function(){
 		// draw the tab drop options
 		if(!this.dragTab) return
@@ -315,170 +207,91 @@ module.exports=require('base/view').extend({
 		var allTabs = []
 		this.findTabs(this.children[0], allTabs)
 
-		for(var i = 0; i < allTabs.length; i++){
-			// ok lets draw a center drop in each tab
-			var tabs = allTabs[i]
-
-			this.drawDropTab({
-				x:tabs.$xAbs,
-				y:tabs.$yAbs,
-				w:tabs.$w,
-				h:tabs.$h
-			}).tabs = tabs
-		}
-
-		var dtd = this.dragTabDrop
-		if(dtd){
-			var tabs = dtd.tabs
-			var dock = tabs.dock
-			if(dtd.split){
-				var zone = dtd.index
-				if(zone === 0){
-					this.drawSplitZone({
-						x:tabs.$xAbs,
-						y:tabs.$yAbs,
-						w:tabs.$w*.5,
-						h:tabs.$h
-					})
-				}
-				else if (zone === 1){
-					this.drawSplitZone({
-						x:tabs.$xAbs,
-						y:tabs.$yAbs,
-						w:tabs.$w,
-						h:tabs.$h*.5
-					})
-				}else if(zone === 2){
-					this.drawSplitZone({
-						x:tabs.$xAbs,
-						y:tabs.$yAbs+tabs.$h*.5,
-						w:tabs.$w,
-						h:tabs.$h*.5
-					})
-				}else if(zone ===3){
-					this.drawSplitZone({
-						x:tabs.$xAbs+tabs.$w*.5,
-						y:tabs.$yAbs,
-						w:tabs.$w*.5,
-						h:tabs.$h
-					})
-				}
-				else if(zone === 4){
-					this.drawSplitZone({
-						x:dock.$xAbs,
-						y:dock.$yAbs,
-						w:dock.$w*.5,
-						h:dock.$h
-					})
-				}
-				else if (zone === 5){
-					this.drawSplitZone({
-						x:dock.$xAbs,
-						y:dock.$yAbs,
-						w:dock.$w,
-						h:dock.$h*.5
-					})
-				}else if(zone === 6){
-					this.drawSplitZone({
-						x:dock.$xAbs,
-						y:dock.$yAbs+dock.$h*.5,
-						w:dock.$w,
-						h:dock.$h*.5
-					})
-				}else if(zone ===7){
-					this.drawSplitZone({
-						x:dock.$xAbs+dock.$w*.5,
-						y:dock.$yAbs,
-						w:dock.$w*.5,
-						h:dock.$h
-					})
-				}
-			}
-
-			var cx = tabs.$xAbs+tabs.$w*.5
-			var cy = tabs.$yAbs+tabs.$h*.5
-			var xs = 55
-			var ys = 55
-
-			this.drawDropSplit({
-				x:cx-2.0*xs+1,
-				y:cy-.5*ys,
-				w:xs*.5,
-				h:ys,
-				index:4,
-				icon:'arrow-left'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx-1.5*xs,
-				y:cy-.5*ys,
-				w:xs,
-				h:ys,
-				index:0,
-				icon:'arrow-circle-left'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx-.5*xs,
-				y:cy-2.0*ys+1,
-				w:xs,
-				h:ys*.5,
-				index:5,
-				icon:'arrow-up'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx-.5*xs,
-				y:cy-1.5*ys,
-				w:xs,
-				h:ys,
-				index:1,
-				icon:'arrow-circle-up'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx-.5*xs,
-				y:cy+.5*ys,
-				w:xs,
-				h:ys,
-				index:2,
-				icon:'arrow-circle-down'
-			}).tabs = tabs
-			
-			this.drawDropSplit({
-				x:cx-.5*xs,
-				y:cy+1.5*ys-1,
-				w:xs,
-				h:ys*.5,
-				index:6,
-				icon:'arrow-down'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx+.5*xs,
-				y:cy-.5*ys,
-				w:xs,
-				h:ys,
-				index:3,
-				icon:'arrow-circle-right'
-			}).tabs = tabs
-
-			this.drawDropSplit({
-				x:cx+1.5*xs-1,
-				y:cy-.5*ys,
-				w:xs*.5,
-				h:ys,
-				index:7,
-				icon:'arrow-right'
-			}).tabs = tabs
-		}
-
 		var e = this.tabDragFinger
 		this.drawTab({
 			x:e.xAbs - dragTab.tabGeom.w*.5,
 			y:e.yAbs - dragTab.tabGeom.h*.5,
-			text:dragTab.tabText
+			text:dragTab.tabText,
+			icon:dragTab.tabIcon
 		})
+		this.dragTabDrop = undefined
+		// lets find out the drop area
+		for(var i = 0; i < allTabs.length; i++){
+			var tabs = allTabs[i]
+
+			var fx = e.x
+			var fy = e.y
+			var px = tabs.parent.$xAbs
+			var py = tabs.parent.$yAbs
+			var pw = tabs.parent.$w
+			var ph = tabs.parent.$h
+			var tx = tabs.$xAbs
+			var ty = tabs.$yAbs
+			var tw = tabs.$w
+			var th = tabs.$h
+
+			var tabh = 40
+			var pdock = 30
+
+			if(fx < tx || fy < ty || fx > tx + tw || fy > ty + th){
+				continue
+			}
+			// tab head
+			if(fx >= tx && fx <= tx+tw && fy >= ty && fy <= ty+tabh){
+				this.dragTabDrop = {tabs:tabs, part:-1}
+				this.drawSplitZone({x:tx, y:ty, w:tw, h:th})
+				continue	
+			}
+			
+			var l = fx - tx
+			var r = (tx + tw) - fx 
+			var t = fy - (ty + tabh)
+			var b = (ty + th) - fy 
+
+			var m = min(l, r, t, b)
+
+			if(m === l){ // left
+				if(fx < tx+pdock && tabs.parent.name !== 'Dock'){
+					this.dragTabDrop = {tabs:tabs.parent,part:0,isParent:1}
+					this.drawSplitZone({x:px, y:py, w:pw*.25, h:ph})
+				}
+				else{
+					this.dragTabDrop = {tabs:tabs,part:0}
+					this.drawSplitZone({x:tx, y:ty, w:tw*.5, h:th})
+				}
+			}
+			else if(m === r){
+				if(fx > tx+tw-pdock && tabs.parent.name !== 'Dock'){
+					this.dragTabDrop = {tabs:tabs.parent,part:1,isParent:1}
+					this.drawSplitZone({x:px+pw*.75, y:py, w:pw*.25, h:ph})
+				}
+				else{
+					this.dragTabDrop = {tabs:tabs,part:1}
+					this.drawSplitZone({x:tx+tw*.5, y:ty, w:tw*.5, h:th})
+				}
+			}
+			else if(m === t){
+				if(fy < ty+tabh+pdock && tabs.parent.name !== 'Dock'){
+					this.dragTabDrop = {tabs:tabs.parent,part:2,isParent:1}
+					this.drawSplitZone({x:px, y:py, w:pw, h:ph*.25})
+				}
+				else{
+					this.dragTabDrop = {tabs:tabs,part:2}
+					this.drawSplitZone({x:tx, y:ty, w:tw, h:th*.5})
+				}
+			}
+			else if (m === b){
+				if(fy > ty+th-pdock && tabs.parent.name !== 'Dock'){
+					this.dragTabDrop = {tabs:tabs.parent,part:3,isParent:1}
+					this.drawSplitZone({x:px, y:py+ph*.75, w:pw, h:ph*.25})
+				}
+				else{
+					this.dragTabDrop = {tabs:tabs,part:3}
+					this.drawSplitZone({x:tx, y:ty+th*.5, w:tw, h:th*.5})
+				}
+			}
+		}
+
 	},
 	onFingerMove:function(e){
 		if(!this.dragTab)return
@@ -488,17 +301,14 @@ module.exports=require('base/view').extend({
 	onFingerUp:function(e){
 		if(!this.dragTab)return
 		// splitting?
-		var dtd = this.dragTabDrop
-		if(dtd && dtd.split){
-			var oldTabs = dtd.tabs
+
+		if(this.dragTabDrop && this.dragTabDrop.part >= 0){
+
+			var oldTabs = this.dragTabDrop.tabs
+			var isParent = this.dragTabDrop.isParent
 			var splitter = oldTabs.parent
-
-			if(dtd.index >= 4){ // we are splitting the dock
-				dtd.index -=4
-				splitter = this
-				oldTabs = this.children[0]		
-			}
-
+			console.log(splitter === this)
+			// what if we are splitting a parent splitter?
 			var idx = splitter.children[0] === oldTabs?0:1
 
 			var newTabs = this.Tabs({
@@ -516,37 +326,42 @@ module.exports=require('base/view').extend({
 			}
 			
 			var newSplitter
-			if(dtd.index === 0){
+			var part = this.dragTabDrop.part
+			if(part === 0){
 				newSplitter = this.Splitter({
 						dock:this,
 						vertical:true,
+						pos:isParent?0.25:0.5
 					},
 					newTabs,
 					oldTabs
 				)
 			}
-			else if(dtd.index === 1){
+			else if(part === 1){
 				newSplitter = this.Splitter({
 						dock:this,
-						vertical:false,
-					},
-					newTabs,
-					oldTabs
-				)
-			}
-			else if(dtd.index === 2){
-				newSplitter = this.Splitter({
-						dock:this,
-						vertical:false,
+						vertical:true,
+						pos:isParent?0.75:0.5
 					},
 					oldTabs,
 					newTabs
 				)
 			}
-			else if(dtd.index === 3){
+			else if(part === 2){
 				newSplitter = this.Splitter({
 						dock:this,
-						vertical:true,
+						vertical:false,
+						pos:isParent?0.25:0.5
+					},
+					newTabs,
+					oldTabs
+				)
+			}
+			else if(part === 3){
+				newSplitter = this.Splitter({
+						dock:this,
+						vertical:false,
+						pos:isParent?0.75:0.5
 					},
 					oldTabs,
 					newTabs
@@ -555,7 +370,7 @@ module.exports=require('base/view').extend({
 			splitter.replaceNewChild(newSplitter, idx)
 		}
 		else{
-			var tabs = dtd && dtd.tabs || this.dragTab.oldTabs
+			var tabs = this.dragTabDrop && this.dragTabDrop.tabs || this.dragTab.oldTabs
 			this.dragTab.parent = tabs
 			var id = tabs.children.push(this.dragTab) - 1
 			tabs.selectTab(id)

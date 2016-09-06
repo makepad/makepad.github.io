@@ -460,7 +460,6 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		LabeledStatement:{},
 		WithStatement:{}
 	}
-	console.log(proto._styles)
 	// abuse a flag as a listener so we keep onText clean without having to use
 	// on('text') API
 	proto._onText = 8

@@ -19,13 +19,8 @@ module.exports=require('base/view').extend({
 		Split:require('tools/split').extend({
 		})
 	},
-	showSettings:function(){
-		if(this.refSettings++) return
-		this.doAnim = true
-		this.redraw()
-	},
-	hideSettings:function(){
-		if(this.refSettings == 0 || --this.refSettings)return
+	toggleSplitterSettings:function(show){
+		this.refSettings = show?1:0
 		this.doAnim = true
 		this.redraw()
 	},

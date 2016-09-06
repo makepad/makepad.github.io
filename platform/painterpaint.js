@@ -16,6 +16,7 @@ module.exports = function painterPaint(proto){
 			0,0,0,1
 		]
 		this.children = {}
+		this.frameSyncPromise = {}
 	}
 
 	proto.addChild = function(child, fbId){
@@ -76,6 +77,12 @@ module.exports = function painterPaint(proto){
 	}
 
 	proto.onRepaint = function(){
+
+		for(var digit in this.frameSyncPromise){
+			this.frameSyncPromise[digit].resolve(true)
+		}
+		this.frameSyncPromise = {}
+
 		this.repaintTime = (Date.now() - this.args.timeBoot) / 1000
 		this.frameId++
 		this.repaintPending = false
@@ -189,6 +196,15 @@ module.exports = function painterPaint(proto){
 		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, pick.depth)
 		gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 		return pick
+	}
+
+	proto.frameSyncFinger = function(digit){
+		var oldSync = this.frameSyncPromise[digit]
+		if(oldSync) oldSync.resolve(false)
+		var sync = this.frameSyncPromise[digit] = {}
+		sync.promise = new Promise(function(res, rej){sync.resolve = res, sync.reject = rej})
+		this.requestRepaint()
+		return sync.promise
 	}
 
 	proto.pickFinger = function(digit, x, y, immediate){

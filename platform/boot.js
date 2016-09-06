@@ -540,7 +540,11 @@ function mathLib(g){
 	g.tan = Math.tan
 	g.asin = Math.asin
 	g.acos = Math.acos
-	g.atan = Math.atan
+	g.atan = function(x, y){
+		if(y !== undefined) return Math.atan2(x, y)
+		return Math.atan(x)
+	}
+
 	g.pow = Math.pow
 	g.exp = Math.exp
 	g.log = Math.log

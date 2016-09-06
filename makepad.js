@@ -79,6 +79,28 @@ module.exports = require('base/app').extend(function(proto){
 		}
 	})
 
+	var Settings = require('views/draw').extend(styles.Settings, {
+		onDraw:function(){
+			this.beginBg(this.viewGeom)
+			this.drawText({
+				text:'Settings page placeholder'
+			})
+			this.draw
+			this.endBg()
+		},
+		onTabShow:function(){
+			this.app.find('Dock').toggleSplitterSettings(true)
+		},
+		onTabHide:function(){
+			this.app.find('Dock').toggleSplitterSettings(false)
+		},
+		onCompose:function(){
+			return Code({
+				x:'0',y:'0',h:0,w:0
+			})
+		}
+	})
+
 	var MainTabs = require('views/tabs').extend(styles.MainTabs, {
 	})
 
@@ -188,8 +210,6 @@ module.exports = require('base/app').extend(function(proto){
 	}
 
 	proto.addCodeTab = function(node, fileName){
-		console.log(this.find('Dock').ids.homeScreen.parent)
-		// alright. now for the fun. lets open a code tab.
 		var tabs = this.find('Dock').ids.homeScreen.parent
 		var idx = tabs.addNewChild(Code({
 			tabText:fileName,
@@ -262,11 +282,13 @@ module.exports = require('base/app').extend(function(proto){
 				classes:{
 					HomeScreen:HomeScreen,
 					Code:Code,
-					FileTree:FileTree
+					FileTree:FileTree,
+					Settings:Settings,
 				},
 				data:{
 					left:[
-						{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true}
+						{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
+						{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
 					],
 					mode:1,
 					locked:false,
