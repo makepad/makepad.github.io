@@ -355,7 +355,7 @@ module.exports = require('base/class').extend(function View(proto){
 
 		this.onDrawChildren()
 
-		this.endTurtle()
+		this.endTurtle(true)
 
 		// store the draw width and height for layout if needed
 		var tw = this.$wDraw = turtle._w
@@ -595,11 +595,11 @@ module.exports = require('base/class').extend(function View(proto){
 			proto.inPlace = true
 
 			proto.onFingerDown = function(){
-				this.state = this.states.hover
+				this.state = this.styles.hover
 			}
 
 			proto.onFingerUp = function(){
-				this.state = this.states.default
+				this.state = this.styles.default
 			}
 
 			proto.onDraw = function(){

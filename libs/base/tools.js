@@ -80,10 +80,10 @@ module.exports = function(proto){
 		return turtle
 	}
 
-	proto.endTurtle = function(){
+	proto.endTurtle = function(doBounds){
 		// call end on a turtle and pop it off the stack
 		var view = this.view
-		this.turtle.end()
+		this.turtle.end(doBounds)
 		// pop the stack
 		var last = this.turtle
 		var outer = this.turtle = view.$turtleStack[--view.$turtleStack.len]

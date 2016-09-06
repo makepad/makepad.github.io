@@ -16,7 +16,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 	}
 
 	proto.allowOperatorSpaces = 0
-
+	proto.overflow = 'scroll'
 	proto.padding = [0,0,0,4]
 
 	proto.$fastTextFontSize = 12
@@ -686,7 +686,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			}
 		}
 		
-		this.endBg()
+		this.endBg(true)
 	}
 
 	proto.indentFindParenError = function(){

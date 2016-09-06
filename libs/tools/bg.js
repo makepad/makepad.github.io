@@ -150,8 +150,8 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 			t.shiftPadding(t._borderWidth)
 			this.beginTurtle()
 		},
-		end:function(){
-			var ot = this.endTurtle()
+		end:function(doBounds){
+			var ot = this.endTurtle(doBounds)
 			this.turtle.walk(ot)
 			this.$WRITEPROPS()
 		}
