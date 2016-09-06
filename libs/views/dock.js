@@ -14,7 +14,7 @@ module.exports=require('base/view').extend({
 				pickAlpha:2.
 			}
 		}),
-		SplitZone:require('tools/rect').extend({
+		SplitZone:require('tools/quad').extend({
 			color:"#77f4",
 			tween:2,
 			ease:[0,10,0,0],
@@ -29,8 +29,10 @@ module.exports=require('base/view').extend({
 				this.state = this.styles.default
 				this.view.dragTabDrop = undefined
 			},
-			Bg:{
-				pickAlpha:-1.
+			tools:{
+				Bg:require('tools/quad').extend({
+					pickAlpha:-1.
+				})
 			},
 			styles:{
 				$tween:2,
