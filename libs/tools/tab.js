@@ -54,7 +54,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			},
 			Text:{
 				color:'#9'
-			}
+			},
+			Icon:{}
 		},
 		default_over:{
 			Bg:{
@@ -62,7 +63,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			},
 			Text:{
 				color:'#c'
-			}
+			},
+			Icon:{}
 		},
 		selected:{
 			Bg:{
@@ -70,7 +72,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			},
 			Text:{
 				color:'#e'
-			}
+			},
+			Icon:{}
 		},
 		selected_slide:{
 			$tween:2,
@@ -81,7 +84,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			},
 			Text:{
 				color:'#f'
-			}
+			},
+			Icon:{}
 		},		
 		selected_over:{
 			Bg:{
@@ -89,7 +93,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			},
 			Text:{
 				color:'#f'
-			}
+			},
+			Icon:{}
 		}
 	}
 

@@ -80,10 +80,13 @@ module.exports = require('base/app').extend(function(proto){
 	})
 
 	var Settings = require('views/draw').extend(styles.Settings, {
+		Bg:{
+			color:'#3'
+		},
 		onDraw:function(){
 			this.beginBg(this.viewGeom)
 			this.drawText({
-				text:'Settings page placeholder'
+				text:'...'
 			})
 			this.draw
 			this.endBg()
@@ -93,11 +96,6 @@ module.exports = require('base/app').extend(function(proto){
 		},
 		onTabHide:function(){
 			this.app.find('Dock').toggleSplitterSettings(false)
-		},
-		onCompose:function(){
-			return Code({
-				x:'0',y:'0',h:0,w:0
-			})
 		}
 	})
 
