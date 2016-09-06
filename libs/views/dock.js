@@ -180,7 +180,7 @@ module.exports=require('base/view').extend({
 					var child = children[i]
 					if(child.tabText){
 						this.drawButton({Bg:{align:[0,0]},text:child.tabText,w:'100%-20'},{tab:i})
-						if(!child.noCloseTab) child.this.drawButton({icon:'close'},{tab:i,close:true})
+						if(!child.noCloseTab) this.drawButton({icon:'close'},{tab:i,close:true})
 					}
 				}
 				this.endLayout()
