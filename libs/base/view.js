@@ -576,16 +576,16 @@ module.exports = require('base/class').extend(function View(proto){
 			proto.styles = {
 				default:{
 					ScrollBar:{
-						tween:1,
-						duration:0.3,
+						//tween:1,
+						//duration:0.3,
 						bgColor:'#4448',
 						handleColor:'#888'
 					}
 				},
 				hover:{
 					ScrollBar:{
-						tween:1,
-						duration:0.1,
+						//tween:1,
+						//duration:0.1,
 						bgColor:'#555f',
 						handleColor:'yellow'
 					}
