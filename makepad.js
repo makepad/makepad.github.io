@@ -190,13 +190,13 @@ module.exports = require('base/app').extend(function(proto){
 	proto.addCodeTab = function(node, fileName){
 		console.log(this.find('Dock').ids.homeScreen.parent)
 		// alright. now for the fun. lets open a code tab.
-		this.find('Dock').ids.homeScreen.parent.addNewChild(Code({
+		var tabs = this.find('Dock').ids.homeScreen.parent
+		var idx = tabs.addNewChild(Code({
 			tabText:fileName,
 			fileNode:node,
 			text:node.data
 		}))
-
-		//tabs.selectTab(tabId)
+		tabs.selectTab(idx)
 	}
 	
 	proto.updateProcess = function(fileName){

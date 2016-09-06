@@ -185,6 +185,7 @@ module.exports = require('base/class').extend(function View(proto){
 		if(this.onAfterCompose) this.onAfterCompose()
 		//this.redraw()
 		this.relayout()
+		return index
 	}
 	
 	proto.replaceNewChild = function(child, index){
