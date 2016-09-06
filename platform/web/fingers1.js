@@ -234,15 +234,21 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				queue.push(f)
 			}
 			else{
-				this.postMessage(f)
 				// lets check if we are dragging this digit
-				if(this.dragMap[f.digit]) this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
-					f.fn = 'onFingerDrag'
-					f.todoId = pick.todoId,
-					f.pickId = pick.pickId
-					f.workerId = pick.workerId
+				if(this.dragMap[f.digit]){
+					this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
+						if(!pick) return
+						this.postMessage(f)
+						f.fn = 'onFingerDrag'
+						f.todoId = pick.todoId,
+						f.pickId = pick.pickId
+						f.workerId = pick.workerId
+						this.postMessage(f)
+					}.bind(this,f))
+				}
+				else{
 					this.postMessage(f)
-				}.bind(this,f))
+				}
 			}
 		}
 	}
