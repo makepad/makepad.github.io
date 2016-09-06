@@ -199,8 +199,8 @@ module.exports=require('base/view').extend({
 				continue	
 			}
 			
-			var a = atan(fx - (tx+tw*.5), fy - (ty+th*.5))
-			//console.log(a)
+			var a = atan((fx - (tx+tw*.5))/tw, (fy - (ty+th*.5))/th)
+			console.log(a)
 			//var l = fx - tx
 			//var r = (tx + tw) - fx 
 			//var t = fy - ty
