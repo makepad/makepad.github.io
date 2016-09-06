@@ -207,7 +207,8 @@ module.exports=require('base/view').extend({
 			//var b = (ty + th) - fy 
 			//var m = min(l, r, t, b)
 			if(a >= -0.75*PI && a <= -0.25*PI){ // left
-				if(fx < tx+pdock && tabs.parent.name !== 'Dock'){
+				// so the left dock should only be available if im the left
+				if(tx === px && fx < tx+pdock && tabs.parent.name !== 'Dock'){
 					this.dragTabDrop = {tabs:tabs.parent,part:0,isParent:1}
 					this.drawSplitZone({x:px, y:py, w:pw*.25, h:ph})
 				}
@@ -216,8 +217,8 @@ module.exports=require('base/view').extend({
 					this.drawSplitZone({x:tx, y:ty, w:tw*.5, h:th})
 				}
 			}
-			else if(a <= 0.75*PI && a >= 0.25*PI){
-				if(fx > tx+tw-pdock && tabs.parent.name !== 'Dock'){
+			else if(a <= 0.75*PI && a >= 0.25*PI){ // right
+				if(tx + tw === px + pw && fx > tx+tw-pdock && tabs.parent.name !== 'Dock'){
 					this.dragTabDrop = {tabs:tabs.parent,part:1,isParent:1}
 					this.drawSplitZone({x:px+pw*.75, y:py, w:pw*.25, h:ph})
 				}
@@ -226,8 +227,9 @@ module.exports=require('base/view').extend({
 					this.drawSplitZone({x:tx+tw*.5, y:ty, w:tw*.5, h:th})
 				}
 			}
-			else if(a <= -0.75*PI || a >= 0.75*PI){
-				if(fy < ty+tabh+pdock && tabs.parent.name !== 'Dock'){
+			else if(a <= -0.75*PI || a >= 0.75*PI){ // top 
+
+				if(ty === py && fy < ty+tabh+pdock && tabs.parent.name !== 'Dock'){
 					this.dragTabDrop = {tabs:tabs.parent,part:2,isParent:1}
 					this.drawSplitZone({x:px, y:py, w:pw, h:ph*.25})
 				}
@@ -237,8 +239,8 @@ module.exports=require('base/view').extend({
 					this.drawSplitZone({x:tx, y:ty, w:tw, h:(th-tabh)*.5})
 				}
 			}
-			else if (a <= 0.25*PI && a >= -0.25*PI){
-				if(fy > ty+th-(tabs.isTop?0:tabh)-pdock && tabs.parent.name !== 'Dock'){
+			else if (a <= 0.25*PI && a >= -0.25*PI){ //bottom
+				if(ty + th === py + ph && fy > ty+th-(tabs.isTop?0:tabh)-pdock && tabs.parent.name !== 'Dock'){
 					this.dragTabDrop = {tabs:tabs.parent,part:3,isParent:1}
 					this.drawSplitZone({x:px, y:py+ph*.75, w:pw, h:ph*.25})
 				}
