@@ -1002,7 +1002,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += propcode
 
 		if(!instanceProps.this_DOT_tween){
-			code += indent + 'var $timeMax = $tweenStart + '
+			code += indent + 'var $timeMax = $view._time + '
 			code += (instanceProps.this_DOT_duration?'$a[$o + ' + instanceProps.this_DOT_duration.offset +']':'$proto.duration')+'\n'
 			code += indent + 'if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 		}

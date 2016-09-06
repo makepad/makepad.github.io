@@ -82,7 +82,7 @@ module.exports = function painterTodo(proto){
 		}
 		this.currentTodo = lastTodo
 		if(!this.inPickPass && this.processScrollState(todo))return true
-		if(repaint || todo.animLoop || todo.timeMax > this.repaintTime)return true
+		if(repaint || todo.animLoop || todo.timeMax >= this.repaintTime)return true
 	}
 
 	var todofn = proto.todofn = new Array(100)
