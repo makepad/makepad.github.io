@@ -30,6 +30,8 @@ module.exports=require('base/view').extend({
 			wrap:false,
 		}),
 		CloseButton:require('tools/button').extend({
+			x:'@1',
+			icon:'close',
 			Bg:{
 				margin:[2,0,0,0],
 				color:'#3',
@@ -39,6 +41,19 @@ module.exports=require('base/view').extend({
 			h:23,
 			onClick:function(e){
 				this.view.closeTab(this.view.selectedIndex)
+			}
+		}),
+		FlipButton:require('tools/button').extend({
+			x:'@1',
+			Bg:{
+				margin:[2,0,0,0],
+				color:'#9',
+				padding:[4,0,0,7]
+			},
+			w:26,
+			h:23,
+			onClick:function(e){
+				this.view.isTop = !this.view.isTop
 			}
 		})
 	},
@@ -143,6 +158,10 @@ module.exports=require('base/view').extend({
 	},
 	onCloseTab:function(index){
 	},
+	toggleTabSettings:function(show){
+		this.showTabSettings = show
+		this.redraw()
+	},
 	onDraw:function(){
 
 		if(this.isTop){
@@ -186,20 +205,17 @@ module.exports=require('base/view').extend({
 		}
 		// lets draw the close button for the current tab
 		var clen = this.children.length
-		if(!this.children[this.selectedIndex].noCloseTab || clen === 1){
-			if(clen>1){
-				this.drawCloseButton({
-					x:'@1',
-					icon:'close'
-				})
-			}
-			else{
-				this.drawCloseButton({
-					x:NaN,
-					icon:'trash'
-				})
-			}
+		
+		if(!this.children[this.selectedIndex].noCloseTab){
+			this.drawCloseButton({
+			})
 		}
+		if(this.showTabSettings){
+			this.drawFlipButton({
+				icon:this.isTop?'arrow-down':'arrow-up'
+			})
+		}
+
 		this.endBackground()
 		this.defSliding = false
 		this.selSliding = false

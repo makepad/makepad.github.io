@@ -33,7 +33,7 @@ module.exports=require('base/view').extend({
 				this.lastSelectedTab = newSel
 			},
 			onTabRip:function(child, e){
-				if(this.children.length === 1) this.dock.onCloseFinalTab(this)
+				if(this.children.length === 0) this.dock.onCloseFinalTab(this)
 				this.dock.onTabRip(child, e)
 			},
 			onCloseTab:function(index){
@@ -41,77 +41,22 @@ module.exports=require('base/view').extend({
 				this.dock.onCloseFinalTab(this)
 			}
 		}),
-		Splitter:require('views/splitter'),
-		Config:require('base/view').extend({
-			canDragTab:false,
-			tabText:'',
-			tabIcon:'angle-up',
-			color:'red',
-			dontReuseStamps:true,
-			tools:{
-				Rect:require('tools/rect'),
-				Button:require('tools/button').extend({
-					w:20,
-					onClick:function(){
-						if(!this.click){ 
-							this.view.parent.isTop = !this.view.parent.isTop
-						}
-						else if(this.click.tab !== undefined){
-							if(this.click.close){
-								this.view.parent.closeTab(this.click.tab, true)
-								this.view.redraw()
-							}
-							else this.view.parent.selectTab(this.click.tab)
-						}
-					},
-					states:{
-						default:{Bg:{color:'#7'}},
-						defaultOver:{Bg:{color:'#9'}},
-						clicked:{Bg:{color:'#0a0'}},
-						clickedOver:{Bg:{color:'#7f7'}}
-					},
-					Bg:{
-						align:[0.5, 0.5],
-						borderRadius:3,
-						padding:[3, 1, 2, 1]
-					}
-				})
-			},
-			onDraw:function(){
-				this.beginLayout({align:[1.,this.parent.isTop?0:1]})
-				this.drawButton({icon:this.parent.isTop?'arrow-down':'arrow-up'})
-				this.endLayout()
-				this.beginLayout({padding:22,wrap:0})
-				var children = this.parent.children
-				for(var i = 0; i < children.length;i ++){
-					var child = children[i]
-					if(child.tabText){
-						this.drawButton({Bg:{align:[0,0]},text:child.tabText,w:'100%-20'},{tab:i})
-						if(!child.noCloseTab) this.drawButton({icon:'close'},{tab:i,close:true})
-					}
-				}
-				this.endLayout()
-			}
-		})
+		Splitter:require('views/splitter')
 	},
 	onConstruct:function(){
 		this.ids = {}
 	},
 	composeFromData:function(node){
-		if(Array.isArray(node)){
+		if(node.tabs){
 			var args = [{
+					isTop:node.top,
 					dock:this
-				},
-				this.Config({
-					noDragTab: true,
-					noCloseTab: true,
-					dock:this
-				})
+				}
 			]
 			var selIndex = 0
-			for(var i = 0; i < node.length; i++){
-				var page = node[i]
-				if(page.open) selIndex = i+1
+			for(var i = 0; i < node.tabs.length; i++){
+				var page = node.tabs[i]
+				if(page.open) selIndex = i
  				args.push(this.composeFromData(page))
 			}
 			var tabs = this.Tabs.apply(null,args)
@@ -148,11 +93,8 @@ module.exports=require('base/view').extend({
 	onTabRip:function(tab, e){
 		// lets transfer the mouse capture to us
 		this.transferFingerMove(e.digit,0)
-		// start finger drag so we get onFingerDragOver and onFingerDragOut events
-		//this.app.startFingerDrag(e.digit)
 		this.tabDragFinger = e
 		tab.tabGeom = tab.tabStamp.stampGeom()
-		// lets draw all drop options
 		this.dragTab = tab
 		this.redraw() 
 	},
@@ -199,6 +141,13 @@ module.exports=require('base/view').extend({
 			splitters[i].toggleSplitterSettings(show)
 		}
 	},
+	toggleTabSettings:function(show){
+		var tabs = []
+		this.findTabs(this.children[0], tabs)
+		for(var i = 0; i < tabs.length; i++){
+			tabs[i].toggleTabSettings(show)
+		}
+	},
 	onOverlay:function(){
 		// draw the tab drop options
 		if(!this.dragTab) return
@@ -236,8 +185,15 @@ module.exports=require('base/view').extend({
 			if(fx < tx || fy < ty || fx > tx + tw || fy > ty + th){
 				continue
 			}
+
 			// tab head
-			if(fx >= tx && fx <= tx+tw && fy >= ty && fy <= ty+tabh){
+
+			if( tabs.isTop && fx >= tx && fx <= tx+tw && fy >= ty && fy <= ty+tabh){
+				this.dragTabDrop = {tabs:tabs, part:-1}
+				this.drawSplitZone({x:tx, y:ty, w:tw, h:th})
+				continue	
+			}
+			if( !tabs.isTop && fx >= tx && fx <= tx+tw && fy >= ty + th - tabh && fy <= ty+th){
 				this.dragTabDrop = {tabs:tabs, part:-1}
 				this.drawSplitZone({x:tx, y:ty, w:tw, h:th})
 				continue	
@@ -245,7 +201,7 @@ module.exports=require('base/view').extend({
 			
 			var l = fx - tx
 			var r = (tx + tw) - fx 
-			var t = fy - (ty + tabh)
+			var t = fy - ty
 			var b = (ty + th) - fy 
 
 			var m = min(l, r, t, b)
@@ -277,7 +233,8 @@ module.exports=require('base/view').extend({
 				}
 				else{
 					this.dragTabDrop = {tabs:tabs,part:2}
-					this.drawSplitZone({x:tx, y:ty, w:tw, h:th*.5})
+					
+					this.drawSplitZone({x:tx, y:ty, w:tw, h:(th-tabh)*.5})
 				}
 			}
 			else if (m === b){
@@ -307,22 +264,18 @@ module.exports=require('base/view').extend({
 			var oldTabs = this.dragTabDrop.tabs
 			var isParent = this.dragTabDrop.isParent
 			var splitter = oldTabs.parent
-			console.log(splitter === this)
-			// what if we are splitting a parent splitter?
+
 			var idx = splitter.children[0] === oldTabs?0:1
 
 			var newTabs = this.Tabs({
 					dock:this
 				},
-				this.Config({
-					dock:this
-				}),
 				this.dragTab
 			)
 
 			newTabs.onAfterCompose = function(){
 				this.onAfterCompose = null
-				this.selectTab(1)
+				this.selectTab(0)
 			}
 			
 			var newSplitter

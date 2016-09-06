@@ -92,10 +92,14 @@ module.exports = require('base/app').extend(function(proto){
 			this.endBg()
 		},
 		onTabShow:function(){
-			this.app.find('Dock').toggleSplitterSettings(true)
+			var dock = this.app.find('Dock')
+			dock.toggleSplitterSettings(true)
+			dock.toggleTabSettings(true)
 		},
 		onTabHide:function(){
-			this.app.find('Dock').toggleSplitterSettings(false)
+			var dock = this.app.find('Dock')
+			dock.toggleSplitterSettings(false)
+			dock.toggleTabSettings(false)
 		}
 	})
 
@@ -284,16 +288,22 @@ module.exports = require('base/app').extend(function(proto){
 					Settings:Settings,
 				},
 				data:{
-					left:[
-						{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
-						{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
-					],
 					mode:1,
 					locked:false,
 					pos:100,
-					right:[
-						{type:'HomeScreen', id:'homeScreen', tabText:'Home', open:true, noCloseTab:true}
-					]
+					left:{
+						top:true,
+						tabs:[
+							{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
+							{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
+						]	
+					},
+					right:{
+						top:false,
+						tabs:[
+							{type:'HomeScreen', id:'homeScreen', tabText:'Home', open:true, noCloseTab:true}
+						]
+					}
 				}
 			})
 			/*
