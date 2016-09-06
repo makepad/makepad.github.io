@@ -192,7 +192,7 @@ module.exports=require('base/view').extend({
 				$layer:isSel?1:undefined,
 				x:isSel?this.slidePos:NaN,
 				Bg:{
-					borderRadius:this.isTop?[6,6,1,1]:[1,1,6,6]
+					borderRadius:this.isTop?[6,6,2,2]:[2,2,6,6]
 				},
 				index:i,
 				state:isSel?
