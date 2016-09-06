@@ -450,6 +450,10 @@ module.exports = require('base/class').extend(function View(proto){
 			this.onOverlay()
 			this.onFlag = 0
 			this.endTurtle()
+
+			for(var i = this.$pickId+1;this.$stamps[i];i++){
+				this.$stamps[i] = null
+			}
 		}
 
 		if(this.onAfterDraw){
@@ -529,12 +533,12 @@ module.exports = require('base/class').extend(function View(proto){
 					vertexStyle:function(){$ // bypass the worker roundtrip :)
 						var pos = vec2()
 						if(this.isHorizontal > .5){
-							this.y += 1.///this.pixelRatio
+							this.y += .5///this.pixelRatio
 							this.handleSize = this.viewSpace.x / this.viewSpace.z
 							this.handlePos = this.viewScroll.x / this.viewSpace.z
 						}
 						else{
-							this.x += 1.///this.pixelRatio
+							this.x += .5///this.pixelRatio
 							this.handleSize = this.viewSpace.y / this.viewSpace.w
 							this.handlePos = this.viewScroll.y / this.viewSpace.w
 						}

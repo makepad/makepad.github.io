@@ -2,17 +2,25 @@ module.exports=require('base/view').extend({
 	name:'Tabs',
 	overflow:'none',
 	props:{
-		isTop:true
+		isBottom:false,
+		isFolded:false,
 	},
-	onIsTop:function(){
-		if(this.isTop){
+	onIsFolded:function(){
+		this.onIsBottom()
+	},
+	onIsBottom:function(){
+		if(this.isFolded){
+			this.padding = [0,0,0,0]
+		}
+		else if(!this.isBottom){
 			this.padding = [26,0,0,0]
 		}
 		else{
 			this.padding = [0,0,26,0]
 		}
 	},
-	isTop:true,
+	isFolded:false,
+	isBottom:false,
 	tools:{
 		Tab:require('tools/tab').extend({
 			onTabSelected:function(e){
@@ -29,7 +37,11 @@ module.exports=require('base/view').extend({
 			color:'#2',
 			wrap:false,
 		}),
-		CloseButton:require('tools/button').extend({
+		Button:require('tools/button').extend({
+		})
+	},
+	styles:{
+		closeButton:{
 			x:'@1',
 			icon:'close',
 			Bg:{
@@ -42,22 +54,43 @@ module.exports=require('base/view').extend({
 			onClick:function(e){
 				this.view.closeTab(this.view.selectedIndex)
 			}
-		}),
-		FlipButton:require('tools/button').extend({
+		},
+		flipButton:{
 			x:'@1',
 			Bg:{
-				margin:[2,0,0,0],
+				margin:[3,0,0,0],
 				color:'#9',
-				padding:[4,0,0,7]
+				padding:0,
+				align:[.5,.5]
 			},
-			w:26,
+			w:20,
 			h:23,
 			onClick:function(e){
-				this.view.isTop = !this.view.isTop
+				this.view.isBottom = !this.view.isBottom
 			}
-		})
+		},
+		flipButtonBottom$flipButton:{
+			icon:'arrow-up'
+		},
+		flipButtonTop$flipButton:{
+			icon:'arrow-down'
+		},
+		foldButton:{
+			x:'@21',
+			icon:'eye-slash',
+			Bg:{
+				margin:[3,0,0,0],
+				color:'#9',
+				padding:0,
+				align:[.5,.5]
+			},
+			w:20,
+			h:23,
+			onClick:function(e){
+				this.view.isFolded = !this.view.isFolded
+			}
+		}
 	},
-	fontSize:11,
 	_tabSelected:function(index, e){
 		// deselect the other tab
 		this.selectTab(index)
@@ -162,15 +195,16 @@ module.exports=require('base/view').extend({
 		this.showTabSettings = show
 		this.redraw()
 	},
-	onDraw:function(){
-
-		if(this.isTop){
+	onOverlay:function(){
+		
+		if(!this.isBottom){
 			this.beginBackground({
 				align:[0.,0.],
 				padding:[0,0,0,0],
 				w:this.$w,
 				y:0,
 				h:26,
+				visible:this.isFolded?false:true
 			})
 		}
 		else{
@@ -180,40 +214,41 @@ module.exports=require('base/view').extend({
 				w:this.$w,
 				y:this.$h-26,
 				h:26,
+				visible:this.isFolded?false:true
 			})
 		}
-		// make sure our normale tab happens first
-		this.orderTab({})
-		for(var i = 0, len = this.children.length; i < len; i++){
-			var child = this.children[i]
-			if(!child.tabText && !child.tabIcon) continue
-			var isSel = i === this.selectedIndex
-			child.tabStamp = this.drawTab({
-				$layer:isSel?1:undefined,
-				x:isSel?this.slidePos:NaN,
-				Bg:{
-					borderRadius:this.isTop?[6,6,2,2]:[2,2,6,6]
-				},
-				index:i,
-				state:isSel?
-					(this.selSliding?'selected_slide':'selected_over'):
-					(this.defSliding?'slide':'default'),
-				icon:child.tabIcon,
-				canClose:false,//child.tabCanClose,
-				text:child.tabText
-			})
-		}
-		// lets draw the close button for the current tab
-		var clen = this.children.length
-		
-		if(!this.children[this.selectedIndex].noCloseTab){
-			this.drawCloseButton({
-			})
+		if(!this.isFolded){
+			// make sure our normale tab happens first
+			this.orderTab({})
+			for(var i = 0, len = this.children.length; i < len; i++){
+				var child = this.children[i]
+				if(!child.tabText && !child.tabIcon) continue
+				var isSel = i === this.selectedIndex
+				child.tabStamp = this.drawTab({
+					$layer:isSel?1:undefined,
+					x:isSel?this.slidePos:NaN,
+					Bg:{
+						borderRadius:this.isBottom?[2,2,6,6]:[6,6,2,2]
+					},
+					index:i,
+					state:isSel?
+						(this.selSliding?'selected_slide':'selected_over'):
+						(this.defSliding?'slide':'default'),
+					icon:child.tabIcon,
+					canClose:false,//child.tabCanClose,
+					text:child.tabText
+				})
+			}
+			// lets draw the close button for the current tab
+			var clen = this.children.length
+			
+			if(!this.showTabSettings && !this.children[this.selectedIndex].noCloseTab){
+				this.drawButton(this.styles.closeButton)
+			}
 		}
 		if(this.showTabSettings){
-			this.drawFlipButton({
-				icon:this.isTop?'arrow-down':'arrow-up'
-			})
+			this.drawButton(this.styles.foldButton)
+			this.drawButton(this.isBottom?this.styles.flipButtonBottom:this.styles.flipButtonTop)
 		}
 
 		this.endBackground()

@@ -4,6 +4,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 		text:'',
 		icon:'',
 		index:0,
+		onClick:undefined,
 		debug:0
 	}
 

@@ -483,11 +483,6 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += stylePropCode('	', macroargs[0], styleProps, styleLevel, true)
 		code += '}\n'
 
-		code += 'var $p0 = this.$stampArgs && this.$stampArgs.'+classname+'\n'
-		code += 'if($p0){\n'
-		code += stylePropCode('	', '$p0', styleProps, styleLevel)
-		code += '}\n'
-
 		code += 'var $p1 = this.$outerState && this.$outerState.'+classname+'\n'
 		code += 'if($p1){\n'
 		code += stylePropCode('	', '$p1', styleProps, styleLevel)
@@ -497,6 +492,12 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += 'if($p2){\n'
 		code += stylePropCode('	', '$p2', styleProps, styleLevel)
 		code += '}\n'
+
+		code += 'var $p0 = this.$stampArgs && this.$stampArgs.'+classname+'\n'
+		code += 'if($p0){\n'
+		code += stylePropCode('	', '$p0', styleProps, styleLevel)
+		code += '}\n'
+
 		/*
 		if(styleProps.this_DOT_tween){
 			code += 'var $p3 = this.$stampArgs\n'

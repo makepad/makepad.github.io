@@ -48,7 +48,7 @@ module.exports = require('base/view').extend({
 			color:'#a',
 			margin:[0,4,0,0]
 		}),
-		Quad:require('tools/shadowquad').extend({
+		TreeLine:require('tools/shadowquad').extend({
 			tween:2,
 			pickAlpha:-1,
 			duration:0.2,
@@ -190,7 +190,7 @@ module.exports = require('base/view').extend({
 					//var pid=pickId
 					//if(isFolder)this.pickMap[pid=this.pickId++]=node
 					//this.setPickId(pid)
-					this.drawQuad({
+					this.drawTreeLine({
 						isFiller:j==dl?0:depth[j+1],
 						isLast:j==dl&&i===len,
 						isFolder:isFolder,
@@ -200,7 +200,7 @@ module.exports = require('base/view').extend({
 					})
 					if(isFolder){// add the first line from a folder
 						var x=this.turtle.wx// make sure the turtle doesnt move
-						this.drawQuad({
+						this.drawTreeLine({
 							isFiller:node.closed,
 							isFirst:1,
 							isSide:1,

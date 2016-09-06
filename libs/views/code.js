@@ -233,7 +233,10 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		Comma:{
 			$color:'#777',
 			FunctionDeclaration:{$tail:0.5},
-			CallExpression:{$tail:0.5},
+			CallExpression:{
+				open:{$tail:0.},
+				close:{$tail:0.5}
+			},
 			ArrayExpression:{
 				open:{$tail:0.},
 				close:{$tail:0.5},

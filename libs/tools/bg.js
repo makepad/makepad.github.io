@@ -93,6 +93,9 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 	proto.vertex = function(){$
 		this.vertexPre()
 		this.vertexStyle()
+
+		if(this.visible < .5) return  vec4(0.)
+
 		this.borderRadius = max(1., this.borderRadius)
 		
 		if(this.mesh.x == 0.2){

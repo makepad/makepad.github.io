@@ -49,7 +49,8 @@ module.exports=require('base/view').extend({
 	composeFromData:function(node){
 		if(node.tabs){
 			var args = [{
-					isTop:node.top,
+					isBottom:node.bottom,
+					isFolded:node.folded,
 					dock:this
 				}
 			]
@@ -188,12 +189,12 @@ module.exports=require('base/view').extend({
 
 			// tab head
 
-			if( tabs.isTop && fx >= tx && fx <= tx+tw && fy >= ty && fy <= ty+tabh){
+			if( !tabs.isBottom && fx >= tx && fx <= tx+tw && fy >= ty && fy <= ty+tabh){
 				this.dragTabDrop = {tabs:tabs, part:-1}
 				this.drawSplitZone({x:tx, y:ty, w:tw, h:th})
 				continue	
 			}
-			if( !tabs.isTop && fx >= tx && fx <= tx+tw && fy >= ty + th - tabh && fy <= ty+th){
+			if( tabs.isBottom && fx >= tx && fx <= tx+tw && fy >= ty + th - tabh && fy <= ty+th){
 				this.dragTabDrop = {tabs:tabs, part:-1}
 				this.drawSplitZone({x:tx, y:ty, w:tw, h:th})
 				continue	
@@ -239,7 +240,7 @@ module.exports=require('base/view').extend({
 				}
 			}
 			else if (a <= 0.25*PI && a >= -0.25*PI){ //bottom
-				if(ty + th === py + ph && fy > ty+th-(tabs.isTop?0:tabh)-pdock && tabs.parent.name !== 'Dock'){
+				if(ty + th === py + ph && fy > ty+th-(tabs.isBottom?tabh:0)-pdock && tabs.parent.name !== 'Dock'){
 					this.dragTabDrop = {tabs:tabs.parent,part:3,isParent:1}
 					this.drawSplitZone({x:px, y:py+ph*.75, w:pw, h:ph*.25})
 				}
@@ -270,7 +271,7 @@ module.exports=require('base/view').extend({
 
 			var newTabs = this.Tabs({
 					dock:this,
-					isTop:this.dragTab.parent.isTop
+					isBottom:this.dragTab.parent.isBottom
 				},
 				this.dragTab
 			)

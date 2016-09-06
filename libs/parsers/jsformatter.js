@@ -528,7 +528,7 @@ module.exports = function(proto){
 			this[arg.type](arg)
 			if(i < argslen) {
 				this.trace += ','
-				this.fastText(',', this._styles.Comma.CallExpression)
+				this.fastText(',', node.top?this._styles.Comma.CallExpression.open:this._styles.Comma.CallExpression.close)
 			}
 			if(node.top){
 				if(arg.side) this.fastText(arg.side, this._styles.Comment.side)
@@ -591,6 +591,7 @@ module.exports = function(proto){
 		var id = node.id
 
 		if(id){
+			this.scope[name] = 1
 			this.trace += 'function '+id.name
 			this.fastText('function ', this._styles.FunctionDeclaration)
 			this.fastText(id.name, this._styles.Identifier.FunctionDeclaration)
@@ -608,7 +609,7 @@ module.exports = function(proto){
 		this.scope = Object.create(this.scope)
 		var params = node.params
 		var paramslen = params.length - 1
-		for(var i =0 ; i <= paramslen; i++){
+		for(var i = 0; i <= paramslen; i++){
 			var param = params[i]
 
 			if(node.top && param.above) this.fastText(param.above, this._styles.Comment.above)

@@ -1,19 +1,11 @@
 module.exports = require('base/app').extend(function(proto){
-
 	var storage = require('services/storage')
 	var Worker = require('services/worker')
-
 	var Dock = require('views/dock')
-	var Splitter = require('views/splitter')
-	var Fill = require('views/fill')
-	var Tabs = require('views/tabs')
-	var Tree = require('views/tree')
-	var Button = require('views/button')
+
 	var projectFile = "./makepad.json"
 	var currentFile = "./examples/windtree.js"
 	var styles = Styles()
-	
-	// which file to load
 
 	var User = require('views/draw').extend(styles.User, {
 		x:'0',
@@ -60,14 +52,11 @@ module.exports = require('base/app').extend(function(proto){
 		},
 	})
 
-	var Input = require('base/view').extend(styles.Input, {
-	})
-
 	var HomeScreen = require('views/draw').extend(styles.HomeScreen, {
 		onDraw:function(){
 			this.beginBg(this.viewGeom)
 			this.drawText({
-				text:'Welcome to MakePad! Makepad is a live code editor.\nThe editor is an AST editor which may feel a bit different at first. Use the tree on the left to explore some examples.'
+				text:this.id==='codeHome'?'Welcome to MakePad! Makepad is a live code editor.\nThe editor is an AST editor which may feel a bit different at first. Use the tree on the left to explore some examples.':''
 			})
 			this.draw
 			this.endBg()
@@ -103,16 +92,6 @@ module.exports = require('base/app').extend(function(proto){
 		}
 	})
 
-	var MainTabs = require('views/tabs').extend(styles.MainTabs, {
-	})
-
-	var SideTabs = require('views/tabs').extend(styles.SideTabs, {
-	})
-
-	var UserTabs = require('views/tabs').extend(styles.UserTabs, {
-	})
-
-
 	var FileTree = require('views/tree').extend(styles.FileTree, {
 		onNodeSelect:function(node, path){
 			// compute path for node
@@ -134,7 +113,10 @@ module.exports = require('base/app').extend(function(proto){
 		}
 	})
 
-	var PlayButton = require('views/button').extend(styles.PlayButton, {
+	var LiveEdit = require('views/live').extend(styles.Live, {
+		onPlay:function(){
+
+		}
 	})
 
 	proto.onInit = function(){
@@ -212,7 +194,7 @@ module.exports = require('base/app').extend(function(proto){
 	}
 
 	proto.addCodeTab = function(node, fileName){
-		var tabs = this.find('Dock').ids.homeScreen.parent
+		var tabs = this.find('Dock').ids.codeHome.parent
 		var idx = tabs.addNewChild(Code({
 			tabText:fileName,
 			fileNode:node,
@@ -286,90 +268,55 @@ module.exports = require('base/app').extend(function(proto){
 					Code:Code,
 					FileTree:FileTree,
 					Settings:Settings,
+					LiveEdit:LiveEdit
 				},
 				data:{
-					mode:1,
+					mode:2,
 					locked:false,
-					pos:100,
-					left:{
-						top:true,
-						tabs:[
-							{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
-							{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
-						]	
+					pos:110,
+					top:{
+						mode:1,
+						locked:false,
+						pos:100,
+						left:{
+							bottom:true,
+							tabs:[
+								{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
+								{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
+							]	
+						},
+						right:{
+							mode:0,
+							locked:false,
+							pos:0.5,
+							left:{
+								bottom:true,
+								tabs:[
+									{type:'HomeScreen', id:'codeHome', tabIcon:'home', open:true, noCloseTab:true}
+								]
+							},
+							right:{
+								bottom:true,
+								tabs:[
+									{type:'HomeScreen', id:'outputHome', tabIcon:'home', open:true, noCloseTab:true}
+								]
+							}
+						}
 					},
-					right:{
-						top:false,
+					bottom:{
+						folded:true,
 						tabs:[
-							{type:'HomeScreen', id:'homeScreen', tabText:'Home', open:true, noCloseTab:true}
+							{type:'LiveEdit', id:'liveEdit', tabIcon:'play', open:true, noCloseTab:true}
 						]
 					}
 				}
 			})
-			/*
-			Splitter({
-					split:'horizontal',
-					pos:-100,
-					w:'100%',
-					h:'100%'
-				},
-				Fill({
-					color:'red'
-				}),
-				Fill({
-					color:'blue'
-				}),
-				Fill({
-					x:'@0',
-					y:'@0',
-					w:20,
-					h:20,
-					color:'blue'
-				})
-			)
-			
-			SideTabs({
-				onInit:function(){
-					this.selectTab(0)
-				},
-				name:'sideTab',
-				data:[
-					{name:'Files'},
-					{name:'Input'},
-					{name:'', icon:'gear', canClose:0}
-				],
-				w:'12%',
-				},
-				FileTree({
-					data:[],
-				}),
-				Input({
-				})
-			),
-			MainTabs({
-				name:'mainTabs',
-				w:'43%',
-				data:[]
-				},
-				HomeScreen({})
-				//PlayButton({
-				//})
-			),
-			UserTabs({
-				name:'userTabs',
-				w:'45%'
-			})*/
-			
 		]
 	}
 
 	function Styles(){
 		return {
-			
-			Code:{
-				x:'0',
-				y:'0'
-			},
+			Code:{},
 			HomeScreen:{
 				padding:[4,4,4,4],
 				Bg:{
@@ -380,59 +327,10 @@ module.exports = require('base/app').extend(function(proto){
 					color:'#f',
 				}
 			},
-			MainTabs:{
-				Tab:{
-					states:{
-						selected:{
-							Bg:{color:'#0c2141',shadowOffset:[2,2]},
-							Text:{color:'#e'}
-						},
-						selectedOver:{
-							Bg:{color:'#0c2141',shadowOffset:[2,2]}
-						}
-					}
-				}
-			},
-			UserTabs:{
-				Tab:{
-					states:{
-						selected:{
-							Bg:{color:'#0c2141',shadowOffset:[2,2]},
-							Text:{color:'#e'}
-						},
-						selectedOver:{
-							Bg:{color:'#0c2141',shadowOffset:[2,2]}
-						}
-					}
-				}
-			},			
 			FileTree:{
 				Background:{
 					color:'#4'
 				},						
-			},
-			PlayButton:{
-				Button:{
-					Bg:{padding:[2.5,0,0,6],borderRadius:12},
-					states:{
-						default:{
-							Bg:{
-								color:'#3b3'
-							}
-						},
-						clicked:{
-							Bg:{color:'#5f5'}
-						},
-						over:{
-							Bg:{color:'#0c0'}
-						}
-					}
-				},
-				x:'$0',
-				y:'-20',
-				h:'20',
-				w:'20',
-				icon:'play',				
 			}
 		}
 	}
