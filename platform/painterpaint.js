@@ -119,7 +119,7 @@ module.exports = function painterPaint(proto){
 
 		var repaint = false
 
-		for(var deps = todo.deps, i = 0; i < deps.length; i++){
+		for(var deps = todo.deps, i = 0; deps && i < deps.length; i++){
 
 			var fb = this.framebufferIds[deps[i]]
 			var ret

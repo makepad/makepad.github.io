@@ -5,7 +5,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		cursorTrim:0.,
 		text:''
 	}
-
+	proto.cursor = 'text'
 	//
 	//
 	// Shaders

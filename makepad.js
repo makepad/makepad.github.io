@@ -7,14 +7,13 @@ module.exports = require('base/app').extend(function(proto){
 	var currentFile = "./examples/windtree.js"
 	var styles = Styles()
 
-	var User = require('views/draw').extend(styles.User, {
+	var UserProcess = require('views/draw').extend(styles.UserProcess, {
 		x:'0',
 		y:'0',
-		name:'User',
+		name:'UserProcess',
 		surface:true,
 		onRemove:function(){
 			// we have to free all associated resources.
-
 		},
 		onDraw:function(){
 			this.drawBg(this.viewGeom)
@@ -22,6 +21,7 @@ module.exports = require('base/app').extend(function(proto){
 	})
 
 	var Code = require('views/code').extend(styles.Code, {
+		name:'Code',
 		onKeyS:function(e){
 			if(!e.meta && !e.ctrl) return true
 			storage.saveText(currentFile, this.serializeWithFormatting())
@@ -31,6 +31,7 @@ module.exports = require('base/app').extend(function(proto){
 			if(this.fileNode) this.fileNode.data = this.text
 			// check if our file is an app, ifso lets run it.
 			var body = this.ast.body[0]
+			this.isExecutableCode = false
 			if(body && body.type === 'ExpressionStatement' && 
 				body.expression.type === 'AssignmentExpression' &&
 				body.expression.right.type === 'CallExpression' && 
@@ -40,11 +41,22 @@ module.exports = require('base/app').extend(function(proto){
 				body.expression.right.callee.object.arguments[0].type === 'Literal'){
 				var value = body.expression.right.callee.object.arguments[0].value
 				if(value === 'base/app' || value === 'base/drawapp'){
-					if(this.fileName) this.app.addUserTab(this.fileName)
+					this.isExecutableCode = true
+					var proc = this.app.find('Process'+this.fileName)
+					if(proc){
+						
+						proc.worker.init(
+							this.fileName,
+							projectToResources(this.app.projectData, proc.resources)
+						)
+					}
+					//if(this.fileName) this.app.addUserTab(this.fileName)
 					//this.app.runCurrentFile()
-					return
+					//return
 				}
 			}
+			// do some updating somehow
+
 			//if(this.app.runningFile === this){
 			//console.log(this.fileName)
 			///if(this.fileName) this.app.updateProcess(this.fileName)//text, this.app.userAppArgs)
@@ -53,6 +65,7 @@ module.exports = require('base/app').extend(function(proto){
 	})
 
 	var HomeScreen = require('views/draw').extend(styles.HomeScreen, {
+		name:'HomeScreen',
 		onDraw:function(){
 			this.beginBg(this.viewGeom)
 			this.drawText({
@@ -69,6 +82,7 @@ module.exports = require('base/app').extend(function(proto){
 	})
 
 	var Settings = require('views/draw').extend(styles.Settings, {
+		name:'Settings',
 		Bg:{
 			color:'#3'
 		},
@@ -93,6 +107,7 @@ module.exports = require('base/app').extend(function(proto){
 	})
 
 	var FileTree = require('views/tree').extend(styles.FileTree, {
+		name:'FileTree',
 		onNodeSelect:function(node, path){
 			// compute path for node
 			if(path[0].name === 'libs'){
@@ -115,6 +130,13 @@ module.exports = require('base/app').extend(function(proto){
 
 	var LiveEdit = require('views/live').extend(styles.Live, {
 		onPlay:function(){
+			// ask which code file has focus
+			var code = this.app.focusView 
+			if(code.isExecutableCode){
+				this.app.addProcessTab(code.fileNode, code.fileName)
+			}
+		},
+		onStop:function(){
 
 		}
 	})
@@ -185,7 +207,7 @@ module.exports = require('base/app').extend(function(proto){
 		// we need to load all other files in the project
 		loadProjectTree(projectFile).then(function(project){
 			this.projectData = project
-			this.find('Dock').ids.tree.data = project
+			this.find('FileTree').data = project
 		}.bind(this))
 	}
 
@@ -194,20 +216,68 @@ module.exports = require('base/app').extend(function(proto){
 	}
 
 	proto.addCodeTab = function(node, fileName){
-		var tabs = this.find('Dock').ids.codeHome.parent
-		var idx = tabs.addNewChild(Code({
+		var old = this.find('Code'+fileName)
+		if(old){
+			var tabs = old.parent
+			tabs.selectTab(tabs.children.indexOf(old))
+			return
+		}
+		var tabs = this.find('CodeHome').parent
+		var code = Code({
+			name:'Code'+fileName,
 			tabText:fileName,
+			fileName:fileName,
 			fileNode:node,
 			text:node.data
-		}))
+		})
+		var idx = tabs.addNewChild(code)
 		tabs.selectTab(idx)
+		code.setFocus()
 	}
 	
-	proto.updateProcess = function(fileName){
+	proto.updateProcess = function(fileNode, fileName){
 		if(!this.userProcess) return this.addProcessTab(fileName)
 	}
 
-	proto.addUserTab = function(fileName){
+	proto.addProcessTab = function(fileNode, fileName){
+		var old = this.find('Process'+fileName)
+		if(old){
+			var tabs = old.parent
+			tabs.selectTab(tabs.children.indexOf(old))
+			return
+		}
+		var tabs = this.find('UserProcessHome').parent
+		var idx = tabs.addNewChild(UserProcess({
+			name:'Process'+fileName,
+			tabText:fileName,
+			fileNode:fileNode,
+			text:fileNode.data,
+			onAfterDraw:function(){
+				this.onAfterDraw = undefined
+
+				this.worker = new Worker(null, {
+					fileName:fileName,
+					parentFbId: this.$renderPasses.surface.framebuffer.fbId
+				})	
+
+				this.resources = projectToResources(this.app.projectData)
+				this.worker.init(
+					fileName,
+					this.resources
+				)
+				
+				this.worker.onPingTimeout = function(){
+					// do other stuff
+					this.worker.terminate()
+				}.bind(this)
+
+				this.worker.ping(2000)
+			}
+		}))
+		tabs.selectTab(idx)
+
+
+		/*
 		var tabs = this.find('userTabs')
 		for(var i = 0; i < tabs.data.length; i++){
 			var tab = tabs.data[i]
@@ -257,7 +327,7 @@ module.exports = require('base/app').extend(function(proto){
 			}
 		}), tabId)
 
-		tabs.selectTab(tabId)
+		tabs.selectTab(tabId)*/
 	}
 
 	proto.onCompose = function(){
@@ -281,8 +351,8 @@ module.exports = require('base/app').extend(function(proto){
 						left:{
 							bottom:true,
 							tabs:[
-								{type:'FileTree', id:'tree', tabText:'Files', open:true, noCloseTab:true},
-								{type:'Settings', id:'settings', tabText:'', tabIcon:'gear',noCloseTab:true}
+								{type:'FileTree', tabText:'Files', open:true, noCloseTab:true},
+								{type:'Settings', tabText:'', tabIcon:'gear',noCloseTab:true}
 							]	
 						},
 						right:{
@@ -292,13 +362,13 @@ module.exports = require('base/app').extend(function(proto){
 							left:{
 								bottom:true,
 								tabs:[
-									{type:'HomeScreen', id:'codeHome', tabIcon:'home', open:true, noCloseTab:true}
+									{type:'HomeScreen', name:'CodeHome', tabIcon:'home', open:true, noCloseTab:true}
 								]
 							},
 							right:{
 								bottom:true,
 								tabs:[
-									{type:'HomeScreen', id:'outputHome', tabIcon:'home', open:true, noCloseTab:true}
+									{type:'HomeScreen', name:'UserProcessHome', tabIcon:'home', open:true, noCloseTab:true}
 								]
 							}
 						}
@@ -306,7 +376,7 @@ module.exports = require('base/app').extend(function(proto){
 					bottom:{
 						folded:true,
 						tabs:[
-							{type:'LiveEdit', id:'liveEdit', tabIcon:'play', open:true, noCloseTab:true}
+							{type:'LiveEdit', tabIcon:'play', open:true, noCloseTab:true}
 						]
 					}
 				}

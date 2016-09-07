@@ -486,21 +486,23 @@ module.exports = require('base/class').extend(function View(proto){
 	}
 
 	proto.setFocus = function(){
-		var old = this.app.$focusView
+		var old = this.app.focusView
 		this.app.setWorkerKeyboardFocus()
 		if(old !== this){
-			this.app.$focusView = this
+			this.app.focusView = this
 			old.hasFocus = false
 			this.hasFocus = true
+			if(this.app.onFocusChange) this.app.onFocusChange(this, old)
 		}
 	}
 
 	proto.clearFocus = function(){
-		var old = this.app.$focusView		
-		this.app.$focusView = undefined
+		var old = this.app.focusView		
+		this.app.focusView = undefined
 		if(old){
 			old.hasFocus = false
 		}
+		if(this.app.onFocusChange) this.app.onFocusChange(undefined, old)
 	}
 
 	proto.animateUniform = function(value){
@@ -519,7 +521,7 @@ module.exports = require('base/class').extend(function View(proto){
 				lockScroll:1.,
 				borderRadius:4
 			}
-
+			proto.cursor = 'default'
 			proto.tools = {
 				ScrollBar: require('tools/quad').extend({
 					props:{

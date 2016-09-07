@@ -168,32 +168,32 @@ module.exports = require('base/view').extend(function App(proto, base){
 		}
 
 		keyboard.onKeyDown = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyDown) focus.onKeyDown(msg)
 		}
 
 		keyboard.onKeyUp = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyUp) focus.onKeyUp(msg)
 		}
 
 		keyboard.onKeyPress = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyPress) focus.onKeyPress(msg)
 		}
 
 		keyboard.onKeyPaste = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyPaste) focus.onKeyPaste(msg)
 		}
 
 		keyboard.onKeyboardOpen = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyboardOpen) focus.onKeyboardOpen(msg)
 		}
 
 		keyboard.onKeyboardClose = function(msg){
-			var focus = app.$focusView
+			var focus = app.focusView
 			if(focus && focus.onKeyboardClose) focus.onKeyboardClose(msg)
 		}
 
@@ -205,7 +205,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 		// lets do our first redraw
 		this.app = this
 		// we are the default focus
-		this.$focusView = this
+		this.focusView = this
 
 		// compose the tree
 		this.$composeTree(this)
