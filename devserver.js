@@ -95,8 +95,7 @@ function requestHandler(req, res){
 
 	// file write interface
 	if(req.method == 'POST'){
-
-		if(filename.indexOf('/storage/') !== 0) {
+		if(req.connection.remoteAddress !== '127.0.0.1' ) {
 			res.writeHead(404)
 			res.end()
 			return 

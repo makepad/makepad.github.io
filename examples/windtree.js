@@ -118,4 +118,3 @@ module.exports=require('base/drawapp').extend({
 		recur(0,0)
 	}
 })
-

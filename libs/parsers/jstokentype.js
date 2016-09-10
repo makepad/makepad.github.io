@@ -46,7 +46,6 @@ var types = exports.types = {
 	string: new TokenType("string", startsExpr),
 	name: new TokenType("name", startsExpr),
 	eof: new TokenType("eof"),
-
 	// Punctuation token types.
 	bracketL: new TokenType("[", {beforeExpr: true, startsExpr: true}),
 	bracketR: new TokenType("]"),
@@ -82,6 +81,7 @@ var types = exports.types = {
 	eq: new TokenType("=", {beforeExpr: true, isAssign: true}),
 	assign: new TokenType("_=", {beforeExpr: true, isAssign: true}),
 	incDec: new TokenType("++/--", {prefix: true, postfix: true, startsExpr: true}),
+	//probe: new TokenType("@", {prefix: true, postfix: false, startsExpr: true}),
 	prefix: new TokenType("prefix", {beforeExpr: true, prefix: true, startsExpr: true}),
 	logicalOR: binop("||", 1),
 	logicalAND: binop("&&", 2),

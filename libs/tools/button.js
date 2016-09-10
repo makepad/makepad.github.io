@@ -25,7 +25,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 	proto.styles = {
 		default:{},
 		defaultOver:{Bg:{color:'#f77'}},
-		clicked:{Bg:{color:'#f77'}},
+		//clicked:{Bg:{color:'#f77'}},
 		clickedOver:{Bg:{color:'red'}}
 	}
 	

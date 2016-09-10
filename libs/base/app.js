@@ -433,8 +433,9 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 	proto.$redrawViews = function(){
 		this.$updateTime()
+
 		// we can submit a todo now
-		mat4.ortho(this.camProjection,0, painter.w, 0, painter.h, -100, 100)
+		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
 
 		var todo = this.todo
 
@@ -450,7 +451,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			this._frameId++
 			this.$drawDependentLayout = false
 			this.$relayoutViews()
-			this.$redrawView()			
+			this.$redrawView()
 		}
 	}
 })

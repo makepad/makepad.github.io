@@ -1,5 +1,7 @@
 {
 	"project":"Makepad",
+	"open":["./examples/shiny.js"],
+	"run":["./examples/shiny.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","closed":true,"folder":[
@@ -56,7 +58,8 @@
 				{"name":"fill.js"},
 				{"name":"splitter.js"},
 				{"name":"tabs.js"},
-				{"name":"tree.js"}
+				{"name":"tree.js"},
+				{"name":"probes.js"}
 			]},
 			{"name":"services","closed":true,"folder":[
 				{"name":"painter.js"},
@@ -99,6 +102,7 @@
 		]},
 		{"name":"examples", "closed":false, "folder":[
 			{"name":"windtree.js"},
+			{"name":"buttons.js"},
 			{"name":"shiny.js"},
 			{"name":"tiny.js"}
 		]},

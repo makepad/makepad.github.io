@@ -1,8 +1,9 @@
 module.exports=require('base/drawapp').extend({
-	tools:{Rect:{
+	tools:{
+		Rect:{
 		col:'red',
 		id:0,
-		borderRadius:50,
+		borderRadius:@50,
 		shadowOffset:[5,5],
 		borderWidth:2,
 		pixelStyle:function(){$
@@ -34,8 +35,6 @@ module.exports=require('base/drawapp').extend({
 					random(),
 					1
 				],
-				x:(i%20)*50,
-				y:floor(i/20)*50,
 				w:50,
 				h:50
 			})

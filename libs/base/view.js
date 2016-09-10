@@ -37,7 +37,7 @@ module.exports = require('base/class').extend(function View(proto){
 		surface:false,
 		margin:[0,0,0,0],
 		padding:[0,0,0,0],
-		drawPadding:[0,0,0,0],
+		drawPadding:undefined,
 		align:[0,0],
 		wrap:1		
 	}
@@ -233,7 +233,7 @@ module.exports = require('base/class').extend(function View(proto){
 				noBounds:1,
 				w:this.$w,
 				h:this.$h,
-				padding:this.padding
+				padding:this.drawPadding || this.padding
 			}
 		},
 		set:function(){
@@ -356,7 +356,9 @@ module.exports = require('base/class').extend(function View(proto){
 		this.onDrawChildren()
 
 		this.endTurtle(true)
-
+		if(this.$turtleStack.len !== 0){
+			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
+		}
 		// store the draw width and height for layout if needed
 		var tw = this.$wDraw = turtle._w
 		var th = this.$hDraw = turtle._h

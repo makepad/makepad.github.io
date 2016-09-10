@@ -488,7 +488,6 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 
 		this.beginBg(this.viewGeom)
 		// ok lets parse the code
-	
 		if(this.textClean){
 			this.reuseDrawSize()
 			this.reuseBlock()
@@ -537,6 +536,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				var oldtext = this._text
 				this.oldText = oldtext
 				// first we format the code
+				if(this.onBeginFormatAST) this.onBeginFormatAST()
 				this.formatJS(this.indentSize, this.ast)
 
 				// make undo operation for reformat
@@ -1034,13 +1034,14 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var ann = this.ann
 		var s =''
 		var fs = this.$fastTextFontSize
+		var padLeft = this.drawPadding && this.drawPadding[3] || this.padding[3]
 		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			var style = ann[i+1]
 			//var fs = ann[i+4]
 			var sx = ann[i+5]
 			if(txt.indexOf('\n') !== -1){
-				var indent = Array(1+Math.ceil((sx - this.padding[3]) / (this.indentSize*fs))).join('\t')
+				var indent = Array(1+Math.ceil((sx - padLeft) / (this.indentSize*fs))).join('\t')
 				var out = txt.split('\n')
 				for(var j = 0; j < out.length - 1;j++){
 					s += out[j] + '\n' + indent

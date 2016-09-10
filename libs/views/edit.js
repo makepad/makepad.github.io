@@ -876,7 +876,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	}
 
 	proto.onKeySlash = function(k){
-		if(!k.ctrl && !k.meta) return true
+		if(!k.alt && !k.ctrl && !k.meta) return true
 		// lets scan for // at the beg of the line
 		this.cs.toggleSlashComment(k.shift)
 	}

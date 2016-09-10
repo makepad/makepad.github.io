@@ -60,7 +60,7 @@ module.exports = require('/platform/service').extend(function storage1(proto, ba
 		//req.responseType = 'text'
 		req.addEventListener("load", function(){
 			if(req.status !== 200){
-				bus.postMessage({
+				this.postMessage({
 					path:msg.path,
 					error:'Error loading '+msg.path,
 					status:req.status

@@ -2,11 +2,11 @@ module.exports = function(proto){
 
 	proto.formatJS = function(indentSize, ast){
 		this.indent = 0
-		this.currentIndent = this.padding[3]
+		this.currentIndent = this.drawPadding && this.drawPadding[3] || this.padding[3]
 		this.indentSize = indentSize
 		this._text = ''
-		this.trace = ''
-		this.traceMap = []//[]
+		//this.trace = ''
+		//this.traceMap = []//[]
 		this.ann.length = 0
 		this.$fastTextWrite = true
 		this.scope = Object.create(this.defaultScope)
@@ -306,7 +306,7 @@ module.exports = function(proto){
 				this.trace += ':'
 				this.fastText(':', this._styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
 				var value = prop.value
-				this[value.type](value)
+				this[value.type](value, key)
 			}
 
 			if(node.trail || i < propslen){
@@ -425,6 +425,7 @@ module.exports = function(proto){
 
 	//Literal:{raw:0, value:0},
 	proto.Literal = function(node){
+		this.trace += node.raw
 		this.fastText(node.raw, this._styles.Literal[node.kind])
 	}
 
@@ -454,7 +455,8 @@ module.exports = function(proto){
 		else style = this._styles.Identifier.unknown
 
 		if(this.traceMap) this.trace += 'T$('+this.traceMap.push(node)+','+name+')'
-		
+		else this.trace += name
+
 		this.fastText(name, style)
 	}
 
@@ -546,7 +548,8 @@ module.exports = function(proto){
 			this.indentOut()
 		}
 		this.$fastTextDelta += dy
-		this.trace += '))'
+		this.trace += ')'
+		if(this.traceMap) this.trace += ')'
 		
 		if(this.allowOperatorSpaces && node.rightSpace){
 			for(var i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
@@ -597,6 +600,7 @@ module.exports = function(proto){
 			this.fastText(id.name, this._styles.Identifier.FunctionDeclaration)
 		}
 		else{
+			this.trace += 'function'
 			this.fastText('function' + node.space, this._styles.FunctionDeclaration)
 		}
 		this.trace += '('
@@ -688,13 +692,13 @@ module.exports = function(proto){
 		
 			if(node.around2) this.fastText(node.around2, this._styles.Comment.around)
 
-			this[init.type](init)
+			this[init.type](init, id)
 		}
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
 	proto.LogicalExpression = function(node, level){
-		level = level || 0
+		level = typeof level === 'number'?level:0
 		var left = node.left
 		var right = node.right
 		if(this.traceMap) this.trace += '$T('+this.traceMap.push(node)+','
@@ -709,7 +713,7 @@ module.exports = function(proto){
 		if(node.around2) this.fastText(node.around2, this._styles.Comment.around)
 
 		this[right.type](right,level + 1)
-		this.trace += ')'
+		if(this.traceMap) this.trace += ')'
 		this.indentOut()
 	}
 
@@ -744,7 +748,7 @@ module.exports = function(proto){
 
 		this[right.type](right, level+1)
 	
-		this.trace + ')'
+		if(this.traceMap) this.trace + ')'
 		this.indentOut()
 
 		//if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
@@ -763,7 +767,7 @@ module.exports = function(proto){
 
 		if(node.around2) this.fastText(node.around2, this._styles.Comment.around)
 
-		this[right.type](right)
+		this[right.type](right, left)
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
@@ -820,31 +824,30 @@ module.exports = function(proto){
  	}
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
-	proto.UnaryExpression = function(node){
+	proto.UnaryExpression = function(node, lhs){
 		if(node.prefix){
 			var op = node.operator
-			if(op.length > 1) op = op + ' '
-			this.trace += op
-			this.fastText(op, this._styles.UnaryExpression[op] || this._styles.UnaryExpression)
-			var arg = node.argument
-			var argtype = arg.type
-			//if(argtype === 'Identifier'){
-			//	var name = arg.name
-			//	this.trace += name
-			//	this.fastText(name, this._styles.Identifier)
-			//}
-			//else 
-			this[argtype](arg)
+			if(node.operator === '@'){
+				var id = this.onProbe(node, lhs)
+				this.trace += '$P('+id+','
+				this.fastText(op, this._styles.UnaryExpression[op] || this._styles.UnaryExpression)
+				var arg = node.argument
+				var argtype = arg.type
+				this[argtype](arg)
+				this.trace += ')'
+			}
+			else{
+				if(op.length > 1) op = op + ' '
+				this.trace += op
+				this.fastText(op, this._styles.UnaryExpression[op] || this._styles.UnaryExpression)
+				var arg = node.argument
+				var argtype = arg.type
+				this[argtype](arg)
+			}
 		}
 		else{
 			var arg = node.argument
 			var argtype = arg.type
-			//if(argtype === 'Identifier'){
-			//	var name = arg.name
-			//	this.trace += name
-			//	this.fastText(name, this._styles.Identifier)
-			//}
-			//else 
 			this[argtype](arg)
 			var op = node.operator
 			this.fastText(op, this._styles.UnaryExpression[op] || this._styles.UnaryExpression)
@@ -854,11 +857,15 @@ module.exports = function(proto){
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	proto.IfStatement = function(node){
 		if(this.traceMap) this.trace += 'if(T$('+this.traceMap.push(node)+','
+		else this.trace += 'if('
 		this.fastText('if', this._styles.IfStatement.if)
 		this.fastText('(', this._styles.Paren.IfStatement.left)
 		var test = node.test
 		this[test.type](test,1)
-		this.trace += '))'
+
+		if(this.traceMap) this.trace += '))'
+		else this.trace += ')'
+
 		this.fastText(')', this._styles.Paren.IfStatement.right)
 		if(node.after1) this.fastText(node.after1, this._styles.Comment.above)
 		var cq = node.consequent

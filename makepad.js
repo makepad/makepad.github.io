@@ -19,12 +19,25 @@ module.exports = require('base/app').extend(function(proto){
 			this.drawBg(this.viewGeom)
 		}
 	})
+	
+	var Probes = require('views/probes').extend({
+		onPlay:function(){
+			// ask which code file has focus
+			var code = this.parent
+			if(code.isExecutableCode){
+				this.app.addProcessTab(code.trace, code.fileName)
+			}
+		},
+		onStop:function(){
+
+		}
+	})
 
 	var Code = require('views/code').extend(styles.Code, {
 		name:'Code',
 		onKeyS:function(e){
 			if(!e.meta && !e.ctrl) return true
-			storage.saveText(currentFile, this.serializeWithFormatting())
+			storage.save(this.fileName, this.serializeWithFormatting())
 		},
 		onParsed:function(){
 			// store it in the filetree
@@ -44,10 +57,11 @@ module.exports = require('base/app').extend(function(proto){
 					this.isExecutableCode = true
 					var proc = this.app.find('Process'+this.fileName)
 					if(proc){
-						
+						var res = projectToResources(this.app.projectData, proc.resources)
+						res[this.fileName] = this.trace
 						proc.worker.init(
 							this.fileName,
-							projectToResources(this.app.projectData, proc.resources)
+							res
 						)
 					}
 					//if(this.fileName) this.app.addUserTab(this.fileName)
@@ -62,17 +76,30 @@ module.exports = require('base/app').extend(function(proto){
 			///if(this.fileName) this.app.updateProcess(this.fileName)//text, this.app.userAppArgs)
 			//}
 		},
+		drawPadding:[0,0,0,36],
+		wrap:true,
+		padding:[0,0,0,0],
+		onCompose:function(){
+			return this.probes = Probes({
+				w:31,
+				h:'100%'
+			})
+		}
 	})
 
 	var HomeScreen = require('views/draw').extend(styles.HomeScreen, {
 		name:'HomeScreen',
+		overflow:'scroll',
 		onDraw:function(){
 			this.beginBg(this.viewGeom)
 			this.drawText({
-				text:this.id==='codeHome'?'Welcome to MakePad! Makepad is a live code editor.\nThe editor is an AST editor which may feel a bit different at first. Use the tree on the left to explore some examples.':''
+				text:this.name==='CodeHome'?
+				'Welcome to MakePad! Makepad is a live code editor.\n'+
+				'The Goal of makepad is make programming enjoyable and learn through play.\n\n'+
+				'Try opening an example on the left and clicking Play. Updates to these files will be Live'
+				:''
 			})
-			this.draw
-			this.endBg()
+			this.endBg(true)
 		},
 		onCompose:function(){
 			return Code({
@@ -128,19 +155,6 @@ module.exports = require('base/app').extend(function(proto){
 		}
 	})
 
-	var LiveEdit = require('views/live').extend(styles.Live, {
-		onPlay:function(){
-			// ask which code file has focus
-			var code = this.app.focusView 
-			if(code.isExecutableCode){
-				this.app.addProcessTab(code.fileNode, code.fileName)
-			}
-		},
-		onStop:function(){
-
-		}
-	})
-
 	proto.onInit = function(){
 	}
 
@@ -177,7 +191,7 @@ module.exports = require('base/app').extend(function(proto){
 		})
 	}
 
-	function projectToResources(projectTree, oldResources){
+	function projectToResources(projectTree, oldResourcesOrNode){
 		var resources = {}
 		function walk(folder, base){
 			for(var i = 0; i < folder.length; i++){
@@ -188,14 +202,14 @@ module.exports = require('base/app').extend(function(proto){
 					continue
 				}
 				var store = base+child.name
-				if(oldResources){
-					if(oldResources[store] !== child.data){
-						oldResources[store] = child.data
+				if(typeof oldResourcesOrNode === 'object'){
+					if(oldResourcesOrNode[store] !== child.data){
+						oldResourcesOrNode[store] = child.data
 						resources[store] = child.data
 					}
 				}
 				else{
-					resources[store] = child.data
+					resources[store] = oldResourcesOrNode?child:child.data
 				}
 			}
 		}
@@ -208,6 +222,20 @@ module.exports = require('base/app').extend(function(proto){
 		loadProjectTree(projectFile).then(function(project){
 			this.projectData = project
 			this.find('FileTree').data = project
+			var map = projectToResources(project, true)
+			if(project.open){
+				for(var i = 0; i < project.open.length; i++){
+					var open = project.open[i]
+					this.addCodeTab(map[open], open)
+				}
+			}
+			if(project.run){
+				for(var i = 0; i < project.run.length; i++){
+					var run = project.run[i]
+					this.addCodeTab(map[run], run)
+				}
+			}
+
 		}.bind(this))
 	}
 
@@ -239,7 +267,7 @@ module.exports = require('base/app').extend(function(proto){
 		if(!this.userProcess) return this.addProcessTab(fileName)
 	}
 
-	proto.addProcessTab = function(fileNode, fileName){
+	proto.addProcessTab = function(source, fileName){
 		var old = this.find('Process'+fileName)
 		if(old){
 			var tabs = old.parent
@@ -250,8 +278,8 @@ module.exports = require('base/app').extend(function(proto){
 		var idx = tabs.addNewChild(UserProcess({
 			name:'Process'+fileName,
 			tabText:fileName,
-			fileNode:fileNode,
-			text:fileNode.data,
+			//fileNode:fileNode,
+			text:source,
 			onAfterDraw:function(){
 				this.onAfterDraw = undefined
 
@@ -261,6 +289,7 @@ module.exports = require('base/app').extend(function(proto){
 				})	
 
 				this.resources = projectToResources(this.app.projectData)
+				this.resources[fileName] = source
 				this.worker.init(
 					fileName,
 					this.resources
@@ -275,59 +304,6 @@ module.exports = require('base/app').extend(function(proto){
 			}
 		}))
 		tabs.selectTab(idx)
-
-
-		/*
-		var tabs = this.find('userTabs')
-		for(var i = 0; i < tabs.data.length; i++){
-			var tab = tabs.data[i]
-			if(tab.fileName === fileName){
-				tabs.selectTab(i)
-
-				// send it only this fileName resource
-				var userView = tab.userView
-				userView.worker.init(
-					fileName,
-					projectToResources(this.app.projectData, userView.resources)
-				)
-
-				return
-			}
-		}
-
-		var name = fileName
-		if(name.indexOf('.') === 0) name = name.slice(1)
-		if(name.indexOf('.js') === name.length-3) name = name.slice(0,-3)
-
-		var tabData = {name:name, fileName:fileName, canClose:1}
-		var tabId = tabs.data.push(
-			tabData
-		)-1
-		
-		tabs.addChild(tabData.userView = User({
-			fileName:fileName,
-			onAfterDraw:function(){
-				this.onAfterDraw = undefined
-
-				this.worker = new Worker(null, {
-					fileName:fileName,
-					parentFbId: this.$renderPasses.surface.framebuffer.fbId
-				})		
-				this.resources = projectToResources(this.app.projectData)
-				this.worker.init(
-					fileName,
-					this.resources
-				)
-				
-				this.worker.onPingTimeout = function(){
-					this.worker.terminate()
-				}
-
-				this.worker.ping(2000)
-			}
-		}), tabId)
-
-		tabs.selectTab(tabId)*/
 	}
 
 	proto.onCompose = function(){
@@ -337,47 +313,35 @@ module.exports = require('base/app').extend(function(proto){
 					HomeScreen:HomeScreen,
 					Code:Code,
 					FileTree:FileTree,
-					Settings:Settings,
-					LiveEdit:LiveEdit
+					Settings:Settings
 				},
 				data:{
-					mode:2,
+					mode:1,
 					locked:false,
-					pos:110,
-					top:{
-						mode:1,
+					pos:100,
+					left:{
+						bottom:true,
+						tabs:[
+							{type:'FileTree', tabText:'Files', open:true, noCloseTab:true},
+							{type:'Settings', tabText:'', tabIcon:'gear',noCloseTab:true}
+						]	
+					},
+					right:{
+						mode:0,
 						locked:false,
-						pos:100,
+						pos:0.5,
 						left:{
 							bottom:true,
 							tabs:[
-								{type:'FileTree', tabText:'Files', open:true, noCloseTab:true},
-								{type:'Settings', tabText:'', tabIcon:'gear',noCloseTab:true}
-							]	
+								{type:'HomeScreen', name:'CodeHome', tabIcon:'home', open:true, noCloseTab:true}
+							]
 						},
 						right:{
-							mode:0,
-							locked:false,
-							pos:0.5,
-							left:{
-								bottom:true,
-								tabs:[
-									{type:'HomeScreen', name:'CodeHome', tabIcon:'home', open:true, noCloseTab:true}
-								]
-							},
-							right:{
-								bottom:true,
-								tabs:[
-									{type:'HomeScreen', name:'UserProcessHome', tabIcon:'home', open:true, noCloseTab:true}
-								]
-							}
+							bottom:true,
+							tabs:[
+								{type:'HomeScreen', name:'UserProcessHome', tabIcon:'home', open:true, noCloseTab:true}
+							]
 						}
-					},
-					bottom:{
-						folded:true,
-						tabs:[
-							{type:'LiveEdit', tabIcon:'play', open:true, noCloseTab:true}
-						]
 					}
 				}
 			})

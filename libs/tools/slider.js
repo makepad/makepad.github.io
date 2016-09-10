@@ -1,7 +1,7 @@
 module.exports = require('base/stamp').extend(function ScrollBarStamp(proto){
 
 	proto.props = {
-		text:'Button',
+		vertical:false
 	}
 
 	proto.tools = {
