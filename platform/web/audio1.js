@@ -52,12 +52,8 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 	
 	proto.user_reset = function(){
 		for(var key in this.ids){
-			var item = this.ids[key]
-			if(item.stop){
-				//if(!item.wasStarted) console.log(key)
-				item.stop(0)
-			}
-			if(item.disconnect) item.disconnect()
+			var flow = this.ids[key]
+			stopFlow(flow)
 			delete this.ids[key]
 		}
 	}
@@ -210,24 +206,28 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 	proto.user_start = function(msg){
 		var flow = this.ids[msg.id]
 		if(flow.started){
-			this.user_stop(msg)
+			stopFlow(flow)
 		}
 		this.spawnFlow(flow, msg.overlay)
+	}
+
+	function stopFlow(flow){
+		// lets terminate the whole thing
+		for(var name in flow.nodes){
+			var node = flow.nodes[name]
+			if(node.audioNode && node.audioNode.disconnect){
+				node.audioNode.disconnect()
+				node.audioNode = undefined
+			}
+		}
+		flow.started = false
 	}
 
 	// ok how do we stop this thing?
 	proto.user_stop = function(msg){
 		var flow = this.ids[msg.id]
 		if(!flow.started) return
-		// lets terminate the whole thing
-		for(var name in flow.nodes){
-			var node = flow.nodes[name]
-			if(node.audioNode.disconnect){
-				node.audioNode.disconnect()
-				node.audioNode = undefined
-			}
-		}
-		flow.started = false
+		stopFlow(flow)
 	}
 
 	/*
