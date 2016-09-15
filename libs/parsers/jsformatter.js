@@ -671,7 +671,10 @@ module.exports = function(proto){
 		for(var i = 0; i <= declslen; i++){
 			var decl = decls[i]
 			this[decl.type](decl)
-			if(i !== declslen) this.fastText(',', this._styles.Comma.VariableDeclaration)
+			if(i !== declslen){
+				this.fastText(',', this._styles.Comma.VariableDeclaration)
+				this.trace += ','
+			}
 		}
 	}
 

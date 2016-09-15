@@ -1,3 +1,5 @@
+
+
 var loadServices = [
 	"debug1",
 	"fingers1",
@@ -256,7 +258,7 @@ function workerBoot(){
 				}
 			}
 			catch(e){
-				console.log("POSTING", source)
+				console.log("POSTING", source, e.stack)
 				worker.postMessage({
 					$:'exception',
 					msg:{path:path}
@@ -281,6 +283,8 @@ function workerBoot(){
 	promiseLib(global)
 	traceLib(global)
 }
+
+
 
 //
 //
