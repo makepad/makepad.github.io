@@ -44,6 +44,7 @@ module.exports = require('base/app').extend(function(proto){
 			if(this.fileNode) this.fileNode.data = this.text
 			// check if our file is an app, ifso lets run it.
 			var body = this.ast.body[0]
+			/*
 			this.isExecutableCode = false
 			if(body && body.type === 'ExpressionStatement' && 
 				body.expression.type === 'AssignmentExpression' &&
@@ -55,20 +56,22 @@ module.exports = require('base/app').extend(function(proto){
 				var value = body.expression.right.callee.object.arguments[0].value
 				if(value === 'base/app' || value === 'base/drawapp'){
 					this.isExecutableCode = true
-					var proc = this.app.find('Process'+this.fileName)
-					if(proc){
-						var res = projectToResources(this.app.projectData, proc.resources)
-						res[this.fileName] = this.trace
-						proc.worker.init(
-							this.fileName,
-							res
-						)
-					}
+					*/
+			var proc = this.app.find('Process'+this.fileName)
+			if(proc){
+				var res = projectToResources(this.app.projectData, proc.resources)
+				res[this.fileName] = this.trace
+
+				proc.worker.init(
+					this.fileName,
+					res
+				)
+			}
 					//if(this.fileName) this.app.addUserTab(this.fileName)
 					//this.app.runCurrentFile()
 					//return
-				}
-			}
+			//	}
+			//}
 			// do some updating somehow
 
 			//if(this.app.runningFile === this){
@@ -232,7 +235,7 @@ module.exports = require('base/app').extend(function(proto){
 			if(project.run){
 				for(var i = 0; i < project.run.length; i++){
 					var run = project.run[i]
-					this.addCodeTab(map[run], run)
+					this.addProcessTab(map[run].data, run)
 				}
 			}
 
@@ -290,6 +293,7 @@ module.exports = require('base/app').extend(function(proto){
 
 				this.resources = projectToResources(this.app.projectData)
 				this.resources[fileName] = source
+
 				this.worker.init(
 					fileName,
 					this.resources

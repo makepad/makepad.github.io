@@ -1,4 +1,5 @@
-var Http = require('http')  
+var Https = require('https')
+var Http = require('http')
 var Fs = require('fs')
 var Url = require('url')
 var Os = require('os')
@@ -162,7 +163,17 @@ function requestHandler(req, res){
 	})
 }
 
-var server = Http.createServer(requestHandler)
+try{
+	// simple https test certificates to test getUserMedia, google how to create / set up a self signed https cert for node.js
+	const options = {
+		key: Fs.readFileSync('./devserver-key.test'),
+		cert: Fs.readFileSync('./devserver-cert.test')
+	}
+	var server = Https.createServer(options, requestHandler)
+} 
+catch(x){
+	var server = Http.createServer(requestHandler)
+}
 
 server.listen(server_port, server_interface, function(err){
 	if (err) {

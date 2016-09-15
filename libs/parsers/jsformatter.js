@@ -27,6 +27,7 @@ module.exports = function(proto){
 			if(statement.above) this.fastText(statement.above, this._styles.Comment.above)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this._styles.Comment.side)
+			this.trace += '\n'
 		}
 
 		if(node.bottom) this.fastText(node.bottom, this._styles.Comment)

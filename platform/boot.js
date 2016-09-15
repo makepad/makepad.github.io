@@ -4,7 +4,8 @@ var loadServices = [
 	"keyboard1",
 	"painter1",
 	"storage1",
-	"worker1"
+	"worker1",
+	"audio1"
 //	"dropfiles1",
 ]
 
@@ -243,6 +244,7 @@ function workerBoot(){
 					worker:worker,
 					exports:source
 				}
+
 				continue
 			}
 			try{
@@ -254,6 +256,7 @@ function workerBoot(){
 				}
 			}
 			catch(e){
+				console.log("POSTING", source)
 				worker.postMessage({
 					$:'exception',
 					msg:{path:path}
@@ -264,6 +267,7 @@ function workerBoot(){
 		// lets boot it up
 		var module = modules[msg.main]
 		module.exports = {}
+		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
 		if(typeof module.exports === 'function'){

@@ -3,7 +3,7 @@ module.exports=require('base/drawapp').extend({
 		Rect:{
 		col:'red',
 		id:0,
-		borderRadius:@50,
+		borderRadius:50,
 		shadowOffset:[5,5],
 		borderWidth:2,
 		pixelStyle:function(){$
