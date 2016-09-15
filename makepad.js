@@ -24,9 +24,7 @@ module.exports = require('base/app').extend(function(proto){
 		onPlay:function(){
 			// ask which code file has focus
 			var code = this.parent
-			if(code.isExecutableCode){
-				this.app.addProcessTab(code.trace, code.fileName)
-			}
+			this.app.addProcessTab(code.trace, code.fileName)
 		},
 		onStop:function(){
 
