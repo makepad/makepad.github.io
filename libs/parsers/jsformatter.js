@@ -953,13 +953,14 @@ module.exports = function(proto){
 
 	//WhileStatement:{body:1, test:1},
 	proto.WhileStatement = function(node){
-		this.fastText('while', this._styles.DoWhileStatement.while)
-		this.fastText('(', this._styles.Paren.DoWhileStatement.left)
+		this.fastText('while', this._styles.WhileStatement.while)
+		this.fastText('(', this._styles.Paren.WhileStatement.left)
 		this.trace += 'while('
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this._styles.Paren.DoWhileStatement.right)
+		this.fastText(')', this._styles.Paren.WhileStatement.right)
 		this.trace += ')'
+		if(node.after1) this.fastText(node.after1, this._styles.Comment.above)
 		var body = node.body
 		this[body.type](body)
 	}

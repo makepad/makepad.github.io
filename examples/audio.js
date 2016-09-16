@@ -1,31 +1,5 @@
 var audio=require('services/audio')
-//var sequencer = require('services/sequencer')
-
-function load(buffer){
-	var i16=new Int16Array(buffer)
-	var u16=new Uint16Array(buffer)
-	if(u16[0]!==0x4952)return false
-	if(u16[1]!==0x4646)return false
-	var size=(u16[3]<<16)|u16[2]
-	// size is byteLength - 8
-	if(u16[4]!==0x4157)return false
-	if(u16[5]!==0x4556)return false
-	if(u16[6]!==0x6d66)return false
-	if(u16[7]!==0x2074)return false
-	var fmtChunkSize=u16[8]
-	var formatTag=u16[10]
-	if(formatTag!==1)return false
-	var channels=u16[11]
-	var sampleRate=(u16[13]<<16)|u16[12]
-	var bps=(u16[15]<<16)|u16[14]
-	var blockAlign=u16[16]
-	var bitsPerSample=u16[17]
-	var cbSize=u16[18]
-	// we should now see 'data'
-	if(u16[(fmtChunkSize>>1)+21]!==0x6164)return false
-	if(u16[20]!==0x6174)return false
-	
-}
+var wav = require('parsers/wav')
 
 module.exports=require('base/drawapp').extend({
 	tools:{
@@ -65,8 +39,10 @@ module.exports=require('base/drawapp').extend({
 			}
 		})
 		
-		//load(require('./audio.wav'))
+		//var out = wav.parse(require('./audio.wav'))
 		
+		//this.recording.push(out.data)
+		//this.samples=out.data[0].length
 		this.playFlow=audio.Flow({
 			buffer1:{
 				to:'output',

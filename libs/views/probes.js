@@ -1,6 +1,14 @@
 function $P(id, arg){
 	if(typeof arg === 'number'){
-		console.log(arg,arg.toString(16))
+		var sh = arg
+		var str = ''
+		while(sh){
+			var code = sh&0xff
+			if(code<31 || code >127){str = '';break}
+			str += String.fromCharCode(code)
+			sh = sh >> 8
+		}
+		console.log(arg,arg.toString(16), str)
 	}
 	else console.log(arg)
 	// we can interact with the editor in the other thread.

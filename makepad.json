@@ -97,7 +97,8 @@
 				{"name":"jstokenize.js"},
 				{"name":"jstokentype.js"},
 				{"name":"jsutil.js"},
-				{"name":"jswhitespace.js"}
+				{"name":"jswhitespace.js"},
+				{"name":"wav.js"}
 			]}
 		]},
 		{"name":"examples", "closed":false, "folder":[

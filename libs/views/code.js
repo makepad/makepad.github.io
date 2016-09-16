@@ -228,7 +228,12 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			DoWhileStatement:{
 				left:{},
 				right:{}
+			},
+			WhileStatement:{
+				left:{},
+				right:{}
 			}
+
 		},
 		Comma:{
 			$color:'#777',
@@ -425,10 +430,16 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		},
 		ForInStatement:{},
 		ForOfStatement:{},
-		WhileStatement:{},
+		WhileStatement:{
+			$color:'#bb0',
+		},
 		DoWhileStatement:{
+			$color:'#bb0',
 			do:{$tail:0.5},
 			while:{$head:0.5}
+		},
+		WhileStatement:{
+			while:{}
 		},
 		BreakStatement:{},
 		ContinueStatement:{},

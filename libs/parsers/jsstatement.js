@@ -382,6 +382,12 @@ pp.parseVarStatement = function(node, kind) {
 pp.parseWhileStatement = function(node) {
 	this.next()
 	node.test = this.parseParenExpression()
+
+	if(this.storeComments){
+		var after1 = this.commentAfter(tt.parenR)
+		if(after1 && after1.length) node.after1 = after1
+	}
+
 	this.labels.push(loopLabel)
 	node.body = this.parseStatement(false)
 	this.labels.pop()
