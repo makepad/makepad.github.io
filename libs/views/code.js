@@ -27,7 +27,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			font:require('fonts/ubuntu_monospace_256.font'),
 			tween:2.,
 			ease:[0, 10, 1.0, 1.0],
-			duration:0.3,
+			duration:0.,
 			displace:{
 				0:{x:0,y:0.08},
 				42:{x:0,y:-0.08} // * 
@@ -52,7 +52,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			borderRadius:2.5,
 			tween:2.,
 			ease: [0,10,1.0,1.0],
-			duration:0.3,
+			duration:0.,
 			pickAlpha:0.,
 			vertexStyle:function(){$
 				this.x -= (6./12.)*this.fontSize
@@ -74,7 +74,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		Marker:require('tools/codemarker').extend({
 			tween:2.,
 			ease: [0,10,1.0,1.0],
-			duration:0.3,
+			duration:0.,
 			vertexStyle:function(){$
 				this.opColor = this.bgColor*1.1
 				this.borderColor = this.bgColor

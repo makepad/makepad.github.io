@@ -66,7 +66,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.view = this
 
 		var children = this.children = this.constructorChildren = []
-		for(i = 0; i < arguments.length; i++){
+		for(var i = 0; i < arguments.length; i++){
 			var value = arguments[i]
 			if(typeof value === 'object' && value.constructor === Object){
 				for(var key in value){
@@ -113,7 +113,7 @@ module.exports = require('base/class').extend(function View(proto){
 		var todo = this.todo
 		var children = this.children
 		for(var i = 0; i < children.length; i++){
-			child = children[i]
+			var child = children[i]
 			todo.addChildTodo(child.todo)
 			child.$redrawView()
 		}

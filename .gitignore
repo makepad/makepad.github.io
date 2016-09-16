@@ -1,3 +1,4 @@
 fonts/encoder/glyphy
 fonts/encoder/*.ttf
 platform/node/cache
+*.test

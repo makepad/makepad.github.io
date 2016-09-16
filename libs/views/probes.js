@@ -1,4 +1,8 @@
 function $P(id, arg){
+	if(typeof arg === 'number'){
+		console.log(arg,arg.toString(16))
+	}
+	else console.log(arg)
 	// we can interact with the editor in the other thread.
 	// console.log(arg)
 	// how do we re-render?... what does it mean to update a value?

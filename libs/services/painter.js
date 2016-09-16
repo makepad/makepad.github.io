@@ -728,7 +728,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 
 		if(!type) debugger
 
-		if(!initalloc) alloc = this.initalloc
+		if(!initalloc) initalloc = this.initalloc
 
 		var meshId = meshIdsAlloc++
 
@@ -925,7 +925,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 
 		for(var key in attachments){
 			if(!attach) attach = {}
-			texture = attachments[key]
+			var texture = attachments[key]
 			if(texture){
 				texture.framebufferId = fbId
 				attach[key] = texture.texId

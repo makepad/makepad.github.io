@@ -380,7 +380,8 @@ function createOnMessage(worker){
 				msgs:batchMessages
 			}, transfers)
 
-			worker.batchMessages.length = worker.batchTransfers.length = 0
+			worker.batchMessages = []
+			worker.batchTransfers = []
 		}
 		// send out any produced sync messages in one go
 		if(worker.afterEntryCallbacks.length){
@@ -603,7 +604,7 @@ function promiseLib(g){
 			this._deferreds.push(deferred)
 			return
 		}
-		setImmediate(function() {
+		g.setImmediate(function() {
 			var cb = me._state ? deferred.onFulfilled : deferred.onRejected
 			if (cb === null) {
 				(me._state ? deferred.resolve : deferred.reject)(me._value)

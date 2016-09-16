@@ -10,14 +10,93 @@
 	root.locationSearch = location.search
 
 	// creates a worker creator
-	root.makeWorkerCreator = function(source){
+	root.makeWorkerCreator = function(source, fake){
+		if(fake){
+
+			var mask = Object.getOwnPropertyNames(window)
+			var jsGlobals = getJsGlobals()
+			for(var i = 0; i < jsGlobals.length; i++){
+				var idx = mask.indexOf(jsGlobals[i])
+				if(idx !== -1) mask.splice(idx, 1)
+			}
+
+			return function(){
+				// exec it
+				var inMain = {
+					postMessage:function(msg){
+						//setTimeout(function(){
+							inWorker.onMessage(msg)
+						//},0)
+					}
+				}
+				var inWorker = {
+					postMessage:function(msg){
+						setTimeout(function(){
+							inMain.onMessage(msg)
+						},0)
+					}
+				}
+
+				function WrapFunction(){
+					var globnames = []
+					var globargs = []
+					for(var key in global){
+						globnames.push(key)							
+						globargs.push(global[key])
+					}
+
+					// lets push in all masked
+					for(var i = 0; i < mask.length; i++){
+						var name = mask[i]
+						if(!(name in global)){
+							globnames.push(name)
+						}
+					}
+
+					var fnargs = []
+					var args = arguments
+					var len = arguments.length
+					var code = '"use strict"\nreturn function('
+					for(var i = 0; i < len - 1; i++){
+						if(i) code += ','
+						code += args[i]
+					}
+					code += '){'+args[i]+'}'
+					globnames.push(code)
+					return Function.apply(null, globnames).apply(null, globargs)
+				}
+
+				var global = {
+					Object:Object,
+					String:String,
+					Number:Number,
+					Boolean:Boolean,
+					console:{
+						log:console.log.bind(console)
+					},
+					setTimeout:setTimeout,
+					clearTimeout:clearTimeout,
+					setInterval:setInterval,
+					clearInterval:clearInterval,
+					Function:WrapFunction
+				}	
+
+				function postBoot(){
+				}
+
+				new Function("Function","global", "worker", source+'\n'+postBoot.toString()+'\npostBoot()\n')(WrapFunction, global, inWorker)
+				return inMain
+			}			
+		}
+
 		var src = 
 			'(function(){'+
 			'	var global = self\n'+
 			'	var worker = {postMessage:self.postMessage.bind(self)}\n'+
 			'	self.onmessage = function(msg){worker.onMessage(msg.data)}\n'+
-			source+'\n'+
+			getJsGlobals.toString()+
 			cleanWebWorker.toString()+';cleanWebWorker();\n'+
+			source+'\n'+
 			'})()'
 
 		var blob = URL.createObjectURL(new Blob([src], {type: "text/javascript"}))
@@ -121,57 +200,52 @@
 		req.send()
 	}
 
+	function getJsGlobals(){
+		return [
+			'console', 'eval', 'Infinity','NaN','undefined','null','isFinite','isNaN','parseFloat','parseInt',
+			'Symbol','Error','EvalError','InternalError','RangeError','ReferenceError','TypeError','URIError',
+			'Map','Set','WeakMap','WeakSet','SIMD','JSON','Generator','GeneratorFunction','Intl','SyntaxError', 
+			'Function', 'RegExp', 'Math', 'Object', 'String', 'Number','Boolean','Date', 'Array',
+			'Int8Array','Uint8Array','Uint8ClampedArray','Int16Array','Uint16Array','Int32Array','Uint32Array',
+			'Float32Array','Float64Array','DataView','ArrayBuffer'
+		]
+	}
+
 	if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.indexOf('10.') === 0)
 		watchFileChange()
 
 	function cleanWebWorker(){
-		var clean = {
-			location:1,navigator:1,webkitIndexedDB:2,indexedDB:1,
-			CacheStorage:1, Cache:1, Event:1, EventSource:1, EventTarget:1,
-			CustomEvent:1, DOMException:1, Crypto:1, CryptoKey:1, CloseEvent:1, Blob:1, 
-			Headers:1, MessageChannel:1, MessageEvent:1, MessagePort:1, Notification:1, 
-			PermissionStatus:1, Permissions:1, ProgressEvent:1, Proxy:1, 
-			ReadableByteStream:1, ReadableStream:1, ReferenceError:1, Reflect:1, 
-			Request:1, Response:1, ServiceWorkerRegistration:1, 
-			SubtleCrypto:1, TextDecoder:1, TextEncoder:1, 
-			DedicatedWorkerGlobalScope:1, URLSearchParams:1, 
-			WorkerGlobalScope:1, WorkerLocation:1, WorkerNavigator:1, 
-			XMLHttpRequestEventTarget:1, XMLHttpRequestUpload:1, 
-			File:1, FileError:1, FileList:1, FileReader:1, FileReaderSync:1, FormData:1, 
-			XMLHttpRequest:1, importScript:1, importScripts:1, webkitIDBCursor:2, IDBCursor:1, 
-			webkitIDBCursorWithValue:2, IDBCursorWithValue:1, 
-			webkitIDBDatabase:2, IDBDatabase:1, webkitIDBFactory:2, IDBFactory:1, 
-			webkitIDBIndex:2,  IDBIndex:1, webkitIDBKeyRange:2, IDBKeyRange:1, 
-			webkitIDBObjectStore:2, IDBObjectStore:1, webkitIDBOpenDBRequest:2, IDBOpenDBRequest:1, 
-			webkitIDBRequest:2, IDBRequest:1, webkitIDBTransaction:2, IDBTransaction:1, 
-			webkitIDBVersionChangeEvent:2, IDBVersionChangeEvent:1, 
-			WebSocket:1, location:1, navigator:1, webkitRequestFileSystem:2, 
-			webkitRequestFileSystemSync:2, webkitResolveLocalFileSystemSyncURL:2, 
-			webkitResolveLocalFileSystemURL:2, webkitResolveLocalFileSystemUrl:2,  
-			escape:1, decodeURI:1, decodeURIComponent:1, encodeURI:1, encodeURIComponent:1, 
-			URL:1,crypto:1,onerror:1,onmessage:1,onrejectionhandled:1,
-			onunhandledrejection:1//,self:1//,postMessage:2
-		}
-
+		var deprecated = [
+			'webkitIDBTransaction','webkitIDBRequest','webkitIDBObjectStore','webkitIDBKeyRange','webkitIDBIndex','webkitIDBFactory',
+			'webkitIDBDatabase','webkitIDBCursor'
+		]
+		var jsGlobals = getJsGlobals()
+		var mask = Object.getOwnPropertyNames(self)
+		var forceMask = []
 		var LocalFunction = self.Function
 		self.Function = function(){
 			
 			var args = []
 			var len = arguments.length
 			for(var i = 0; i < len - 1; i++) args.push(arguments[i])
-			args.push('caches')
+			args.push.apply(args, forceMask)
 			
 			var code = arguments[len -1]
 			args.push(code)
 			return LocalFunction.apply(null, args)
 		}
-		for(var key in clean){
-			var id = clean[key]
+
+		for(var i = 0; i < mask.length; i++){
+			var name = mask[i]
+			if(jsGlobals.indexOf(name) !== -1) continue
 			try{
-				if(id == 1) Object.defineProperty(self, key,{value:undefined})
-				if(id == 2) self[key] = undefined
-			}catch(e){
-				console.log("Error with "+key)
+				if(deprecated.indexOf(name)!==-1){
+					self[name] = undefined
+				}
+				else Object.defineProperty(self, name, {value:undefined})
+			}
+			catch(e){
+				forceMask.push(name)
 			}
 		}
 		self = undefined

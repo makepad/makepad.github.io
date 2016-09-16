@@ -491,6 +491,8 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 
 	proto.onInput = function(){
 		
+		window.stamp = performance.now()
+
 		var value = this.textArea.value
 		// we seem to have pressed backspace on android	
 		if(value.length === 4 && value === androidBackspace){

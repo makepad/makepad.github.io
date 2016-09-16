@@ -59,7 +59,8 @@ module.exports = require('base/app').extend(function(proto){
 			if(proc){
 				var res = projectToResources(this.app.projectData, proc.resources)
 				res[this.fileName] = this.trace
-
+				console.log("---- restarting user process ----")
+				//return
 				proc.worker.init(
 					this.fileName,
 					res

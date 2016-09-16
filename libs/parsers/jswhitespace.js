@@ -1,7 +1,7 @@
 // Matches a whole line break (where CRLF is considered a single
 // line break). Used to count lines.
 
-exports.lineBreak = lineBreak = /\r\n?|\n|\u2028|\u2029/
+exports.lineBreak = /\r\n?|\n|\u2028|\u2029/
 
 exports.lineBreakG = new RegExp(exports.lineBreak.source, "g")
 

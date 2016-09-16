@@ -206,6 +206,12 @@ module.exports = function painterUser(proto){
 	}
 
 	proto.user_updateTodo = function(msg){
+		if(window.stamp){
+			window.stamp1 = window.stamp
+			window.stamp = undefined
+		}
+		//console.log("UPDATETODO",performance.now()-window.stamp)
+
 		// lets just store the todo message as is
 		var todo = this.todoIds[msg.todoId]
 

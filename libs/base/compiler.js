@@ -785,7 +785,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 				if(pack){
 					// we have to unpack before interpolating
 					for(var i = 0; i < slots; i++){
-						tweencode += indent + '_upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
+						tweencode += indent + 'var _upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
 						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
 							'(($1mcf * Math.floor(_upo/4096) +' +
 							'$cf * Math.floor(_upn/4096)) << 12) + ' + 

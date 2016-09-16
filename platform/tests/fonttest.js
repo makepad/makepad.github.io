@@ -16,7 +16,7 @@ var App = require('base/app').extend(function(proto){
 				h:'50%'
 			}),
 			Code({
-				text:"var t = 10",
+				text:"var t = 10\nvar t=20",
 				cursorTrim:0.1,
 				Text:{
 					fontSize:14,

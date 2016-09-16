@@ -52,7 +52,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			}
 		}),
 		Cursor:require('tools/rect').extend({
-			duration:0.1,
+			duration:0.0,
 			ease:[1,100,0,0],
 			tween:2,
 			color:'#fff',
@@ -202,24 +202,27 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			if(!onlyEnd){
 				this.start = this.end
 			}
-			var rect = this.editor.cursorRect(this.end)
-			this.max = rect?rect.x:0
+			//var rect = this.editor.cursorRect(this.end)
+			this.max = -1//true
+			//this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
 
 		proto.moveHome = function(onlyEnd){
 			this.end = 0
 			if(!onlyEnd) this.start = this.end
-			var rect = this.editor.cursorRect(this.end)
-			this.max = rect?rect.x:0
+			//var rect = this.editor.cursorRect(this.end)
+			this.max = -1//true
+			//this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
 
 		proto.moveEnd = function(onlyEnd){
 			this.end = this.editor.textLength()
 			if(!onlyEnd) this.start = this.end
-			var rect = this.editor.cursorRect(this.end)
-			this.max = rect?rect.x:0
+			//var rect = this.editor.cursorRect(this.end)
+			this.max = -1//true
+			//this.max = rect?rect.x:0
 			this.editor.cursorChanged(this)
 		}
 
@@ -228,6 +231,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
 			if(this.end < 0) this.end = 0
 			if(!onlyEnd) this.start = this.end
+			//console.log(this.max)
 			this.editor.cursorChanged(this)
 		}
 		
@@ -235,8 +239,10 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			var end = this.editor.offsetFromPos(x, y)
 			if(this.end === end && (onlyEnd || this.start === end)) return
 			this.end = end
-			var rect = this.editor.cursorRect(this.end)
-			this.max = rect?rect.x:0
+			//var rect = this.editor.cursorRect(this.end)
+			//this.max = rect?rect.x:0
+			this.max = -1//true
+			//console.log(this.max)
 			if(!onlyEnd) this.start = this.end
 			this.editor.cursorChanged(this)
 		}
@@ -288,7 +294,9 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				this.editor.addUndoDelete(lo, lo +len)
 			}
 			this.start = this.end = lo
-			this.max = this.editor.cursorRect(this.end).x
+			//this.max = this.editor.cursorRect(this.end).x
+			this.max = -1//true
+			//console.log(this.max)
 			this.editor.cursorChanged(this)
 		}
 
@@ -299,7 +307,8 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.removeText(lo, hi)
 			this.cursorSet.delta -= hi - lo
 			this.start = this.end = lo
-			this.max = this.editor.cursorRect(this.end).x
+			this.max = -1//true
+			//this.max = this.editor.cursorRect(this.end).x
 			this.editor.cursorChanged(this)
 		}
 
@@ -310,7 +319,8 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.removeText(this.end, next)
 			this.cursorSet.delta -= 1
 			this.editor.forkRedo()
-			this.max = this.editor.cursorRect(this.end).x
+			this.max = -1//true
+			//this.max = this.editor.cursorRect(this.end).x
 			this.editor.cursorChanged(this)
 		}
 
@@ -335,7 +345,8 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.cursorSet.delta -= 1
 			this.editor.forkRedo()
 			this.start = this.end = prev
-			this.max = this.editor.cursorRect(this.end).x
+			this.max = -1//true
+			//this.max = this.editor.cursorRect(this.end).x
 			this.editor.cursorChanged(this)
 		}
 

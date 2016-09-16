@@ -681,12 +681,17 @@ module.exports = function(proto){
 	//VariableDeclarator:{id:1, init:1},
 	proto.VariableDeclarator = function(node){
 		var id = node.id
+
+		if(node.probe){
+			this.fastText('@', this._styles.Identifier.local)
+		}
 		if(id.type === 'Identifier'){
 			this.scope[id.name] = 1//scopeId || 1
 			this.fastText(id.name, this._styles.Identifier.local)
 			this.trace += id.name
 		}
 		else this[id.type](id, node)
+		
 		var init = node.init
 		if(init){
 			if(node.around1) this.fastText(node.around1, this._styles.Comment.around)
@@ -695,8 +700,15 @@ module.exports = function(proto){
 			this.fastText('=', this._styles.AssignmentExpression['='] || this._styles.AssignmentExpression)
 		
 			if(node.around2) this.fastText(node.around2, this._styles.Comment.around)
-
-			this[init.type](init, id)
+			if(node.probe){
+				var id = this.onProbe(init, id)
+				this.trace += '$P('+id+','
+				this[init.type](init, id)
+				this.trace += ')'
+			}
+			else{
+				this[init.type](init, id)
+			}
 		}
 	}
 
