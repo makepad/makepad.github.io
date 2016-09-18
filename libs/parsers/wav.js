@@ -1,4 +1,4 @@
-exports.parse = function(buffer){
+exports.parse = function(buffer, normalize){
 	var u16=new Uint16Array(buffer)
 	var u8=new Uint8Array(buffer)
 	var len=u16.length
@@ -40,27 +40,45 @@ exports.parse = function(buffer){
 						for(var i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=u8[f]
-							f32[i]=(num&0x80?((num&0x7f)-0x80):num)/0x80
+							var v = f32[i]=(num&0x80?((num&0x7f)-0x80):num)/0x80
 						}
 					}
 					else if(fmt.bitsPerSample===16){
 						for(var i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=(u8[f+1]<<8)|u8[f]
-							f32[i]=(num&0x8000?((num&0x7fff)-0x8000):num)/0x8000
+							var v = f32[i]=(num&0x8000?((num&0x7fff)-0x8000):num)/0x8000
 						}
 					}
 					else if(fmt.bitsPerSample===24){
 						for(var i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=(u8[f+2]<<16)|(u8[f+1]<<8)|u8[f]
-							f32[i]=(num&0x800000?((num&0x7fffff)-0x800000):num)/0x800000
+							var v = f32[i]=(num&0x800000?((num&0x7fffff)-0x800000):num)/0x800000
 						}
 					}
 					else if(fmt.bitsPerSample===32){//float?
 						
 					}
 				}
+				if(normalize){
+					var minv = 0, maxv = 0
+					for(var c=0;c<fmt.numChannels;c++){
+						var f32 = data[c]
+						for(var i=0;i<samples;i++){
+							var v = f32[i]
+							if(v<minv)minv = v
+							if(v>maxv)maxv = v
+						}
+					}
+					var mul = 1 / max(-minv, maxv)
+					for(var c=0;c<fmt.numChannels;c++){
+						var f32 = data[c]
+						for(var i=0;i<samples;i++){
+							f32[i] *= mul
+						}
+					}
+				}				
 			}
 		}
 		else {}
@@ -69,6 +87,25 @@ exports.parse = function(buffer){
 	return {
 		rate:fmt.sampleRate,
 		data:data
+	}
+}
+
+exports.normalize = function(data){
+	var minv = 0, maxv = 0
+	for(var c = 0; c < data.length; c++){
+		var chan = data[c]
+		for(var i = 0; i < chan.length; i++){
+			var v = chan[i]
+			if(v<minv) minv =v
+			if(v>maxv) maxv = v
+		}
+	}
+	var mul = 1 / max(-minv, maxv)
+	for(var c = 0; c < data.length; c++){
+		var chan = data[c]
+		for(var i = 0; i < chan.length; i++){
+			chan[i] *= mul
+		}
 	}
 }
 

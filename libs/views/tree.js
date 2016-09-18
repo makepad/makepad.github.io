@@ -77,31 +77,31 @@ module.exports = require('base/view').extend({
 				var B=0.
 				var cen=this.h*.5
 				if(this.isFirst<0.5){
-					B=this.boxField(p,4.,-2,2.,hh,0.5)
+					B=this.boxDistance(p,4.,-2,2.,hh,0.5)
 				}
 				else {
-					B=this.boxField(p,4.,cen,2.,hh,0.5)
+					B=this.boxDistance(p,4.,cen,2.,hh,0.5)
 				}
 				var A=0.
 				
 				if(this.isSide<0.5){
-					A=this.boxField(p,4.,cen-2,this.w-4.,2.,0.5)
+					A=this.boxDistance(p,4.,cen-2,this.w-4.,2.,0.5)
 				}
-				var f=this.unionField(B,A)
+				var f=this.unionDistance(B,A)
 				if(this.isFolder>.5){
 					// box
-					var C=this.boxField(p,1.,cen-5,8.,8.,1.)
-					f=this.unionField(f,C)
+					var C=this.boxDistance(p,1.,cen-5,8.,8.,1.)
+					f=this.unionDistance(f,C)
 					// minus
-					var D=this.boxField(p,2.,cen-1.5,6.,1.,1.)
-					f=this.subtractField(D,f)
+					var D=this.boxDistance(p,2.,cen-1.5,6.,1.,1.)
+					f=this.subtractDistance(D,f)
 					// plus
-					var E=this.boxField(p,4.5,cen-4.,1.,6.,1.)
-					f=this.subtractField(E+this.isOpen,f)
+					var E=this.boxDistance(p,4.5,cen-4.,1.,6.,1.)
+					f=this.subtractDistance(E+this.isOpen,f)
 				}
 				var col=this.lineColor
 				if(this.mesh.z<.5)col=this.shadowColor
-				return this.colorSolidField(aa,f,col)
+				return this.colorSolidDistance(aa,f,col)
 			}
 		})
 	},

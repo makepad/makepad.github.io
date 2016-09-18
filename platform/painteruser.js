@@ -265,6 +265,13 @@ module.exports = function painterUser(proto){
 		this.requestRepaint()
 	}
 
+	proto.user_scrollSet = function(msg){
+		var todo = this.todoIds[msg.todoId]
+		todo.xScroll = msg.x
+		todo.yScroll = msg.y
+		this.requestRepaint()
+	}
+
 	proto.user_newMesh = function(msg){
 		var gl = this.gl
 		var glbuffer = gl.createBuffer()

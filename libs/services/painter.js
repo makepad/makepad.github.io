@@ -18,6 +18,8 @@ painter.timeBoot = args.timeBoot
 
 service.onMessage = function(msg){
 	if(msg.fn === 'onResize'){
+		painter.x = msg.x
+		painter.y = msg.y
 		painter.w = msg.w
 		painter.h = msg.h
 		painter.pixelRatio = msg.pixelRatio
@@ -56,7 +58,7 @@ painter.onScrollTodo = function(msg){
 	if(todo){
 		todo.xScroll = msg.x
 		todo.yScroll = msg.y
-		if(todo.onScroll) todo.onScroll(msg.x, msg.y)
+		if(todo.onScroll) todo.onScroll(msg)
 	}
 }
 
@@ -136,14 +138,27 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 	}
 
 	proto.scrollTo = function(x, y, scrollToSpeed){
-		this.xScroll = x
-		this.yScroll = y
-		service.postMessage({
+		if(x !== undefined) this.xScroll = x
+		if(y !== undefined) this.yScroll = y
+
+		service.batchMessage({
 			fn:'scrollTo',
 			todoId:this.todoId,
-			x:x,
-			y:y,
-			scrollToSpeed:this.scrollToSpeed || scrollToSpeed
+			x:this.xScroll,
+			y:this.yScroll,
+			scrollToSpeed:scrollToSpeed || this.scrollToSpeed
+		})
+	}
+	
+	proto.scrollSet = function(x, y){
+		if(x !== undefined) this.xScroll = x
+		if(y !== undefined) this.yScroll = y
+		
+		service.batchMessage({
+			fn:'scrollSet',
+			todoId:this.todoId,
+			x:this.xScroll,
+			y:this.yScroll
 		})
 	}
 

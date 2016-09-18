@@ -303,7 +303,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				queue.push(f)
 			}
 			else{
-				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
+				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
 					f.fn = 'onFingerUp'
 					if(f.workerId === pick.workerId &&
 						f.pickId === pick.pickId &&

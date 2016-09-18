@@ -69,14 +69,14 @@ module.exports = require('base/stamp').extend(function Split(proto){
 				}
 				this.p = this.mesh.xy*vec2(this.w, this.h)
 			},
-			pixel:function(){
+			pixel:function(){$
 				var p = this.p
 				var aa = this.antialias(p)
 
-				var lineField = 0.
-				var blobField = 0.
+				var lineDist = 0.
+				var blobDist = 0.
 				if(this.vertical > .5){
-					lineField = this.boxField(
+					lineDist = this.boxDistance(
 						p, 
 						this.dv-this.ow*.5, 
 						0., 
@@ -84,9 +84,9 @@ module.exports = require('base/stamp').extend(function Split(proto){
 						this.h, 
 						1.
 					)
-					blobField = this.boxField(
+					blobDist = this.boxDistance(
 						p, 
-						0, 
+						0., 
 						this.h*.5-.5*this.boxSize, 
 						this.w, 
 						this.boxSize, 
@@ -94,7 +94,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 					)
 				}
 				else{
-					lineField = this.boxField(
+					lineDist = this.boxDistance(
 						p, 
 						0., 
 						this.dv-this.oh*.5, 
@@ -102,7 +102,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 						this.oh, 
 						1.
 					)
-					blobField = this.boxField(
+					blobDist = this.boxDistance(
 						p, 
 						this.w*0.5-.5*this.boxSize, 
 						0., 
@@ -111,9 +111,9 @@ module.exports = require('base/stamp').extend(function Split(proto){
 						8.
 					)
 				}
-				var field = this.blendField(lineField,blobField, .5)
+				var dist = this.blendDistance(lineDist,blobDist, .5)
 
-				return this.colorBorderField(aa, field, this.borderWidth, this.bgColor, this.borderColor )
+				return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
 			}
 		})
 	}

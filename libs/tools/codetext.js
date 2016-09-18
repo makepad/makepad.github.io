@@ -28,7 +28,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
 		duration: {kind:'uniform', value:0.3},
 		delay: {styleLevel:1, value:0.},
-		lockScroll:{kind:'uniform', noTween:1, value:1.}
+		moveScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 	proto.displace = {
 		0:{

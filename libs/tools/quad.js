@@ -42,7 +42,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 			return vec4(0.)
 		}
 
-		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
+		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
 		var size = vec2(this.w, this.h)
 		
 		this.mesh.xy = (clamp(

@@ -81,7 +81,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			if(stamp){
 				msg.x = msg.xLocal - stamp.$x
 				msg.y = msg.yLocal - stamp.$y
-				if(stamp.lockScroll){
+				if(stamp.moveScroll){
 					msg.x += view.todo.xScroll || 0
 					msg.y += view.todo.yScroll || 0
 				}

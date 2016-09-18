@@ -165,6 +165,10 @@ module.exports = require('base/class').extend(function Stamp(proto){
 
 	proto.$DRAWSTAMP = function(target, classname, macroargs, mainargs, indent){
 		var code = ''
+		code += indent + '$stamp.$x = $turtle.wx\n'
+		code += indent + '$stamp.$y = $turtle.wy\n'
+		code += indent + '$stamp.$w = $turtle._w\n'
+		code += indent + '$stamp.$h = $turtle._h\n'
 		code += indent + '$stamp.onDraw()\n'
 		code += indent + 'var $turtle = $stamp.turtle\n'
 		code += indent + '$stamp.$x = $turtle._x\n'

@@ -1228,7 +1228,13 @@ module.exports = function(proto){
 	proto.LabeledStatement = function(node){
 		var label = node.label
 		this[label.type](label)
+		this.trace += ':'
 		this.fastText(':', this._styles.LabeledStatement)
+		
+		var after1 = node.after1
+		if(after1) this.fastText(after1, this._styles.Comment.above)
+
+		// lets inject a newline
 		var body = node.body
 		this[body.type](body)
 	}

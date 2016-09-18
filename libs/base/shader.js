@@ -22,7 +22,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 
 		// clipping and scrolling
 		noBounds: {styleLevel:1, value:0},
-		lockScroll:{noTween:1, value:1.},
+		moveScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
@@ -225,15 +225,15 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 
 	proto.fingerPos = function(i){
 		var f = this.fingerInfo[i]
-		return (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+		return (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
 	}
 
 	proto.checkFingerDown = function(f, pos){
 		if(f[2] > 0. && this.todoId == mod(f[2],256.) &&  abs(this.workerId) == floor(f[2]/256.) && (this.pickId < 0. || this.pickId == f[3]) ){
-			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
 			return true
 		}
-		false
+		return false
 	}
 
 	proto.isFingerDown = function(pos){$
@@ -248,7 +248,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	proto.checkFingerOver = function(f, pos){
 		var f2 = abs(f[2])
 		if(abs(this.workerId) == floor(f2/256.) && this.todoId == mod(f2,256.) && (this.pickId < 0. || this.pickId == f[3]) ){
-			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.lockScroll * this.viewScroll.x, this.lockScroll * this.viewScroll.y)
+			pos = (vec4(f.xy,0.,1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
 			return true
 		}
 		return false
@@ -270,33 +270,33 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	//
 	//
 
-	proto.unionField = function(f1, f2){
+	proto.unionDistance = function(f1, f2){
 		return min(f1, f2)
 	}
 
-	proto.intersectField = function(f1, f2){
+	proto.intersectDistance = function(f1, f2){
 		return max(f1, f2)
 	}
 
-	proto.subtractField = function(f1, f2){
+	proto.subtractDistance = function(f1, f2){
 		return max(-f1, f2)
 	}
 
-	proto.blendField = function(a, b, k){
+	proto.blendDistance = function(a, b, k){
 	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
 	    return mix(b, a, h) - k * h * (1.0 - h)
 	}
 
-	proto.boxField = function(p, x, y, w, h, r){
+	proto.boxDistance = function(p, x, y, w, h, r){
 		var size = vec2(.5*w, .5*h)
 		return length(max(abs(p - vec2(x, y)-size) - (size - vec2(2.*r)), 0.)) - 2.*r
 	}
 
-	proto.circleField = function(p, x, y, r){
+	proto.circleDistance = function(p, x, y, r){
 		return distance(p, vec2(x,y)) - r
 	}
 
-	proto.lineField = function(p, x1, y1, x2, y2, r){
+	proto.lineDistance = function(p, x1, y1, x2, y2, r){
 		var a = vec2(x1, y1)
 		var b = vec2(x2, y2)
 		var pa = p - a
@@ -308,11 +308,11 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 	}
 
-	proto.colorSolidField = function(antialias, field, fill){
+	proto.colorSolidDistance = function(antialias, field, fill){
 		return mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
 	}
 
-	proto.colorBorderField = function(antialias, field, borderWidth, fill, border){
+	proto.colorBorderDistance = function(antialias, field, borderWidth, fill, border){
 		if(borderWidth<0.001) return mix(fill, vec4(fill.rgb,0.), clamp(field * antialias + 1., 0., 1.))
 		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1.,0.,1.))
 		return mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.))

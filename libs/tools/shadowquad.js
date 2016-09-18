@@ -57,7 +57,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		if (this.visible < 0.5) return vec4(0.0)
 
 		// compute the normal rect positions
-		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
+		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
 		}

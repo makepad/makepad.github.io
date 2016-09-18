@@ -112,8 +112,13 @@ pp.parseStatement = function(declaration, topLevel) {
 		// Identifier node, we switch to interpreting it as a label.
 	default:
 		var maybeName = this.value, expr = this.parseExpression()
-		if (starttype === tt.name && expr.type === "Identifier" && this.eat(tt.colon))
+		if (starttype === tt.name && expr.type === "Identifier" && this.eat(tt.colon)){
+			if(this.storeComments){
+				var after1 = this.commentAfter(tt.colon)
+				if(after1 && after1.length) node.after1 = after1
+			}
 			return this.parseLabeledStatement(node, maybeName, expr)
+		}
 		else return this.parseExpressionStatement(node, expr)
 	}
 }

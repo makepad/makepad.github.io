@@ -1054,13 +1054,13 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		var rightinfer = node.right.infer
 
 		if(leftinfer.kind !== 'value' || rightinfer.kind !== 'value'){
-			throw this.InferErr(node, 'Not a value type '+leftinfer.kind + " - " + rightinfer.kind)
+			throw this.InferErr(node, 'Not a value type '+leftinfer.kind + " - " + rightinfer.kind+":"+leftstr+node.operator+rightstr)
 		}
 		var group = groupBinaryExpression[node.operator]
 		if(group === 1){
 			var lt = tableBinaryExpression[leftinfer.type.name]
 
-			if(!lt) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name)
+			if(!lt) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+":"+leftstr)
 
 			var type = lt[rightinfer.type.name] 
 			if(!type){
@@ -1074,7 +1074,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 					rightstr += '.0'
 					type = types.float
 				}
-				else throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+' and '+rightinfer.type.name)
+				else throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+' and '+rightinfer.type.name+":"+leftstr+node.operator+rightstr)
 			}
 
 			node.infer = {

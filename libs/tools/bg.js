@@ -23,7 +23,7 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 		borderRadius: {value:0},
 		borderWidth: {value:0},
 
-		lockScroll:{noTween:1, value:1.},
+		moveScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
 		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 		fieldSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
@@ -111,7 +111,7 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 			this.mesh.y = clamp(1. - this.borderRadius / this.h,0.,1.)
 		}
 
-		var shift = vec2(this.x - this.viewScroll.x*this.lockScroll, this.y - this.viewScroll.y*this.lockScroll)
+		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
 		var size = vec2(max(0.,this.w), max(0.,this.h))
 
 		this.mesh.xy = (clamp(

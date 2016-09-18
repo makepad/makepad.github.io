@@ -229,7 +229,7 @@ module.exports = require('base/class').extend(function View(proto){
 	Object.defineProperty(proto, 'viewGeom', {
 		get:function(){
 			return {
-				lockScroll:0.,
+				moveScroll:0.,
 				noBounds:1,
 				w:this.$w,
 				h:this.$h,
@@ -254,7 +254,7 @@ module.exports = require('base/class').extend(function View(proto){
 	var identityMat4 = mat4.create()
 
 	proto.$scrollBarSize = 8
-	proto.$scrollBarRadius = 4
+	proto.$scrollBarRadius = 2
 	proto.$scrollPickIds = 65000
 
 	proto.scrollIntoView = function(x, y, w, h){
@@ -387,8 +387,8 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.yView = th
 		this.todo.scrollMomentum = 0.92
 		this.todo.scrollToSpeed = 0.5
-		this.todo.xsScroll = this.$xAbs
-		this.todo.ysScroll = this.$yAbs
+		this.todo.xsScroll = this.$xAbs + painter.x
+		this.todo.ysScroll = this.$yAbs + painter.y
 
 		// clear out unused stamps
 		for(var i = this.$pickId+1;this.$stamps[i];i++){
@@ -399,31 +399,31 @@ module.exports = require('base/class').extend(function View(proto){
 		if(this.overflow === 'scroll'){
 			if(th < this.$hDraw){
 				this.$xScroll = this.drawScrollBar({
-					lockScroll:0,
-					isHorizontal:1.,
+					moveScroll:0,
+					vertical:false,
 					x:0,
 					y:this.$hDraw - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
 					w:tw,
 					h:this.$scrollBarSize,// / painter.pixelRatio,
 					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
 				})
-
 				this.todo.xScrollId = this.$xScroll.$stampId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
 			}
 
 			if(tw < this.$wDraw){ // we need a vertical scrollbar
 
 				this.$yScroll = this.drawScrollBar({
-					lockScroll:0,
-					isHorizontal:0.,
+					moveScroll:0,
+					vertical:true,
 					x:this.$wDraw - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
 					y:0,
 					w:this.$scrollBarSize,// / painter.pixelRatio,
 					h:th,
 					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
 				})
-
 				this.todo.yScrollId = this.$yScroll.$stampId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
 			}
 		}
 
@@ -461,6 +461,24 @@ module.exports = require('base/class').extend(function View(proto){
 		if(this.onAfterDraw){
 			this.onAfterDraw()
 		}
+	}
+
+	proto.scrollTo = function(x, y, speed){
+		this.todo.scrollTo(x, y, speed)
+		this.redraw()
+	}
+
+	proto.scrollDeltaSet = function(dx, dy, speed){
+		this.todo.scrollSet(this.todo.xScroll+(dx||0), this.todo.yScroll+(dy||0), speed)
+		this.redraw()
+	}
+
+	proto.scrollSize = function(x2, y2, x1, y1){
+		var turtle = this.turtle
+		if(x2 > turtle.x2) turtle.x2 = x2
+		if(y2 > turtle.y2) turtle.y2 = y2
+		if(x1 < turtle.x1) turtle.x1 = x1
+		if(y1 < turtle.y1) turtle.y1 = y1
 	}
 
 	proto.reuseDrawSize = function(){
@@ -519,8 +537,8 @@ module.exports = require('base/class').extend(function View(proto){
 	proto.tools = {
 		ScrollBar: require('base/stamp').extend(function ScrollBarStamp(proto){
 			proto.props = {
-				isHorizontal:0.,
-				lockScroll:1.,
+				vertical:0.,
+				moveScroll:0.,
 				borderRadius:4
 			}
 			proto.cursor = 'default'
@@ -529,14 +547,14 @@ module.exports = require('base/class').extend(function View(proto){
 					props:{
 						x:{noTween:1, noInPlace:1, value:NaN},
 						y:{noTween:1, noInPlace:1, value:NaN},
-						isHorizontal:{noTween:1, value:0.},
+						vertical:{noTween:1, value:0.},
 						bgColor:'#000',
 						handleColor:'#111',
 						borderRadius:4
 					},
 					vertexStyle:function(){$ // bypass the worker roundtrip :)
 						var pos = vec2()
-						if(this.isHorizontal > .5){
+						if(this.vertical < .5){
 							this.y += .5///this.pixelRatio
 							this.handleSize = this.viewSpace.x / this.viewSpace.z
 							this.handlePos = this.viewScroll.x / this.viewSpace.z
@@ -551,32 +569,22 @@ module.exports = require('base/class').extend(function View(proto){
 					pixel:function(){
 						this.pixelStyle()
 						var p = this.mesh.xy * vec2(this.w, this.h)
-						var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+						var aa = this.antialias(p)
 						
 						// background field
-						var pBg = p
-						var bBg = this.borderRadius
-						var hBg = vec2(.5*this.w, .5*this.h)
-						var fBg = length(max(abs(pBg-hBg) - (hBg - vec2(bBg)), 0.)) - bBg
+						var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
 
-						// handle field
-						var pHan = p
-						var hHan = vec2(.5*this.w, .5*this.h)
-						if(this.isHorizontal > 0.5){
-							pHan -= vec2(this.w * this.handlePos, 0.)
-							hHan *= vec2(this.handleSize, 1.)
+						var fHan = 0.						
+						if(this.vertical < 0.5){
+							fHan = this.boxDistance(p, this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
 						}
 						else{
-							pHan -=  vec2(0., this.h * this.handlePos)
-							hHan *=  vec2(1., this.handleSize)
+							fHan = this.boxDistance(p, 0., this.h*this.handlePos, this.w, this.handleSize*this.h, this.borderRadius)
 						}
 						
-						var bHan = this.borderRadius
-						var fHan = length(max(abs(pHan-hHan) - (hHan - vec2(bHan)), 0.)) - bHan
-
 						// mix the fields
-						var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*antialias+1.,0.,1.))
-						return mix(this.handleColor, finalBg, clamp(fHan * antialias + 1., 0., 1.))
+						var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*aa+1.,0.,1.))
+						return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
 					}
 				})
 			}

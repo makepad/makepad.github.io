@@ -8,8 +8,8 @@ module.exports = function painterScroll(proto){
 
 	proto.doScroll = function(todo, sx, sy){
 
-		var xScroll = Math.min(Math.max(sx, 0), Math.max(0,todo.xTotal - todo.xView))
-		var yScroll = Math.min(Math.max(sy, 0), Math.max(0,todo.yTotal - todo.yView))
+		var xScroll = sx !== todo.xScroll?Math.min(Math.max(sx, 0), Math.max(0,todo.xTotal - todo.xView)):todo.xScroll
+		var yScroll = sy !== todo.yScroll?Math.min(Math.max(sy, 0), Math.max(0,todo.yTotal - todo.yView)):todo.yScroll
 
 		if(yScroll === -Infinity || xScroll === -Infinity) return
 		if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
@@ -65,13 +65,17 @@ module.exports = function painterScroll(proto){
 	proto.onFingerDown = function(f){
 
 		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerDown(f)
+
+
 		var fingerInfo = this.fingerInfo
 		var args = this.args
-		var o = (f.digit-1) * 4
-		fingerInfo[o+0] = f.x - args.x
-		fingerInfo[o+1] = f.y - args.y
-		fingerInfo[o+2] = f.workerId*256 + f.todoId
-		fingerInfo[o+3] = f.pickId
+		var o = (f.digit - 1.) * 4
+
+		fingerInfo[o + 0] = f.x - args.x
+		fingerInfo[o + 1] = f.y - args.y
+		fingerInfo[o + 2] = f.workerId * 256 + f.todoId
+		fingerInfo[o + 3] = f.pickId
+
 		// check if we are down on a scrollbar
 		var todo = this.todoIds[f.todoId]
 		if(!todo) return
@@ -126,7 +130,8 @@ module.exports = function painterScroll(proto){
 		if(!todo) return
 
 		if(this.isScrollBarMove === 1){
-			this.doScroll(todo, todo.xScroll, ((f.y - todo.ysScroll) / todo.yView)*todo.yTotal - this.scrollDelta)
+			var ys = ((f.y - todo.ysScroll) / todo.yView)*todo.yTotal - this.scrollDelta
+			this.doScroll(todo, todo.xScroll, ys)
 			return
 		}
 		if(this.isScrollBarMove === 2){

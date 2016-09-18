@@ -108,7 +108,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			font:require('fonts/ubuntu_medium_256.font'),
 			color:'#cbb',
 			boldness: -.5,
-			lockScroll:0.,
+			moveScroll:0.,
 			fontSize:16,
 			y:2,
 			x:'@15'

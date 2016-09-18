@@ -24,7 +24,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 
 		// make these uniforms
 		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-		lockScroll:{kind:'uniform', noTween:1, value:1.},
+		moveScroll:{kind:'uniform', noTween:1, value:1.},
 
 		errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
 
@@ -60,7 +60,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		}
 
 		// vertexshader clipping!
-		var shift = vec2(- this.viewScroll.x*this.lockScroll, - this.viewScroll.y*this.lockScroll)
+		var shift = vec2(- this.viewScroll.x*this.moveScroll, - this.viewScroll.y*this.moveScroll)
 		var size = vec2()
 
 		this.topSize =  vec2(this.w, this.h)
@@ -127,7 +127,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		// background field
 		var lineRadius = 1.
 		
-		var topField = this.boxField(
+		var topDist = this.boxDistance(
 			p, 
 			5., 
 			13.5, 
@@ -136,7 +136,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 			lineRadius
 		)
 
-		var sideField = this.boxField(
+		var sideDist = this.boxDistance(
 			p,
 			this.topSize.x - 18.,
 			0.,
@@ -145,7 +145,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 			this.borderRadius
 		)
 
-		var botField = this.boxField(
+		var botDist = this.boxDistance(
 			p,
 			12,
 			this.h - 1.,
@@ -154,7 +154,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 			lineRadius
 		)
 	
-		var grabField = this.boxField(
+		var grabDist = this.boxDistance(
 			p,
 			0.,
 			this.h2 - 2.,
@@ -166,16 +166,16 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		var gloop = 4.
 	
 		var df = 1. - this.open * this.errorTime
-		sideField += df * 14.
-		grabField += df * 14.
-		topField += pow(df, 4.) * abs(p.x)// - this.topSize.x)
-		botField += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
+		sideDist += df * 14.
+		grabDist += df * 14.
+		topDist += pow(df, 4.) * abs(p.x)// - this.topSize.x)
+		botDist += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
 
 		// blend the fields
-		var field = this.blendField(this.blendField(this.blendField(topField,botField, .5), sideField, gloop), grabField, gloop)
+		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topDist,botDist, .5), sideDist, gloop), grabDist, gloop)
 
 		// compute color
-		return this.colorBorderField(aa, field, this.borderWidth, this.bgColor, this.borderColor )
+		return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
 	}
 
 	proto.toolMacros = {

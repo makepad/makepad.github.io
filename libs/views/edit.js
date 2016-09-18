@@ -237,6 +237,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		
 		proto.moveTo = function(x, y, onlyEnd){
 			var end = this.editor.offsetFromPos(x, y)
+
 			if(this.end === end && (onlyEnd || this.start === end)) return
 			this.end = end
 			//var rect = this.editor.cursorRect(this.end)
@@ -968,6 +969,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		}
 
 		var touchdy = 0//f.touch?-20:0
+
 		this.fingerCursor.moveTo(f.x, f.y + touchdy, f.shift)
 		var tapDiv = f.touch? 4: 3
 		var tapStart = f.touch? 2: 1

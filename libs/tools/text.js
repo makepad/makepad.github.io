@@ -93,7 +93,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 		)
 
 		// clip the rect
-		var shift = vec2(-this.viewScroll.x*this.lockScroll, -this.viewScroll.y*this.lockScroll)
+		var shift = vec2(-this.viewScroll.x*this.moveScroll, -this.viewScroll.y*this.moveScroll)
 
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy

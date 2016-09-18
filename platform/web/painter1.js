@@ -98,7 +98,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.gl.viewport(0,0,sw,sh)
 
 		if(this.args.pixelRatio){
-			this.postMessage({fn:'onResize', pixelRatio:pixelRatio, w:w, h:h})
+			this.postMessage({fn:'onResize', pixelRatio:pixelRatio, x:0,y:0,w:w, h:h})
 		}
 		this.args.pixelRatio = window.devicePixelRatio
 		this.args.w = canvas.offsetWidth

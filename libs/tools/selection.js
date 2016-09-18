@@ -24,19 +24,19 @@ module.exports = require('tools/quad').extend(function(proto){
 		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
 		duration: {kind:'uniform', value:0.},
 		delay: {styleLevel:1, value:0.},
-		lockScroll:{kind:'uniform', noTween:1, value:1.}
+		moveScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 	
 	proto.pixel = function(){$
 		var p = this.mesh.xy * vec2(this.w, this.h)
 		var aa = this.antialias(p)
 
-		var bg = this.boxField(p, 0., 0., this.w, this.h, this.borderRadius)
-		var up = this.wp>0.?this.boxField(p, this.xp - this.x, -this.h*0.9, this.wp, this.h, this.borderRadius):100.
-		var dn = this.wn>0.?this.boxField(p, this.xn - this.x, +this.h*0.9, this.wn, this.h, this.borderRadius):100.
-		var sum = this.blendField(this.blendField(bg, up, this.gloop), dn, this.gloop)
+		var bg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+		var up = this.wp>0.?this.boxDistance(p, this.xp - this.x, -this.h*0.9, this.wp, this.h, this.borderRadius):100.
+		var dn = this.wn>0.?this.boxDistance(p, this.xn - this.x, +this.h*0.9, this.wn, this.h, this.borderRadius):100.
+		var sum = this.blendDistance(this.blendDistance(bg, up, this.gloop), dn, this.gloop)
 		
-		return this.colorBorderField(aa, sum, this.borderWidth, this.bgColor, this.borderColor)
+		return this.colorBorderDistance(aa, sum, this.borderWidth, this.bgColor, this.borderColor)
 	}
 
 	proto.toolMacros = {

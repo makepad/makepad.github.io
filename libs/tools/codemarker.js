@@ -28,7 +28,7 @@ module.exports = require('tools/quad').extend(function(proto){
 		ease: {kind:'uniform', value:[0,0,1.0,1.0]},
 		duration: {noTween:1., value:0.},
 		delay: {styleLevel:1, value:0.},
-		lockScroll:{kind:'uniform', noTween:1, value:1.}
+		moveScroll:{kind:'uniform', noTween:1, value:1.}
 	}
 
 	proto.vertexPre = function(){$
@@ -46,8 +46,8 @@ module.exports = require('tools/quad').extend(function(proto){
 		var aa = this.antialias(p)
 		
 		// background field
-		var bgField = this.boxField(p, 0., 0., this.w, this.h, this.borderRadius)
-		var opField = this.boxField(
+		var bgDist = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+		var opDist = this.boxDistance(
 			p,
 			this.x2 - this.x1 + this.opMargin, 
 			this.opMargin,
@@ -57,11 +57,11 @@ module.exports = require('tools/quad').extend(function(proto){
 		)
 	
 		var rip = (1.5+.5*sin(p.x*.4)+p.x)*(this.closed+this.errorTime)*10.
-		bgField += rip
-		opField += rip
+		bgDist += rip
+		opDist += rip
 
-		var final = this.colorBorderField(aa, bgField, this.borderWidth, this.bgColor, this.borderColor)
-		return mix(this.opColor, final, clamp(opField * aa + 1., 0., 1.))
+		var final = this.colorBorderDistance(aa, bgDist, this.borderWidth, this.bgColor, this.borderColor)
+		return mix(this.opColor, final, clamp(opDist * aa + 1., 0., 1.))
 	}
 
 	proto.toolMacros = {
