@@ -3,10 +3,32 @@ var service = require('$audio1')
 var flowIdsAlloc = 1
 var flowIds = {}
 
+var pileupQueue = []
+var pileupTimer
+
+function flushPileupQueue(){
+	for(var i = 0; i < pileupQueue.length; i++){
+		var msg = pileupQueue[i]
+		var flow = flowIds[msg.id]
+		var node = flow.config[msg.node]
+		// lets do the pileup
+		if(node.onData) node.onData(msg.data)
+	}
+	pileupQueue.length = 0
+}
+
 service.onMessage = function(msg){
-	var flow = flowIds[msg.id]
-	var node = flow.config[msg.node]
-	if(node.onData) node.onData(msg.data)
+	if(msg.fn === 'onRecorderData'){
+		if(Date.now() - msg.pileupTime > 16){
+			if(pileupTimer) clearTimeout(pileupTimer)
+			pileupQueue.push(msg)
+			pileupTimer = setTimeout(flushPileupQueue, 16)
+			return
+		}
+		if(pileupTimer) clearTimeout(pileupTimer), pileupTimer = undefined
+		pileupQueue.push(msg)
+		flushPileupQueue()
+	}
 }
 
 function deepCopy(obj){

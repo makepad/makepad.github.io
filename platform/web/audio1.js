@@ -84,6 +84,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 
 		this.postMessage({
 			fn:'onRecorderData',
+			pileupTime:Date.now(),
 			id:flow.id,
 			node:name,
 			data:data
@@ -129,7 +130,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 			}
 			else if(type === 'recorder'){
 				node = {config:nodeConfig, type:'recorder', audioNode:this.context.createScriptProcessor(
-					nodeConfig.chunk || 512,
+					nodeConfig.chunk || 2048,
 					nodeConfig.channels || 2,
 					nodeConfig.channels || 2
 				)}

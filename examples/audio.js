@@ -30,7 +30,7 @@ module.exports=require('base/drawapp').extend({
 			},
 			recorder1:{
 				to:'gain1',
-				chunk:512,
+				chunk:2048,
 				onData:function(data){
 					this.redraw()
 					this.recording.push(data)

@@ -260,7 +260,6 @@ service.onMessage = function(msg){
 					var old = pileupTimer[msg.fn].msg
 					msg.xWheel += old.xWheel
 					msg.yWheel += old.yWheel
-					console.log(msg.yWheel)
 				}
 				clearTimeout(pileupTimer[msg.fn].to)
 			}
