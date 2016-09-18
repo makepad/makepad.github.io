@@ -77,10 +77,6 @@ module.exports = function painterPaint(proto){
 	}
 
 	proto.onRepaint = function(){
-		if(window.stamp1){
-			//console.log("DRAW",performance.now()-window.stamp1)
-			window.stamp1 = undefined
-		}
 		for(var digit in this.frameSyncPromise){
 			this.frameSyncPromise[digit].resolve(true)
 		}

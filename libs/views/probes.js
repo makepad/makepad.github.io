@@ -68,7 +68,7 @@ module.exports = require('base/view').extend({
 		}
 	},
 	onBeginFormatAST:function(){
-		this.code.trace = $P.toString()+'\n'
+		this.code.trace = $P.toString()+';\n'
 		this.probes = []
 	},
 	onProbe:function(node, lhs){

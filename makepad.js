@@ -300,10 +300,10 @@ module.exports = require('base/app').extend(function(proto){
 				
 				this.worker.onPingTimeout = function(){
 					// do other stuff
-					this.worker.terminate()
+					//this.worker.terminate()
 				}.bind(this)
 
-				this.worker.ping(2000)
+				this.worker.ping(4000)
 			}
 		}))
 		tabs.selectTab(idx)

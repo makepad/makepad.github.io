@@ -151,7 +151,6 @@ module.exports=require('base/drawapp').extend({
 					if(v<minv)minv=v
 					if(v>maxv)maxv=v
 					if(!(t++%scale)&&t/scale>xmin){
-						cdc++
 						this.drawRect({
 							x:t/scale,
 							y:minv*100+300,
