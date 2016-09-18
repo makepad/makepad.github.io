@@ -201,7 +201,7 @@ module.exports = function painterPaint(proto){
 		var oldSync = this.frameSyncPromise[digit]
 		if(oldSync) oldSync.resolve(false)
 		var sync = this.frameSyncPromise[digit] = {}
-		sync.promise = new Promise(function(res, rej){sync.resolve = res, sync.reject = rej})
+		sync.promise = new Promise(function(res, rej){sync.resolve = res, sync.reject = rej}, true)
 		this.requestRepaint()
 		return sync.promise
 	}
@@ -209,7 +209,7 @@ module.exports = function painterPaint(proto){
 	proto.pickFinger = function(digit, x, y, immediate){
 		var pick = {}
 
-		pick.promise = new Promise(function(res, rej){pick.resolve = res, pick.reject = rej})
+		pick.promise = new Promise(function(res, rej){pick.resolve = res, pick.reject = rej}, true)
 		pick.x = x
 		pick.y = y
 

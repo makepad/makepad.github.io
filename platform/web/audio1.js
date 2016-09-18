@@ -73,9 +73,14 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		for (var c = 0; c < outBuf.numberOfChannels; c++) {
 			var inp = inBuf.getChannelData(c)
 			var outp = outBuf.getChannelData(c)
-			for (var s = inBuf.length-1; s>=0; s--) outp[s] = inp[s]
-			data.push(inp)
+			var cpy = new Float32Array(inBuf.length)
+			for (var s = inBuf.length-1; s>=0; s--){
+				cpy[s] = outp[s] = inp[s]
+			}
+			data.push(cpy)
 		}
+		
+		// we have to sync this thing to the renderer
 
 		this.postMessage({
 			fn:'onRecorderData',

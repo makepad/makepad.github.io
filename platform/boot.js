@@ -236,7 +236,7 @@ function workerBoot(){
 		worker.args = msg.args
 		worker.init = msg.init
 		worker.hasParent = msg.hasParent
-		
+
 		var serviceArgs = msg.args
 		for(var path in resources){
 			var source = resources[path]
@@ -590,12 +590,13 @@ function mathLib(g){
 
 function promiseLib(g){
 
-	function Promise(fn) {
+	function Promise(fn, immediate) {
 		if (typeof this !== 'object') throw new TypeError('Promises must be constructed via new')
 		if (typeof fn !== 'function') throw new TypeError('not a function')
 		this._state = null
 		this._value = null
 		this._deferreds = []
+		this._immediate = immediate
 		doResolve(fn, resolve.bind(this), reject.bind(this))
 	}
 
@@ -605,7 +606,7 @@ function promiseLib(g){
 			this._deferreds.push(deferred)
 			return
 		}
-		g.setImmediate(function() {
+		function handle() {
 			var cb = me._state ? deferred.onFulfilled : deferred.onRejected
 			if (cb === null) {
 				(me._state ? deferred.resolve : deferred.reject)(me._value)
@@ -620,7 +621,13 @@ function promiseLib(g){
 			//	return
 			//}
 			deferred.resolve(ret)
-		})
+		}
+		if(this._immediate){
+			handle()
+		}
+		else{
+			g.setImmediate(handle)
+		}
 	}
 
 	function resolve(newValue) {

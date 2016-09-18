@@ -5,7 +5,7 @@ module.exports=require('base/view').extend({
 		pos:.5,
 		mode:0,
 		lockedWidth:1,
-		unlockedWidth:4,
+		unlockedWidth:6,
 		isLocked:false,
 		color:'red'
 	},

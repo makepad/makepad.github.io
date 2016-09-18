@@ -245,6 +245,37 @@ fingers.startFingerDrag = function(digit){
 	})	
 }
 
+var delayTimer= {}
+function delayMessage(msg){
+	delayTimer[msg.fn] = undefined
+	if(fingers[msg.fn]) fingers[msg.fn](msg)
+}
+
 service.onMessage = function(msg){
+	// message pileup removal
+	if(msg.fn === 'onFingerMove' || msg.fn === 'onFingerWheel'){
+		if(Date.now() - msg.time > 50){ //
+			if(delayTimer[msg.fn]){
+				if(msg.fn === 'onFingerWheel'){
+					var old = delayTimer[msg.fn].msg
+					msg.xWheel += old.xWheel
+					msg.yWheel += old.yWheel
+				}
+				clearTimeout(delayTimer[msg.fn].to)
+			}
+			var fn = delayMessage.bind(this, msg)
+			delayTimer[msg.fn] = {fn:fn, msg:msg, to:setTimeout(fn, 20)}
+			return
+		}
+		if(delayTimer[msg.fn]) clearTimeout(delayTimer[msg.fn].to), delayTimer[msg.fn] = undefined
+	}
+	// if we have delaytimers running flush them first
+	for(var key in delayTimer){
+		if(!delayTimer[key]) continue
+		delayTimer[key].fn()
+		clearTimeout(delayTimer[key].to)
+		delayTimer[key] = undefined
+	}
+
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }
