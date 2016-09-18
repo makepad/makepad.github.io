@@ -119,7 +119,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 	}
 	
 	proto.runBootCache = function(){
-		this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
+		//this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
 	}
 
 	proto.stopBootCache = function(){
@@ -168,6 +168,10 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 					gl.bindTexture(gl.TEXTURE_2D, gltex)
 				}
 				gl.drawArrays(gl.TRIANGLES,0,1)
+			//	for(var t = 0; t< 8; t++){
+			//		gl.activeTexture(gl.TEXTURE0 + t)
+			//		gl.bindTexture(gl.TEXTURE_2D, null)
+			//	}
 			}
 			// dont take too long
 			if(Date.now() - dt > 100){

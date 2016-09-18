@@ -38,6 +38,7 @@ module.exports = require('base/app').extend(function(proto){
 			storage.save(this.fileName, this.serializeWithFormatting())
 		},
 		onParsed:function(){
+			return
 			// store it in the filetree
 			if(this.fileNode) this.fileNode.data = this.text
 			// check if our file is an app, ifso lets run it.

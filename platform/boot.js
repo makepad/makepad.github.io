@@ -235,7 +235,8 @@ function workerBoot(){
 		worker.resources = resources
 		worker.args = msg.args
 		worker.init = msg.init
-
+		worker.hasParent = msg.hasParent
+		
 		var serviceArgs = msg.args
 		for(var path in resources){
 			var source = resources[path]
