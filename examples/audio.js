@@ -68,16 +68,13 @@ module.exports=require('base/drawapp').extend({
 		var x1=x*this.zoom
 		var x2=x*zoom
 		this.zoom=zoom
-		this.zoomScroll=(x1-x2)/zoom
-		this.redraw()
+		this.scrollAtDraw((x1-x2)/zoom,0,true)
 	},
 	onFingerWheel:function(e){
 		var z=ceil(this.zoom*(1+e.yWheel/1500))
 		this.setZoom(z,e.x)
 	},
 	onDraw:function(){
-		this.scrollDeltaSet(this.zoomScroll,0,1)
-		this.zoomScroll=0
 		this.drawButton({
 			text:this.recFlow.running?"Stop":"Rec",
 			onClick:function(){
@@ -138,7 +135,6 @@ module.exports=require('base/drawapp').extend({
 			// we should draw it near the scroll position
 			var xmin=this.todo.xScroll-this.$w
 			var xmax=xmin+this.$w*3
-			var dc=0
 			outer:
 			for(var c=0;c<this.recording.length;c++){
 				var left=this.recording[c][0]

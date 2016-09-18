@@ -245,36 +245,38 @@ fingers.startFingerDrag = function(digit){
 	})	
 }
 
-var delayTimer= {}
-function delayMessage(msg){
-	delayTimer[msg.fn] = undefined
+var pileupTimer= {}
+function pileupMessage(msg){
+	pileupTimer[msg.fn] = undefined
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }
 
 service.onMessage = function(msg){
 	// message pileup removal
 	if(msg.fn === 'onFingerMove' || msg.fn === 'onFingerWheel'){
-		if(Date.now() - msg.time > 50){ //
-			if(delayTimer[msg.fn]){
+		if(Date.now() - msg.pileupTime > 16){ // looks like we are piling up
+			if(pileupTimer[msg.fn]){
 				if(msg.fn === 'onFingerWheel'){
-					var old = delayTimer[msg.fn].msg
+					var old = pileupTimer[msg.fn].msg
 					msg.xWheel += old.xWheel
 					msg.yWheel += old.yWheel
+					console.log(msg.yWheel)
 				}
-				clearTimeout(delayTimer[msg.fn].to)
+				clearTimeout(pileupTimer[msg.fn].to)
 			}
-			var fn = delayMessage.bind(this, msg)
-			delayTimer[msg.fn] = {fn:fn, msg:msg, to:setTimeout(fn, 20)}
+			var fn = pileupMessage.bind(this, msg)
+			// if we dont get a new message in 16ms we still send it 
+			pileupTimer[msg.fn] = {fn:fn, msg:msg, to:setTimeout(fn, 16)}
 			return
 		}
-		if(delayTimer[msg.fn]) clearTimeout(delayTimer[msg.fn].to), delayTimer[msg.fn] = undefined
+		if(pileupTimer[msg.fn]) clearTimeout(pileupTimer[msg.fn].to), pileupTimer[msg.fn] = undefined
 	}
 	// if we have delaytimers running flush them first
-	for(var key in delayTimer){
-		if(!delayTimer[key]) continue
-		delayTimer[key].fn()
-		clearTimeout(delayTimer[key].to)
-		delayTimer[key] = undefined
+	for(var key in pileupTimer){
+		if(!pileupTimer[key]) continue
+		pileupTimer[key].fn()
+		clearTimeout(pileupTimer[key].to)
+		pileupTimer[key] = undefined
 	}
 
 	if(fingers[msg.fn]) fingers[msg.fn](msg)

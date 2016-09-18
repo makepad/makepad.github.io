@@ -296,7 +296,12 @@ module.exports = require('base/class').extend(function View(proto){
 		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 		//todo.viewInverse = this.viewInverse
 		todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
-
+		
+		if(this.$scrollAtDraw){
+			todo.scrollSet(this.$scrollAtDraw.x, this.$scrollAtDraw.y)
+			this.$scrollAtDraw = undefined
+		}
+		
 		if(this.app == this){
 			todo.mat4Global(painter.nameId('this_DOT_camPosition'), this.camPosition)
 			todo.mat4Global(painter.nameId('this_DOT_camProjection'), this.camProjection)
@@ -463,13 +468,11 @@ module.exports = require('base/class').extend(function View(proto){
 		}
 	}
 
-	proto.scrollTo = function(x, y, speed){
-		this.todo.scrollTo(x, y, speed)
-		this.redraw()
-	}
-
-	proto.scrollDeltaSet = function(dx, dy, speed){
-		this.todo.scrollSet(this.todo.xScroll+(dx||0), this.todo.yScroll+(dy||0), speed)
+	proto.scrollAtDraw = function(dx, dy, delta){
+		this.$scrollAtDraw = {
+			x:delta?this.todo.xScroll+(dx||0):(dx||0), 
+			y:delta?this.todo.yScroll+(dy||0):(dy||0)
+		}
 		this.redraw()
 	}
 

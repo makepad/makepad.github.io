@@ -243,13 +243,17 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 						f.todoId = pick.todoId,
 						f.pickId = pick.pickId
 						f.workerId = pick.workerId
+						f.pileupTime = Date.now()
 						this.postMessage(f)
 					}.bind(this,f))
 				}
 				else{
 					// we need to throttle it
 					this.worker.services.painter1.frameSyncFinger(f.digit).then(function(run){
-						if(run) this.postMessage(f)
+						if(run){
+							f.pileupTime = Date.now()
+							this.postMessage(f)
+						}
 					}.bind(this))
 				}
 			}
@@ -362,6 +366,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				f.todoId = pick.todoId
 				f.workerId = pick.workerId
 				f.fn = 'onFingerWheel'
+				f.pileupTime = Date.now()
 				this.worker.services.painter1.onFingerWheel(f)
 				this.postMessage(f)
 			}.bind(this, f))
@@ -472,7 +477,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		var f = mouseToFinger(e)
 		e.preventDefault()
 		var fac = 1
-		if(e.deltaMode === 1) fac = 6
+		if(e.deltaMode === 1) fac = 40
 		else if(e.deltaMode === 2) fac = window.offsetHeight
 		f[0].xWheel = e.deltaX * fac
 		f[0].yWheel = e.deltaY * fac
