@@ -44,9 +44,9 @@ module.exports=require('base/drawapp').extend({
 			}
 		})
 		
-		//var out=wav.parse(require('./audio.wav'),true)
-		//this.recording.push(out.data)
-		//this.samples=out.data[0].length
+		var out=wav.parse(require('./audio.wav'),true)
+		this.recording.push(out.data)
+		this.samples=out.data[0].length
 		
 		this.playFlow=audio.Flow({
 			buffer1:{
@@ -138,7 +138,7 @@ module.exports=require('base/drawapp').extend({
 			// we should draw it near the scroll position
 			var xmin=this.todo.xScroll-this.$w
 			var xmax=xmin+this.$w*3
-			var cdc=0
+			var dc=0
 			outer:
 			for(var c=0;c<this.recording.length;c++){
 				var left=this.recording[c][0]
