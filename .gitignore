@@ -2,3 +2,4 @@ fonts/encoder/glyphy
 fonts/encoder/*.ttf
 platform/node/cache
 *.test
+.DS_Store

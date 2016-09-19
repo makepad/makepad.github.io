@@ -101,15 +101,16 @@ module.exports = function painterTodo(proto){
 		var shaderid = i32[o+2]
 		var shader = this.shaderIds[shaderid]
 		// check last maxindex
-		var prevAttrMax = -1
-		if(this.gl.currentShader){
-			prevAttrMax = this.gl.currentShader.maxAttrIndex
+		//var prevAttrMax = -1
+		//if(this.gl.currentShader){
+			//prevAttrMax = this.gl.currentShader.maxAttrIndex
 			//shader.prevMaxTexIndex = currentShader.maxTexIndex || 0
-		}
+		//}
 		
 		gl.currentShader = this.currentShader = shader
 		
 		if(shader){
+			/*
 			if(prevAttrMax > shader.maxAttrIndex){
 				for(var i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
 					gl.disableVertexAttribArray(i)
@@ -119,124 +120,19 @@ module.exports = function painterTodo(proto){
 				for(var i = shader.maxAttrIndex; i > prevAttrMax; i--){
 					gl.enableVertexAttribArray(i)
 				}
-			}
+			}*/
 
 			//this.currentUniLocs = shader.uniLocs
 			//shader.maxTexIndex = -1
-			shader.instanced = false
-			shader.indexed = false
+			//shader.instanced = false
+			//shader.indexed = false
+			shader.vao = undefined
 			shader.samplers = 0
 			shader.fallbackInstancedArrays = false
 			gl.useProgram(shader.program)
 		}
 	}
 
-	todofn[3] = function attributes(i32, f32, o, pthis){
-		var currentShader = this.currentShader
-		var gl = this.gl
-		if(!currentShader) return
-		var startId = i32[o+2]
-		var range = i32[o+3]
-		var meshid = i32[o+4]
-		var stride = i32[o+5]
-		var offset = i32[o+6]
-		var slotoff = 0
-		var mesh = this.meshIds[meshid]
-
-		this.currentShader.attrlength = mesh.length
-
-		if(!gl.ANGLE_instanced_arrays){
-			if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
-			var attr = currentShader.fallbackInstancedArrays.attr
-			attr.mesh = mesh
-			attr.stride = stride
-			attr.startId = startId
-			attr.range = range
-		}
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-		var nameRev = this.nameRev
-		for(var i = 0; i < range; i++){
-			var loc = currentShader.attrLocs[nameRev[startId+i]]
-			gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
-			if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
-			slotoff += loc.slots * 4
-		}
-	}
-
-	todofn[4] = function instances(i32, f32, o){
-		var currentShader = this.currentShader
-		var gl = this.gl
-		if(!currentShader) return
-
-		var startId = i32[o+2]
-		var range = i32[o+3]
-		var meshid = i32[o+4]
-		var stride = i32[o+5]
-		var offset = i32[o+6]
-		var divisor = i32[o+7]
-		var slotoff = 0
-		var mesh = this.meshIds[meshid]
-
-		// fast geometry clipping
-		var len = mesh.length
-		
-		if( mesh.yOffset &&  len > 100 && mesh.drawDiscard === 'y'){ // otherwise dont bother
-			var array = mesh.array
-			var yScroll = this.currentTodo.yScroll
-			var yMax = this.currentTodo.yView
-			var yOffset = mesh.yOffset
-			var hOffset = mesh.hOffset
-			var guard = yMax*0.5
-			for(var start = 0; start < len; start += 100){
-				var o = stride*start
-				if(array[o + yOffset] - yScroll + (hOffset?array[o + hOffset]:guard) >= 0) break
-			}
-			start = Math.max(start - 100,0)
-
-			for(var end = start; end < len; end += 100){
-				if(array[stride*end + yOffset] - yScroll - guard> yMax) break
-			}
-			end = Math.min(end, len)
-			offset = start 
-			len = end - start
-		}
-
-		currentShader.instlength = len
-		currentShader.instanced = true
-
-		if(!gl.ANGLE_instanced_arrays){
-			if(!currentShader.fallbackInstancedArrays) currentShader.fallbackInstancedArrays = {attr:{}, inst:{}}
-			var inst = currentShader.fallbackInstancedArrays.inst
-			inst.mesh = mesh
-			inst.stride = stride
-			inst.startId = startId
-			inst.range = range
-			inst.offset = offset
-			inst.len = len
-			return
-		}
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-		var nameRev = this.nameRev
-		for(var i = 0; i < range; i++){
-			var loc = currentShader.attrLocs[nameRev[startId+i]]
-			var index = loc.index
-			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
-			gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
-			slotoff += loc.slots * 4
-		}
-	}
-
-	todofn[5] = function indices(i32, f32, o){
-		var gl = this.gl
-		var currentShader = this.currentShader
-		if(!currentShader) return
-		var mesh = this.meshIds[i32[o+2]]
-		currentShader.attrlength = mesh.length
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh)
-		currentShader.indexed = true
-	}
 
 	todofn[40] = function clear(i32, f32, o){
 		var gl = this.gl
@@ -305,7 +201,6 @@ module.exports = function painterTodo(proto){
 		SAMPLELINEAR: 1<<3
 	}
 
-
 	todofn[8] = function sampler(i32, f32, o){
 		var gl = this.gl
 		var currentShader = this.currentShader
@@ -358,43 +253,7 @@ module.exports = function painterTodo(proto){
 
 	//
 	//
-	// Uniforms
-	//
-	//
-
-	todofn[10] = function intUniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.int(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	todofn[11] = function floatUniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.float(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	todofn[12] = function vec2Uniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.vec2(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	todofn[13] = function vec3Uniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.vec3(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	todofn[14] = function vec4Uniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.vec4(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	todofn[15] = function mat4Uniform(i32, f32, o){
-		var currentShader = this.currentShader
-		uboMap.mat4(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
-	}
-
-	//
-	//
-	// Ubos
+	// Ubos, fake for now. Coming in webGL 2
 	//
 	//
 
@@ -518,6 +377,12 @@ module.exports = function painterTodo(proto){
 		}
 	}
 
+	todofn[21] = function vao(i32, f32, o){
+		var vao = this.vaoIds[i32[o+2]]
+		this.currentShader.vao = vao
+		this.gl.OES_vertex_array_object.bindVertexArrayOES(vao)
+	}
+
 	//
 	//
 	// Drawing
@@ -532,106 +397,50 @@ module.exports = function painterTodo(proto){
 		var gl = this.gl
 
 		if(!currentShader) return
-		if(currentShader.name === 'Surface'){
-		}
+
 		// set the global uniforms
 		var type = this.drawTypes[i32[o+2]]
+		var vao = currentShader.vao
 
-		if(currentShader.instanced){
-
-			if(currentShader.fallbackInstancedArrays){
-				// alright we need to construct an array which is
-				var fb = currentShader.fallbackInstancedArrays
-				// well use the instances mesh
-				var instmesh = fb.inst.mesh
-				var vertexsize = fb.attr.stride + fb.inst.stride
-				var instlen = fb.inst.mesh.length
-				var attrlen = fb.attr.mesh.length
-				var inststride = fb.inst.stride
-				var attrstride = fb.attr.stride
-				var numvertices = instlen * attrlen
-				var totalsize = numvertices * vertexsize
-				var attrarray = fb.attr.mesh.array
-				var instarray = fb.inst.mesh.array
-				// lets check if we need to update it
-				if(instmesh.fbUpdateId !== instmesh.updateId){
-					//console.log("UYPDATE",instmesh.fbUpdateId,instmesh.updateId)
-					instmesh.fbUpdateId = instmesh.updateId
-					var array = instmesh.fbArray = new Float32Array(totalsize)
-					for(var i = 0; i < numvertices; i++){
-						// first write the attribute data
-						var o = i * vertexsize
-						var attrvertex = (i % attrlen) * attrstride
-						for(var j = 0; j < attrstride; j++){
-							array[o++] =  attrarray[attrvertex + j]
-						}
-						// write the instance data
-						var instvertex = Math.floor(i / attrlen) * inststride
-						for(var j = 0; j < inststride; j++){
-							array[o++] =  instarray[instvertex + j]
-						}
-					}
-					// update geometry
-					if(!instmesh.fbglbuf) instmesh.fbglbuf = gl.createBuffer()
-					gl.bindBuffer(gl.ARRAY_BUFFER, instmesh.fbglbuf )
-					gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW)
-				}
-				gl.bindBuffer(gl.ARRAY_BUFFER, instmesh.fbglbuf )
-
-				// set all attributes
-				var range = fb.attr.range
-				var startId = fb.attr.startId
-				var slotoff = 0
-				for(var i = 0; i < range; i++){
-					var loc = currentShader.attrlocs[startId+i]
-					gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, vertexsize * 4, slotoff)
-					slotoff += loc.slots * 4
-				}
-
-				var range = fb.inst.range
-				var startId = fb.inst.startId
-				for(var i = 0; i < range; i++){
-					var loc = currentShader.attrlocs[startId+i]
-					if(loc.index !== -1) gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, vertexsize * 4, slotoff)
-					slotoff += loc.slots * 4
-				}
-				if(currentShader.indexed){
-					gl.drawElements(type, fb.inst.len * attrlen, gl.UNSIGNED_SHORT, fb.inst.offset * attrlen)
-				}
-				else{
-					gl.drawArrays(type, fb.inst.offset * attrlen, fb.inst.len * attrlen)
-				}
-			}
-			else{
-				var offset = i32[o+3]
-				var len =  i32[o+4]
-				var inst = i32[o+5]
+		if(vao.instMesh){
+			var offset = i32[o+3]
+			var len =  i32[o+4]
+			var inst = i32[o+5]
+			if(vao.indexMesh){
 				if(offset < 0){
 					offset = 0
-					len = currentShader.attrlength
-					inst = currentShader.instlength
+					len = vao.indexMesh.length
+					inst = vao.instMesh.length
 				}
-				if(currentShader.indexed){
-					gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
+				gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
+			}
+			else{
+				if(offset < 0){
+					offset = 0
+					len = vao.attrMesh.length
+					inst = vao.instMesh.length
 				}
-				else{
-					gl.ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, offset, len, inst)
-				}
+				gl.ANGLE_instanced_arrays.drawArraysInstancedANGLE(type, offset, len, inst)
 			}
 		}
 		else{
 			var offset = i32[o+3]
 			var len =  i32[o+4]
-			if(offset < 0){
-				offset = 0
-				len = currentShader.attrlength
-			}
-			if(currentShader.indexed){
+			if(vao.indexMesh){
+				if(offset < 0){
+					offset = 0
+					len = vao.indexMesh.length
+				}
 				gl.drawElements(type, len, gl.UNSIGNED_SHORT, offset)
 			}
 			else{
+				if(offset < 0){
+					offset = 0
+					len = vao.attrMesh.length
+				}
 				gl.drawArrays(type, offset, len)
 			}
 		}
 	}
+
 }

@@ -277,14 +277,8 @@ module.exports = function painterUser(proto){
 		var gl = this.gl
 		var glbuffer = this.meshIds[msg.meshId]
 
-		if(glbuffer.drawDiscard = msg.drawDiscard){
-			glbuffer.xOffset = msg.xOffset
-			glbuffer.yOffset = msg.yOffset
-			glbuffer.wOffset = msg.wOffset
-			glbuffer.hOffset = msg.hOffset
-		}
-
 		glbuffer.length = msg.length
+
 		glbuffer.updateId = this.frameId
 		// check the type
 
@@ -339,11 +333,90 @@ module.exports = function painterUser(proto){
 		ubo.i32 = new Int32Array(msg.buffer)
 	}
 
+	var vaofn = Array(4)
+
+	vaofn[1] = function attributes(vao, i32, o){
+
+		var gl = this.gl
+		var startId = i32[o+2]
+		var range = i32[o+3]
+		var meshid = i32[o+4]
+		var stride = i32[o+5]
+		var offset = i32[o+6]
+		var slotoff = 0
+		var mesh = this.meshIds[meshid]
+
+		vao.attrMesh = mesh
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+		var nameRev = this.nameRev
+		var attrLocs = vao.shader.attrLocs
+		for(var i = 0; i < range; i++){
+			var loc = attrLocs[nameRev[startId+i]]
+			gl.enableVertexAttribArray(loc.index)
+			gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
+			if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
+			slotoff += loc.slots * 4
+		}
+	}
+
+	vaofn[2] = function instances(vao, i32, o){
+		var gl = this.gl
+		var startId = i32[o+2]
+		var range = i32[o+3]
+		var meshid = i32[o+4]
+		var stride = i32[o+5]
+		var offset = i32[o+6]
+		var divisor = i32[o+7]
+		var slotoff = 0
+		var mesh = this.meshIds[meshid]
+
+		vao.instMesh = mesh
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+		var nameRev = this.nameRev
+		var attrLocs = vao.shader.attrLocs
+		for(var i = 0; i < range; i++){
+			var loc = attrLocs[nameRev[startId+i]]
+			var index = loc.index
+			gl.enableVertexAttribArray(index)
+			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
+			gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
+			slotoff += loc.slots * 4
+		}
+	}
+
+	vaofn[3] = function indices(vao, i32, o){
+		var gl = this.gl
+		var mesh = this.meshIds[i32[o+2]]
+		vao.indexMesh = mesh
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh)
+	}
+
 	proto.user_newVao = function(msg){
 		var vao = this.vaoIds[msg.vaoId]
-		if(vao) return console.error('new vao already exists')
-		this.vaoIds[msg.vaoId] = {
+		//if(vao) return console.error('new vao already exists')
+		var gl = this.gl
+		vao = this.vaoIds[msg.vaoId] = gl.OES_vertex_array_object.createVertexArrayOES()
+		vao.msg = msg
+		
+		gl.OES_vertex_array_object.bindVertexArrayOES(vao)
+
+		vao.shader = this.shaderIds[msg.shaderId]
+		var i32 = new Int32Array(msg.buffer)
+		var len = msg.length
+		var last = 0
+		var repaint = false
+		var todofn = this.todofn
+		for(var o = 0; o < len; o += argc + 2){
+			var fnid = i32[o]
+			var argc = i32[o + 1]
+			var fn = vaofn[fnid]
+			if(!fn) console.error('cant find vao '+fnid)
+			else fn.call(this, vao, i32, o)
 		}
+
+		gl.OES_vertex_array_object.bindVertexArrayOES(null)
 	}
 
 	// new shader helpers

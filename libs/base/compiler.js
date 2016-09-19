@@ -573,37 +573,19 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.oldLength = $props.length\n'
+		code += indent+'	$props.updateMesh()\n'
 		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
 		code += indent+'	var $todo = $view.todo\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.useShader($shader)\n'
-		// first do the normal attributes
-		var geometryProps = info.geometryProps
-		
-		var attrbase = painter.nameId('ATTR_0')
-		// do the props
-		var attroffset = Math.ceil(info.propSlots / 4)
-		code += indent+'	$todo.instances('+(attrbase)+','+attroffset+',$props)\n'
-		var attrid = attroffset
-		// set attributes
-		for(var key in geometryProps){
-			var geom = geometryProps[key]
-			var attrange = Math.ceil(geom.type.slots / 4)
-			var nodot = key.slice(9)
-			//code += indent+'	$attrlen = $proto.'+nodot+'.length\n'
-			code += indent+'	$todo.attributes('+(attrbase+attrid)+','+attrange+',$proto.'+nodot+')\n'
-			attrid += attrange
-		}
 
-		// check if we have indice
-		if(this.indices){
-			code += indent+'	$todo.indices($proto.indices)\n'
-		}
-		
 		// lets set the blendmode
 		code += '	$todo.blending($proto.blending, $proto.constantColor)\n'
+
+		// set the vao
+		code += '	$todo.vao($shader.$vao)\n'
 
 		// set uniforms
 		var uniforms = info.uniforms

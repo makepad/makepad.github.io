@@ -135,18 +135,39 @@ module.exports = function(proto){
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
 		// create a vao
-		var vao = shader.$vao = new painter.Vao()
+		var vao = shader.$vao = new painter.Vao(shader)
+
+		// initialize the VAO
+		var geometryProps = info.geometryProps
+		var attrbase = painter.nameId('ATTR_0')
+		var attroffset = Math.ceil(info.propSlots / 4)
+
+		vao.instances(attrbase, attroffset, props)
+
+		var attrid = attroffset
+		// set attributes
+		for(var key in geometryProps){
+			var geom = geometryProps[key]
+			var attrRange = ceil(geom.type.slots / 4)
+			vao.attributes(attrbase + attrid, attrRange, proto[geom.name])
+			attrid += attrRange
+		}
+
+		// check if we have indice
+		if(proto.indices){
+			vao.indices(proto.indices)
+		}
 
 		props.name = classname
-		var xProp = info.instanceProps.this_DOT_x
-		props.xOffset = xProp && xProp.offset
-		var yProp = info.instanceProps.this_DOT_y 
-		props.yOffset = yProp && yProp.offset
-		var wProp = info.instanceProps.this_DOT_w
-		props.wOffset = wProp && wProp.offset
-		var hProp = info.instanceProps.this_DOT_h
-		props.hOffset = hProp && hProp.offset
-		props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
+		//var xProp = info.instanceProps.this_DOT_x
+		//props.xOffset = xProp && xProp.offset
+		//var yProp = info.instanceProps.this_DOT_y 
+		//props.yOffset = yProp && yProp.offset
+		//var wProp = info.instanceProps.this_DOT_w
+		//props.wOffset = wProp && wProp.offset
+		//var hProp = info.instanceProps.this_DOT_h
+		//props.hOffset = hProp && hProp.offset
+		//props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
 		props.transferData = proto.transferData
 		return shader
 	}
