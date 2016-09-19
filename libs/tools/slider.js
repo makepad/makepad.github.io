@@ -32,11 +32,11 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 					var rs = 0., v=0.
 					if(this.vertical<0.5){
 						rs = (this.psize - this.w)
-						v = clamp((pos.x - this.poff) / rs,0.,1.)*rw+this.range.x
+						v = clamp((pos.x - this.x - this.poff) / rs,0.,1.)*rw+this.range.x
 					}
 					else{
 						rs = (this.psize - this.h)
-						v = clamp((pos.y - this.poff) / rs,0.,1.)*rw+this.range.x
+						v = clamp((pos.y - this.y - this.poff) / rs,0.,1.)*rw+this.range.x
 					}
 					if(this.step>0.) v = floor(v/this.step+.5)*this.step
 					this.pos= ((v-this.range.x)/rw)*rs
@@ -143,7 +143,7 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 				w:this.turtle._w,
 				h:this.knobSize,
 				step:this.step,
-				poff:this.dragOffset>=0?this.$y + this.dragOffset:-1,
+				poff:this.dragOffset>=0?this.dragOffset-this.innerPadding[0]:-1,
 				psize: this.turtle._h,
 				pos:this.dragSize * pos
 			})
@@ -156,7 +156,7 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 				h:this.turtle._h,
 				step:this.step,
 				range:this.range,
-				poff:this.dragOffset>=0?this.$x + this.dragOffset:-1,
+				poff:this.dragOffset>=0?this.dragOffset-this.innerPadding[3]:-1,
 				psize: this.turtle._w,
 				pos:this.dragSize * pos
 			})

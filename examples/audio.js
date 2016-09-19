@@ -12,12 +12,6 @@ module.exports=require('base/drawapp').extend({
 			Text:{moveScroll:0},
 		}),
 		Quad:{color:'red'},
-		Rect:{
-			color:'white',
-			borderWidth:1,
-			borderColor:'white',
-			borderRadius:[0,6,6,0],
-		}
 	},
 	onInit:function(){
 		audio.reset()

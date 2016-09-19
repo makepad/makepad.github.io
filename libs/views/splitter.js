@@ -66,6 +66,7 @@ module.exports=require('base/view').extend({
 		if(!e.fromMode && this.refSettings && this.mode){
 			this.mode = this.modeFromPos()
 		}
+		this.relayout()
 	},
 	modeFromPos:function(){
 		var pos = this.getPos()

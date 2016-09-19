@@ -496,7 +496,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		this.dirty = false
 
 		if(this.transferData){
-			sendarray = this.array
+			var sendarray = this.array
 			this.array = undefined
 			this.allocated = 0
 			this.length = 0	
@@ -504,7 +504,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		else{
 			var sendarray = new this.arraytype(this.array)
 		}
-		
+		//console.log("UPDATING", this.name, sendarray.buffer.byteLength/(4*this.slots))
 		return [{
 			fn:'updateMesh',
 			arrayType:this.type.name,
@@ -557,7 +557,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 	}
 
 	proto.type = types.vec4
-	proto.initalloc = 1024
+	proto.initalloc = 1
 
 	proto.alloc = function(newlength){
 		var oldalloc = this.allocated * this.slots

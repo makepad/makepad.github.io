@@ -319,7 +319,6 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 	// relayout the viewtree
 	proto.$relayoutViews = function(){
-
 		var iter = this
 		var layout = this.$turtleLayout
 
@@ -362,11 +361,14 @@ module.exports = require('base/view').extend(function App(proto, base){
 			)?-1:0)
 
 			layout.$writeList.push(iter, level)
+			iter.onFlag = 4
 			layout.beginTurtle(iter)
 			turtle = layout.turtle
 			// define width/height for any expressions depending on it
 			iter.$wInside = turtle.width 
 			iter.$hInside = turtle.height
+			iter.$wLast = iter.$w
+			iter.$hLast = iter.$h
 			iter.$w = turtle.width + turtle.padding[3] + turtle.padding[1]
 			iter.$h = turtle.height+ turtle.padding[0] + turtle.padding[2]
 			// depth first recursion free walk
@@ -376,7 +378,8 @@ module.exports = require('base/view').extend(function App(proto, base){
 				var view = turtle.context
 				
 				var ot = layout.endTurtle()
-				
+				//view.onFlag = 0
+
 				turtle = layout.turtle
 		
 				//if(!layout.turtle.outer)debugger
@@ -387,6 +390,9 @@ module.exports = require('base/view').extend(function App(proto, base){
 				view.$yAbs = turtle._y 
 				view.$w = turtle._w
 				view.$h = turtle._h
+				if(view.$w !== view.$wLast || view.$h !== view.$hLast){
+					view.$drawCleanFalse()
+				}
 
 				// we need an extra layout cycle after redraw
 				if(isNaN(view.$w) || isNaN(view.$h)){
@@ -433,14 +439,13 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 	proto.$redrawViews = function(){
 		this.$updateTime()
-
 		// we can submit a todo now
 		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
 
 		var todo = this.todo
 
 		if(!this.$layoutClean){
-			this.$layoutClean = false
+			this.$layoutClean = true
 			this.$relayoutViews()
 		}
 

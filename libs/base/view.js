@@ -43,6 +43,8 @@ module.exports = require('base/class').extend(function View(proto){
 	}
 
 	proto.viewId = 0
+	// flag visible
+	proto._onVisible = 2
 
 	proto.$createTodo = function(){
 		var todo = new painter.Todo()
@@ -296,18 +298,23 @@ module.exports = require('base/class').extend(function View(proto){
 				}
 			}
 		}
-		//ok we want to regen the matrix but only call draw if the geom has changed
-		this.$drawClean = true
-
 		// begin a new todo stack
 		var todo = this.todo
-		todo.clearTodo()
-		if(!this._visible) return
+
 		// lets set some globals
 		var todoUbo = todo.todoUbo
 		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
-		//todo.viewInverse = this.viewInverse
 		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+
+		// alright so now we decide wether this todo needs updating
+		if(this.$drawClean) return
+		
+		//ok we want to regen the matrix but only call draw if the geom has changed
+		this.$drawClean = true
+
+		todo.clearTodo()
+		// if we are not visible...
+		if(!this.visible) return
 		
 		if(this.$scrollAtDraw){
 			todo.scrollSet(this.$scrollAtDraw.x, this.$scrollAtDraw.y)
@@ -371,7 +378,9 @@ module.exports = require('base/class').extend(function View(proto){
 			this.onDraw()
 			this.onFlag = 0
 		}
-
+		//this.drawDebug({
+		//	x:0,y:0,w:10,h:10,color:[random(),random(),random(),1]
+		//})
 		this.onDrawChildren()
 
 		this.endTurtle(true)
@@ -506,15 +515,25 @@ module.exports = require('base/class').extend(function View(proto){
 	proto.recompose = function(){
 	}
 
+	proto.$drawCleanFalse = function(){
+		var node = this
+		while(node){//}] && node.$drawClean){
+			node.$drawClean = false
+			node = node.parent
+		}
+	}
+
 	// how do we incrementally redraw?
 	proto.redraw = function(){
-		this.$drawClean = false
+		//if(this.$drawClean){
+		this.$drawCleanFalse()
 		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){
 				this.$redrawViews()
 				this.redrawTimer = undefined
 			}.bind(this.app),0)
 		}
+		//}
 	}
 
 	proto.relayout = function(){
@@ -647,6 +666,7 @@ module.exports = require('base/class').extend(function View(proto){
 				}
 			}
 		}),
+		Debug:require('tools/quad'),
 		Surface:require('base/shader').extend(function Surface(proto){
 			proto.props = {
 				x: {noTween:1, value:NaN},

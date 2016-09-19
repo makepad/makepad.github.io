@@ -281,7 +281,6 @@ module.exports = function painterUser(proto){
 
 		glbuffer.updateId = this.frameId
 		// check the type
-
 		if(msg.arrayType === 'uint16'){
 			glbuffer.array = new Uint16Array(msg.array)
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)

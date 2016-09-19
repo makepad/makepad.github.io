@@ -158,7 +158,7 @@ module.exports = function(proto){
 			vao.indices(proto.indices)
 		}
 
-		props.name = classname
+		props.name = this.name + "-"+classname
 		var xProp = info.instanceProps.this_DOT_x
 		props.xOffset = xProp && xProp.offset
 		var yProp = info.instanceProps.this_DOT_y 
