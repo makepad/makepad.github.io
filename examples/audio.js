@@ -45,9 +45,9 @@ module.exports=require('base/drawapp').extend({
 			}
 		})
 		
-		// var out=wav.parse(require('./audio.wav'),true)
-		// this.recording.push(out.data)
-		// this.samples=out.data[0].length
+		var out=wav.parse(require('./audio.wav'),true)
+		this.recording.push(out.data)
+		this.samples=out.data[0].length
 		
 		this.playFlow=audio.Flow({
 			buffer1:{
@@ -72,7 +72,7 @@ module.exports=require('base/drawapp').extend({
 		this.scrollAtDraw((x1-x2)/zoom,0,true)
 	},
 	onFingerWheel:function(e){
-		var z=ceil(this.zoom*(1+e.yWheel/1500))
+		var z=this.zoom*(1+e.yWheel/1500)
 		this.setZoom(z,e.x)
 	},
 	onDraw:function(){
@@ -121,7 +121,7 @@ module.exports=require('base/drawapp').extend({
 			vertical:false,
 			handleSize:30,
 			value:this.zoom,
-			step:1,
+			step:0,
 			range:this.zoomRange,
 			w:100,
 			h:36
@@ -131,6 +131,7 @@ module.exports=require('base/drawapp').extend({
 		if(this.recording){
 			
 			var scale=this.zoom
+			var smod=floor(scale)
 			var t=0
 			var minv=0,maxv=0.
 			// we should draw it near the scroll position
@@ -147,7 +148,7 @@ module.exports=require('base/drawapp').extend({
 					var v=left[i]
 					if(v<minv)minv=v
 					if(v>maxv)maxv=v
-					if(!(t++%(scale))&&t/scale>xmin){
+					if(!(t++%smod)&&t/scale>xmin){
 						this.drawQuad({
 							x:t/scale,
 							y:minv*100+300,
