@@ -159,10 +159,10 @@ module.exports = function(proto){
 		}
 
 		props.name = classname
-		//var xProp = info.instanceProps.this_DOT_x
-		//props.xOffset = xProp && xProp.offset
-		//var yProp = info.instanceProps.this_DOT_y 
-		//props.yOffset = yProp && yProp.offset
+		var xProp = info.instanceProps.this_DOT_x
+		props.xOffset = xProp && xProp.offset
+		var yProp = info.instanceProps.this_DOT_y 
+		props.yOffset = yProp && yProp.offset
 		//var wProp = info.instanceProps.this_DOT_w
 		//props.wOffset = wProp && wProp.offset
 		//var hProp = info.instanceProps.this_DOT_h
