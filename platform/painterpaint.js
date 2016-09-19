@@ -131,7 +131,7 @@ module.exports = function painterPaint(proto){
 
 		// lets set some globals
 		var nameIds = this.nameIds
-		this.setDefaultGlobals(false)
+		var painterUbo = this.setPainterUbo(framebuffer, false)
 		
 		// compensation matrix for viewport size lag main thread vs user thread
 		var args = this.args
@@ -151,10 +151,10 @@ module.exports = function painterPaint(proto){
 				var color0 = framebuffer.attach.color0
 				gl.viewport(0, 0, color0.w, color0.h)
 			}
-			this.mat4Global(this.nameIds.this_DOT_vertexPostMatrix, lagCompMat)
+			this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, lagCompMat)
 		}
 		else{
-			this.mat4Global(this.nameIds.this_DOT_vertexPostMatrix, identityMat)
+			this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, identityMat)
 			// alright lets 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glfb)
 			var color0 = framebuffer.attach.color0
@@ -244,8 +244,8 @@ module.exports = function painterPaint(proto){
 
 		// lets set some globals
 		var nameIds = this.nameIds
-		this.setDefaultGlobals(true)
-		this.mat4Global(nameIds.this_DOT_vertexPostMatrix, identityMat)
+		var painterUbo = this.setPainterUbo(framebuffer, true)
+		this.mat4Ubo(painterUbo, nameIds.this_DOT_vertexPostMatrix, identityMat)
 		// alright lets bind the pick framebuffer
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glpfb)
 		var pick = framebuffer.attach.pick
@@ -324,8 +324,8 @@ module.exports = function painterPaint(proto){
 
 
 		// set up global uniforms
-		this.setDefaultGlobals(true)
-		this.mat4Global(this.nameIds.this_DOT_vertexPostMatrix, pickMat)
+		var painterUbo = this.setPainterUbo(this.mainFramebuffer, true)
+		this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, pickMat)
 		this.inPickPass = true
 
 		this.runTodo(todo)

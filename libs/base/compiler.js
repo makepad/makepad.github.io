@@ -309,19 +309,37 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		if(curslot) vpost += ');\n'
 
 		vhead += this.$uniformHeader
+		vhead += '\n// uniforms\n'
+		phead += this.$uniformHeader
+		phead += '\n// uniforms\n'
 
-		var hasuniforms = 0
-		for(var key in vtx.uniforms){
-			if(!hasuniforms++)vhead += '\n// uniforms\n'
-			vhead += 'uniform ' + vtx.uniforms[key].type.name + ' ' + key + ';\n'
+		// create uniformBlocks
+		var uboDefs = {}
+		var props = this._props
+		for(var key in props){
+			var prop = props[key]
+			if(prop.kind === 'uniform'){
+				var blockName = prop.block
+				var uniName = 'this_DOT_'+ key
+				if(!blockName || blockName === 'draw'){
+					// if the draw uniform is not used skip it
+					if(!(uniName in uniforms)) continue
+					blockName = 'draw'
+				}
+				var block = uboDefs[blockName] || (uboDefs[blockName] = {})
+				block[uniName] = uniforms[uniName] || {type:prop.type, config:prop, name:key, unused:true}
+			}
 		}
 
-		phead += this.$uniformHeader
-
-		var hasuniforms = 0
-		for(var key in pix.uniforms){
-			if(!hasuniforms++)phead += '\n// uniforms\n'
-			phead += 'uniform ' + pix.uniforms[key].type.name + ' ' + key + ';\n'
+		for(var blockName in uboDefs){
+			var block = uboDefs[blockName]
+			vhead += '// Uniform block '+blockName+';\n'
+			phead += '// Uniform block '+blockName+';\n'
+			for(var key in block){
+				var uniform = block[key]
+				vhead += 'uniform ' + uniform.type.name + ' ' + key + ';\n'
+				phead += 'uniform ' + uniform.type.name + ' ' + key + ';\n'
+			}
 		}
 
 		// the sampler uniforms
@@ -409,6 +427,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			geometryProps:geometryProps,
 			styleProps:styleProps,
 			uniforms:uniforms,
+			uboDefs:uboDefs,
 			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
@@ -558,6 +577,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	\n'
 		code += indent+'	var $todo = $view.todo\n'
+		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// first do the normal attributes
 		var geometryProps = info.geometryProps
@@ -576,6 +596,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			code += indent+'	$todo.attributes('+(attrbase+attrid)+','+attrange+',$proto.'+nodot+')\n'
 			attrid += attrange
 		}
+
 		// check if we have indice
 		if(this.indices){
 			code += indent+'	$todo.indices($proto.indices)\n'
@@ -586,22 +607,27 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 		// set uniforms
 		var uniforms = info.uniforms
+		var drawUboDef = info.uboDefs.draw
+		code += '	$todo.ubo('+painter.nameId('painter')+', $view.app.painterUbo)\n'
+		code += '	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
+		code += '	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
+
 		for(var key in uniforms){
 			var uniform = uniforms[key]
-			if(uniform.config.asGlobal) continue
+			
 			if(key === 'this_DOT_time' && uniform.refcount > 1){
 				code += indent +'	$todo.timeMax = Infinity\n'
 			}
+			if(!drawUboDef || !(key in drawUboDef)) continue
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
-			if(uniform.config.animate){
-				code += indent+'    var $animate = '+source+'\n'
-				code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
-				code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+',$animate)\n'
-
-			}
-			else code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+','+source+')\n'
+			// if(uniform.config.animate){
+			// 	code += indent+'    var $animate = '+source+'\n'
+			// /	code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
+			// 	code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+',$animate)\n'
+			// }
+			code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 		}
 
 		// do the samplers
@@ -737,7 +763,6 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			code += indent +'var $props = $shader.$props\n'
 			code += indent +'var $a = $props.array\n'
 			code += indent + '$props.dirty = true\n'
-
 		}
 
 		if(macroargs[0].$offset){

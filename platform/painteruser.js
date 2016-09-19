@@ -3,15 +3,19 @@ module.exports = function painterUser(proto){
 	proto.onConstructPainterUser = function(){
 		this.shaderIds = {}
 		this.nameIds = {}
+		this.nameRev = {}
 		this.meshIds = {}
 		this.todoIds = {}
 		this.textureIds = {}
 		this.framebufferIds = {}
+		this.uboIds = {}
+		this.vaoIds = {}
 		this.localShaderCache = {}
 	}
 
 	proto.user_newName = function(msg){
 		this.nameIds[msg.name] = msg.nameId
+		this.nameRev[msg.nameId] = msg.name
 	}
 
 	proto.user_newShader = function(msg){
@@ -32,22 +36,18 @@ module.exports = function painterUser(proto){
 
 		this.writeBootCache(cacheid)
 
-		var shader = this.localShaderCache[cacheid]
-		if(shader){
-			shader.refCount++
-			this.shaderIds[shaderid] = shader
-			return
-		}
-
+		//var shader = this.localShaderCache[cacheid]
+		//if(shader){
+		//	shader.refCount++
+		//	this.shaderIds[shaderid] = shader
+		//	return
+		//}
 		shader = gl.globalShaderCache[cacheid] || (gl.globalShaderCache[cacheid] = this.compileShader(vertexcode, pixelcode))
 		if(!shader) return
-
-		shader = Object.create(shader)
-		shader.refCount = 1
-		this.mapShaderIO(shader, vertexcode, pixelcode)
+		//shader.refCount = 1
 		shader.name = msg.name
 		this.shaderIds[shaderid] = shader
-		this.localShaderCache[cacheid] = shader
+		//this.localShaderCache[cacheid] = shader
 	}
 
 	proto.user_newFramebuffer = function(msg){
@@ -159,22 +159,16 @@ module.exports = function painterUser(proto){
 		}
 	}
 
-
-	proto.user_assignTodoToFramebuffer = function(msg){
+	proto.user_assignTodoAndUboToFramebuffer = function(msg){
 		// we are attaching a todo to a framebuffer.
 		var framebuffer = this.framebufferIds[msg.fbId]
 		framebuffer.todoId = msg.todoId
+		framebuffer.uboId = msg.uboId
 		// if we attached to the main framebuffer, repaint
 		if(framebuffer === this.mainFramebuffer){
 			this.requestRepaint()
 		}
 	}
-
-	//
-	//
-	// Texture management
-	//
-	//
 
 	proto.user_newTexture = function(msg){
 		var tex = this.textureIds[msg.texId]
@@ -189,12 +183,7 @@ module.exports = function painterUser(proto){
 		tex.array = msg.array
 		tex.updateId = this.frameId
 	}
-
-	//
-	//
-	// Todo management
-	//
-	//
+	
 	proto.user_newTodo = function(msg){
 		this.todoIds[msg.todoId] = {
 			todoId:msg.todoId,
@@ -225,13 +214,17 @@ module.exports = function painterUser(proto){
 
 		todo.f32 = new Float32Array(msg.buffer)
 		todo.i32 = new Int32Array(msg.buffer)
+
 		todo.name = msg.name
 		todo.length = msg.length
-		todo.timeStart = msg.timeStart
+		//todo.timeStart = msg.timeStart
+
 		todo.timeMax = msg.timeMax 
 		todo.animLoop = msg.animLoop
+
 		todo.wPainter = msg.wPainter
 		todo.hPainter = msg.hPainter
+
 		todo.xTotal = msg.xTotal
 		todo.xView = msg.xView
 		todo.yTotal = msg.yTotal
@@ -243,7 +236,9 @@ module.exports = function painterUser(proto){
 		todo.scrollToSpeed = msg.scrollToSpeed || .5
 		todo.scrollMomentum = msg.scrollMomentum
 		todo.scrollMask = msg.scrollMask
-		
+
+		todo.uboId = msg.uboId
+
 		// what if we are the todo of the mainFrame
 		if(this.mainFramebuffer && this.mainFramebuffer.todoId === todo.todoId){
 			this.requestRepaint()
@@ -252,7 +247,7 @@ module.exports = function painterUser(proto){
 
 	proto.user_updateTodoTime = function(msg){
 		var todo = this.todoIds[msg.todoId]
-		todo.timeStart = msg.timeStart
+		//todo.timeStart = msg.timeStart
 		todo.timeMax = msg.timeMax
 		this.requestRepaint()
 	}
@@ -305,6 +300,52 @@ module.exports = function painterUser(proto){
 		}
 	}
 
+	proto.slotsTable = {
+		'float':1,
+		'int':1,
+		'vec2':2,
+		'vec3':3,
+		'vec4':4,
+		'mat4':16
+	}
+
+	proto.user_newUbo = function(msg){
+		var ubo = this.uboIds[msg.uboId]
+		if(ubo) return console.error('new ubo already exists')
+		var order = msg.order
+		// compute offsets
+		var offsets = {}
+		var nmorder = []
+		var size = 0
+		var nameRev = this.nameRev
+		for(var l = order.length, i = 0; i < l; i++){
+			var item = order[i]
+			item.name = nameRev[item.nameId]
+			offsets[item.nameId] = size
+			size += this.slotsTable[item.type]
+		}
+		var f32 = new Float32Array(size)
+		this.uboIds[msg.uboId] = {
+			order: order,
+			offsets: offsets,
+			f32: f32,
+			i32: new Int32Array(f32.buffer)
+		}
+	}
+	
+	proto.user_updateUbo = function(msg){
+		var ubo = this.uboIds[msg.uboId]
+		ubo.f32 = new Float32Array(msg.buffer)
+		ubo.i32 = new Int32Array(msg.buffer)
+	}
+
+	proto.user_newVao = function(msg){
+		var vao = this.vaoIds[msg.vaoId]
+		if(vao) return console.error('new vao already exists')
+		this.vaoIds[msg.vaoId] = {
+		}
+	}
+
 	// new shader helpers
 	function addLineNumbers(code){
 		var lines = code.split('\n')
@@ -329,13 +370,6 @@ module.exports = function painterUser(proto){
 			obj[name] = type
 		})
 		return obj
-	}
-
-	var slotsTable = {
-		'float':1,
-		'vec2':2,
-		'vec3':3,
-		'vec4':4,
 	}
 
 	function logShaderError(){
@@ -386,14 +420,6 @@ module.exports = function painterUser(proto){
 			)
 		}
 
-		return {
-			program:shader
-		}
-	}
-
-	proto.mapShaderIO = function(shader, vertexcode, pixelcode){
-		var gl = this.gl
-		var nameIds = this.nameIds
 		// parse out uniforms and attributes
 		var attrs = parseShaderAttributes(vertexcode)
 
@@ -402,28 +428,39 @@ module.exports = function painterUser(proto){
 		parseShaderUniforms(pixelcode, uniforms)
 
 		// look up attribute ids
-		var attrlocs = {}
+		var attrLocs = {}
 		var maxAttrIndex = 0
 		for(var name in attrs){
-			var nameid = nameIds[name]
-			var index = gl.getAttribLocation(shader.program, name)
+			//var nameid = nameIds[name]
+			var index = gl.getAttribLocation(shader, name)
 
 			if(index > maxAttrIndex) maxAttrIndex = index
-			attrlocs[nameid] = {
+			attrLocs[name] = {
 				index: index,
-				slots: slotsTable[attrs[name]]
+				slots: this.slotsTable[attrs[name]]
 			}
 		}
-		shader.attrlocs = attrlocs
-		shader.maxAttrIndex = maxAttrIndex
-		shader.refCount = 1
-		var uniLocs = {}
-		for(var name in uniforms){
-			var nameid = nameIds[name]
-			var index = gl.getUniformLocation(shader.program, name)
-			uniLocs[nameid] = index
-		}
-		shader.uniLocs = uniLocs
-	}
 
+		var uniLocs = {}
+		var uniVals = {}
+		for(var name in uniforms){
+			//var nameid = nameIds[name]
+			var type = uniforms[name]
+			var slots = this.slotsTable[type]
+			if(slots > 1){
+				uniVals[name] = new Float32Array(slots)
+			}
+			var index = gl.getUniformLocation(shader, name)
+			uniLocs[name] = index
+		}
+
+		return {
+			attrLocs:attrLocs,
+			maxAttrIndex:maxAttrIndex,
+			refCount:1,
+			uniVals:uniVals,
+			uniLocs:uniLocs,
+			program:shader
+		}
+	}
 }

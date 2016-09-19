@@ -2,7 +2,7 @@ module.exports = function painterTodo(proto){
 
 	proto.onConstructPainterTodo = function(){
 		this.currentShader = undefined
-		this.currentUniLocs = undefined
+		//this.currentUniLocs = undefined
 		this.currentTodo = undefined
 		this.repaintTime = 0
 
@@ -62,9 +62,12 @@ module.exports = function painterTodo(proto){
 		this.currentTodo = todo
 		// set todoId
 		var nameIds = this.nameIds
-		this.floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
-		this.vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
-		this.vec4fGlobal(nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
+		var todoUbo = this.uboIds[todo.uboId]
+
+		this.floatUbo(todoUbo, nameIds.this_DOT_todoId, todo.todoId)
+		this.vec2fUbo(todoUbo, nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
+		this.vec4fUbo(todoUbo, nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
+
 		var f32 = todo.f32
 		var i32 = todo.i32
 		var len = todo.length
@@ -90,12 +93,6 @@ module.exports = function painterTodo(proto){
 	todofn[1] = function addChildTodo(i32, f32, o){
 		var todo = this.todoIds[i32[o+2]]
 		var ret = this.runTodo(todo)
-		var todo = this.currentTodo
-		var nameIds = this.nameIds
-		// put back previous todo globals
-		this.floatGlobal(nameIds.this_DOT_todoId, todo.todoId)
-		this.vec2fGlobal(nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
-		this.vec4fGlobal(nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 		return ret
 	}
 
@@ -124,7 +121,7 @@ module.exports = function painterTodo(proto){
 				}
 			}
 
-			this.currentUniLocs = shader.uniLocs
+			//this.currentUniLocs = shader.uniLocs
 			//shader.maxTexIndex = -1
 			shader.instanced = false
 			shader.indexed = false
@@ -158,9 +155,9 @@ module.exports = function painterTodo(proto){
 		}
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
-
+		var nameRev = this.nameRev
 		for(var i = 0; i < range; i++){
-			var loc = currentShader.attrlocs[startId+i]
+			var loc = currentShader.attrLocs[nameRev[startId+i]]
 			gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
 			if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 			slotoff += loc.slots * 4
@@ -221,8 +218,9 @@ module.exports = function painterTodo(proto){
 		}
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
+		var nameRev = this.nameRev
 		for(var i = 0; i < range; i++){
-			var loc = currentShader.attrlocs[startId+i]
+			var loc = currentShader.attrLocs[nameRev[startId+i]]
 			var index = loc.index
 			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
 			gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
@@ -311,7 +309,7 @@ module.exports = function painterTodo(proto){
 	todofn[8] = function sampler(i32, f32, o){
 		var gl = this.gl
 		var currentShader = this.currentShader
-		var currentUniLocs = this.currentUniLocs
+		//var currentUniLocs = this.currentUniLocs
 		if(!currentShader) return
 
 		// this thing lazily creates textures and samplers
@@ -355,7 +353,7 @@ module.exports = function painterTodo(proto){
 		//currentShader.maxTexIndex = texid
 		gl.activeTexture(gl.TEXTURE0 + texid)
 		gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
-		gl.uniform1i(currentUniLocs[i32[o+2]], texid)
+		gl.uniform1i(currentShader.uniLocs[this.nameRev[i32[o+2]]], texid)
 	}
 
 	//
@@ -365,80 +363,159 @@ module.exports = function painterTodo(proto){
 	//
 
 	todofn[10] = function intUniform(i32, f32, o){
-		if(!this.currentShader) return
-		this.gl.uniform1i(this.currentUniLocs[i32[o+2]], i32[o+3])
+		var currentShader = this.currentShader
+		uboMap.int(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
 	todofn[11] = function floatUniform(i32, f32, o){
-		if(!this.currentShader) return
-		this.gl.uniform1f(this.currentUniLocs[i32[o+2]], f32[o+3])
+		var currentShader = this.currentShader
+		uboMap.float(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
 	todofn[12] = function vec2Uniform(i32, f32, o){
-		if(!this.currentShader) return
-		this.gl.uniform2f(this.currentUniLocs[i32[o+2]], f32[o+3], f32[o+4])
+		var currentShader = this.currentShader
+		uboMap.vec2(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
 	todofn[13] = function vec3Uniform(i32, f32, o){
-		if(!this.currentShader) return
-		this.gl.uniform3f(this.currentUniLocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5])
+		var currentShader = this.currentShader
+		uboMap.vec3(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
 	todofn[14] = function vec4Uniform(i32, f32, o){
-		if(!this.currentShader) return
-		this.gl.uniform4f(this.currentUniLocs[i32[o+2]], f32[o+3], f32[o+4], f32[o+5], f32[o+6])
+		var currentShader = this.currentShader
+		uboMap.vec4(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
-	var identity = [
-		1,0,0,0,
-		0,1,0,0,
-		0,0,1,0,
-		0,0,0,1
-	]
-
-	var tmtx = new Float32Array(16)
 	todofn[15] = function mat4Uniform(i32, f32, o){
-		if(!this.currentShader) return
-		tmtx[0] = f32[o+3]
-		tmtx[1] = f32[o+4]
-		tmtx[2] = f32[o+5]
-		tmtx[3] = f32[o+6]
-		tmtx[4] = f32[o+7]
-		tmtx[5] = f32[o+8]
-		tmtx[6] = f32[o+9]
-		tmtx[7] = f32[o+10]
-		tmtx[8] = f32[o+11]
-		tmtx[9] = f32[o+12]
-		tmtx[10] = f32[o+13]
-		tmtx[11] = f32[o+14]
-		tmtx[12] = f32[o+15]
-		tmtx[13] = f32[o+16]
-		tmtx[14] = f32[o+17]
-		tmtx[15] = f32[o+18]
-
-		this.gl.uniformMatrix4fv(this.currentUniLocs[i32[o+2]], 0, tmtx)
+		var currentShader = this.currentShader
+		uboMap.mat4(this.gl, currentShader.uniVals, currentShader.uniLocs, this.nameRev[i32[o+2]], i32, f32, o+3)
 	}
 
 	//
 	//
-	// Globals
+	// Ubos
 	//
 	//
 
-	todofn[20] = 
-	todofn[21] = 
-	todofn[22] = 
-	todofn[23] = 
-	todofn[24] = 
-	todofn[25] = function globalValue(i32, f32, o, pthis){
-		var globals = this.globals
-		for(var nameid = i32[o+2], i = 0, l = this.globalsLen; i < l; i+=5) if(globals[i] === nameid) break
-		globals[i] = nameid
-		globals[i+1] = i32[o] - 10
-		globals[i+2] = i32
-		globals[i+3] = f32
-		globals[i+4] = o
-		if(i >= l) this.globalsLen = i+5
+	var uboMap = {
+		float:function floatUbo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var v = f32[o]
+			if(uniVals[name] === v) return
+			uniVals[name] = v
+			gl.uniform1f(loc, v)
+		},
+		int:function intUbo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var o = offsets[name]
+			var v = i32[o]
+			if(uniVals[name] === v) return
+			uniVals[name] = v
+			gl.uniform1i(loc, v)
+		},		
+		vec2:function vec2Ubo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var p = uniVals[name]
+			var f0 = f32[o]
+			var f1 = f32[o+1]
+			if(p[0] === f0 && p[1] === f1) return
+			p[0] = f0
+			p[1] = f1
+			gl.uniform2f(loc, f0, f1)
+		},
+		vec3:function vec3Ubo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var p = uniVals[name]
+			var f0 = f32[o]
+			var f1 = f32[o+1]
+			var f2 = f32[o+1]
+			if(p[0] === f0 && p[1] === f1 && p[2] === f2) return
+			p[0] = f0
+			p[1] = f1
+			p[2] = f2
+			gl.uniform3f(loc, f0, f1, f2)
+		},
+		vec4:function vec4Ubo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var p = uniVals[name]
+			if(!p) return
+			var f0 = f32[o]
+			var f1 = f32[o+1]
+			var f2 = f32[o+2]
+			var f3 = f32[o+3]
+			if(p[0] === f0 && p[1] === f1 && p[2] === f2 && p[3] === f3) return
+			p[0] = f0
+			p[1] = f1
+			p[2] = f2
+			p[3] = f3
+			gl.uniform4f(loc, f0, f1, f2, f3)
+		},
+		mat4:function mat4Ubo(gl, uniVals, uniLocs, name, i32, f32, o){
+			var loc = uniLocs[name]
+			if(!loc)return
+			var p = uniVals[name]
+			var f0 = f32[o]
+			var f1 = f32[o+1]
+			var f2 = f32[o+2]
+			var f3 = f32[o+3]
+			var f4 = f32[o+4]
+			var f5 = f32[o+5]
+			var f6 = f32[o+6]
+			var f7 = f32[o+7]
+			var f8 = f32[o+8]
+			var f9 = f32[o+9]
+			var f10 = f32[o+10]
+			var f11 = f32[o+11]
+			var f12 = f32[o+12]
+			var f13 = f32[o+13]
+			var f14 = f32[o+14]
+			var f15 = f32[o+15]
+			if(p[0] === f0 && p[1] === f1 && p[2] === f2 && p[3] === f3 && 
+			   p[0] === f4 && p[1] === f5 && p[2] === f6 && p[3] === f7 && 
+			   p[0] === f8 && p[1] === f9 && p[2] === f10 && p[3] === f11 && 
+			   p[0] === f12 && p[1] === f13 && p[2] === f14 && p[3] === f15) return
+			p[0] = f0
+			p[1] = f1
+			p[2] = f2
+			p[3] = f3
+			p[4] = f4
+			p[5] = f5
+			p[6] = f6
+			p[7] = f7
+			p[8] = f8
+			p[9] = f9
+			p[10] = f10
+			p[11] = f11
+			p[12] = f12
+			p[13] = f13
+			p[14] = f14
+			p[15] = f15
+			gl.uniformMatrix4fv(loc, 0, p)
+		}
+	}
+	
+	todofn[20] = function ubo(i32, f32, o){
+		// lets assign our ubo.
+		//var nameId = o32[o+2]
+		var gl = this.gl
+		var shader = this.currentShader
+		var uniLocs = shader.uniLocs
+		var uniVals = shader.uniVals
+		var ubo = this.uboIds[i32[o+3]]
+		var order = ubo.order
+		var offsets = ubo.offsets
+		var i32 = ubo.i32
+		var f32 = ubo.f32
+		for(var l = order.length, i = 0; i < l; i++){
+			var prop = order[i]
+			uboMap[prop.type](gl, uniVals, uniLocs, prop.name, i32, f32, offsets[prop.nameId])
+		}
 	}
 
 	//
@@ -450,7 +527,7 @@ module.exports = function painterTodo(proto){
 	//ANGLE_instanced_arrays = undefined
 	todofn[30] = function draw(i32, f32, o, pthis){
 		var currentShader = this.currentShader
-		var currentUniLocs = this.currentUniLocs
+		//var currentUniLocs = this.currentUniLocs
 		var globals = this.globals
 		var gl = this.gl
 
@@ -459,11 +536,6 @@ module.exports = function painterTodo(proto){
 		}
 		// set the global uniforms
 		var type = this.drawTypes[i32[o+2]]
-		for(var i = 0, l = this.globalsLen; i < l; i+=5){
-			if(currentUniLocs[globals[i]] !== undefined){
-				todofn[globals[i+1]].call(this, globals[i+2], globals[i+3], globals[i+4])
-			}
-		}
 
 		if(currentShader.instanced){
 

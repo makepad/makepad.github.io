@@ -271,12 +271,14 @@ service.onMessage = function(msg){
 		if(pileupTimer[msg.fn]) clearTimeout(pileupTimer[msg.fn].to), pileupTimer[msg.fn] = undefined
 	}
 	// if we have delaytimers running flush them first
-	for(var key in pileupTimer){
-		if(!pileupTimer[key]) continue
-		pileupTimer[key].fn()
-		clearTimeout(pileupTimer[key].to)
-		pileupTimer[key] = undefined
+	if(msg.fn !== 'onFingerForce'){
+		for(var key in pileupTimer){
+			if(!pileupTimer[key]) continue
+			clearTimeout(pileupTimer[key].to)
+			pileupTimer[key].fn()
+			pileupTimer[key] = undefined
+		}
 	}
-
+	
 	if(fingers[msg.fn]) fingers[msg.fn](msg)
 }

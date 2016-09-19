@@ -57,6 +57,9 @@ module.exports = require('base/view').extend(function App(proto, base){
 		this.camPosition = mat4.create()
 		this.camProjection = mat4.create()
 		
+		var painterUboDef = this.Surface.prototype.$compileInfo.uboDefs.painter
+		this.painterUbo = new painter.Ubo(painterUboDef)
+
 		this._frameId = 0
 
 		function fingerMessage(event, todoId, pickId, msg, isOut){
@@ -210,11 +213,8 @@ module.exports = require('base/view').extend(function App(proto, base){
 		// compose the tree
 		this.$composeTree(this)
 
-		// regenerate view ids
-		//this.$generateViewIds()
-
-		// lets attach our todo to the main framebuffer
-		painter.mainFramebuffer.assignTodo(this.todo)
+		// lets attach our todo and ubo to the main framebuffer
+		painter.mainFramebuffer.assignTodoAndUbo(this.todo, this.painterUbo)
 		// first draw
 		this.$redrawViews(0,0)
 	}

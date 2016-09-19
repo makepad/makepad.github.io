@@ -1,6 +1,6 @@
 var audio=require('services/audio')
 var wav=require('parsers/wav')
-
+var painter=require('services/painter')
 module.exports=require('base/drawapp').extend({
 	tools:{
 		Slider:require('tools/slider').extend({
@@ -11,6 +11,7 @@ module.exports=require('base/drawapp').extend({
 			Bg:{moveScroll:0},
 			Text:{moveScroll:0},
 		}),
+		Quad:{color:'red'},
 		Rect:{
 			color:'white',
 			borderWidth:1,
@@ -44,9 +45,9 @@ module.exports=require('base/drawapp').extend({
 			}
 		})
 		
-		//var out=wav.parse(require('./audio.wav'),true)
-		//this.recording.push(out.data)
-		//this.samples=out.data[0].length
+		// var out=wav.parse(require('./audio.wav'),true)
+		// this.recording.push(out.data)
+		// this.samples=out.data[0].length
 		
 		this.playFlow=audio.Flow({
 			buffer1:{
@@ -146,11 +147,11 @@ module.exports=require('base/drawapp').extend({
 					var v=left[i]
 					if(v<minv)minv=v
 					if(v>maxv)maxv=v
-					if(!(t++%scale)&&t/scale>xmin){
-						this.drawRect({
+					if(!(t++%(scale))&&t/scale>xmin){
+						this.drawQuad({
 							x:t/scale,
 							y:minv*100+300,
-							w:2,//t / scale,
+							w:1,///painter.pixelRatio,//t / scale,
 							h:(maxv-minv)*100+1.//+300
 						})
 						minv=0

@@ -99,7 +99,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		service.batchMessage({
 			fn:'updateTodoTime',
 			todoId:this.todoId,
-			timeStart:this.timeStart,
+			//timeStart:this.timeStart,
 			timeMax:this.timeMax
 		})
 	}
@@ -110,10 +110,12 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 			name:this.name,
 			deps:this.deps,
 			todoId:this.todoId,
+			uboId:this.todoUbo && this.todoUbo.uboId,
+
 			buffer:this.f32.buffer,
 			length:this.length,
 			// animation related
-			timeStart:this.timeStart,
+			//timeStart:this.timeStart,
 			timeMax:this.timeMax,
 
 			wPainter:painter.w,
@@ -209,6 +211,10 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+0] = 2
 		i32[o+1] = 1
 		i32[o+2] = shader.shaderId
+	}
+
+	proto.vao = function(vao){
+
 	}
 
 	proto.attributes = function(startnameid, range, mesh, offset, stride){
@@ -320,7 +326,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+4] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
 	}
 
-	proto.intUniform = function(nameId, x){
+	proto.int = function(nameId, x){
 		var o = (this.last = this.length)
 		if((this.length += 4) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -331,7 +337,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+3] = x
 	}
 
-	proto.floatUniform = function(nameId, x){
+	proto.float = function(nameId, x){
 		var o = (this.last = this.length)
 		if((this.length += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -342,7 +348,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+3] = x
 	}
 
-	proto.vec2Uniform = function(nameId, v){
+	proto.vec2 = function(nameId, v){
 		var o = (this.last = this.length)
 		if((this.length += 5) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -353,7 +359,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+4] = v[1]
 	}
 
-	proto.vec3Uniform = function(nameId, v){
+	proto.vec3 = function(nameId, v){
 		var o = (this.last = this.length)
 		if((this.length += 6) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -366,7 +372,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+5] = v[2]
 	}
 
-	proto.vec4Uniform = function(nameId, v){ // id:6
+	proto.vec4 = function(nameId, v){ // id:6
 		var o = (this.last = this.length)
 		if((this.length += 7) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -387,7 +393,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		}
 	}
 
-	proto.mat4Uniform = function(nameId, m){
+	proto.mat4 = function(nameId, m){
 		var o = (this.last = this.length)
 		if((this.length += 19) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -413,91 +419,17 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+18] = m[15]
 	}
 
-	proto.intGlobal = function(nameId, x){
+	proto.ubo = function(nameId, block){
 		var o = (this.last = this.length)
 		if((this.length += 4) > this.allocated) this.resize()
-		var i32 = this.i32
+		var i32 = this.i32, f32 = this.f32
 
 		i32[o+0] = 20
 		i32[o+1] = 2
 		i32[o+2] = nameId
-		i32[o+3] = x
+		i32[o+3] = block.uboId
 	}
 
-	proto.floatGlobal = function(nameId, x){ // id:3
-		var o = (this.last = this.length)
-		if((this.length += 4) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-
-		i32[o+0] = 21
-		i32[o+1] = 2
-		i32[o+2] = nameId
-		f32[o+3] = x
-	}
-
-	proto.vec2Global = function(nameId, v){ // id:4
-		var o = (this.last = this.length)
-		if((this.length += 5) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-		i32[o+0] = 22
-		i32[o+1] = 3
-		i32[o+2] = nameId
-		f32[o+3] = v[0]
-		f32[o+4] = v[1]
-	}
-
-	proto.vec3Global = function(nameId, v){ // id:5
-		var o = (this.last = this.length)
-		if((this.length += 6) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-
-		i32[o+0] = 23
-		i32[o+1] = 4
-		i32[o+2] = nameId
-		f32[o+3] = v[0]
-		f32[o+4] = v[1]
-		f32[o+5] = v[2]
-	}
-
-	proto.vec4Global = function(nameId, v){ // id:6
-		var o = (this.last = this.length)
-		if((this.length += 7) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-
-		i32[o+0] = 24
-		i32[o+1] = 5
-		i32[o+2] = nameId
-		f32[o+3] = v[0]
-		f32[o+4] = v[1]
-		f32[o+5] = v[2]
-		f32[o+6] = v[3]
-	}
-
-	proto.mat4Global = function(nameId, m){
-		var o = (this.last = this.length)
-		if((this.length += 19) > this.allocated) this.resize()
-		var i32 = this.i32, f32 = this.f32
-		i32[o+0] = 25
-		i32[o+1] = 17
-		i32[o+2] = nameId
-		f32[o+3] = m[0]
-		f32[o+4] = m[1]
-		f32[o+5] = m[2]
-		f32[o+6] = m[3]
-		f32[o+7] = m[4]
-		f32[o+8] = m[5]
-		f32[o+9] = m[6]
-		f32[o+10] = m[7]
-		f32[o+11] = m[8]
-		f32[o+12] = m[9]
-		f32[o+13] = m[10]
-		f32[o+14] = m[11]
-		f32[o+15] = m[12]
-		f32[o+16] = m[13]
-		f32[o+17] = m[14]
-		f32[o+18] = m[15]
-	}
-	
 	painter.TRIANGLES = 0
 	painter.TRIANGLE_STRIP = 1
 	painter.TRIANGLE_FAN = 2
@@ -927,6 +859,170 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 	}
 })
 
+var vaoIdsAlloc = 1
+var vaoIds = {}
+
+// Vertex attribute object
+painter.Vao = require('base/class').extend(function Vao(proto){
+	proto.toMessage = function(){
+		return [{
+			fn:'newVao',
+			vaoId:this.vaoId,
+			buffer:this.f32.buffer,
+			length:this.length
+		}]
+	}
+
+	proto.onConstruct = function(){
+		var vaoId = vaoIdsAlloc++
+		vaoIds[vaoId] = this
+		service.batchMessage(this)
+		this.last = -1
+		this.length = 0
+		this.allocated = 20
+		this.vaoId = vaoId
+		// the two datamappings
+		this.f32 = new Float32Array(this.allocated)
+		this.i32 = new Int32Array(this.f32.buffer)
+	}
+	// copy relevant todo functions
+	proto.resize = painter.Todo.prototype.resize
+	proto.attributes = painter.Todo.prototype.attributes
+	proto.instances = painter.Todo.prototype.instances
+	proto.indices = painter.Todo.prototype.indices
+})
+
+var uboIdsAlloc = 1
+var uboIds = {}
+
+// uniform buffer object
+painter.Ubo = require('base/class').extend(function Ubo(proto){
+
+	proto.toMessage = function(){
+		this.updating = false
+		// do a change check on the uniforms
+		var i32a = this.i32
+		var i32b = this.i32last
+		for(var i = this.size - 1;i>=0; i--){
+			if(i32a[i] !== i32b[i]) break
+		}
+		if(i<0) return null // no change in buffers
+		// swap the buffers		
+		this.i32last = this.i32
+		this.i32 = i32b
+		var f32b = this.f32last
+		this.f32last = this.f32
+		this.f32 = f32b
+		return [{
+			fn:'updateUbo',
+			buffer:this.f32last.buffer,
+			size:this.size,
+			uboId:this.uboId
+		}]
+	}
+
+	proto.onConstruct = function(layoutDef){
+		var uboId = uboIdsAlloc++
+		uboIds[uboId] = this
+		var offsets = this.offsets = {}
+		var order = this.order = []
+		var size = 0
+		for(var key in layoutDef){
+			var item = layoutDef[key]
+			var slots = item.type.slots
+			var nameId = nameIds[key] || painter.nameId(key)
+			offsets[nameId] = size
+			this.order.push({
+				nameId:nameIds[key], type:item.type.name
+			})
+			size += slots
+		}
+		this.uboId = uboId
+		service.batchMessage({
+			fn:'newUbo',
+			uboId: this.uboId,
+			order: order
+		})
+		this.size = size
+		this.f32 = new Float32Array(size)
+		this.i32 = new Int32Array(this.f32.buffer)
+		this.f32last = new Float32Array(size)
+		this.i32last = new Int32Array(this.f32last.buffer)
+	}
+
+	proto.int = function(nameId, x){
+		if(!this.updating) this.update()
+		this.i32[this.offsets[nameId]] = x
+	}
+
+	proto.float = function(nameId, x){
+		if(!this.updating) this.update()
+		this.f32[this.offsets[nameId]] = x
+	}
+
+	proto.vec2 = function(nameId, v){
+		if(!this.updating) this.update()
+		var o = this.offsets[nameId]
+		var f32 = this.f32
+		f32[o  ] = v[0]
+		f32[o+1] = v[1]
+	}
+
+	proto.vec3 = function(nameId, v){
+		if(!this.updating) this.update()
+		var o = this.offsets[nameId]
+		var f32 = this.f32
+		f32[o  ] = v[0]
+		f32[o+1] = v[1]
+		f32[o+2] = v[2]
+	}
+
+	proto.vec4 = function(nameId, v){ // id:6
+		if(!this.updating) this.update()
+		var o = this.offsets[nameId]
+		var f32 = this.f32
+		if(typeof v === 'string'){
+			types.colorFromString(v, 1, f32, o)
+		}
+		else if(v.length === 2){
+			types.colorFromString(v[0], v[1], f32, o)
+		} 
+		else {
+			f32[o  ] = v[0]
+			f32[o+1] = v[1]
+			f32[o+2] = v[2]
+			f32[o+3] = v[3]
+		}
+	}
+
+	proto.mat4 = function(nameId, m){
+		if(!this.updating) this.update()
+		var o = this.offsets[nameId]
+		var f32 = this.f32
+		f32[o  ] = m[0]
+		f32[o+1] = m[1]
+		f32[o+2] = m[2]
+		f32[o+3] = m[3]
+		f32[o+4] = m[4]
+		f32[o+5] = m[5]
+		f32[o+6] = m[6]
+		f32[o+7] = m[7]
+		f32[o+8] = m[8]
+		f32[o+9] = m[9]
+		f32[o+10] = m[10]
+		f32[o+11] = m[11]
+		f32[o+12] = m[12]
+		f32[o+13] = m[13]
+		f32[o+14] = m[14]
+		f32[o+15] = m[15]
+	}
+
+	proto.update = function(){
+		this.updating = true
+		service.batchMessage(this)
+	}
+})
+
 var framebufferIdsAlloc = 1
 var framebufferIds = {}
 
@@ -936,7 +1032,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 		var fbId = framebufferIdsAlloc ++
 		framebufferIds[fbId] = this
 
-		var attach 
+		var attach
 
 		for(var key in attachments){
 			if(!attach) attach = {}
@@ -973,13 +1069,12 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 		})
 	}
 
-	// attach a todo to the framebuffer
-	// the main framebuffer is the first 
-	proto.assignTodo = function(todo){
+	proto.assignTodoAndUbo = function(todo, ubo){
 		service.batchMessage({
-			fn:'assignTodoToFramebuffer',
+			fn:'assignTodoAndUboToFramebuffer',
 			fbId:this.fbId,
-			todoId:todo.todoId
+			todoId:todo.todoId,
+			uboId:ubo.uboId
 		})
 	}
 })

@@ -44,10 +44,17 @@ module.exports = require('base/class').extend(function View(proto){
 
 	proto.viewId = 0
 
+	proto.$createTodo = function(){
+		var todo = new painter.Todo()
+		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
+		todo.todoUbo = new painter.Ubo(todoUboDef)
+		return todo
+	}
+
 	proto._onConstruct = function(){
 		// lets process the args and construct things
 		// lets create a todo
-		this.todo = new painter.Todo()
+		this.todo = this.$createTodo()
 		this.turtle = new this.Turtle(this)
 		this.$turtleStack = [this.turtle]
 		this.$writeList = []
@@ -141,7 +148,7 @@ module.exports = require('base/class').extend(function View(proto){
 				pick:pass.pick,
 				depth:pass.depth,
 			}, this.$xAbs, this.$yAbs)
-			pass.todo = new painter.Todo()
+			pass.todo = this.$createTodo()
 			// store the view reference
 			this.app.$viewTodoMap[pass.todo.todoId] = this
 
@@ -151,7 +158,7 @@ module.exports = require('base/class').extend(function View(proto){
 			pass.h = h
 			mat4.ortho(pass.projection, 0, pass.w, 0, pass.h, -100, 100)
 			// assign the todo to the framebuffe
-			pass.framebuffer.assignTodo(pass.todo)
+			pass.framebuffer.assignTodoAndUbo(pass.todo, this.app.painterUbo)
 		}
 
 		// swap out our todo object
@@ -273,7 +280,8 @@ module.exports = require('base/class').extend(function View(proto){
 
 		this._frameId = this.app._frameId
 		this.$writeList.length = 0
-		this.$drawClean = true
+
+		// what if drawClean is true?....
 		// update the matrix?
 		if(!this.$matrixClean){
 			this.$matrixClean = true
@@ -288,14 +296,18 @@ module.exports = require('base/class').extend(function View(proto){
 				}
 			}
 		}
+		//ok we want to regen the matrix but only call draw if the geom has changed
+		this.$drawClean = true
+
 		// begin a new todo stack
 		var todo = this.todo
 		todo.clearTodo()
 		if(!this._visible) return
 		// lets set some globals
-		todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+		var todoUbo = todo.todoUbo
+		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 		//todo.viewInverse = this.viewInverse
-		todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 		
 		if(this.$scrollAtDraw){
 			todo.scrollSet(this.$scrollAtDraw.x, this.$scrollAtDraw.y)
@@ -303,8 +315,8 @@ module.exports = require('base/class').extend(function View(proto){
 		}
 		
 		if(this.app == this){
-			todo.mat4Global(painter.nameId('this_DOT_camPosition'), this.camPosition)
-			todo.mat4Global(painter.nameId('this_DOT_camProjection'), this.camProjection)
+			this.painterUbo.mat4(painter.nameId('this_DOT_camPosition'), this.camPosition)
+			this.painterUbo.mat4(painter.nameId('this_DOT_camProjection'), this.camProjection)
 			todo.clearColor(0.2, 0.2, 0.2, 1)
 		}
 
@@ -313,15 +325,17 @@ module.exports = require('base/class').extend(function View(proto){
 			// set up a surface and start a pass
 			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
 			todo = this.todo
-			todo.mat4Global(painter.nameId('this_DOT_viewPosition'),identityMat4)
-			todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
-			todo.mat4Global(painter.nameId('this_DOT_camPosition'),identityMat4)
-			todo.mat4Global(painter.nameId('this_DOT_camProjection'),pass.projection)
+			todoUbo = todo.todoUbo
+			todoUbo.mat4(painter.nameId('this_DOT_viewPosition'),identityMat4)
+			todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+			//!TODO SOLVE THIS LATER, for a surface this changes
+			//todoUbo.mat4(painter.nameId('this_DOT_camPosition'),identityMat4)
+			//todoUbo.mat4(painter.nameId('this_DOT_camProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)
 		}
 
 		// store time info on todo
-		todo.timeStart = this._time
+		//todo.timeStart = this._time
 		
 		// clean out the turtlestack for our draw api
 		this.$turtleStack.len = 0
@@ -448,8 +462,8 @@ module.exports = require('base/class').extend(function View(proto){
 
 		if(this.onOverlay){
 			// reset our matrices
-			todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
-			todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+			//todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+			//todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 			this.beginTurtle()
 			this.turtle._x = 0
 			this.turtle._y = 0		

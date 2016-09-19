@@ -3,7 +3,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 	require('/platform/painteruser')(proto)
 	require('/platform/paintertodo')(proto)
 	require('/platform/painterscroll')(proto)
-	require('/platform/painterglobals')(proto)
+	require('/platform/painterubos')(proto)
 	require('/platform/painterpaint')(proto)
 	
 	//proto.debug = 1
@@ -33,7 +33,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.onConstructPainterUser()
 		this.onConstructPainterTodo()
 		this.onConstructPainterScroll()
-		this.onConstructPainterGlobals()
+		this.onConstructPainterUbos()
 		this.onConstructPainterPaint()
 	}
 
@@ -69,7 +69,6 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		gl.OES_texture_half_float = gl.getExtension('OES_texture_half_float')
 		gl.OES_texture_float = gl.getExtension('OES_texture_float')
 		gl.WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
-
 	}
 
 	proto.onScreenResize = function(dy){
@@ -105,7 +104,6 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.args.h = canvas.offsetHeight
 
 		this.requestRepaint()
-
 	}
 
 	proto.requestRepaint = function(){
@@ -119,6 +117,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 	}
 	
 	proto.runBootCache = function(){
+		// bootcache errors on windows.
 		//this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
 	}
 
@@ -168,10 +167,6 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 					gl.bindTexture(gl.TEXTURE_2D, gltex)
 				}
 				gl.drawArrays(gl.TRIANGLES,0,1)
-			//	for(var t = 0; t< 8; t++){
-			//		gl.activeTexture(gl.TEXTURE0 + t)
-			//		gl.bindTexture(gl.TEXTURE_2D, null)
-			//	}
 			}
 			// dont take too long
 			if(Date.now() - dt > 100){

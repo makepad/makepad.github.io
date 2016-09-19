@@ -5,40 +5,37 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 
 	// default shader properties
 	proto.props = {
-		time:{kind:'uniform', value: 1.0},
+		// painter uniforms
+		time:{kind:'uniform', block:'painter', value: 1.0},
+		pixelRatio:{kind:'uniform', block:'painter',  type:types.float},
+		workerId:{kind:'uniform', block:'painter', type:types.float},
+		fingerInfo:{kind:'uniform', block:'painter', type:types.mat4},
+		vertexPostMatrix:{kind:'uniform', block:'painter', type:types.mat4},
+		camPosition:{kind:'uniform', block:'painter',  type:types.mat4},
+		camProjection:{kind:'uniform', block:'painter',  type:types.mat4},
+		// todo uniforms (also modified by painter)
+		viewScroll:{kind:'uniform', block:'todo',  type:types.vec2},
+		viewSpace:{kind:'uniform', block:'todo', type:types.vec4},
+		viewPosition:{kind:'uniform', block:'todo', type:types.mat4},
+		viewInverse:{kind:'uniform', block:'todo', type:types.mat4},
+		todoId:{kind:'uniform', block:'todo', value:0.},
+		// draw uniforms 
+		viewClip:{kind:'uniform', value:[0,0,0,0]},
+		pickAlpha:{kind:'uniform', value:0.5},
 
-		// pick values
-		pickAlpha: {kind:'uniform', value:0.5},
-		workerId:{kind:'uniform', asGlobal:true, type:types.float},
-		todoId: {kind:'uniform', value:0.},
-		pickId: {noTween:true, noStyle:true, value:0.},
+		pickId: {noTween:1, noStyle:1, value:0.},
 
 		// tweening
-		tween: {noTween:true, value:0.},
-		ease: {noTween:true, value:[0,0,1.0,1.0]},
-		duration: {noTween:true, value:0.},
+		tween: {noTween:1, value:0.},
+		ease: {noTween:1, value:[0,0,1.0,1.0]},
+		duration: {noTween:1, value:0.},
 		delay: {styleLevel:1, value:0.},
-		tweenStart: {noTween:true, noStyle:true, value:1.0},
+		tweenStart: {noTween:1, noStyle:1, value:1.0},
 
 		// clipping and scrolling
 		noBounds: {styleLevel:1, value:0},
 		moveScroll:{noTween:1, value:1.},
 		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
-
-		// for ease of use define them here
-		pixelRatio:{kind:'uniform', asGlobal:true, type:types.float},
-		viewScroll:{kind:'uniform', asGlobal:true, type:types.vec2},
-		viewSpace:{kind:'uniform', asGlobal:true, type:types.vec4},
-
-		fingerInfo:{kind:'uniform', asGlobal:true, type:types.mat4},
-		vertexPostMatrix:{kind:'uniform', asGlobal:true, type:types.mat4},
-
-		viewPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
-		viewInverse:{kind:'uniform', asGlobal:true, type:types.mat4},
-
-		camPosition:{kind:'uniform', asGlobal:true, type:types.mat4},
-		camProjection:{kind:'uniform', asGlobal:true, type:types.mat4}
 	}
 
 	proto.defines = {
@@ -53,16 +50,18 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 		'GOLDEN':'1.618033988749895'
 	}
 
+	painter.nameId('this_DOT_'+key)
 
-	painter.nameId('this_DOT_time')
-	painter.nameId('this_DOT_pixelRatio')
-	painter.nameId('this_DOT_workerId')
-	painter.nameId('this_DOT_todoId')
-	painter.nameId('this_DOT_viewScroll')
-	painter.nameId('this_DOT_viewSpace')
-	painter.nameId('this_DOT_fingerInfo')
-	painter.nameId('this_DOT_vertexPostMatrix')
+	// Allocate non draw block names
+	for(var key in proto._props){
+		var prop = proto._props[key]
+		if(prop.kind === 'uniform'){
+			if(!prop.block || prop.block === 'draw') continue
+			painter.nameId('this_DOT_'+key)
+		}
+	}
 
+	// safety for infinite loops
 	proto.propAllocLimit = 150000
 
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]

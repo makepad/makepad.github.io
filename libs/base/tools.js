@@ -131,7 +131,12 @@ module.exports = function(proto){
 		var proto = this['_' + classname].prototype
 		var info = proto.$compileInfo
 		var shader = shaders[classname] = new painter.Shader(info)
+
+		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
+		// create a vao
+		var vao = shader.$vao = new painter.Vao()
+
 		props.name = classname
 		var xProp = info.instanceProps.this_DOT_x
 		props.xOffset = xProp && xProp.offset
