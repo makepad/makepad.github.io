@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
 	"open":["./examples/audio.js"],
-	"run":["./examples/tiny.js"],
+	"run":["./examples/audio.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","closed":true,"folder":[

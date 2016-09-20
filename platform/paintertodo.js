@@ -366,10 +366,11 @@ module.exports = function painterTodo(proto){
 	todofn[20] = function ubo(i32, f32, o){
 		// lets assign our ubo.
 		//var nameId = o32[o+2]
+		var currentShader = this.currentShader
+		if(!currentShader) return
 		var gl = this.gl
-		var shader = this.currentShader
-		var uniLocs = shader.uniLocs
-		var uniVals = shader.uniVals
+		var uniLocs = currentShader.uniLocs
+		var uniVals = currentShader.uniVals
 		var ubo = this.uboIds[i32[o+3]]
 		var order = ubo.order
 		var offsets = ubo.offsets
@@ -382,8 +383,10 @@ module.exports = function painterTodo(proto){
 	}
 
 	todofn[21] = function vao(i32, f32, o){
+		var currentShader = this.currentShader
+		if(!currentShader) return
 		var vao = this.vaoIds[i32[o+2]]
-		this.currentShader.vao = vao
+		currentShader.vao = vao
 		var vaoExt = this.gl.OES_vertex_array_object
 		if(vaoExt){
 			vaoExt.bindVertexArrayOES(vao)
@@ -403,11 +406,10 @@ module.exports = function painterTodo(proto){
 	//ANGLE_instanced_arrays = undefined
 	todofn[30] = function draw(i32, f32, o, pthis){
 		var currentShader = this.currentShader
+		if(!currentShader) return
 		//var currentUniLocs = this.currentUniLocs
 		var globals = this.globals
 		var gl = this.gl
-
-		if(!currentShader) return
 
 		// set the global uniforms
 		var type = this.drawTypes[i32[o+2]]

@@ -334,7 +334,8 @@ module.exports = function painterUser(proto){
 	var vaofn = Array(4)
 
 	vaofn[1] = function attributes(vao, i32, o){
-
+		var shader = vao.shader
+		if(!shader)return
 		var gl = this.gl
 		var startId = i32[o+2]
 		var range = i32[o+3]
@@ -348,7 +349,7 @@ module.exports = function painterUser(proto){
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 		var nameRev = this.nameRev
-		var attrLocs = vao.shader.attrLocs
+		var attrLocs = shader.attrLocs
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
@@ -364,6 +365,8 @@ module.exports = function painterUser(proto){
 	}
 
 	vaofn[2] = function instances(vao, i32, o){
+		var shader = vao.shader
+		if(!shader)return
 		var gl = this.gl
 		var startId = i32[o+2]
 		var range = i32[o+3]
@@ -378,7 +381,7 @@ module.exports = function painterUser(proto){
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 		var nameRev = this.nameRev
-		var attrLocs = vao.shader.attrLocs
+		var attrLocs = shader.attrLocs
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
