@@ -88,6 +88,7 @@ module.exports=require('base/view').extend({
 			h:23,
 			onClick:function(e){
 				this.view.isFolded = !this.view.isFolded
+				this.view.relayout()
 			}
 		}
 	},
