@@ -61,7 +61,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 					this.click.toggle |= 1 << this.index
 				}
 			}
-			if(this.onClick) this.onClick(e)
+			if(this.onClickStamp) this.onClickStamp(e)
+			if(this.onClick) this.onClick.call(this.view,e)
 		}
 		else{
 			 this.state = this.styles.clickedOver
@@ -101,6 +102,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 	}
 
 	proto.onFingerOut = function(){
+		console.log("OUT")
 		this.state = this.isClicked()?this.styles.clicked:this.styles.default
 	}
 

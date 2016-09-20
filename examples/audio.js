@@ -108,10 +108,10 @@ module.exports=require('base/drawapp').extend({
 		})
 		
 		this.drawSlider({
-			onValue:function(e){
-				this.setZoom(e.value,this.todo.xScroll)
+			onValue:function(v){
+				this.setZoom(v,this.todo.xScroll)
 				this.redraw()
-			}.bind(this),
+			},
 			vertical:false,
 			handleSize:30,
 			value:this.zoom,
@@ -120,6 +120,8 @@ module.exports=require('base/drawapp').extend({
 			w:100,
 			h:36
 		})
+		
+		
 		
 		// lets draw the recording
 		if(this.recording){

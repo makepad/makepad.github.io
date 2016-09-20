@@ -82,6 +82,8 @@ module.exports = function painterPaint(proto){
 			this.frameSyncPromise[digit].resolve(true)
 		}
 		this.frameSyncPromise = {}
+		// flush any batched messages
+		this.worker.onAfterEntry()
 
 		this.repaintTime = (Date.now() - this.args.timeBoot) / 1000
 		this.frameId++

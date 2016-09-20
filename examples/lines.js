@@ -1,0 +1,30 @@
+module.exports=require('base/drawapp').extend({
+	tools:{
+		Line:{
+			lineWidth:2,
+		},
+		Slider:require('tools/slider')
+	},
+	onFingerDown:function(){
+		this.redraw()
+	},
+	props:{
+		sldVal:1
+	},
+	onDraw:function(){
+		this.drawSlider({
+			w:200,
+			h:30,
+			range:[0,1],
+			onValue:function(v){
+				this.sldVal=v
+			}
+		})
+		for(var i=0;i<450;i++){
+			this.drawLine({
+				x:i,
+				y:50*this.sldVal*sin(-.1*i)+120
+			})
+		}
+	}
+})

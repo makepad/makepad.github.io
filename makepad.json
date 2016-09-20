@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["./examples/audio.js"],
-	"run":["./examples/audio.js"],
+	"open":["./examples/lines.js"],
+	"run":["./examples/lines.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","closed":true,"folder":[
@@ -104,6 +104,7 @@
 		{"name":"examples", "closed":false, "folder":[
 			{"name":"audio.js"},
 			{"name":"windtree.js"},
+			{"name":"lines.js"},
 			{"name":"buttons.js"},
 			{"name":"shiny.js"},
 			{"name":"tiny.js"}

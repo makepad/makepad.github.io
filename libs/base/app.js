@@ -151,19 +151,27 @@ module.exports = require('base/view').extend(function App(proto, base){
 			fingerMessage('onFingerForce', msg.todoId, msg.pickId, msg)
 		}
 
-		var hoverTodoId = {}
-		var hoverPickId = {}
+		//var hoverTodoId = {}
+		//var hoverPickId = {}
 		fingers.onFingerHover = function(msg){
 			// we want mouse in/out messages to go to the right view and stamp.
-			var todoId = msg.todoId
-			var pickId = msg.pickId
-			if(todoId !== hoverTodoId[msg.digit] || pickId !== hoverPickId[msg.digit]){
-				fingerMessage('onFingerOut', hoverTodoId[msg.digit], hoverPickId[msg.digit], msg, true)
-				fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
-			}
-			hoverTodoId[msg.digit] = todoId
-			hoverPickId[msg.digit] = pickId
+			//var todoId = msg.todoId
+			//var pickId = msg.pickId
+			//if(todoId !== hoverTodoId[msg.digit] || pickId !== hoverPickId[msg.digit]){
+			//	fingerMessage('onFingerOut', hoverTodoId[msg.digit], hoverPickId[msg.digit], msg, true)
+			//	fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
+			//}
+			//hoverTodoId[msg.digit] = todoId
+			//hoverPickId[msg.digit] = pickId
 			fingerMessage('onFingerHover', msg.todoId, msg.pickId, msg)
+		}
+
+		fingers.onFingerOver = function(msg){
+			fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
+		}
+
+		fingers.onFingerOut = function(msg){
+			fingerMessage('onFingerOut', msg.todoId, msg.pickId, msg)
 		}
 
 		fingers.onFingerWheel = function(msg){

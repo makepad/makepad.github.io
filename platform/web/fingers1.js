@@ -12,6 +12,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.children = {}
 		this.fingerMap = {}
 		this.dragMap = {}
+		this.hoverMap = {}
 		this.tapMap = {}
 		this.fingerMapAlloc = 1
 		this.onForceInterval = this.onForceInterval.bind(this)
@@ -21,6 +22,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		canvas.addEventListener('mousedown',this.onMouseDown.bind(this))
 		window.addEventListener('mouseup',this.onMouseUp.bind(this))
 		window.addEventListener('mousemove',this.onMouseMove.bind(this))
+		window.addEventListener('mouseout',this.onMouseMove.bind(this))
 		canvas.addEventListener('contextmenu',function(e){
 			e.preventDefault()
 			return false
@@ -44,12 +46,26 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.children[child.worker.workerId] = child
 	}
 
+	proto.batchMessage = function(msg){
+		if(msg.workerId === this.worker.workerId){
+			return base.batchMessage.call(this, msg)
+		}
+		// otherwise post to a child
+		var child = this.children[msg.workerId]
+		if(child){
+			var after = child.worker.onAfterEntry
+			if(this.worker.afterEntryCallbacks.indexOf(after) === -1){
+				this.worker.afterEntryCallbacks.push(after)
+			}
+			child.batchMessage(msg)
+		}
+		else console.log('fingers1 invalid worker ID', msg)
+	}
+
 	proto.postMessage = function(msg){
 		if(!msg.workerId){
 			 base.postMessage.call(this, msg)
-			 for(var key in this.children){
-			 	this.children[key].postMessage(msg)
-			 }
+			 for(var key in this.children) this.children[key].postMessage(msg)
 			 return
 		}
 
@@ -58,7 +74,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 		// otherwise post to a child
 		var child = this.children[msg.workerId]
-		if(child) this.children[msg.workerId].postMessage(msg)
+		if(child) child.postMessage(msg)
 		else console.log('fingers1 invalid worker ID', msg)
 	}
 
@@ -252,7 +268,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 					this.worker.services.painter1.frameSyncFinger(f.digit).then(function(run){
 						if(run){
 							f.pileupTime = Date.now()
-							this.postMessage(f)
+							this.batchMessage(f)
 						}
 					}.bind(this))
 				}
@@ -324,6 +340,18 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
+	proto.cloneFinger = function(f, fn, pick){
+		var o = {}
+		for(var key in f){
+			o[key] = f[key]
+		}
+		o.fn = fn
+		o.pickId = pick.pickId
+		o.todoId = pick.todoId
+		o.workerId = pick.workerId
+		return o
+	}
+
 	proto.onFingerHover = function(fingers){
 		if(!this.worker.services.painter1) return
 		for(var i = 0; i < fingers.length; i++){
@@ -331,12 +359,26 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 
 			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
 				if(!pick) return
+				f.pileupTime = Date.now()
+				var last = this.hoverMap[f.digit]
+				if(!last || last.pickId !== pick.pickId || last.todoId !== pick.todoId || last.workerId !== pick.workerId){
+					if(last){
+						this.batchMessage(this.cloneFinger(f,'onFingerOut',last))
+					}
+					this.batchMessage(this.cloneFinger(f,'onFingerOver',pick))
+				}
+				this.hoverMap[f.digit] = pick
+
 				f.pickId = pick.pickId
 				f.todoId = pick.todoId
 				f.workerId = pick.workerId
 				f.fn = 'onFingerHover'
+				
 				this.worker.services.painter1.onFingerHover(f)
-				this.postMessage(f)
+				
+				this.batchMessage(f)
+
+				this.worker.onAfterEntry()
 			}.bind(this, f))
 		}
 	}

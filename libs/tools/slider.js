@@ -102,7 +102,8 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 				// compute pos
 				this.dragOffset = 0.5*this.knobSize + this.innerPadding[3]
 				this.value = this.mapValue((e.x - this.dragOffset)/this.dragSize)
-				if(this.onValue) this.onValue({value:this.value})
+				if(this.onValueStamp) this.onValueStamp(this.value)
+				if(this.onValue) this.onValue.call(this.view, this.value)
 			}
 		}
 		this.state = this.styles.sliding
@@ -115,7 +116,8 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 		else{
 			this.value = this.mapValue((e.x - this.dragOffset)/this.dragSize)
 		}
-		if(this.onSlide) this.onSlide({value:this.value})
+		if(this.onValueStamp) this.onValueStamp(this.value)
+		if(this.onValue) this.onValue.call(this.view, this.value)
 		this.redraw
 	}
 
