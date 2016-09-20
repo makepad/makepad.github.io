@@ -216,7 +216,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 		// lets attach our todo and ubo to the main framebuffer
 		painter.mainFramebuffer.assignTodoAndUbo(this.todo, this.painterUbo)
 		// first draw
-		this.$redrawViews(0,0)
+		this.$redrawViews()
 	}
 
 	proto.transferFingerMove = function(digit, todoId, pickId){

@@ -124,10 +124,15 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 	}
 
 	proto.toMessage = function(){
+		var deps = []
+		for(var key in this.deps){
+			deps.push(key)
+		}
 		return [{
 			fn:'updateTodo',
 			name:this.name,
-			deps:this.deps,
+			deps:deps,
+			children:this.children,
 			todoId:this.todoId,
 			uboId:this.todoUbo && this.todoUbo.uboId,
 
@@ -198,6 +203,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 	proto.clearTodo = function(){
 		this.length = 0
 		this.deps = {}
+		this.children = []
 		this.last = -1
 		this.w = painter.w
 		this.h = painter.h
@@ -216,7 +222,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+0] = 1
 		i32[o+1] = 1
 		i32[o+2] = todo.todoId
-
+		this.children.push(todo.todoId)
 		todo.root = this.root
 		todo.parentId = this.todoId
 		todo.rootId = this.root.todoId
@@ -274,8 +280,8 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 		// its owned by a framebuffer
 		if(texture.framebufferId){
-			// flag dependency on root todo
-			this.root.deps[texture.framebufferId] = 1
+			// flag dependency on our deps
+			this.deps[texture.framebufferId] = 1
 		}
 
 		i32[o+0] = 8

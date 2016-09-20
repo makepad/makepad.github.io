@@ -98,7 +98,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.gl.viewport(0,0,sw,sh)
 
 		if(this.args.pixelRatio){
-			this.postMessage({fn:'onResize', pixelRatio:pixelRatio, x:0,y:0,w:w, h:h})
+			this.postMessage({fn:'onResize', pileupTime:Date.now(), pixelRatio:pixelRatio, x:0,y:0,w:w, h:h})
 		}
 		this.args.pixelRatio = window.devicePixelRatio
 		this.args.w = canvas.offsetWidth
@@ -176,88 +176,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 			}
 		}
 	}
-	/*
-	// wait a bit and fire it up
-	//
 
-	var subWorkers = {}
-
-	exports.regSubWorker = function(subWorker, workerId){
-		if(ownerServices){
-			return ownerServices.painter1.regSubWorker(subWorker, workerId)
-		}
-		subWorkers[workerId] = subWorker
-	}
-
-	exports.connectWorkerToFramebuffer = function(subWorker, fbId){
-		var fb = framebufferIds[fbId]
-		fb.subWorker = subWorker
-		// send the framebuffer to make the main to the child
-		return {
-			requestRepaint: requestRepaint,
-			gl:gl,
-			attach:fb.attach,
-			glfb:fb.glfb,
-			glpfb: fb.glpfb,
-			timeBoot: args.timeBoot,
-			todoId:undefined,
-			xStart:fb.xStart,
-			yStart:fb.yStart
-		}
-	}
-	// ok someone wants to hot reload
-	exports.onHotReload = function(){
-	}
-
-	exports.onFbResize = function(attach, glfb, glpfb, xStart, yStart){
-		if(!mainFramebuffer) return
-		mainFramebuffer.attach = attach
-		mainFramebuffer.glfb = glfb
-		mainFramebuffer.glpfb = glpfb
-		args.pixelRatio = attach.color0.pixelRatio
-		args.x = xStart
-		args.y = yStart
-		args.w = attach.color0.w / args.pixelRatio
-		args.h = attach.color0.h / args.pixelRatio
-		bus.postMessage({
-			fn:'onResize', 
-			pixelRatio:args.pixelRatio,
-			x:args.x,
-			y:args.y,
-			w:args.w,
-			h:args.h
-		})
-	}
-
-	var gl
-
-	var ownerServices = service.ownerServices
-	var painterWorkerId = service.workerId
-	var parentFramebuffer
-
-	if(ownerServices && ownerServices.painter1){
-		var workerArgs = service.workerArgs	
-		var ownerPainter = ownerServices.painter1
-		ownerPainter.regSubWorker(exports, service.workerId)
-		parentFramebuffer = ownerPainter.connectWorkerToFramebuffer(exports, service.workerArgs.fbId)
-		gl = parentFramebuffer.gl
-		var attach = parentFramebuffer.attach
-		args.pixelRatio = attach.color0.pixelRatio
-		args.w = attach.color0.w / args.pixelRatio
-		args.h = attach.color0.h / args.pixelRatio
-		args.x = parentFramebuffer.xStart
-		args.y = parentFramebuffer.yStart
-		args.timeBoot = parentFramebuffer.timeBoot
-		args.isSub = true
-	}
-	else{
-		args.x = 0
-		args.y = 0
-		args.timeBoot = Date.now()
-		gl = initializeGLContext(canvas)
-		exports.resizeCanvas(0)
-	}
-	*/
 })
 
 
