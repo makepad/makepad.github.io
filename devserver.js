@@ -149,13 +149,13 @@ function requestHandler(req, res){
 
 		// mark as watched
 		watchfiles[filefull] = true
-
 		// now send the file
 		var stream = Fs.createReadStream(filefull)
 		res.writeHead(200, {
 			"Connection": "Close",
 			"Cache-control": 'max-age=0',
 			"Content-Type": filemime,
+			'Content-Length':stat.size,
 			"etag": etag,
 			"mtime": stat.mtime.getTime()
 		})

@@ -126,16 +126,33 @@
 	// downloads a resource
 	root.resourceCache = {}
 
-	root.downloadResource = function(localFile, isBinary){
+	root.downloadResource = function(localFile, isBinary, appProgress){
 		return new Promise(function(resolve, reject){
 			var req = new XMLHttpRequest()
-		
+			
+			// lets add this node to the canvas tag
+			var progressDiv
+			if(appProgress){
+				progressDiv = document.createElement('span')
+				progressDiv.style.marginLeft = 50
+				progressDiv.style.display = 'block'
+				progressDiv.style.fontSize = '10px'
+				progressDiv.style.color = 'white'// = 'margin-left:50;display:block;font-size:10px;color:white'
+				progressDiv.innerHTML = 'Loading: '+localFile+' 0%'
+				document.body.appendChild(progressDiv)
+				req.addEventListener("progress", function(e){
+					var pos = e.position || e.loaded
+					var total = e.totalSize || e.total
+					progressDiv.innerHTML = 'Loading: '+localFile+' '+Math.floor(100*pos / total)+'%<br/>'
+				})
+			}
 			req.addEventListener("error", function(){
 				console.error('Error loading '+resourceurl+' from '+parenturl)
 				reject(resource)
 			})
 			req.responseType = isBinary?'arraybuffer':'text'
 			req.addEventListener("load", function(){
+				if(appProgress) document.body.removeChild(progressDiv)
 				if(req.status !== 200){
 					return reject(resource)
 				}
@@ -207,7 +224,7 @@
 			'Map','Set','WeakMap','WeakSet','SIMD','JSON','Generator','GeneratorFunction','Intl','SyntaxError', 
 			'Function', 'RegExp', 'Math', 'Object', 'String', 'Number','Boolean','Date', 'Array',
 			'Int8Array','Uint8Array','Uint8ClampedArray','Int16Array','Uint16Array','Int32Array','Uint32Array',
-			'Float32Array','Float64Array','DataView','ArrayBuffer'
+			'Float32Array','Float64Array','DataView','ArrayBuffer','setTimeout','clearTimeout','setInterval','clearInterval'
 		]
 	}
 

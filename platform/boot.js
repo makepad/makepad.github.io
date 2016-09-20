@@ -18,10 +18,10 @@ var loadServices = [
 //
 //
 
-root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources){
+root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources, appProgress){
 	if(singleLoad[absUrl]) return singleLoad[absUrl]
 	var isBinary = absUrl.lastIndexOf('.js') !== absUrl.length - 3
-	var prom = singleLoad[absUrl] = root.downloadResource(absUrl, isBinary)
+	var prom = singleLoad[absUrl] = root.downloadResource(absUrl, isBinary, appProgress)
 
 	return prom.then(function(result){
 		resources[absUrl] =result
@@ -33,7 +33,7 @@ root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources){
 		code.replace(/require\s*\(\s*['"](.*?)["']/g, function(m, path){
 			if(path.indexOf('$') === 0) return // its a service
 			var subUrl = buildPath(absUrl, path)
-			deps.push(root.downloadWithDeps(subUrl, absUrl, singleLoad, resources))
+			deps.push(root.downloadWithDeps(subUrl, absUrl, singleLoad, resources, appProgress))
 		})
 		return Promise.all(deps)
 	}, 
@@ -137,8 +137,9 @@ root.onInitApps = function(apps){
 		var app = apps[i]
 		app.singleLoad = {}
 		app.resources = {}
+		console.log(app)
 		allApps.push(
-			root.downloadWithDeps(app.main, '', app.singleLoad, app.resources)
+			root.downloadWithDeps(app.main, '', app.singleLoad, app.resources, app)
 		)
 	}
 
@@ -470,7 +471,6 @@ function traceLib(g){
 //
 
 function timerLib(g){
-
 	var _setTimeout = g.setTimeout
 	var _clearTimeout = g.clearTimeout
 	var _setInterval = g.setInterval
@@ -503,6 +503,7 @@ function timerLib(g){
 	}
 
 	g.setTimeout = function(fn, time){
+
 		var id = _setTimeout(function(){
 			var i = allTimeouts.indexOf(id)
 			if(i !== -1) allTimeouts.splice(id, 1)

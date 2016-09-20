@@ -343,8 +343,10 @@ module.exports = function painterUser(proto){
 		var attrLocs = vao.shader.attrLocs
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
-			gl.enableVertexAttribArray(loc.index)
-			gl.vertexAttribPointer(loc.index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
+			var index = loc.index
+			if(index<0) continue
+			gl.enableVertexAttribArray(index)
+			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
 			if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
 			slotoff += loc.slots * 4
 		}
@@ -369,6 +371,7 @@ module.exports = function painterUser(proto){
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
+			if(index<0) continue
 			gl.enableVertexAttribArray(index)
 			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
 			gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
@@ -383,18 +386,12 @@ module.exports = function painterUser(proto){
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh)
 	}
 
-	proto.user_newVao = function(msg){
-		var vao = this.vaoIds[msg.vaoId]
-		//if(vao) return console.error('new vao already exists')
-		var gl = this.gl
-		vao = this.vaoIds[msg.vaoId] = gl.OES_vertex_array_object.createVertexArrayOES()
-		vao.msg = msg
-		
-		gl.OES_vertex_array_object.bindVertexArrayOES(vao)
-
-		vao.shader = this.shaderIds[msg.shaderId]
-		var i32 = new Int32Array(msg.buffer)
-		var len = msg.length
+	proto.execVao = function(vao){
+		for(var i =0; i < 16; i++){
+			this.gl.disableVertexAttribArray(i)
+		}
+		var i32 = vao.i32
+		var len = vao.len
 		var last = 0
 		var repaint = false
 		var todofn = this.todofn
@@ -405,8 +402,30 @@ module.exports = function painterUser(proto){
 			if(!fn) console.error('cant find vao '+fnid)
 			else fn.call(this, vao, i32, o)
 		}
+	}		
 
-		gl.OES_vertex_array_object.bindVertexArrayOES(null)
+	proto.user_newVao = function(msg){
+		var vao = this.vaoIds[msg.vaoId]
+		//if(vao) return console.error('new vao already exists')
+		var gl = this.gl
+
+		if(!gl.OES_vertex_array_object){
+			vao = this.vaoIds[msg.vaoId] = {}
+		}
+		else{
+			vao = this.vaoIds[msg.vaoId] = gl.OES_vertex_array_object.createVertexArrayOES()
+			gl.OES_vertex_array_object.bindVertexArrayOES(vao)
+		}
+
+		vao.msg = msg
+		vao.i32 = new Int32Array(msg.buffer)
+		vao.len =  msg.length
+		vao.shader = this.shaderIds[msg.shaderId]
+
+		if(gl.OES_vertex_array_object){
+			this.execVao(vao)
+			gl.OES_vertex_array_object.bindVertexArrayOES(null)
+		}
 	}
 
 	// new shader helpers

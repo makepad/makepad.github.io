@@ -384,7 +384,14 @@ module.exports = function painterTodo(proto){
 	todofn[21] = function vao(i32, f32, o){
 		var vao = this.vaoIds[i32[o+2]]
 		this.currentShader.vao = vao
-		this.gl.OES_vertex_array_object.bindVertexArrayOES(vao)
+		var vaoExt = this.gl.OES_vertex_array_object
+		if(vaoExt){
+			vaoExt.bindVertexArrayOES(vao)
+			return
+		}
+		else{
+			this.execVao(vao)
+		}
 	}
 
 	//
