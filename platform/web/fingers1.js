@@ -264,16 +264,12 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 					}.bind(this,f))
 				}
 				else{
-					// we need to throttle it
-					this.worker.services.painter1.frameSyncFinger(f.digit).then(function(run){
-						if(run){
-							f.pileupTime = Date.now()
-							this.batchMessage(f)
-						}
-					}.bind(this))
+					f.pileupTime = Date.now()
+					this.batchMessage(f)
 				}
 			}
 		}
+		this.worker.onAfterEntry()
 	}
 
 	proto.onFingerUp = function(fingers){
