@@ -20,7 +20,7 @@ var tt = require('./jstokentype').types
 var Parser = require('./jsstate').Parser
 var DestructuringErrors = require('./jsparseutil').DestructuringErrors
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // Check if property name clashes with already added.
 // Object/class getters and setters are not allowed to clash —
@@ -508,7 +508,7 @@ pp.parseParenArrowList = function(startPos, exprList) {
 // argument to parseSubscripts to prevent it from consuming the
 // argument list.
 
-const empty = []
+var empty = []
 
 pp.parseNew = function() {
 	var node = this.startNode()

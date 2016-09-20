@@ -24,7 +24,7 @@ var types = exports.types = {
 	f_expr: new TokContext("function", true)
 }
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 pp.initialContext = function() {
 	return [types.b_stat]

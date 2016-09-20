@@ -2,7 +2,7 @@ var Parser = require('./jsstate').Parser
 var Position = require('./jslocutil').Position
 var getLineInfo = require('./jslocutil').getLineInfo
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // This function is used to raise exceptions on parse errors. It
 // takes an offset integer (into the current `input`) to indicate

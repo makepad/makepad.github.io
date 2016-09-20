@@ -233,8 +233,10 @@ module.exports = function painterTodo(proto){
 			var bufType = this.textureBufTypes[tex.bufType]
 			var dataType = this.textureDataTypes[tex.dataType]
 			// upload array
+			var dt = performance.now()
+			//gl.texSubImage2D(gl.TEXTURE_2D, 1, 0, 0, tex.w, tex.h, bufType, dataType, new Uint8Array(tex.array), 0)
 			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, tex.w, tex.h, 0, bufType, dataType, new Uint8Array(tex.array))
-
+			//console.log(performance.now()-dt, tex.array.byteLength, dataType)
 			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.samplerFilter[(samplerType>>0)&0xf])
 			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.samplerFilter[(samplerType>>4)&0xf])
 			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.samplerWrap[(samplerType>>8)&0xf])

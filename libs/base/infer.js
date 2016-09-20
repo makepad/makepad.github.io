@@ -483,6 +483,9 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 
 				// its a function
 				if(typeof value === 'function'){
+					if(!this.root['_'+propname]){
+						this.root.$monitorMethod(propname)
+					}
 					node.infer = {
 						kind: 'function',
 						name: propname,

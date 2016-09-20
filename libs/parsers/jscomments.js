@@ -1,6 +1,6 @@
 var Parser = require('./jsstate').Parser
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 var tt = require('./jstokentype').types
 
 pp.commentBegin = function(start){

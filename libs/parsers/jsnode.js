@@ -9,7 +9,7 @@ function Node(pos) {
 // Start an AST node, attaching a start offset.
 exports.Node = Node
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 pp.startNode = function() {
 	return new Node(this.start)

@@ -434,6 +434,8 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			propSlots:propSlots
 		}
 
+		this.$toolCacheKey = pixel+vertex
+
 		if(this.dump) console.log(vertex,pixel)
 	}
 
@@ -1016,6 +1018,21 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		}
 
 		return code
+	}
+
+	proto.$monitorMethod = function(name){
+		var _name = '_' + name
+		var value = this[name]
+		this[_name] = value
+		Object.defineProperty(this, name, {
+			get:function(){
+				return this[_name]
+			},
+			set:function(v){
+				this.$shaderClean = false
+				this[_name] = v
+			}
+		})
 	}
 
 	Object.defineProperty(proto, 'props', {

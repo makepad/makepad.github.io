@@ -154,6 +154,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 				var data = nodeConfig.data
 				if(data){
 					// lets copy the data into an audiobuffer
+					console.log(data.length, data[0].length, nodeConfig.rate)
 					var buffer = this.context.createBuffer(data.length, data[0].length, nodeConfig.rate)
 					for(var i = 0; i < data.length; i++){
 						buffer.copyToChannel(data[i], i)

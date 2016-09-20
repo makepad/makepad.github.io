@@ -346,6 +346,9 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	}
 
 	proto.onExtendClass = function(){
-		this.$compileShader()
+		if(!this.$shaderClean){
+			this.$shaderClean = true
+			this.$compileShader()
+		}
 	}
 })

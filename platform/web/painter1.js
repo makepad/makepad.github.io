@@ -119,7 +119,9 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 	
 	proto.runBootCache = function(){
 		// bootcache errors on windows.
-		//this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
+		if(!this.root.isWindows){
+			this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
+		}
 	}
 
 	proto.stopBootCache = function(){

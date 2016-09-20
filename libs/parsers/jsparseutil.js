@@ -3,7 +3,7 @@ var tt = require('./jstokentype').types
 var Parser = require('./jsstate').Parser
 var lineBreak = require('./jswhitespace').lineBreak
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // ## Parser utilities
 

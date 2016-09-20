@@ -21,10 +21,10 @@ function Token(p){
 
 // ## Tokenizer
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // Are we running under Rhino?
-const isRhino = typeof Packages == "object" && Object.prototype.toString.call(Packages) == "[object JavaPackage]"
+var isRhino = typeof Packages == "object" && Object.prototype.toString.call(Packages) == "[object JavaPackage]"
 
 // Move to the next token
 

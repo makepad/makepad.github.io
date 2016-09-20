@@ -303,6 +303,7 @@ module.exports = function(proto){
 	var dumpRx = new RegExp(/DUMP/g)
 
 	var fnCache = {}
+
 	// can we reasonably cache these?
 	proto.$compileToolMacros = function(className, sourceClass){
 		var sourceProto = sourceClass.prototype
@@ -314,6 +315,15 @@ module.exports = function(proto){
 			var methodName = macroName + className
 			var thing = macros[macroName]
 			
+			var cacheKey = sourceProto.$toolCacheKey
+			if(false){//cacheKey){
+				var cache = fnCache[cacheKey+methodName]
+				if(cache){
+					target[methodName] = cache
+					continue
+				}
+			}
+
 			if(typeof thing !== 'function'){
 				target[methodName] = thing
 				continue
@@ -343,9 +353,7 @@ module.exports = function(proto){
 			var outcode = code.replace(dumpRx,'')
 			if(outcode !== code){
 				code = outcode
-				console.log(outcode)
 			}
-
 			
 			code = code.replace(fnnameRx, function(){
 				return 'function '+methodName+'('
@@ -353,6 +361,10 @@ module.exports = function(proto){
 
 			// create the function on target
 			target[methodName] = fnCache[code] || (fnCache[code] = new Function('return ' + code)())
+
+			if(cacheKey){ // store it
+				fnCache[cacheKey+methodName] = target[methodName]
+			}
 		}
 	}
 

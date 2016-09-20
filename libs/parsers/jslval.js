@@ -2,7 +2,7 @@ var tt = require('./jstokentype').types
 var Parser = require('./jsstate').Parser
 var has = require('./jsutil').has
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // Convert existing expression atom to assignable pattern
 // if possible.

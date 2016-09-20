@@ -38,7 +38,7 @@ var TokenType = exports.TokenType = function TokenType(label, conf){
 function binop(name, prec) {
 	return new TokenType(name, {beforeExpr: true, binop: prec})
 }
-const beforeExpr = {beforeExpr: true}, startsExpr = {startsExpr: true}
+var beforeExpr = {beforeExpr: true}, startsExpr = {startsExpr: true}
 
 var types = exports.types = {
 	num: new TokenType("num", startsExpr),

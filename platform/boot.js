@@ -261,7 +261,7 @@ function workerBoot(){
 				}
 			}
 			catch(e){
-				console.log("POSTING", source, e.stack)
+				console.log("POSTING",e.message, source)
 				worker.postMessage({
 					$:'exception',
 					msg:{path:path}

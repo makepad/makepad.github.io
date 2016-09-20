@@ -107,7 +107,6 @@ module.exports = function painterUser(proto){
 			
 			var bufType = this.textureBufTypes[tex.bufType]
 			var dataType = this.textureDataTypes[tex.dataType]
-
 			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, msg.w, msg.h, 0, bufType, dataType, null)
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
 

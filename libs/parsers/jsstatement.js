@@ -6,7 +6,7 @@ var isIdentifierStart = require('./jsidentifier').isIdentifierStart
 var isIdentifierChar = require('./jsidentifier').isIdentifierChar
 var DestructuringErrors = require('./jsparseutil').DestructuringErrors
 
-const pp = Parser.prototype
+var pp = Parser.prototype
 
 // ### Statement parsing
 
@@ -36,7 +36,7 @@ pp.parseTopLevel = function(node) {
 	return this.finishNode(node, "Program")
 }
 
-const loopLabel = {kind: "loop"}, switchLabel = {kind: "switch"}
+var loopLabel = {kind: "loop"}, switchLabel = {kind: "switch"}
 
 pp.isLet = function() {
 	if (this.type !== tt.name || this.options.ecmaVersion < 6 || this.value != "let") return false
@@ -328,7 +328,7 @@ pp.parseThrowStatement = function(node) {
 
 // Reused empty array added for node fields that are always empty.
 
-const empty = []
+var empty = []
 
 pp.parseTryStatement = function(node) {
 	this.next()
