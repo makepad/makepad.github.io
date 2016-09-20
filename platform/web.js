@@ -139,12 +139,12 @@
 				progressDiv.style.display = 'none'
 				progressDiv.style.fontSize = '10px'
 				progressDiv.style.color = 'white'// = 'margin-left:50;display:block;font-size:10px;color:white'
-				progressDiv.innerHTML = 'Loading: '+localFile+' 0%'
+				progressDiv.innerHTML = 'Loading resource 0%'
 				document.body.appendChild(progressDiv)
 				req.addEventListener("progress", function(e){
 					var pos = e.position || e.loaded
 					var total = e.totalSize || e.total
-					progressDiv.innerHTML = 'Loading: '+localFile+' '+Math.floor(100*pos / total)+'%<br/>'
+					progressDiv.innerHTML = 'Loading resource '+Math.floor(100*pos / total)+'%<br/>'
 				})
 				progressTimeout = setTimeout(function(){
 					progressTimeout = undefined
