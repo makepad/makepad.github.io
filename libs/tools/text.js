@@ -156,7 +156,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 
 	proto.pixel = function(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.006) / adjust * 1.4 
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.01) / adjust * 1.4 
 		this.field = field
 
 		this.pixelStyle()

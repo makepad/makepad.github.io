@@ -47,12 +47,12 @@ module.exports = require('tools/text').extend(function(proto, base){
 	proto.pixel = function(){$
 		//if(this.unicode == 10.) return 'red'
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.006) / adjust * 1.4 
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.010) / adjust * 1.4 
 		this.field = field
 
 		this.pixelStyle()
 
-		field = this.field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.2
+		field = this.field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
 
 
 		if(this.mesh.z < 0.5){

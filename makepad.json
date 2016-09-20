@@ -103,7 +103,6 @@
 		]},
 		{"name":"examples", "closed":false, "folder":[
 			{"name":"audio.js"},
-			{"name":"audio.wav"},
 			{"name":"windtree.js"},
 			{"name":"buttons.js"},
 			{"name":"shiny.js"},
