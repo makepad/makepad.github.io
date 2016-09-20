@@ -101,6 +101,8 @@ module.exports = function painterPaint(proto){
 		}
 		// clear the pickPromises for next frame
 		this.pickPromises = {}
+		// flush any batched messages
+		this.worker.onAfterEntry()
 
 		// render the main scene
 		if(this.renderColor(this.mainFramebuffer)){

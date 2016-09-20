@@ -5,9 +5,6 @@ module.exports=require('base/drawapp').extend({
 		},
 		Slider:require('tools/slider')
 	},
-	onFingerDown:function(){
-		this.redraw()
-	},
 	props:{
 		sldVal:1
 	},

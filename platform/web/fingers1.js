@@ -374,7 +374,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				
 				this.batchMessage(f)
 
-				this.worker.onAfterEntry()
+				//this.worker.onAfterEntry()
 			}.bind(this, f))
 		}
 	}
