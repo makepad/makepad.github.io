@@ -132,10 +132,11 @@
 			
 			// lets add this node to the canvas tag
 			var progressDiv
+			var progressTimeout
 			if(appProgress){
 				progressDiv = document.createElement('span')
 				progressDiv.style.marginLeft = 50
-				progressDiv.style.display = 'block'
+				progressDiv.style.display = 'none'
 				progressDiv.style.fontSize = '10px'
 				progressDiv.style.color = 'white'// = 'margin-left:50;display:block;font-size:10px;color:white'
 				progressDiv.innerHTML = 'Loading: '+localFile+' 0%'
@@ -145,6 +146,10 @@
 					var total = e.totalSize || e.total
 					progressDiv.innerHTML = 'Loading: '+localFile+' '+Math.floor(100*pos / total)+'%<br/>'
 				})
+				progressTimeout = setTimeout(function(){
+					progressTimeout = undefined
+					progressDiv.style.display = 'block'
+				}, 2000)
 			}
 			req.addEventListener("error", function(){
 				console.error('Error loading '+resourceurl+' from '+parenturl)
@@ -152,7 +157,10 @@
 			})
 			req.responseType = isBinary?'arraybuffer':'text'
 			req.addEventListener("load", function(){
-				if(appProgress) document.body.removeChild(progressDiv)
+				if(appProgress){
+					document.body.removeChild(progressDiv)
+					if(progressTimeout) clearTimeout(progressTimeout)
+				}
 				if(req.status !== 200){
 					return reject(resource)
 				}
