@@ -336,9 +336,9 @@ module.exports = function painterTodo(proto){
 			var f14 = f32[o+14]
 			var f15 = f32[o+15]
 			if(p[0] === f0 && p[1] === f1 && p[2] === f2 && p[3] === f3 && 
-			   p[0] === f4 && p[1] === f5 && p[2] === f6 && p[3] === f7 && 
-			   p[0] === f8 && p[1] === f9 && p[2] === f10 && p[3] === f11 && 
-			   p[0] === f12 && p[1] === f13 && p[2] === f14 && p[3] === f15) return
+			   p[4] === f4 && p[5] === f5 && p[6] === f6 && p[7] === f7 && 
+			   p[8] === f8 && p[9] === f9 && p[10] === f10 && p[11] === f11 && 
+			   p[12] === f12 && p[13] === f13 && p[14] === f14 && p[15] === f15) return
 			p[0] = f0
 			p[1] = f1
 			p[2] = f2
@@ -358,6 +358,8 @@ module.exports = function painterTodo(proto){
 			gl.uniformMatrix4fv(loc, 0, p)
 		}
 	}
+
+	window.typestats = {}
 	
 	todofn[20] = function ubo(i32, f32, o){
 		// lets assign our ubo.

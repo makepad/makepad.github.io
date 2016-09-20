@@ -88,4 +88,6 @@ module.exports = function painterUbos(proto){
 		f32[o+14] = m[14]
 		f32[o+15] = m[15]
 	}
+
+	
 }

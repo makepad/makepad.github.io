@@ -39,8 +39,8 @@ module.exports=require('base/drawapp').extend({
 			}
 		})
 		
-		//var out=wav.parse(require('./audio.wav'),true)
-		//this.recording.push(out.data)
+		// var out=wav.parse(require('./audio.wav'),true)
+		// this.recording.push(out.data)
 		// this.samples=out.data[0].length
 		
 		this.playFlow=audio.Flow({
