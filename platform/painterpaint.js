@@ -165,6 +165,7 @@ module.exports = function painterPaint(proto){
 				var color0 = framebuffer.attach.color0
 				gl.viewport(0, 0, color0.w, color0.h)
 			}
+
 			this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, lagCompMat)
 		}
 		else{

@@ -423,6 +423,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 		this.$compileInfo = {
 			name:this.name || this.constructor.name,
+			trace:this.drawTrace,
 			instanceProps:instanceProps,
 			geometryProps:geometryProps,
 			styleProps:styleProps,

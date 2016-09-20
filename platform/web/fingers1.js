@@ -309,7 +309,8 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 			else{
 				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
 					f.fn = 'onFingerUp'
-					if(f.workerId === pick.workerId &&
+
+					if(pick && f.workerId === pick.workerId &&
 						f.pickId === pick.pickId &&
 						f.todoId === pick.todoId){
 						f.samePick = true

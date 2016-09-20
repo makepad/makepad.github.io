@@ -417,13 +417,14 @@ module.exports = function painterTodo(proto){
 			var offset = i32[o+3]
 			var len =  i32[o+4]
 			var inst = i32[o+5]
-			if(vao.indexMesh){
+			var indexMesh = vao.indexMesh
+			if(indexMesh){
 				if(offset < 0){
 					offset = 0
 					len = vao.indexMesh.length
 					inst = vao.instMesh.length
 				}
-				gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, gl.UNSIGNED_SHORT, offset, inst)
+				gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(type, len, indexMesh.type, offset, inst)
 			}
 			else{
 				if(offset < 0){
@@ -437,12 +438,13 @@ module.exports = function painterTodo(proto){
 		else{
 			var offset = i32[o+3]
 			var len =  i32[o+4]
-			if(vao.indexMesh){
+			var indexMesh = vao.indexMesh
+			if(indexMesh){
 				if(offset < 0){
 					offset = 0
 					len = vao.indexMesh.length
 				}
-				gl.drawElements(type, len, gl.UNSIGNED_SHORT, offset)
+				gl.drawElements(type, len, indexMesh.type, offset)
 			}
 			else{
 				if(offset < 0){

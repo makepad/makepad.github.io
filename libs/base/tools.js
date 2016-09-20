@@ -129,7 +129,9 @@ module.exports = function(proto){
 	proto.$allocShader = function(classname){
 		var shaders = this.$shaders
 		var proto = this['_' + classname].prototype
+		
 		var info = proto.$compileInfo
+
 		var shader = shaders[classname] = new painter.Shader(info)
 
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)

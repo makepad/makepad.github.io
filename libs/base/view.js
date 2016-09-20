@@ -669,18 +669,17 @@ module.exports = require('base/class').extend(function View(proto){
 		Debug:require('tools/quad'),
 		Surface:require('base/shader').extend(function Surface(proto){
 			proto.props = {
-				x: {noTween:1, value:NaN},
-				y: {noTween:1, value:NaN},
-				w: {noTween:1, value:NaN},
-				h: {noTween:1, value:NaN},
+				x: NaN,
+				y: NaN,
+				w: NaN,
+				h: NaN,
 				z: 0,
 				mesh:{kind:'geometry', type:types.vec2},
 				colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
 				pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
 			}
-
 			proto.mesh = painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1)
-
+			proto.drawTrace = 1
 			proto.vertex = function(){$
 				var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
 				return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection

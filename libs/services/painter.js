@@ -495,6 +495,7 @@ painter.Shader = require('base/class').extend(function Shader(proto){
 				vertex:code.vertex,
 				pixel:code.pixel
 			},
+			trace:code.trace,
 			name:code.name,
 			shaderId:shaderId
 		})

@@ -46,6 +46,7 @@ module.exports = function painterUser(proto){
 		if(!shader) return
 		//shader.refCount = 1
 		shader.name = msg.name
+		shader.trace = msg.trace
 		this.shaderIds[shaderid] = shader
 		//this.localShaderCache[cacheid] = shader
 	}
@@ -108,8 +109,8 @@ module.exports = function painterUser(proto){
 			var bufType = this.textureBufTypes[tex.bufType]
 			var dataType = this.textureDataTypes[tex.dataType]
 			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, msg.w, msg.h, 0, bufType, dataType, null)
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
-
+			//gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
+			//console.log(this.glframe_buf)
 			tex.w = msg.w
 			tex.h = msg.h
 			tex.pixelRatio = this.args.pixelRatio
@@ -274,6 +275,13 @@ module.exports = function painterUser(proto){
 		// check the type
 		if(msg.arrayType === 'uint16'){
 			glbuffer.array = new Uint16Array(msg.array)
+			glbuffer.type = gl.UNSIGNED_SHORT
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
+		}
+		else if(msg.arrayType === 'uint32'){
+			glbuffer.array = new Uint32Array(msg.array)
+			glbuffer.type = gl.UNSIGNED_INT
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glbuffer)
 			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.array, gl.STATIC_DRAW)
 		}
@@ -344,7 +352,10 @@ module.exports = function painterUser(proto){
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
+			//if(this.currentShader.trace) console.log("attr",index)
+
 			if(index<0) continue
+
 			gl.enableVertexAttribArray(index)
 			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset*4 + slotoff)
 			if(gl.ANGLE_instanced_arrays) gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc.index, 0)
@@ -371,6 +382,7 @@ module.exports = function painterUser(proto){
 		for(var i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
+			//if(this.currentShader.trace) console.log("attr",index, nameRev[startId+i])
 			if(index<0) continue
 			gl.enableVertexAttribArray(index)
 			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
@@ -515,7 +527,7 @@ module.exports = function painterUser(proto){
 		for(var name in attrs){
 			//var nameid = nameIds[name]
 			var index = gl.getAttribLocation(shader, name)
-
+			if(index === -1)console.error("Attribute location returns -1 for, bug in system GLSL compiler likely " + name)
 			if(index > maxAttrIndex) maxAttrIndex = index
 			attrLocs[name] = {
 				index: index,

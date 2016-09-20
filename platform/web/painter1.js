@@ -63,6 +63,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 
 		gl.OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')
 		gl.OES_vertex_array_object = gl.getExtension('OES_vertex_array_object')
+		gl.OES_element_index_uint = gl.getExtension("OES_element_index_uint")
 		gl.ANGLE_instanced_arrays = gl.getExtension('ANGLE_instanced_arrays')
 		gl.EXT_blend_minmax = gl.getExtension('EXT_blend_minmax')
 		gl.OES_texture_half_float_linear = gl.getExtension('OES_texture_half_float_linear')
