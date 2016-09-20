@@ -141,6 +141,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 				getUserMedia.call(navigator, {audio:true}, function(flow, node, stream){
 					node.audioNode = this.context.createMediaStreamSource(stream)
 					// connect it lazily
+					node.stream = stream
 					var to = flow.nodes[node.config.to]
 					if(!to) console.log("input cannot connect to "+node.config.to)
 					else node.audioNode.connect(to.audioNode)
@@ -221,6 +222,13 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		// lets terminate the whole thing
 		for(var name in flow.nodes){
 			var node = flow.nodes[name]
+			if(node.stream){
+				// stop any running streams
+				var tracks = node.stream.getAudioTracks()
+				for(var i = 0;i < tracks.length; i++){
+					tracks[i].stop()
+				}
+			}
 			if(node.audioNode && node.audioNode.disconnect){
 				node.audioNode.disconnect()
 				node.audioNode = undefined

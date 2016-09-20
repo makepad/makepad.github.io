@@ -56,7 +56,9 @@ var workerSrc =
 	createOnMessage.toString() + '\n'+
 	workerBoot.toString() + ';workerBoot();\n' 
 
-root.createWorker = root.makeWorkerCreator(workerSrc)
+
+root.createMainWorker = root.makeWorkerCreator(workerSrc, false)//root.hardwareConcurrency>=4?false:true)
+root.createSubWorker = root.makeWorkerCreator(workerSrc, false)
 
 //
 //
@@ -69,7 +71,7 @@ root.workerIdsAlloc = 1
 
 root.startWorker = function(serviceList, platform, parent){
 	
-	var worker = root.createWorker()
+	var worker = parent?root.createSubWorker():root.createMainWorker()
 
 	worker.workerId = root.workerIdsAlloc++
 	worker.serviceList = serviceList
@@ -109,7 +111,7 @@ root.startWorker = function(serviceList, platform, parent){
 	return worker
 }
 
-root.initWorker = function(worker, main, resources, init){
+root.initWorker = function(worker, main, resources, init, ismain){
 	worker.postMessage({
 		$:'init',
 		msg:{
@@ -145,7 +147,7 @@ root.onInitApps = function(apps){
 		for(var i = 0; i < apps.length; i++){
 			var app = apps[i]
 			var worker = root.startWorker(loadServices, app.platform)
-			root.initWorker(worker, app.main, app.resources)
+			root.initWorker(worker, app.main, app.resources, undefined)
 		}
 	})
 }

@@ -8,7 +8,7 @@
 	root.isIOSDevice = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/)
 	root.isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints)
 	root.locationSearch = location.search
-
+	root.hardwareConcurrency = navigator.hardwareConcurrency || 4
 	// creates a worker creator
 	root.makeWorkerCreator = function(source, fake){
 		if(fake){
