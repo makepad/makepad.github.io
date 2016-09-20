@@ -64,7 +64,27 @@ keyboard.setTextInputFocus = function(focus){
 	})
 }
 
+var pileupQueue = []
+var pileupTimer
+
+function flushPileupQueue(){
+	for(var i = 0; i < pileupQueue.length; i++){
+		var msg = pileupQueue[i]
+		if(keyboard[msg.fn]) keyboard[msg.fn](msg)
+	}
+	pileupQueue.length = 0
+}
+
 service.onMessage = function(msg){
 	if(msg.code) msg.name = idToKeyName[msg.code] || 'unknown'
-	if(keyboard[msg.fn]) keyboard[msg.fn](msg)
+	if(Date.now()-msg.pileupTime > 16){
+		if(msg.repeat) return // drop repeat keys
+		if(pileupTimer) clearTimeout(pileupTimer)
+		pileupQueue.push(msg)
+		pileupTimer = setTimeout(flushPileupQueue, 16)
+		return
+	}
+	if(pileupTimer) clearTimeout(pileupTimer), pileupTimer = undefined
+	pileupQueue.push(msg)
+	flushPileupQueue()
 }

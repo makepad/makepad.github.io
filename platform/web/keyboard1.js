@@ -184,11 +184,13 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 			if(key == 0) return
 
 			this.postKeyEvent({
+				pileupTime:Date.now(),
 				fn:'onKeyDown',
 				repeat: 1,
 				code: key
 			})
 			this.postKeyEvent({
+				pileupTime:Date.now(),
 				fn:'onKeyUp',
 				repeat: 1,
 				code: key
@@ -209,8 +211,10 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		this.children[child.worker.workerId] = child
 	}
 
+	// we shouldnt post faster than the framerate
 	proto.postKeyEvent = function(msg){
 		if(!this.focussedWorkerId){
+
 			return this.postMessage(msg)
 		}
 		// otherwise post to a child
@@ -413,6 +417,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		//cliptext.focus()
 		this.postKeyEvent({
 			fn:'onKeyDown',
+			pileupTime:Date.now(),
 			repeat: e.repeat,
 			code:code,
 			shift: e.shiftKey?true:false,
@@ -435,6 +440,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 
 		this.postKeyEvent({
 			fn:'onKeyUp',
+			pileupTime:Date.now(),
 			repeat: e.repeat,
 			code:code,
 			shift: e.shiftKey?true:false,
@@ -450,12 +456,14 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		//if(cliptext.value.length<5)return
 		this.postKeyEvent({
 			fn:'onKeyDown',
+			pileupTime:Date.now(),
 			meta: true,
 			repeat: 1,
 			code: 88
 		})
 		this.postKeyEvent({
 			fn:'onKeyUp',
+			pileupTime:Date.now(),
 			meta: true,
 			repeat: 1,
 			code: 88
@@ -465,6 +473,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	proto.onPaste = function(e){
 		this.postKeyEvent({
 			fn:'onKeyPaste',
+			pileupTime:Date.now(),
 			text: e.clipboardData.getData('text/plain')
 		})
 		e.preventDefault()
@@ -476,12 +485,14 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		if(this.textArea.selectionStart === 0 && this.textArea.selectionEnd === this.textArea.value.length){
 			this.postKeyEvent({
 				fn:'onKeyDown',
+				pileupTime:Date.now(),
 				meta: true,
 				repeat: 1,
 				code: 65
 			})
 			this.postKeyEvent({
 				fn:'onKeyUp',
+				pileupTime:Date.now(),
 				meta: true,
 				repeat: 1,
 				code: 65
@@ -503,11 +514,13 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 				this.keyDownTriggered = false
 				this.postKeyEvent({
 					fn:'onKeyDown',
+					pileupTime:Date.now(),
 					repeat: 1,
 					code: 8
 				})
 				this.postKeyEvent({
 					fn:'onKeyUp',
+					pileupTime:Date.now(),
 					repeat: 1,
 					code: 8
 				})
@@ -524,6 +537,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 			if(this.defaultStart === 3 && value.charCodeAt(2) !== magicClip.charCodeAt(1)){
 				this.postKeyEvent({
 					fn:'onKeyPress',
+					pileupTime:Date.now(),
 					char:value.charCodeAt(2),
 					special:1,
 					repeat: 1
@@ -536,6 +550,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 
 				var msg = {
 					fn:'onKeyPress',
+					pileupTime:Date.now(),
 					char:charcode,
 					repeat: 1
 				}
