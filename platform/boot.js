@@ -137,7 +137,6 @@ root.onInitApps = function(apps){
 		var app = apps[i]
 		app.singleLoad = {}
 		app.resources = {}
-		console.log(app)
 		allApps.push(
 			root.downloadWithDeps(app.main, '', app.singleLoad, app.resources, app)
 		)
