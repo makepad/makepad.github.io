@@ -202,8 +202,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 
 
 		painter.onResize = function(){
-			app.$layoutClean = false
-			app.$redrawViews()
+			app.relayout()
 		}
 
 		// lets do our first redraw

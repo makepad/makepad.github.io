@@ -16,6 +16,17 @@ painter.h = args.h
 painter.pixelRatio = args.pixelRatio
 painter.timeBoot = args.timeBoot
 
+var pileupQueue = []
+var pileupTimer
+
+function flushPileupQueue(){
+	for(var i = 0; i < pileupQueue.length; i++){
+		var msg = pileupQueue[i]
+		if(painter[msg.fn]) painter[msg.fn](msg)
+	}
+	pileupQueue.length = 0
+}
+
 service.onMessage = function(msg){
 	if(msg.fn === 'onResize'){
 		painter.x = msg.x
@@ -24,7 +35,15 @@ service.onMessage = function(msg){
 		painter.h = msg.h
 		painter.pixelRatio = msg.pixelRatio
 	}
-	if(painter[msg.fn]) painter[msg.fn](msg)
+	if(Date.now()-msg.pileupTime > 16){
+		if(pileupTimer) clearTimeout(pileupTimer)
+		pileupQueue.push(msg)
+		pileupTimer = setTimeout(flushPileupQueue, 16)
+		return
+	}
+	if(pileupTimer) clearTimeout(pileupTimer), pileupTimer = undefined
+	pileupQueue.push(msg)
+	flushPileupQueue()
 }
 
 painter.sync = function(){

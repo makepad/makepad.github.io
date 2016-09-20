@@ -52,6 +52,7 @@ module.exports = function painterPaint(proto){
 		ca.h = fb.attach.color0.h / ca.pixelRatio 
 		child.postMessage({
 			fn:'onResize', 
+			pileupTime:Date.now(), 
 			pixelRatio:ca.pixelRatio, 
 			x:ca.x,
 			y:ca.y,
@@ -86,7 +87,7 @@ module.exports = function painterPaint(proto){
 		this.frameId++
 		this.repaintPending = false
 
-		this.postMessage({fn:'onSync', time:this.repaintTime, frameId:this.frameId})
+		this.postMessage({fn:'onSync', pileupTime:Date.now(),  time:this.repaintTime, frameId:this.frameId})
 
 		if(!this.mainFramebuffer || !this.mainFramebuffer.todoId) return
 

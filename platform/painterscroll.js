@@ -17,6 +17,7 @@ module.exports = function painterScroll(proto){
 			todo.yScroll = yScroll
 			this.postMessage({
 				fn:'onScrollTodo',
+				pileupTime:Date.now(), 
 				todoId:todo.todoId,
 				x:xScroll,
 				y:yScroll
