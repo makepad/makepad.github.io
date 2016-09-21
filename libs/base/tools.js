@@ -23,6 +23,7 @@ module.exports = class Tools extends require('base/mixin'){
 					}
 					this._tools[key] = true
 					this['_' + key] = cls
+					
 					defineToolGetterSetter(this, key)
 					this.$compileToolMacros(key, cls)
 				}	

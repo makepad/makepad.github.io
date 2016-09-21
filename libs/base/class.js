@@ -14,6 +14,8 @@ function extend(body){
 
 	var Constructor = ExtendClass
 	var proto = ExtendClass.prototype
+	
+	if(!protoReady.get(proto)) proto.__initproto__()
 
 	Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
 
@@ -50,8 +52,7 @@ var protoReady = new WeakMap()
 module.exports = class RootClass{
 	constructor(){
 		var proto = Object.getPrototypeOf(this)
-		if(protoReady.get(proto)) return
-		proto.__initproto__()
+		if(!protoReady.get(proto)) proto.__initproto__()
 	}
 }
 
@@ -69,7 +70,7 @@ Object.defineProperty(module.exports.prototype, '__initproto__',{
 			proto = Object.getPrototypeOf(proto)
 		}
 
-		for(let i = stack.length-1;i>=0;i--){
+		for(let i = stack.length - 1;i>=0;i--){
 			proto = stack[i]
 			proto.prototype()
 			protoReady.set(proto, true)

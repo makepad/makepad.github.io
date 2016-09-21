@@ -331,10 +331,7 @@ function workerRequire(absParent, worker, modules, args){
 			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
 			if(ret !== undefined) module.exports = ret
 		}
-		// little hack to fix not having prototype() in our classes
-		if(module.exports.prototype && module.exports.prototype.__initproto__){
-			module.exports.prototype.__initproto__()
-		}
+
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent, buildPath)
 		}
