@@ -22,7 +22,7 @@ module.exports = function(proto){
 	//Program:{ body:2 },	
 	proto.Program = function(node){
 		var body = node.body
-		for(var i = 0; i < body.length; i++){
+		for(let i = 0; i < body.length; i++){
 			var statement = body[i]
 			if(statement.above) this.fastText(statement.above, this._styles.Comment.above)
 			this[statement.type](statement, node)
@@ -77,7 +77,7 @@ module.exports = function(proto){
 			this.trace += '$T('+traceHandler+',this);'
 			var params = parent.params
 			var paramslen = params.length - 1
-			for(var i =0 ; i <= paramslen; i++){
+			for(let i =0 ; i <= paramslen; i++){
 				var param = params[i]
 				if(param.type === 'Identifier'){
 					this.trace += '$T(' + this.traceMap.push(param)+');'
@@ -105,7 +105,7 @@ module.exports = function(proto){
 		}
 
 		var foldAfterFirst = false
-		for(var i = 0; i <= bodylen; i++){
+		for(let i = 0; i <= bodylen; i++){
 			var statement = body[i]
 			// Support the $ right after function { to mark shaders
 			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$'){
@@ -119,7 +119,7 @@ module.exports = function(proto){
 			}
 		}
 
-		for(var i = 0; i <= bodylen; i++){
+		for(let i = 0; i <= bodylen; i++){
 			var statement = body[i]
 			// the above
 
@@ -192,7 +192,7 @@ module.exports = function(proto){
 		}
 		var commaStyle = top?this._styles.Comma.ArrayExpression.open:this._styles.Comma.ArrayExpression.close
 
-		for(var i = 0; i <= elemslen; i++){
+		for(let i = 0; i <= elemslen; i++){
 			var elem = elems[i]
 
 			if(elem){
@@ -279,7 +279,7 @@ module.exports = function(proto){
 			if(isFolded) this.$fastTextFontSize = 1
 
 			// compute the max key size
-			for(var i = 0; i <= propslen; i++){
+			for(let i = 0; i <= propslen; i++){
 				var key = props[i].key
 				if(key.type === 'Identifier'){
 					var keylen = key.name.length
@@ -289,7 +289,7 @@ module.exports = function(proto){
 		}		
 		
 		var commaStyle = top?this._styles.Comma.ObjectExpression.open:this._styles.Comma.ObjectExpression.close
-		for(var i = 0; i <= propslen; i++){
+		for(let i = 0; i <= propslen; i++){
 
 			var prop = props[i]
 			if(top && prop.above) this.fastText(prop.above, this._styles.Comment.above)
@@ -362,6 +362,53 @@ module.exports = function(proto){
 			)
 	}
 
+	//ClassBody:{body:2},
+	proto.ClassBody = function(node){
+		var turtle = this.turtle
+		var startx = turtle.sx, starty = turtle.wy
+
+		this.fastText('{', this._styles.Curly.ObjectExpression)
+		this.trace += '{\n'
+		
+		var endx = turtle.wx, lineh = turtle.mh
+
+		this.indentIn()
+
+		if(node.top) this.fastText(node.top, this._styles.Comment.top)
+		var body = node.body
+		var bodylen = body.length - 1
+		for(let i = 0; i <= bodylen; i++){
+			var method = body[i]
+			if(method.above) this.fastText(method.above, this._styles.Comment.above)
+			this[method.type](method)
+			if(method.side) this.fastText(method.side, this._styles.Comment.side)
+			else if(i < bodylen) this.fastText('\n', this._styles.Comment.side)
+			this.trace += '\n'
+		}
+        if(node.bottom) this.fastText(node.bottom, this._styles.Comment.bottom)
+		this.indentOut()
+		this.trace += '}'
+		this.fastText('}', this._styles.Curly.BlockStatement)
+		// store endx endy
+		var blockh = turtle.wy
+
+		var pickId = this.pickIdCounter++
+
+		this.pickIds[pickId] = node 
+
+		this.fastBlock(
+			startx,
+			starty,
+			endx-startx, 
+			lineh,
+			this.indentSize* this.$fastTextFontSize,
+			blockh - starty,
+			this.indent,
+			pickId,
+			this._styles.Block.ClassBody
+		)
+	}
+
 	//EmptyStatement:{}
 	proto.EmptyStatement = function(node){
 		console.log(node)
@@ -378,7 +425,7 @@ module.exports = function(proto){
 
 		var exps = node.expressions
 		var expslength = exps.length - 1
-		for(var i = 0; i <= expslength; i++){
+		for(let i = 0; i <= expslength; i++){
 			var exp = exps[i]
 			if(exp)this[exp.type](exp)
 			if(i < expslength){
@@ -417,7 +464,7 @@ module.exports = function(proto){
 		}
 		this.trace += ')'
 		if(this.allowOperatorSpaces && node.rightSpace){
-			for(var i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
+			for(let i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
 			this.fastText(')'+rs, this._styles.Paren.ParenthesizedExpression)
 		}
 		else this.fastText(')', this._styles.Paren.ParenthesizedExpression)
@@ -431,8 +478,8 @@ module.exports = function(proto){
 	}
 
 	proto.glslGlobals = {$:1}
-	for(var glslKey in require('base/infer').prototype.glsltypes) proto.glslGlobals[glslKey] = 1
-	for(var glslKey in require('base/infer').prototype.glslfunctions) proto.glslGlobals[glslKey] = 1
+	for(let glslKey in require('base/infer').prototype.glsltypes) proto.glslGlobals[glslKey] = 1
+	for(let glslKey in require('base/infer').prototype.glslfunctions) proto.glslGlobals[glslKey] = 1
 
 	//Identifier:{name:0},
 	proto.Identifier = function(node){
@@ -525,7 +572,7 @@ module.exports = function(proto){
 			this.indentIn()
 		}
 		
-		for(var i = 0; i <= argslen;i++){
+		for(let i = 0; i <= argslen;i++){
 			var arg = args[i]
 			if(node.top && arg.above) this.fastText(arg.above, this._styles.Comment.above)
 			this[arg.type](arg)
@@ -553,7 +600,7 @@ module.exports = function(proto){
 		if(this.traceMap) this.trace += ')'
 		
 		if(this.allowOperatorSpaces && node.rightSpace){
-			for(var i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
+			for(let i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
 			this.fastText(')'+rs, this._styles.Paren.CallExpression)
 		}
 		else this.fastText(')', this._styles.Paren.CallExpression)
@@ -591,9 +638,8 @@ module.exports = function(proto){
 	}
 
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
-	proto.FunctionDeclaration = function(node){
+	proto.FunctionDeclaration = function(node, method){
 		var id = node.id
-
 		if(id){
 			this.scope[name] = 1
 			this.trace += 'function '+id.name
@@ -601,8 +647,9 @@ module.exports = function(proto){
 			this.fastText(id.name, this._styles.Identifier.FunctionDeclaration)
 		}
 		else{
-			this.trace += 'function'
-			this.fastText('function' + node.space, this._styles.FunctionDeclaration)
+            if(!method) method = 'function'
+			this.trace += method
+			this.fastText(method + (node.space?node.space:''), this._styles.FunctionDeclaration)
 		}
 		this.trace += '('
 		this.fastText('(', this._styles.Paren.FunctionDeclaration.left)
@@ -614,7 +661,7 @@ module.exports = function(proto){
 		this.scope = Object.create(this.scope)
 		var params = node.params
 		var paramslen = params.length - 1
-		for(var i = 0; i <= paramslen; i++){
+		for(let i = 0; i <= paramslen; i++){
 			var param = params[i]
 
 			if(node.top && param.above) this.fastText(param.above, this._styles.Comment.above)
@@ -625,8 +672,12 @@ module.exports = function(proto){
 				this.trace += name
 				this.fastText(name, this._styles.Identifier.localArg)
 			}
-			else this[param.type](param)
-			
+			else {
+                if(param.type === 'RestElement'){
+                    this.scope[param.argument.name] = 2
+                }
+				this[param.type](param)
+			}
 			if(i < paramslen){
 				this.trace += ','
 				this.fastText(',', this._styles.Comma.FunctionDeclaration)
@@ -668,7 +719,7 @@ module.exports = function(proto){
 
 		var decls = node.declarations
 		var declslen = decls.length - 1
-		for(var i = 0; i <= declslen; i++){
+		for(let i = 0; i <= declslen; i++){
 			var decl = decls[i]
 			this[decl.type](decl)
 			if(i !== declslen){
@@ -753,8 +804,8 @@ module.exports = function(proto){
 		var x2 = turtle.wx 
 		this.trace += node.operator
 		if(this.allowOperatorSpaces){
-			for(var ls = '', i = node.leftSpace||0; i > 0; --i) ls += ' '
-			for(var rs = '', i = node.rightSpace||0; i > 0; --i) rs += ' '
+			for(let ls = '', i = node.leftSpace||0; i > 0; --i) ls += ' '
+			for(let rs = '', i = node.rightSpace||0; i > 0; --i) rs += ' '
 			this.fastText(ls+node.operator+rs, this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression, 0, 0)
 		}
 		else this.fastText(node.operator, this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression)
@@ -1072,9 +1123,26 @@ module.exports = function(proto){
 		this[body.type](body)
 	}
 
+	//SpreadElement
+	proto.SpreadElement = function(node){
+		this.fastText('...', this._styles.RestElement)
+		this.trace += '...'
+		var arg = node.argument
+		this[arg.type](arg)
+	}
+
+	//RestElement:{argument:1}
+	proto.RestElement = function(node){
+		this.fastText('...', this._styles.RestElement)
+		this.trace += '...'
+		var arg = node.argument
+		this[arg.type](arg)
+	}
+
 	//Super:{},
 	proto.Super = function(node){
-		logNonexisting(node)
+		this.fastText('super', this._styles.Super)
+		this.trace += 'super'
 	}
 
 	//AwaitExpression:{argument:1},
@@ -1113,7 +1181,7 @@ module.exports = function(proto){
 		if(top) this.fastText(top, this._styles.Comment.top)
 		var cases = node.cases
 		var caseslen = cases.length
-		for(var i = 0; i < caseslen; i++){
+		for(let i = 0; i < caseslen; i++){
 			var cas = cases[i]
 			this[cas.type](cas)
 		}
@@ -1139,7 +1207,7 @@ module.exports = function(proto){
 		this.indentIn()
 		var cqs = node.consequent
 		var cqlen = cqs.length
-		for(var i = 0; i < cqlen; i++){
+		for(let i = 0; i < cqlen; i++){
 			var cq = cqs[i]
 			var above = cq.above
 			if(above) this.fastText(above, this._styles.Comment.above)
@@ -1168,22 +1236,61 @@ module.exports = function(proto){
 
 	//ClassDeclaration:{id:1,superClass:1},
 	proto.ClassDeclaration = function(node){
-		logNonexisting(node)
+		this.trace += 'class '
+		this.fastText('class ', this._styles.ClassDeclaration.class)
+		var id = node.id
+		if(id){
+            this.scope[id.name] = 1
+			this[id.type](id)
+
+			if(node.space){
+				this.trace += node.space
+				this.fastText(node.space, this._styles.ClassDeclaration.class)
+			}
+		}
+		var base = node.superClass
+		if(base){
+			this.trace += 'extends '
+			this.fastText('extends ', this._styles.ClassDeclaration.extends)
+			this[base.type](base)
+		}
+		var body = node.body
+		this[body.type](body)
 	}
 
 	//ClassExpression:{id:1,superClass:1},
 	proto.ClassExpression = function(node){
-		logNonexisting(node)
-	}
-
-	//ClassBody:{body:2},
-	proto.ClassBody = function(node){
-		logNonexisting(node)
+		this.trace += 'class '
+		this.fastText('class ', this._styles.ClassExpression.class)
+		var id = node.id
+		if(id){
+			this.scope[id.name] = 1
+			this[id.type](id)
+			
+			if(node.space){
+				this.trace += node.space
+				this.fastText(node.space, this._styles.ClassExpression.class)
+			}
+		}	
+		var base = node.superClass
+		if(base){
+			this.trace += 'extends '
+			this.fastText('extends ', this._styles.ClassExpression.extends)
+			this[base.type](base)
+		}
+		var body = node.body
+		this[body.type](body)
 	}
 
 	//MethodDefinition:{value:1, kind:0, static:0},
 	proto.MethodDefinition = function(node){
-		logNonexisting(node)
+		var value = node.value
+        var name = node.key.name
+        if(node.static){
+            this.trace += 'static '
+            this.fastText('static ', this.styles.MethodDefinition.static)
+        }
+        this.FunctionDeclaration(value, name)
 	}
 
 	//ExportAllDeclaration:{source:1},
@@ -1243,8 +1350,4 @@ module.exports = function(proto){
 		logNonexisting(node)
 	}
 
-	//TryStatement:{block:1, handler:1, finalizer:1},
-	proto.SpreadElement = function(node){
-		logNonexisting(node)
-	}
 }

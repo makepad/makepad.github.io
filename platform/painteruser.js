@@ -64,9 +64,9 @@ module.exports = function painterUser(proto){
 				if(prev.child) this.resizeChild(prev.child, msg.fbId)
 				return
 			}
-			for(var key in prev.attach){
+			for(let key in prev.attach){
 				var sam = prev.attach[key].samplers
-				for(var samkey in sam){
+				for(let samkey in sam){
 					var gltex = sam[samkey].gltex
 					if(gltex) gl.deleteTexture(sam[samkey].gltex)
 				}
@@ -88,7 +88,7 @@ module.exports = function painterUser(proto){
 		
 		// create all attached textures as needed
 		var attach = {}
-		for(var key in msg.attach){
+		for(let key in msg.attach){
 			var tex = this.textureIds[msg.attach[key]]
 			// we might need to create this texture
 			var defsam = (tex.flags&this.textureFlags.SAMPLELINEAR)?'4352':'4352'
@@ -310,7 +310,7 @@ module.exports = function painterUser(proto){
 		var nmorder = []
 		var size = 0
 		var nameRev = this.nameRev
-		for(var l = order.length, i = 0; i < l; i++){
+		for(let l = order.length, i = 0; i < l; i++){
 			var item = order[i]
 			item.name = nameRev[item.nameId]
 			offsets[item.nameId] = size
@@ -350,7 +350,7 @@ module.exports = function painterUser(proto){
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 		var nameRev = this.nameRev
 		var attrLocs = shader.attrLocs
-		for(var i = 0; i < range; i++){
+		for(let i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
 			//if(this.currentShader.trace) console.log("attr",index)
@@ -382,7 +382,7 @@ module.exports = function painterUser(proto){
 		gl.bindBuffer(gl.ARRAY_BUFFER, mesh)
 		var nameRev = this.nameRev
 		var attrLocs = shader.attrLocs
-		for(var i = 0; i < range; i++){
+		for(let i = 0; i < range; i++){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
 			//if(this.currentShader.trace) console.log("attr",index, nameRev[startId+i])
@@ -402,7 +402,7 @@ module.exports = function painterUser(proto){
 	}
 
 	proto.execVao = function(vao){
-		for(var i =0; i < 16; i++){
+		for(let i =0; i < 16; i++){
 			this.gl.disableVertexAttribArray(i)
 		}
 		var i32 = vao.i32
@@ -410,7 +410,7 @@ module.exports = function painterUser(proto){
 		var last = 0
 		var repaint = false
 		var todofn = this.todofn
-		for(var o = 0; o < len; o += argc + 2){
+		for(let o = 0; o < len; o += argc + 2){
 			var fnid = i32[o]
 			var argc = i32[o + 1]
 			var fn = vaofn[fnid]
@@ -447,7 +447,7 @@ module.exports = function painterUser(proto){
 	function addLineNumbers(code){
 		var lines = code.split('\n')
 		var out = ''
-		for(var i = 0; i < lines.length; i++){
+		for(let i = 0; i < lines.length; i++){
 			out += (i+1)+': '+lines[i]+'\n'
 		}
 		return out	
@@ -471,7 +471,7 @@ module.exports = function painterUser(proto){
 
 	function logShaderError(){
 		var args = arguments
-		for(var i =0 ; i < args.length; i++){
+		for(let i =0 ; i < args.length; i++){
 			var s = '' + args[i]
 			if(s.length > 1024){
 				out = ''
@@ -527,7 +527,7 @@ module.exports = function painterUser(proto){
 		// look up attribute ids
 		var attrLocs = {}
 		var maxAttrIndex = 0
-		for(var name in attrs){
+		for(let name in attrs){
 			//var nameid = nameIds[name]
 			var index = gl.getAttribLocation(shader, name)
 			if(index === -1)console.error("Attribute location returns -1 for, bug in system GLSL compiler likely " + name)
@@ -540,7 +540,7 @@ module.exports = function painterUser(proto){
 
 		var uniLocs = {}
 		var uniVals = {}
-		for(var name in uniforms){
+		for(let name in uniforms){
 			//var nameid = nameIds[name]
 			var type = uniforms[name]
 			var slots = this.slotsTable[type]

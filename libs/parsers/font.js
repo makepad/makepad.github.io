@@ -15,7 +15,7 @@ module.exports = function(font){
 		if(len > 30000) throw new Error('Font length incorrect')
 		var o = 3
 		var glyphs = map.glyphs = {}
-		for(var i = 0; i < len; i++){
+		for(let i = 0; i < len; i++){
 			var unicode = u32[o++]
 			var glyph = {
 				x1: f32[o++],
@@ -45,7 +45,7 @@ module.exports = function(font){
 		if(len > 30000) throw new Error('Font length incorrect')
 		var o = 4
 		var glyphs = map.glyphs = {}
-		for(var i = 0; i < len; i++){
+		for(let i = 0; i < len; i++){
 			var unicode = u32[o++]
 			var glyph = {
 				x1: f32[o++],

@@ -1,26 +1,22 @@
 module.exports=require('base/drawapp').extend({
 	tools:{
 		Line:{
-			lineWidth:2,
+			lineWidth:2
 		},
-		Slider:require('tools/slider')
-	},
-	props:{
-		sldVal:1
+		Slider:require('tools/slider').extend({
+			inPlace:0
+		})
 	},
 	onDraw:function(){
-		this.drawSlider({
+		var v=this.drawSlider({
 			w:200,
 			h:30,
 			range:[0,1],
-			onValue:function(v){
-				this.sldVal=v
-			}
 		})
-		for(var i=0;i<450;i++){
+		for(let i=0;i<450;i++){
 			this.drawLine({
 				x:i,
-				y:50*this.sldVal*sin(-.1*i)+120
+				y:50*v.value*sin(-.1*i)+120
 			})
 		}
 	}

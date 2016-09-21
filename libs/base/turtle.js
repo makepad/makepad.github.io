@@ -1,6 +1,6 @@
 module.exports = require('base/class').extend(function Turtle(proto){
 
-	proto.onConstruct = function(view){
+	proto.constructor = function(view){
 		this.view = view
 		this.x1 = this.y1 = Infinity
 		this.x2 = this.y2 = -Infinity
@@ -82,7 +82,6 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		// begin walking
 		this.sx = this.wx = this.ix + padding[3] + margin[3]
 		this.sy = this.wy = this.iy + padding[0] + margin[0]
-
 		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
 	}	
 

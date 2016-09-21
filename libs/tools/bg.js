@@ -55,7 +55,7 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 		1.0, 1.0, 1.0, 1.0 // 15
 	)
 	// add the 32 triangles
-	var indices = proto.indices = painter.Mesh(types.uint16)
+	var indices = proto.indices = new painter.Mesh(types.uint16)
 	indices.push(
 		 0, 1, 4, 1, 5, 4,
 		 1, 2, 5, 2, 6, 5,
@@ -76,8 +76,8 @@ module.exports = require('base/shader').extend(function Rect9Shader(proto){
 
     var csize = 128, hsize = csize>>1
     var circleu8 = new Uint8Array(csize*csize)
-    for(var y = 0; y < csize; y++){
-	    for(var x = 0; x < csize; x++){
+    for(let y = 0; y < csize; y++){
+	    for(let x = 0; x < csize; x++){
 	    	var xd = x-(csize>>1)
 	    	var yd = y-(csize>>1)
 	    	circleu8[y*csize + x] = 128 + ((hsize) - Math.round(Math.sqrt(xd*xd + yd*yd))) 

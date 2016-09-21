@@ -96,7 +96,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 			// lets count the linenumbers
 			var node = error.node
 			var off = 0, realcol = 0
-			for(var line = 0; line < lines.length; line++){
+			for(let line = 0; line < lines.length; line++){
 				if(off >= node.start){
 					realcol = off - node.start - 3
 					break
@@ -140,7 +140,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 
 	proto.block = function(array, parent){
 		var ret = ''
-		for(var i = 0; i < array.length; i++){
+		for(let i = 0; i < array.length; i++){
 			var line = this.walk(array[i], parent)
 			if(line.length){
 				ret += this.indent + line + ';'
@@ -181,7 +181,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	proto.SequenceExpression = function(node){
 		var ret = ''
 		var exps = node.expressions
-		for(var i = 0; i < exps.length; i++){
+		for(let i = 0; i < exps.length; i++){
 			var exp = exps[i]
 			if(i) ret += ', '
 			ret += this.walk(exp, node)
@@ -464,7 +464,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 
 					var swiz = swizlut[typename]
 					if(!swiz) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
-					for(var i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
+					for(let i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
 						if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
 					}
 				}
@@ -704,13 +704,13 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 			value:dep
 		})
 	
-		for(var key in dep.deps){
+		for(let key in dep.deps){
 			recursiveDependencyUpdate(genfn, dep.deps[key], key)
 		}
 	}
 
 	function lookupGenFunction(genfn, key){
-		for(var i = 0; i < genfn.length; i++){
+		for(let i = 0; i < genfn.length; i++){
 			var item = genfn[i]
 			if(item.key === key) return item.value
 		}
@@ -730,7 +730,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 
 		var args = node.arguments
 		var argstrs = []
-		for(var i = 0; i < args.length; i++){
+		for(let i = 0; i < args.length; i++){
 			argstrs.push(this.walk(args[i], node))
 		}
 
@@ -756,7 +756,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 				var gentype
 				var params = glslfn.params
 
-				for(var i = 0; i < args.length; i++){
+				for(let i = 0; i < args.length; i++){
 					var arg = args[i]
 					var param = params[i]
 					if(arg.infer.kind !== 'value'){
@@ -793,7 +793,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 			var fnname = calleeinfer.fullname
 			var realargs = []
 			fnname += '_T'
-			for(var i = 0; i < args.length; i++){
+			for(let i = 0; i < args.length; i++){
 				var arg = args[i]
 				var arginfer = arg.infer
 				if(arginfer.kind === 'value'){
@@ -815,7 +815,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 				recursiveDependencyUpdate(this.genFunctions, prevfunction, fnname)
 
 				var params = prevfunction.ast.body[0].params
-				for(var i = 0; i < args.length; i++){
+				for(let i = 0; i < args.length; i++){
 					// write the args on the scope
 					var arg = args[i]
 					var arginfer = arg.infer
@@ -870,7 +870,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 			}
-			for(var i = 0; i < args.length; i++){
+			for(let i = 0; i < args.length; i++){
 				var arg = args[i]
 				var arginfer = arg.infer
 				var name = params[i].name
@@ -896,7 +896,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 			// alright lets run the function body.
 			var body = sub.walk(ast.body[0].body)
 
-			for(var i = 0; i < args.length; i++){
+			for(let i = 0; i < args.length; i++){
 				// write the args on the scope
 				var arg = args[i]
 				var arginfer = arg.infer
@@ -977,7 +977,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		// ok we have to split into the types of the declarations
 		var decls = node.declarations
 		var ret = ''
-		for(var i = 0; i < decls.length; i++){
+		for(let i = 0; i < decls.length; i++){
 			if(i) ret += ';'
 			var decl = decls[i]
 			var str = this.walk(decl, node)

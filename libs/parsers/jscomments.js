@@ -138,6 +138,35 @@ pp.commentTop = function(node){
 }
 
 // this is called at a } we run to it then splice and leave that for the next layer up
+pp.commentBottom2 = function(tail, node){
+	var out = ''
+	var comments = this.storeComments
+	//console.log('tail',cmt.join(','))
+	for(var i = 0, l = comments.length;i < l; i++){
+		var item = comments[i]
+		if(item === tail){
+			comments.splice(0, i + 1)
+			break
+		}
+		if(typeof item !== 'object'){
+			if(item === 1){
+				out += '\n'
+			}
+			else if(item === 2){
+				out += '\r'
+			}
+			else out += item
+		}
+	}
+	if(i==l){
+		comments.splice(0, l - 1)
+		//comments.length = 0
+	}
+	if(out.length && node)node.bottom = out
+	return out
+}
+
+// this is called at a } we run to it then splice and leave that for the next layer up
 pp.commentBottom = function(tail, node){
 	var out = ''
 	var comments = this.storeComments

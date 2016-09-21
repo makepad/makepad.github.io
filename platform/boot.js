@@ -70,7 +70,7 @@ root.workerIds = {}
 root.workerIdsAlloc = 1
 
 root.startWorker = function(serviceList, platform, parent){
-	
+
 	var worker = parent?root.createSubWorker():root.createMainWorker()
 
 	worker.workerId = root.workerIdsAlloc++
@@ -100,12 +100,11 @@ root.startWorker = function(serviceList, platform, parent){
 	}
 	var userArgs = {}
 	// lets create a bunch of services
-	for(var i = 0; i < serviceList.length; i++){
+	for(let i = 0; i < serviceList.length; i++){
 		var name = serviceList[i]
 		var serviceModule = serviceModules[servicePaths[name]]
 		services[name] = new serviceModule.exports(root, worker, parent, platform, args)
 	}
-
 	createOnMessage(worker)
 
 	return worker
@@ -133,7 +132,7 @@ root.initWorker = function(worker, main, resources, init, ismain){
 
 var allApps = []
 root.onInitApps = function(apps){
-	for(var i =0; i < apps.length; i++){
+	for(let i =0; i < apps.length; i++){
 		var app = apps[i]
 		app.singleLoad = {}
 		app.resources = {}
@@ -144,7 +143,7 @@ root.onInitApps = function(apps){
 
 	Promise.all(allApps).then(function(){
 		// start the apps
-		for(var i = 0; i < apps.length; i++){
+		for(let i = 0; i < apps.length; i++){
 			var app = apps[i]
 			var worker = root.startWorker(loadServices, app.platform)
 			root.initWorker(worker, app.main, app.resources, undefined)
@@ -164,7 +163,7 @@ var serviceResults = {}
 var servicePaths = {}
 var serviceModules = {}
 
-for(var i = 0; i < loadServices.length; i++){
+for(let i = 0; i < loadServices.length; i++){
 	var name = loadServices[i]
 	var path = servicePaths[name] = root.platformPath+root.platform+'/'+name+'.js'
 	allServices.push(
@@ -188,7 +187,7 @@ allApps.push(Promise.all(allServices).then(function(){
 	}
 	// make all the factories
 	var init = []
-	for(var path in serviceResults){
+	for(let path in serviceResults){
 		var source = serviceResults[path]
 		try{
 			serviceModules[path] = {
@@ -202,7 +201,7 @@ allApps.push(Promise.all(allServices).then(function(){
 	}
 
 	// load up the service modules
-	for(var key in serviceModules){	
+	for(let key in serviceModules){	
 		var module = serviceModules[key]
 		if(!module.exports){
 			module.exports = {}
@@ -225,6 +224,7 @@ function workerBoot(){
 
 	worker.services = {init:{}, ping:{}}
 	worker.modules = modules
+	worker.appMain = undefined
 
 	createOnMessage(worker)
 	
@@ -240,7 +240,7 @@ function workerBoot(){
 		worker.hasParent = msg.hasParent
 
 		var serviceArgs = msg.args
-		for(var path in resources){
+		for(let path in resources){
 			var source = resources[path]
 			if(typeof source !== 'string'){
 				modules[path] = {
@@ -275,8 +275,9 @@ function workerBoot(){
 		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
+
 		if(typeof module.exports === 'function'){
-			new module.exports()
+			worker.appMain = new module.exports(worker.appMain)
 		}
 	}
 
@@ -330,6 +331,10 @@ function workerRequire(absParent, worker, modules, args){
 			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
 			if(ret !== undefined) module.exports = ret
 		}
+		// little hack to fix not having prototype() in our classes
+		if(module.exports.prototype && module.exports.prototype.__initproto__){
+			module.exports.prototype.__initproto__()
+		}
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent, buildPath)
 		}
@@ -354,7 +359,7 @@ function createOnMessage(worker){
 		var batchMessages = worker.batchMessages
 		if(batchMessages.length){
 			var transfers = worker.batchTransfers
-			for(var i = 0; i < batchMessages.length; i++){
+			for(let i = 0; i < batchMessages.length; i++){
 				var msg = batchMessages[i]
 				var body = msg.msg
 	
@@ -390,7 +395,7 @@ function createOnMessage(worker){
 		if(worker.afterEntryCallbacks.length){
 			var afterEntryCallbacks = worker.afterEntryCallbacks
 			worker.afterEntryCallbacks = []
-			for(var i = 0; i < afterEntryCallbacks.length; i++){
+			for(let i = 0; i < afterEntryCallbacks.length; i++){
 				afterEntryCallbacks[i]()
 			}
 		}
@@ -402,7 +407,7 @@ function createOnMessage(worker){
 		//try{
 
 		if(msg.$ === 'batch'){
-			for(var i = 0, msgs = msg.msgs; i < msgs.length; i++){
+			for(let i = 0, msgs = msg.msgs; i < msgs.length; i++){
 				msg = msgs[i]
 
 				var service = this.services[msg.$]
@@ -479,11 +484,11 @@ function timerLib(g){
 	var allIntervals = []
 
 	worker.clearAllTimers = function(){
-		for(var i = 0; i < allTimeouts.length; i++){
+		for(let i = 0; i < allTimeouts.length; i++){
 			_clearTimeout(allTimeouts[i])
 		}
 		allTimeouts.length = 0
-		for(var i = 0; i < allIntervals.length; i++){
+		for(let i = 0; i < allIntervals.length; i++){
 			_clearInterval(allIntervals[i])
 		}
 		allIntervals.length = 0
@@ -755,7 +760,7 @@ function promiseLib(g){
 
 	Promise.race = function (values) {
 		return new Promise(function (resolve, reject) {
-			for(var i = 0, len = values.length; i < len; i++) {
+			for(let i = 0, len = values.length; i < len; i++) {
 				values[i].then(resolve, reject)
 			}
 		})

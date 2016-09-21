@@ -580,14 +580,26 @@ pp.parseFunctionParams = function(node) {
 
 pp.parseClass = function(node, isStatement) {
 	this.next()
+	if(this.input.charCodeAt(this.pos) === 32){
+		node.space = ' '
+	}
+	else node.space = ''
 	this.parseClassId(node, isStatement)
+	
 	this.parseClassSuper(node)
 	var classBody = this.startNode()
 	var hadConstructor = false
 	classBody.body = []
 	this.expect(tt.braceL)
+	if(this.storeComments){
+		this.commentTop(classBody)
+	}
 	while (!this.eat(tt.braceR)) {
 		if (this.eat(tt.semi)) continue
+		if(this.storeComments){
+			var above = this.commentBegin()
+		}
+
 		var method = this.startNode()
 		var isGenerator = this.eat(tt.star)
 		var isMaybeStatic = this.type === tt.name && this.value === "static"
@@ -629,6 +641,20 @@ pp.parseClass = function(node, isStatement) {
 			if (method.kind === "set" && method.value.params[0].type === "RestElement")
 				this.raise(method.value.params[0].start, "Setter cannot use rest params")
 		}
+		if(this.eat(tt.braceR)){			
+			if(this.storeComments){
+				this.commentEnd(method, above, tt.braceR)
+			}
+			break
+		}
+
+		if(this.storeComments){
+
+			this.commentEnd(method, above, tt.braceR)
+		}
+	}
+	if(this.storeComments){
+		this.commentBottom(tt.braceR, classBody)
 	}
 	node.body = this.finishNode(classBody, "ClassBody")
 	return this.finishNode(node, isStatement ? "ClassDeclaration" : "ClassExpression")

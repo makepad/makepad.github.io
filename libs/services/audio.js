@@ -7,7 +7,7 @@ var pileupQueue = []
 var pileupTimer
 
 function flushPileupQueue(){
-	for(var i = 0; i < pileupQueue.length; i++){
+	for(let i = 0; i < pileupQueue.length; i++){
 		var msg = pileupQueue[i]
 		var flow = flowIds[msg.id]
 		var node = flow.config[msg.node]
@@ -33,7 +33,7 @@ service.onMessage = function(msg){
 
 function deepCopy(obj){
 	var out = {}
-	for(var key in obj){
+	for(let key in obj){
 		var value = obj[key]
 		if(typeof value === 'function') out[key] = null
 		else if(typeof value === 'object' && value.constructor === Object) out[key] = deepCopy(value)
@@ -43,7 +43,7 @@ function deepCopy(obj){
 }
 
 exports.Flow = require('base/class').extend({
-	_onConstruct:function(config){
+	constructor:function(config){
 		this.config = config
 		this.id = flowIdsAlloc ++
 		this.running
@@ -96,7 +96,7 @@ var AudioNode = require('base/class').extend(function(proto){
 		service.batchMessage(this.onCreateArgs(props))
 
 		if(typeof props === 'object'){
-			for(var key in props){
+			for(let key in props){
 				this[key] = props[key]
 			}
 		}
@@ -137,7 +137,7 @@ var AudioNode = require('base/class').extend(function(proto){
 	})
 
 	Object.defineProperty(proto, 'values', {set:function(values){
-		for(var key in values){
+		for(let key in values){
 			this.defProp(key, function(value, key){
 				// deal with value types
 				service.batchMessage({
@@ -151,7 +151,7 @@ var AudioNode = require('base/class').extend(function(proto){
 	}})
 
 	Object.defineProperty(proto, 'setters', {set:function(setters){
-		for(var key in setters){
+		for(let key in setters){
 			this.defProp(key, function(value, key, user){
 				user.call(this, value, key)
 			}, setters[key])

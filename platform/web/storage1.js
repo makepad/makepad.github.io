@@ -1,14 +1,11 @@
-module.exports = require('/platform/service').extend(function storage1(proto, base){
+module.exports = class storage1 extends require('/platform/service'){
 
-	proto.TAP_TIME = 350
-	proto.TAP_DIST_TOUCH = 50
-	proto.TAP_DIST_MOUSE = 5
-
-	proto.onConstruct = function(){
+	constructor(...args){
+		super(...args)
 		this.args.locationSearch = this.root.locationSearch
 	}
 
-	proto.user_load= function(msg){
+	user_load(msg){
 		// if its already in the root cache, dont load it
 		var cache = this.root.resourceCache[msg.path]
 		if(cache){
@@ -48,7 +45,7 @@ module.exports = require('/platform/service').extend(function storage1(proto, ba
 		req.send()
 	}
 
-	proto.user_save = function(msg){
+	user_save(msg){
 		var req = new XMLHttpRequest()
 		// compare todo against domains
 		req.addEventListener("error", function(){
@@ -76,4 +73,4 @@ module.exports = require('/platform/service').extend(function storage1(proto, ba
 		req.open("POST", location.origin+'/'+msg.path, true)
 		req.send(msg.data)
 	}
-})
+}

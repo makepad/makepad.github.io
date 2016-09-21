@@ -74,7 +74,7 @@ module.exports = function painterTodo(proto){
 		var last = 0
 		var repaint = false
 		var todofn = this.todofn
-		for(var o = 0; o < len; o += argc + 2){
+		for(let o = 0; o < len; o += argc + 2){
 			var fnid = i32[o]
 			var argc = i32[o + 1]
 			var fn = todofn[fnid]
@@ -112,12 +112,12 @@ module.exports = function painterTodo(proto){
 		if(shader){
 			/*
 			if(prevAttrMax > shader.maxAttrIndex){
-				for(var i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
+				for(let i = shader.maxAttrIndex+1; i <= prevAttrMax; i++){
 					gl.disableVertexAttribArray(i)
 				}
 			}
 			else if(prevAttrMax < shader.maxAttrIndex){
-				for(var i = shader.maxAttrIndex; i > prevAttrMax; i--){
+				for(let i = shader.maxAttrIndex; i > prevAttrMax; i--){
 					gl.enableVertexAttribArray(i)
 				}
 			}*/
@@ -376,7 +376,7 @@ module.exports = function painterTodo(proto){
 		var offsets = ubo.offsets
 		var i32 = ubo.i32
 		var f32 = ubo.f32
-		for(var l = order.length, i = 0; i < l; i++){
+		for(let l = order.length, i = 0; i < l; i++){
 			var prop = order[i]
 			uboMap[prop.type](gl, uniVals, uniLocs, prop.name, i32, f32, offsets[prop.nameId])
 		}

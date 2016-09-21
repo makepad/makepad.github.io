@@ -141,7 +141,7 @@ module.exports=require('base/view').extend({
 		//console.log(ts.x)
 		//var x = tabStamp.x
 		var ins = tabStamp.index
-		for(var i = 0; i < set.length; i++){
+		for(let i = 0; i < set.length; i++){
 			var stamp = set[i].tabStamp
 			var geom = stamp.stampGeom()
 			if(ts.x > geom.x) ins = i + 1 // insertion point
@@ -180,7 +180,7 @@ module.exports=require('base/view').extend({
 	selectTab:function(index){
 		if(this.selectedIndex !== index){
 			this.selectedIndex = index
-			for(var i = 0; i < this.children.length; i++){
+			for(let i = 0; i < this.children.length; i++){
 				var child = this.children[i]
 				if(child) child.visible = i === index?true:false
 			}
@@ -221,7 +221,7 @@ module.exports=require('base/view').extend({
 		if(!this.isFolded){
 			// make sure our normale tab happens first
 			this.orderTab({})
-			for(var i = 0, len = this.children.length; i < len; i++){
+			for(let i = 0, len = this.children.length; i < len; i++){
 				var child = this.children[i]
 				if(!child.tabText && !child.tabIcon) continue
 				var isSel = i === this.selectedIndex

@@ -15,7 +15,7 @@
 
 			var mask = Object.getOwnPropertyNames(window)
 			var jsGlobals = getJsGlobals()
-			for(var i = 0; i < jsGlobals.length; i++){
+			for(let i = 0; i < jsGlobals.length; i++){
 				var idx = mask.indexOf(jsGlobals[i])
 				if(idx !== -1) mask.splice(idx, 1)
 			}
@@ -40,13 +40,13 @@
 				function WrapFunction(){
 					var globnames = []
 					var globargs = []
-					for(var key in global){
+					for(let key in global){
 						globnames.push(key)							
 						globargs.push(global[key])
 					}
 
 					// lets push in all masked
-					for(var i = 0; i < mask.length; i++){
+					for(let i = 0; i < mask.length; i++){
 						var name = mask[i]
 						if(!(name in global)){
 							globnames.push(name)
@@ -57,7 +57,7 @@
 					var args = arguments
 					var len = arguments.length
 					var code = '"use strict"\nreturn function('
-					for(var i = 0; i < len - 1; i++){
+					for(let i = 0; i < len - 1; i++){
 						if(i) code += ','
 						code += args[i]
 					}
@@ -179,7 +179,7 @@
 	function init(){
 
 		var apps = []
-		for(var i = 0; i < canvasses.length; i++){
+		for(let i = 0; i < canvasses.length; i++){
 			var canvas = canvasses[i]
 			apps.push({
 				main:canvas.getAttribute('main'),
@@ -252,7 +252,7 @@
 			
 			var args = []
 			var len = arguments.length
-			for(var i = 0; i < len - 1; i++) args.push(arguments[i])
+			for(let i = 0; i < len - 1; i++) args.push(arguments[i])
 			args.push.apply(args, forceMask)
 			
 			var code = arguments[len -1]
@@ -260,7 +260,7 @@
 			return LocalFunction.apply(null, args)
 		}
 
-		for(var i = 0; i < mask.length; i++){
+		for(let i = 0; i < mask.length; i++){
 			var name = mask[i]
 			if(jsGlobals.indexOf(name) !== -1) continue
 			try{

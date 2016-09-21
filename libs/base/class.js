@@ -1,56 +1,24 @@
-// lets create a constructor
-var frozen = Object.freeze({})
+var staticSkip = {
+	length:1,
+	arguments:1,
+	caller:1,
+	name:1,
+	prototype:1,
+	__body__:1
+}
+
 function extend(body){
 
-	var proto = Object.create(this.prototype)
-
-	function Class(){
-		var cthis = this
-		if(!(cthis instanceof Class)){
-			cthis = Object.create(Class.prototype)
-		}
-		if(cthis._onConstruct){
-			cthis._onConstruct.apply(cthis, arguments)
-		}
-		if(cthis.onConstruct){
-			cthis.onConstruct.apply(cthis, arguments)
-		}
-		var outer = Class.outer
-		if(outer !== undefined){
-			cthis.outer = outer
-		}
-		return cthis
-	}
-	// get name
-	var Constructor = Class
-
-	if(false){
-		var path = Error().stack.split('\n')[3]
-		var clsname
-		if(body && body.name){
-			clsname = body.name
-		}
-		else if(path.indexOf('/') !== -1){
-			var name = path.slice(path.lastIndexOf('/')+1,path.lastIndexOf('.'))
-			var line = path.slice(path.lastIndexOf('.js')+4, path.lastIndexOf(':')) - 2
-			if(name === 'class') name = 'Class', line = 0
-			clsname = name + (line>1?'_'+line:'')
-		}
-		if(clsname && clsname.indexOf('-') === -1) Constructor = new Function('return '+Class.toString().replace(/Class/g,clsname))()
-	}
-	else{ //?
-		if(body && body.name){
-			proto.name = body.name
-		}
+	class ExtendClass extends this{
 	}
 
-	// connect 
-	Constructor.prototype = proto 
-	Object.defineProperty(proto, 'constructor', {configurable:true,value:Constructor})
-	Constructor.extend = extend
+	var Constructor = ExtendClass
+	var proto = ExtendClass.prototype
+
+	Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
 
 	// apply all args
-	for(var i = 0; i < arguments.length; i++){
+	for(let i = 0; i < arguments.length; i++){
 		var iter = arguments[i]
 		if(typeof iter === 'function'){
 			var check = {}
@@ -61,34 +29,70 @@ function extend(body){
 			}
 		}
 		else if(typeof iter === 'object'){
-			for(var key in iter){
+			for(let key in iter){
 				proto[key] = iter[key]
 			}
 		}
 	}
 
+	//!TODO remove this, we dont support extend classes that replace the constructor
 	if(proto.constructor !== Constructor){
+
 		Constructor = proto.constructor
-		Constructor.extend = extend
+		Constructor.prototype = proto
+		Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
+		// Fake ES6 constructor static methods by copying them
+		var cons = this.prototype.constructor
+		while(cons && cons !== Object){
+			var props = Object.getOwnPropertyNames(cons)
+			for(let i = 0; i < props.length; i++){
+				var name = props[i]
+				if(name in staticSkip) continue
+				if(!(name in Constructor)) Constructor[name] = cons[name]
+			}
+			if(cons.hasOwnProperty('__body__')) cons = null
+			else{
+				var cproto =  Object.getPrototypeOf(cons.prototype)
+				cons = cproto && cproto.constructor
+			}
+		}
 	}
 
 	if(this.prototype.onExtendClass) this.prototype.onExtendClass.call(proto)
-	Constructor.body = body
+	Object.defineProperty(Constructor, '__body__', {value:body})
 	return Constructor
 }
 
-module.exports = extend.call(Object)
-Object.defineProperty(module.exports.prototype,'mixin',{
-	set:function(v){
-		if(Array.isArray(v)){
-			for(var i = 0; i < v.length; i++){
-				var fn = v[i]
-				fn(this)
+var protoReady = new WeakMap()
+
+module.exports = class RootClass{
+	constructor(){
+		var proto = Object.getPrototypeOf(this)
+		if(protoReady.get(proto)) return
+		proto.__initproto__()
+	}
+}
+
+Object.defineProperty(module.exports.prototype, '__initproto__',{
+	value: function(){
+		var proto = this
+		if(protoReady.get(proto)) return
+		// lazily initialize the prototype chain
+		var stack = []	
+
+		while(proto && proto.prototype){
+			if(!protoReady.get(proto) && proto.hasOwnProperty('prototype')){
+				stack.push(proto)
 			}
+			proto = Object.getPrototypeOf(proto)
 		}
-		else v(this)
-	}, 
-	get:function(){
-		throw new Error('mixin is a setter only')
+
+		for(let i = stack.length-1;i>=0;i--){
+			proto = stack[i]
+			proto.prototype()
+			protoReady.set(proto, true)
+		}
 	}
 })
+
+module.exports.extend = extend

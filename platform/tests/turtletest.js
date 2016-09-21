@@ -14,7 +14,7 @@ return require('base/app').extend({
 
 	onDraw:function(){
 		var rnd = Math.random
-		for(var i = 0 ; i < 20; i++){
+		for(let i = 0 ; i < 20; i++){
 			this.beginBg({
 				//x:(i%15)*100,
 				//y:Math.floor(i/15)*150,

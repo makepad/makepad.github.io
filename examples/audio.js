@@ -1,24 +1,41 @@
 var audio=require('services/audio')
 var wav=require('parsers/wav')
 var painter=require('services/painter')
-module.exports=require('base/drawapp').extend({
-	tools:{
-		Slider:require('tools/slider').extend({
-			Bg:{moveScroll:0},
-			Knob:{moveScroll:0},
-		}),
-		Button:require('tools/button').extend({
-			Bg:{moveScroll:0},
-			Text:{moveScroll:0},
-		}),
-		Quad:{color:'red'},
-	},
-	onInit:function(){
+
+console.log("HERE")
+
+module.exports = class extends require('base/drawapp'){
+
+	prototype(){
+		console.log("PROTO")
+		this.props = {
+			zoom:1000.,
+			selStart:0,
+			selEnd:0,
+			zoomRange:[2,1000],
+			zoomScroll:0,
+		}
+		this.tools = {
+			Slider:require('tools/slider').extend({
+				Bg:{moveScroll:0},
+				Knob:{moveScroll:0}
+			}),
+			Button:require('tools/button').extend({
+				Bg:{moveScroll:0},
+				Text:{moveScroll:0}
+			}),
+			Quad:{color:'red'},
+		}
+	}
+	
+	constructor(...args){
+		super(...args)
+		console.log("ONCONSTRUCT")
 		audio.reset()
 		this.recording=[]
 		this.samples=0
 		// ok we dont deal in individual nodes we deal in whole flows.
-		this.recFlow=audio.Flow({
+		this.recFlow=new audio.Flow({
 			gain1:{
 				to:'output',
 				gain:.0,
@@ -38,12 +55,11 @@ module.exports=require('base/drawapp').extend({
 				device:'Microphone'
 			}
 		})
+		var out=wav.parse(require('./audio.wav'),true)
+		this.recording.push(out.data)
+		this.samples=out.data[0].length
 		
-		// var out=wav.parse(require('./audio.wav'),true)
-		// this.recording.push(out.data)
-		// this.samples=out.data[0].length
-		
-		this.playFlow=audio.Flow({
+		this.playFlow=new audio.Flow({
 			buffer1:{
 				to:'output',
 				rate:44100,
@@ -51,25 +67,39 @@ module.exports=require('base/drawapp').extend({
 				start:0
 			}
 		})
-	},
-	onScroll:function(e){
+	}
+	
+	onScroll(e){
 		this.redraw()
-	},
-	zoom:1000.,
-	zoomRange:[2,1000],
-	zoomScroll:0,
-	setZoom:function(z,x){
+	}
+	
+	xToTime(x){
+		return (x+this.todo.xScroll)*this.zoom
+	}
+
+	setZoom(z,x){
 		var zoom=clamp(z,this.zoomRange[0],this.zoomRange[1])
 		var x1=x*this.zoom
 		var x2=x*zoom
 		this.zoom=zoom
 		this.scrollAtDraw((x1-x2)/zoom,0,true)
-	},
-	onFingerWheel:function(e){
+	}
+
+	onFingerWheel(e){
 		var z=this.zoom*(1+e.yWheel/1500)
 		this.setZoom(z,e.x)
-	},
-	onDraw:function(){
+	}
+
+	onFingerDown(e){
+		this.selStart=this.xToTime(e.x)
+	}
+
+	onFingerMove(e){
+		this.selEnd=this.xToTime(e.x)
+	}
+
+	onDraw(){
+		console.log("ONDRAW")
 		this.drawButton({
 			text:this.recFlow.running?"Stop":"Rec",
 			onClick:function(){
@@ -80,7 +110,7 @@ module.exports=require('base/drawapp').extend({
 					this.recFlow.start()
 				}
 				this.redraw()
-			}.bind(this)
+			}
 		})
 		this.drawButton({
 			text:this.playFlow.running?"Stop":"Play",
@@ -93,9 +123,9 @@ module.exports=require('base/drawapp').extend({
 				// lets combine all the recording buffers
 				var out=new Float32Array(this.samples)
 				var o=0
-				for(var c=0;c<this.recording.length;c++){
+				for(let c=0;c<this.recording.length;c++){
 					var left=this.recording[c][0]
-					for(var i=0;i<left.length;i++)out[o++]=left[i]
+					for(let i=0;i<left.length;i++)out[o++]=left[i]
 				}
 				
 				this.playFlow.start({
@@ -108,8 +138,8 @@ module.exports=require('base/drawapp').extend({
 		})
 		
 		this.drawSlider({
-			onValue:function(v){
-				this.setZoom(v,this.todo.xScroll)
+			onValue:function(e){
+				this.setZoom(e.value,this.todo.xScroll)
 				this.redraw()
 			},
 			vertical:false,
@@ -121,8 +151,12 @@ module.exports=require('base/drawapp').extend({
 			h:36
 		})
 		
-		
-		
+		this.drawRect({
+			x:(this.selStart-this.todo.xScroll)/this.zoom,
+			y:300,
+			w:(this.selEnd-this.selStart)/this.zoom,
+			h:100
+		})
 		// lets draw the recording
 		if(this.recording){
 			
@@ -134,13 +168,13 @@ module.exports=require('base/drawapp').extend({
 			var xmin=this.todo.xScroll-this.$w
 			var xmax=xmin+this.$w*3
 			outer:
-			for(var c=0;c<this.recording.length;c++){
+			for(let c=0;c<this.recording.length;c++){
 				var left=this.recording[c][0]
 				if((t+left.length)/scale<xmin){
 					t+=left.length
 					continue
 				}
-				for(var i=0;i<left.length;i++){
+				for(let i=0;i<left.length;i++){
 					var v=left[i]
 					if(v<minv)minv=v
 					if(v>maxv)maxv=v
@@ -163,7 +197,7 @@ module.exports=require('base/drawapp').extend({
 		if(this.scopeData){
 			var left=this.scopeData[0]
 			this.drawLine({sx:0,sy:100})
-			for(var i=0;i<left.length;i++){
+			for(let i=0;i<left.length;i++){
 				this.drawLine({
 					x:i,
 					y:left[i]*100+100
@@ -171,4 +205,4 @@ module.exports=require('base/drawapp').extend({
 			}
 		}
 	}
-})
+}

@@ -23,7 +23,9 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		mesh:{kind:'geometry', type:types.vec2},
 	}
 
-	proto.mesh = painter.Mesh(types.vec2).pushQuad(0,0,0,1,1,0,1,1)
+	var x = new painter.Mesh(types.vec2)
+
+	proto.mesh = new painter.Mesh(types.vec2).pushQuad(0,0,0,1,1,0,1,1)
 
 	proto.vertexStyle = function(){
 	}

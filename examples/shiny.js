@@ -26,7 +26,7 @@ module.exports=require('base/drawapp').extend({
 		this.redraw()
 	},
 	onDraw:function(){
-		for(var i=0;i<450;i++){
+		for(let i=0;i<450;i++){
 			this.drawRect({
 				id:i*0.01,
 				color:[

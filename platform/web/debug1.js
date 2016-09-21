@@ -1,11 +1,12 @@
-module.exports = require('/platform/service').extend(function debug1(proto){
+module.exports = class debug1 extends require('/platform/service'){
 
-	proto.onConstruct = function(){
+	constructor(...args){
+		super(...args)
 		this.args.test = '1'
 	}
 
 	// service log
-	proto.user_log = function(msg){
+	user_log(msg){
 		var div = this.div
 		if(!div){
 			this.div = div = document.createElement('div')
@@ -17,4 +18,4 @@ module.exports = require('/platform/service').extend(function debug1(proto){
 		// we should log this to the html screen
 		div.innerHTML += JSON.stringify(msg.data)+'</br>'
 	}
-})
+}

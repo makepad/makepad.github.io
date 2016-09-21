@@ -68,7 +68,7 @@ var pileupQueue = []
 var pileupTimer
 
 function flushPileupQueue(){
-	for(var i = 0; i < pileupQueue.length; i++){
+	for(let i = 0; i < pileupQueue.length; i++){
 		var msg = pileupQueue[i]
 		if(keyboard[msg.fn]) keyboard[msg.fn](msg)
 	}

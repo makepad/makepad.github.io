@@ -20,7 +20,7 @@ var tags = {}
 
 function pollWatchlist(){
 	var promises = []
-	for(var filename in watchfiles){
+	for(let filename in watchfiles){
 		promises.push(new Promise(function(resolve, reject){
 			Fs.stat(filename, function(filename, err, stat){
 				resolve({
@@ -32,7 +32,7 @@ function pollWatchlist(){
 	}
 	Promise.all(promises).then(function(results){
 		var filechanges = []
-		for(var i = 0; i < results.length; i++){
+		for(let i = 0; i < results.length; i++){
 			var result = results[i]
 			result.stat.atime = null
 			var newtag = JSON.stringify(result.stat)
@@ -46,7 +46,7 @@ function pollWatchlist(){
 			}
 		}
 		if(filechanges.length){ // signal all listeners
-			for(var i = 0; i < watchresponses.length; i++){
+			for(let i = 0; i < watchresponses.length; i++){
 				var res = watchresponses[i]
 				res.writeHead(200, {'Content-type':'text/json'})
 				res.end(JSON.stringify(filechanges))
@@ -104,7 +104,7 @@ function requestHandler(req, res){
 		var buf = new Uint8Array(req.headers['content-length'])
 		var off = 0
 		req.on('data', function(data){
-			for(var i = 0; i < data.length; i ++, off++){
+			for(let i = 0; i < data.length; i ++, off++){
 				buf[off] = data[i]
 			}
 		})
@@ -181,9 +181,9 @@ server.listen(server_port, server_interface, function(err){
 	}
 	// dump what we are listening on
 	var interfaces = Os.networkInterfaces()
-	for(var ifacekey in interfaces){
+	for(let ifacekey in interfaces){
 		var interface = interfaces[ifacekey]
-		for(var i = 0; i < interface.length; i++){
+		for(let i = 0; i < interface.length; i++){
 			var subiface = interface[i]
 			if(subiface.family !== 'IPv4') continue
 			console.log('Server is listening on http://'+subiface.address+':'+server_port+'/')

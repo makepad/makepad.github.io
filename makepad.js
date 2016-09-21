@@ -82,7 +82,7 @@ module.exports = require('base/app').extend(function(proto){
 		wrap:true,
 		padding:[0,0,0,0],
 		onCompose:function(){
-			return this.probes = Probes({
+			return this.probes = new Probes({
 				w:31,
 				h:'100%'
 			})
@@ -104,7 +104,7 @@ module.exports = require('base/app').extend(function(proto){
 			this.endBg(true)
 		},
 		onCompose:function(){
-			return Code({
+			return new Code({
 				x:'0',y:'0',h:0,w:0
 			})
 		}
@@ -141,14 +141,14 @@ module.exports = require('base/app').extend(function(proto){
 			// compute path for node
 			if(path[0].name === 'libs'){
 				var p = ''
-				for(var i = 1; i < path.length;i++){
+				for(let i = 1; i < path.length;i++){
 					if(i>1) p+= '/'
 					p += path[i].name
 				}
 			}
 			else{
 				var p = './'
-				for(var i = 0; i < path.length;i++){
+				for(let i = 0; i < path.length;i++){
 					if(i>0) p+= '/'
 					p += path[i].name
 				}
@@ -168,7 +168,7 @@ module.exports = require('base/app').extend(function(proto){
 				var allNodes = []
 
 				function walk(folder, base){
-					for(var i = 0; i < folder.length; i++){
+					for(let i = 0; i < folder.length; i++){
 						var child = folder[i]
 						if(child.folder){
 							walk(child.folder, base + child.name + '/')
@@ -184,7 +184,7 @@ module.exports = require('base/app').extend(function(proto){
 
 				Promise.all(allProj).then(function(results){
 					// store all the data in the tree
-					for(var i = 0; i < results.length; i++){
+					for(let i = 0; i < results.length; i++){
 						allNodes[i].data = results[i]
 					}
 					resolve(projectTree)
@@ -196,7 +196,7 @@ module.exports = require('base/app').extend(function(proto){
 	function projectToResources(projectTree, oldResourcesOrNode){
 		var resources = {}
 		function walk(folder, base){
-			for(var i = 0; i < folder.length; i++){
+			for(let i = 0; i < folder.length; i++){
 				var child = folder[i]
 				if(child.folder){
 					if(base === './libs/') walk(child.folder, 'libs/'+child.name + '/')
@@ -226,13 +226,13 @@ module.exports = require('base/app').extend(function(proto){
 			this.find('FileTree').data = project
 			var map = projectToResources(project, true)
 			if(project.open){
-				for(var i = 0; i < project.open.length; i++){
+				for(let i = 0; i < project.open.length; i++){
 					var open = project.open[i]
 					this.addCodeTab(map[open], open)
 				}
 			}
 			if(project.run){
-				for(var i = 0; i < project.run.length; i++){
+				for(let i = 0; i < project.run.length; i++){
 					var run = project.run[i]
 					this.addProcessTab(map[run].data, run)
 				}
@@ -253,7 +253,7 @@ module.exports = require('base/app').extend(function(proto){
 			return
 		}
 		var tabs = this.find('CodeHome').parent
-		var code = Code({
+		var code = new Code({
 			name:'Code'+fileName,
 			tabText:fileName,
 			fileName:fileName,
@@ -277,7 +277,7 @@ module.exports = require('base/app').extend(function(proto){
 			return
 		}
 		var tabs = this.find('UserProcessHome').parent
-		var idx = tabs.addNewChild(UserProcess({
+		var idx = tabs.addNewChild(new UserProcess({
 			name:'Process'+fileName,
 			tabText:fileName,
 			//fileNode:fileNode,
@@ -311,7 +311,7 @@ module.exports = require('base/app').extend(function(proto){
 
 	proto.onCompose = function(){
 		return [
-			Dock({
+			new Dock({
 				classes:{
 					HomeScreen:HomeScreen,
 					Code:Code,

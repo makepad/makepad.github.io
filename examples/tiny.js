@@ -1,15 +1,20 @@
-module.exports=require('base/drawapp').extend({
-	tools:{
-		Quad:{
-			pixel:function(){
-				return mix(
-					'white',
-					'black',
-					2*length(this.mesh.xy-.5))
+module.exports=class extends require('base/drawapp'){//top
+	
+	prototype(){
+		this.tools={
+			Quad:{
+				pixel:function(){
+					return mix(
+						'white',
+						'black',
+						2*length(this.mesh.xy-.5)
+					)
+				}
 			}
 		}
-	},
-	onDraw:function(){
+	}
+	
+	onDraw(){
 		this.drawQuad(this.viewGeom)
 	}
-})
+}

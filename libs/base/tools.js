@@ -28,7 +28,7 @@ module.exports = function(proto){
 		},
 		set:function(tools){
 			if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
-			for(var key in tools){
+			for(let key in tools){
 				var cls =  tools[key]
 				if(cls && cls.constructor === Object){ // subclass it
 					this[key] = cls
@@ -100,7 +100,7 @@ module.exports = function(proto){
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len
-		for(var i = start; i < writes.length; i += 4){
+		for(let i = start; i < writes.length; i += 4){
 			var props = writes[i]
 			var begin = writes[i+1]
 			var end = writes[i+2]
@@ -110,7 +110,7 @@ module.exports = function(proto){
 			var xoff = props.xOffset
 			var yoff = props.yOffset
 			var array = props.array
-			for(var j = begin; j < end; j++){
+			for(let j = begin; j < end; j++){
 				array[j * slots + xoff] += dx
 				array[j * slots + yoff] += dy
  			}
@@ -128,7 +128,7 @@ module.exports = function(proto){
 	// internal API used by canvas macros
 	proto.$allocShader = function(classname){
 		var shaders = this.$shaders
-		var proto = this['_' + classname].prototype
+		var proto = new this['_' + classname]()
 		
 		var info = proto.$compileInfo
 
@@ -148,7 +148,7 @@ module.exports = function(proto){
 
 		var attrid = attroffset
 		// set attributes
-		for(var key in geometryProps){
+		for(let key in geometryProps){
 			var geom = geometryProps[key]
 			var attrRange = ceil(geom.type.slots / 4)
 			vao.attributes(attrbase + attrid, attrRange, proto[geom.name])
@@ -208,14 +208,14 @@ module.exports = function(proto){
 		// copy oldobj
 		var outobj = oldobj?Object.create(oldobj):{}
 		// copy old object subobjects
-		for(var key in oldobj){
+		for(let key in oldobj){
 			var item = oldobj[key]
 			if(item && item.constructor === Object){
 				outobj[key] = protoInherit(item, newobj && newobj[key])
 			}
 		}
 		// overwrite new object
-		for(var key in newobj){
+		for(let key in newobj){
 			var item = newobj[key]
 			if(item && item.constructor === Object){
 				outobj[key] = protoInherit(oldobj && oldobj[key], newobj && newobj[key])
@@ -235,7 +235,7 @@ module.exports = function(proto){
 		var cpy = incpy
 		var out = {_:parent}
 		// make sure our copy props are read first
-		for(var key in base){
+		for(let key in base){
 			var value = base[key]
 			var $index = key.indexOf('$')
 			if($index === 0){
@@ -243,7 +243,7 @@ module.exports = function(proto){
 				cpy[key.slice(1)] = value
 			}
 		}
-		for(var key in ovl){
+		for(let key in ovl){
 			var value = ovl[key]
 			var $index = key.indexOf('$')
 			if($index === 0){
@@ -251,7 +251,7 @@ module.exports = function(proto){
 				cpy[key.slice(1)] = value
 			}
 		}
-		for(var key in base){
+		for(let key in base){
 			if(key === '_') continue
 			var value = base[key]
 			var $index = key.indexOf('$')
@@ -269,7 +269,7 @@ module.exports = function(proto){
 				out[key] = value
 			}
 		}
-		for(var key in ovl){
+		for(let key in ovl){
 			if(key === '_') continue
 			var value = ovl[key]
 			var $index = key.indexOf('$')
@@ -287,7 +287,7 @@ module.exports = function(proto){
 				out[key] = value
 			}
 		}
-		for(var key in cpy){
+		for(let key in cpy){
 			out[key] = cpy[key]
 		}
 		return out
@@ -313,7 +313,7 @@ module.exports = function(proto){
 
 
 		var target = this
-		for(var macroName in macros){
+		for(let macroName in macros){
 			var methodName = macroName + className
 			var thing = macros[macroName]
 			

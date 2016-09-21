@@ -50,10 +50,8 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 		'GOLDEN':'1.618033988749895'
 	}
 
-	painter.nameId('this_DOT_'+key)
-
 	// Allocate non draw block names
-	for(var key in proto._props){
+	for(let key in proto._props){
 		var prop = proto._props[key]
 		if(prop.kind === 'uniform'){
 			if(!prop.block || prop.block === 'draw') continue
@@ -67,10 +65,6 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	proto.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
 	proto.constantColor = undefined
 	
-	proto._onConstruct = function(){
-		throw new Error("Cannot new a shader")
-	}
-
 	//
 	//
 	// Entrypoints
@@ -192,7 +186,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 		var ay = 1.0 - cy - by
 		var u = t
 
-		for(var i = 0; i < 6; i++){
+		for(let i = 0; i < 6; i++){
 			var x = ((ax * u + bx) * u + cx) * u - t
 			if(abs(x) < epsilon) return ((ay * u + by) * u + cy) * u
 			var d = (3.0 * ax * u + 2.0 * bx) * u + cx
@@ -205,7 +199,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 		
 		var l = 0, w = 0.0, v = 1.0
 		u = t
-		for(var i = 0; i < 8; i++){
+		for(let i = 0; i < 8; i++){
 			var x = ((ax * u + bx) * u + cx) * u
 			if(abs(x - t) < epsilon) return ((ay * u + by) * u + cy) * u
 			if(t > x) w = u
@@ -346,6 +340,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	}
 
 	proto.onExtendClass = function(){
+		if(this.prototype) this.prototype()
 		if(!this.$shaderClean){
 			this.$shaderClean = true
 			this.$compileShader()

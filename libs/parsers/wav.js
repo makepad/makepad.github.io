@@ -32,26 +32,26 @@ exports.parse = function(buffer, normalize){
 				var cs=(fmt.bitsPerSample/8)
 				var skip=(fmt.bitsPerSample/8)*fmt.numChannels
 				var samples=chunkSize/skip
-				for(var c=0;c<fmt.numChannels;c++){
+				for(let c=0;c<fmt.numChannels;c++){
 					var f32=new Float32Array(samples)
 					var co=c*cs+(o<<1)
 					data.push(f32)
 					if(fmt.bitsPerSample===8){
-						for(var i=0;i<samples;i++){
+						for(let i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=u8[f]
 							var v = f32[i]=(num&0x80?((num&0x7f)-0x80):num)/0x80
 						}
 					}
 					else if(fmt.bitsPerSample===16){
-						for(var i=0;i<samples;i++){
+						for(let i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=(u8[f+1]<<8)|u8[f]
 							var v = f32[i]=(num&0x8000?((num&0x7fff)-0x8000):num)/0x8000
 						}
 					}
 					else if(fmt.bitsPerSample===24){
-						for(var i=0;i<samples;i++){
+						for(let i=0;i<samples;i++){
 							var f=i*skip+co
 							var num=(u8[f+2]<<16)|(u8[f+1]<<8)|u8[f]
 							var v = f32[i]=(num&0x800000?((num&0x7fffff)-0x800000):num)/0x800000
@@ -63,18 +63,18 @@ exports.parse = function(buffer, normalize){
 				}
 				if(normalize){
 					var minv = 0, maxv = 0
-					for(var c=0;c<fmt.numChannels;c++){
+					for(let c=0;c<fmt.numChannels;c++){
 						var f32 = data[c]
-						for(var i=0;i<samples;i++){
+						for(let i=0;i<samples;i++){
 							var v = f32[i]
 							if(v<minv)minv = v
 							if(v>maxv)maxv = v
 						}
 					}
 					var mul = 1 / max(-minv, maxv)
-					for(var c=0;c<fmt.numChannels;c++){
+					for(let c=0;c<fmt.numChannels;c++){
 						var f32 = data[c]
-						for(var i=0;i<samples;i++){
+						for(let i=0;i<samples;i++){
 							f32[i] *= mul
 						}
 					}
@@ -92,18 +92,18 @@ exports.parse = function(buffer, normalize){
 
 exports.normalize = function(data){
 	var minv = 0, maxv = 0
-	for(var c = 0; c < data.length; c++){
+	for(let c = 0; c < data.length; c++){
 		var chan = data[c]
-		for(var i = 0; i < chan.length; i++){
+		for(let i = 0; i < chan.length; i++){
 			var v = chan[i]
 			if(v<minv) minv =v
 			if(v>maxv) maxv = v
 		}
 	}
 	var mul = 1 / max(-minv, maxv)
-	for(var c = 0; c < data.length; c++){
+	for(let c = 0; c < data.length; c++){
 		var chan = data[c]
-		for(var i = 0; i < chan.length; i++){
+		for(let i = 0; i < chan.length; i++){
 			chan[i] *= mul
 		}
 	}
@@ -150,8 +150,8 @@ exports.serialize16=function(data,rate){
 	u16[o+2]=chunk&0xffff
 	u16[o+3]=(chunk>>16)&0xffff
 	o+=4
-	for(var i=0;i<samples;i++){
-		for(var c=0;c<channels;c++){
+	for(let i=0;i<samples;i++){
+		for(let c=0;c<channels;c++){
 			var num=data[c][i]
 			if(num<0)u16[o++]=0x10000-floor(num*-0x7fff)
 			else u16[o++]=floor(num*0x7fff)

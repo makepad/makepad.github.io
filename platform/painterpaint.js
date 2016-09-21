@@ -78,7 +78,7 @@ module.exports = function painterPaint(proto){
 	}
 
 	proto.onRepaint = function(){
-		for(var digit in this.frameSyncPromise){
+		for(let digit in this.frameSyncPromise){
 			this.frameSyncPromise[digit].resolve(true)
 		}
 		this.frameSyncPromise = {}
@@ -94,7 +94,7 @@ module.exports = function painterPaint(proto){
 		if(!this.mainFramebuffer || !this.mainFramebuffer.todoId) return
 
 		// lets resolve pending mousepicks slash create digit windows	
-		for(var digit in this.pickPromises){
+		for(let digit in this.pickPromises){
 			var pick = this.pickPromises[digit]
 			var res = this.renderPickWindow(digit, pick.x, pick.y)
 			pick.resolve(res)
@@ -122,7 +122,7 @@ module.exports = function painterPaint(proto){
 			deps.push.apply(deps, todo.deps)
 		}
 		var children = todo.children
-		for(var i = 0; i < children.length; i++){
+		for(let i = 0; i < children.length; i++){
 			this.findDeps(this.todoIds[children[i]], deps)
 		}
 	}
@@ -136,7 +136,7 @@ module.exports = function painterPaint(proto){
 		// we have to find all our deps
 		var deps = []
 		this.findDeps(todo, deps)
-		for(var i = 0; i < deps.length; i++){
+		for(let i = 0; i < deps.length; i++){
 
 			var fb = this.framebufferIds[deps[i]]
 			var ret
@@ -253,7 +253,7 @@ module.exports = function painterPaint(proto){
 		//console.log('RENDER PICKDEP')
 		var deps = []
 		this.findDeps(todo, deps)
-		for(var i = 0; i < deps.length; i++){
+		for(let i = 0; i < deps.length; i++){
 			var depId = deps[i]
 			var fb = this.framebufferIds[depId]
 			if(fb === framebuffer) return console.error("INFINITE LOOP")
@@ -312,7 +312,7 @@ module.exports = function painterPaint(proto){
 		this.findDeps(todo, deps)
 
 		if(force){ // render deps before framebuffer
-			for(var i = 0; i < deps.length; i++){
+			for(let i = 0; i < deps.length; i++){
 				var fb = this.framebufferIds[deps[i]]
 				if(fb.child){
 					fb.child.renderChildPick(this.repaintTime, this.frameId)
@@ -335,7 +335,7 @@ module.exports = function painterPaint(proto){
 			gl.readPixels(0.5*pickw+px,0.5*pickh-py, 1,1, gl.RGBA, gl.UNSIGNED_BYTE, pick.buf)
 
 			// render deps after framebuffer pick
-			for(var i = 0; i < deps.length; i++){
+			for(let i = 0; i < deps.length; i++){
 				var fb = this.framebufferIds[deps[i]]
 				if(fb.child){
 					fb.child.renderChildPick(this.repaintTime, this.frameId)

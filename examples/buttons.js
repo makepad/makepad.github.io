@@ -26,7 +26,7 @@ module.exports = require('base/drawapp').extend({
 		})
 	},
 	onDraw:function(){
-		for(var i = 0; i < 500; i++){
+		for(let i = 0; i < 500; i++){
 			this.drawButton({
 				text:""+i
 			})

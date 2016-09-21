@@ -43,7 +43,7 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 			// lets check if there are other stamps in the radio group
 			if(this.click.radio !== undefined){ // its a radio group
 				this.state = this.styles.clickedOver
-				for(var i = 0; this.click[i]; i++){
+				for(let i = 0; this.click[i]; i++){
 					var other = this.click[i]
 					if(other !== this){
 						other.state = other.styles.default
@@ -89,7 +89,8 @@ module.exports = require('base/stamp').extend(function ButtonStamp(proto){
 				else{
 					this.state = this.styles.defaultOver
 				}
-				if(this.onClick) this.onClick(e)
+				if(this.onClickStamp) this.onClickStamp(e)
+				if(this.onClick) this.onClick.call(this.view,e)
 			}
 			else{
 				this.state = this.styles.default

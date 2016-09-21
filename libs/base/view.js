@@ -5,57 +5,205 @@ var fingers = require('services/fingers')
 var mat4 = require('base/mat4')
 var types = require('base/types')
 
-module.exports = require('base/class').extend(function View(proto){
+var zeroMargin = [0,0,0,0]
+var identityMat4 = mat4.create()
 
-	require('base/props')(proto)
-	require('base/events')(proto)
-	require('base/tools')(proto)
+module.exports = class View extends require('base/class'){
 
-	proto.Turtle = require('base/turtle')
+	prototype(){
+		require('base/props')(this)
+		require('base/events')(this)
+		require('base/tools')(this)
+		this.Turtle = require('base/turtle')
+		this.props = {
+			visible:true,
+			x:'0',
+			y:'0',
+			z:NaN,
+			w:'100%',
+			h:'100%',
+			overflow:'scroll',
+			d:NaN,
+			clip:true,
+			xCenter:0.5,
+			yCenter:0.5,
+			xScale:1,
+			yScale:1,
+			rotate:0,
+			time:0,
+			hasFocus:false,
+			frameId:0,
+			surface:false,
+			margin:[0,0,0,0],
+			padding:[0,0,0,0],
+			drawPadding:undefined,
+			align:[0,0],
+			wrap:1		
+		}
+
+		this.tools = {
+			ScrollBar: require('base/stamp').extend(function ScrollBarStamp(proto){
+				proto.props = {
+					vertical:0.,
+					moveScroll:0.,
+					borderRadius:4
+				}
+				proto.cursor = 'default'
+				proto.tools = {
+					ScrollBar: require('tools/quad').extend({
+						props:{
+							x:{noTween:1, noInPlace:1, value:NaN},
+							y:{noTween:1, noInPlace:1, value:NaN},
+							vertical:{noTween:1, value:0.},
+							bgColor:'#000',
+							handleColor:'#111',
+							borderRadius:4
+						},
+						vertexStyle:function(){$ // bypass the worker roundtrip :)
+							var pos = vec2()
+							if(this.vertical < .5){
+								this.y += .5///this.pixelRatio
+								this.handleSize = this.viewSpace.x / this.viewSpace.z
+								this.handlePos = this.viewScroll.x / this.viewSpace.z
+							}
+							else{
+								this.x += .5///this.pixelRatio
+								this.handleSize = this.viewSpace.y / this.viewSpace.w
+								this.handlePos = this.viewScroll.y / this.viewSpace.w
+							}
+						},
+						pixelStyle:function(){},
+						pixel:function(){
+							this.pixelStyle()
+							var p = this.mesh.xy * vec2(this.w, this.h)
+							var aa = this.antialias(p)
+							
+							// background field
+							var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+
+							var fHan = 0.						
+							if(this.vertical < 0.5){
+								fHan = this.boxDistance(p, this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
+							}
+							else{
+								fHan = this.boxDistance(p, 0., this.h*this.handlePos, this.w, this.handleSize*this.h, this.borderRadius)
+							}
+							
+							// mix the fields
+							var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*aa+1.,0.,1.))
+							return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
+						}
+					})
+				}
+
+				proto.styles = {
+					default:{
+						ScrollBar:{
+							//tween:1,
+							//duration:0.3,
+							bgColor:'#4448',
+							handleColor:'#888'
+						}
+					},
+					hover:{
+						ScrollBar:{
+							//tween:1,
+							//duration:0.1,
+							bgColor:'#555f',
+							handleColor:'yellow'
+						}
+					}
+				}
+
+				proto.inPlace = true
+
+				proto.onFingerDown = function(){
+					this.state = this.styles.hover
+				}
+
+				proto.onFingerUp = function(){
+					this.state = this.styles.default
+				}
+
+				proto.onDraw = function(){
+					this.drawScrollBar(this)
+				}
+
+				proto.toolMacros = {
+					draw:function(overload){
+						this.$STYLESTAMP(overload)
+						this.$DRAWSTAMP()
+						return $stamp
+					}
+				}
+			}),
+			Debug:require('tools/quad'),
+			Surface:require('base/shader').extend(function Surface(proto){
+				proto.props = {
+					x: NaN,
+					y: NaN,
+					w: NaN,
+					h: NaN,
+					z: 0,
+					mesh:{kind:'geometry', type:types.vec2},
+					colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
+					pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
+				}
+				proto.mesh = new painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1)
+				proto.drawTrace = 1
+				proto.vertex = function(){$
+					var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
+					return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
+				}
+
+				proto.pixelMain = function(){$
+					if(this.workerId < 0.){
+						gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
+					}
+					else{
+						gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
+					}
+				}
+
+				proto.toolMacros = {
+					draw:function(overload){
+						this.$STYLEPROPS(overload)
+						this.$ALLOCDRAW()
+						this.$WRITEPROPS()
+					}
+				}
+			})
+		}
+
+		this.viewId = 0
+		this._onVisible = 2
+
+		this.$scrollBarSize = 8
+		this.$scrollBarRadius = 2
+		this.$scrollPickIds = 65000
 	
-	var View = proto.constructor
+		this.onFlag1 = this.recompose
+		this.onFlag2 = this.redraw
+		this.onFlag4 = this.relayout
 
-	// lets define some props
-	proto.props = {
-		visible:true,
-		x:'0',
-		y:'0',
-		z:NaN,
-		w:'100%',
-		h:'100%',
-		overflow:'scroll',
-		d:NaN,
-		clip:true,
-		xCenter:0.5,
-		yCenter:0.5,
-		xScale:1,
-		yScale:1,
-		rotate:0,
-		time:0,
-		hasFocus:false,
-		frameId:0,
-		surface:false,
-		margin:[0,0,0,0],
-		padding:[0,0,0,0],
-		drawPadding:undefined,
-		align:[0,0],
-		wrap:1		
+		Object.defineProperty(this, 'viewGeom', {
+			get:function(){
+				return {
+					moveScroll:0.,
+					noBounds:1,
+					w:this.$w,
+					h:this.$h,
+					padding:this.drawPadding || this.padding
+				}
+			},
+			set:function(){
+				throw new Error('Dont call set on geom')
+			}
+		})
 	}
 
-	proto.viewId = 0
-	// flag visible
-	proto._onVisible = 2
-
-	proto.$createTodo = function(){
-		var todo = new painter.Todo()
-		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
-		todo.todoUbo = new painter.Ubo(todoUboDef)
-		return todo
-	}
-
-	proto._onConstruct = function(){
-		// lets process the args and construct things
-		// lets create a todo
+	constructor(...args){
+		super(...args)
 		this.todo = this.$createTodo()
 		this.turtle = new this.Turtle(this)
 		this.$turtleStack = [this.turtle]
@@ -75,10 +223,10 @@ module.exports = require('base/class').extend(function View(proto){
 		this.view = this
 
 		var children = this.children = this.constructorChildren = []
-		for(var i = 0; i < arguments.length; i++){
+		for(let i = 0; i < arguments.length; i++){
 			var value = arguments[i]
 			if(typeof value === 'object' && value.constructor === Object){
-				for(var key in value){
+				for(let key in value){
 					this[key] = value[key]
 				}
 			}
@@ -89,17 +237,24 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.name = this.name || this.constructor.name
 	}
 
+	$createTodo(){
+		var todo = new painter.Todo()
+		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
+		todo.todoUbo = new painter.Ubo(todoUboDef)
+		return todo
+	}
+
 	// breadth first find child by name
-	proto.find = function(name){
+	find(name){
 		if(this.name === name || this.constructor.name === name) return this
 		var children = this.children
 		if(children){
 			var childlen = children.length
-			for(var i = 0; i < childlen; i++){
+			for(let i = 0; i < childlen; i++){
 				var child = children[i]
 				if(child.name === name || child.constructor.name === name) return child
 			}
-			for(var i = 0; i< childlen; i++){
+			for(let i = 0; i< childlen; i++){
 				var child = children[i]
 				var res = child.find(name)
 				if(res) return res
@@ -107,28 +262,28 @@ module.exports = require('base/class').extend(function View(proto){
 		}
 	}
 
-	proto._onInit = function(){
+	_onInit(){
 		// connect our todo map
 		this.app.$viewTodoMap[this.todo.todoId] = this
 	}
 
-	proto._onDestroy = function(){
+	_onDestroy(){
 		// destroy the todo
 		this.todo.destroyTodo()
 		this.todo = undefined
 	}
 
-	proto.onDrawChildren = function(){
+	onDrawChildren(){
 		var todo = this.todo
 		var children = this.children
-		for(var i = 0; i < children.length; i++){
+		for(let i = 0; i < children.length; i++){
 			var child = children[i]
 			todo.addChildTodo(child.todo)
 			child.$redrawView()
 		}
 	}
 
-	proto.beginSurface = function(name, w, h, pixelRatio, hasPick, hasZBuf, colorType){
+	beginSurface(name, w, h, pixelRatio, hasPick, hasZBuf, colorType){
 		if(w === undefined) w = this.$w
 		if(h === undefined) h = this.$h
 		if(isNaN(w)) w = 1
@@ -185,7 +340,7 @@ module.exports = require('base/class').extend(function View(proto){
 		return pass
 	}
 
-	proto.addNewChild = function(child, index){
+	addNewChild(child, index){
 		if(index === undefined) index = this.children.length
 		this.children.splice(index, 0, child)
 		child.app = this.app
@@ -197,7 +352,7 @@ module.exports = require('base/class').extend(function View(proto){
 		return index
 	}
 	
-	proto.replaceNewChild = function(child, index){
+	replaceNewChild(child, index){
 		var oldChild = this.children[index]
 		this.children[index] = child
 		child.app = this.app
@@ -208,7 +363,7 @@ module.exports = require('base/class').extend(function View(proto){
 		return oldChild
 	}
 
-	proto.replaceOldChild = function(child, index){
+	replaceOldChild(child, index){
 		var oldChild = this.children[index] 
 		this.children[index] = child
 		child.app = this.app
@@ -218,55 +373,35 @@ module.exports = require('base/class').extend(function View(proto){
 		return oldChild
 	}
 
-	proto.addOldChild = function(child, index){
+	addOldChild(child, index){
 		if(index === undefined) index = this.children.length
 		this.children.splice(index, 0, child)
 		child.parent = this
 		this.relayout()
 	}
 
-	proto.deleteChild = function(index){
+	deleteChild(index){
 		this.children.splice(index, 1)
 		this.relayout()
 	}
 
-	proto.removeChild = function(index){
+	removeChild(index){
 		this.children.splice(index, 1)
 		this.relayout()
 	}
 
-	Object.defineProperty(proto, 'viewGeom', {
-		get:function(){
-			return {
-				moveScroll:0.,
-				noBounds:1,
-				w:this.$w,
-				h:this.$h,
-				padding:this.drawPadding || this.padding
-			}
-		},
-		set:function(){
-			throw new Error('Dont call set on geom')
-		}
-	})
-
-	proto.endSurface = function(){
+	
+	endSurface(){
 		// stop the pass and restore our todo
 		this.todo = this.$todoStack.pop()
 	}
 
-	proto.transferFingerMove = function(digit, pickId){
+	transferFingerMove(digit, pickId){
 		this.app.transferFingerMove(digit, this.todo.todoId, pickId)
 	}
 
-	var zeroMargin = [0,0,0,0]
-	var identityMat4 = mat4.create()
 
-	proto.$scrollBarSize = 8
-	proto.$scrollBarRadius = 2
-	proto.$scrollPickIds = 65000
-
-	proto.scrollIntoView = function(x, y, w, h){
+	scrollIntoView(x, y, w, h){
 		// we figure out the scroll-to we need
 		var todo = this.todo
 		var sx = todo.xScroll, sy = todo.yScroll
@@ -277,7 +412,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.scrollTo(sx, sy)
 	}
 
-	proto.$redrawView = function(){		
+	$redrawView(){		
 		this._time = this.app._time
 
 		this._frameId = this.app._frameId
@@ -419,7 +554,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.todo.ysScroll = this.$yAbs + painter.y
 
 		// clear out unused stamps
-		for(var i = this.$pickId+1;this.$stamps[i];i++){
+		for(let i = this.$pickId+1;this.$stamps[i];i++){
 			this.$stamps[i] = null
 		}
 
@@ -481,7 +616,7 @@ module.exports = require('base/class').extend(function View(proto){
 			this.onFlag = 0
 			this.endTurtle()
 
-			for(var i = this.$pickId+1;this.$stamps[i];i++){
+			for(let i = this.$pickId+1;this.$stamps[i];i++){
 				this.$stamps[i] = null
 			}
 		}
@@ -491,7 +626,7 @@ module.exports = require('base/class').extend(function View(proto){
 		}
 	}
 
-	proto.scrollAtDraw = function(dx, dy, delta){
+	scrollAtDraw(dx, dy, delta){
 		this.$scrollAtDraw = {
 			x:delta?this.todo.xScroll+(dx||0):(dx||0), 
 			y:delta?this.todo.yScroll+(dy||0):(dy||0)
@@ -499,7 +634,7 @@ module.exports = require('base/class').extend(function View(proto){
 		this.redraw()
 	}
 
-	proto.scrollSize = function(x2, y2, x1, y1){
+	scrollSize(x2, y2, x1, y1){
 		var turtle = this.turtle
 		if(x2 > turtle.x2) turtle.x2 = x2
 		if(y2 > turtle.y2) turtle.y2 = y2
@@ -507,15 +642,15 @@ module.exports = require('base/class').extend(function View(proto){
 		if(y1 < turtle.y1) turtle.y1 = y1
 	}
 
-	proto.reuseDrawSize = function(){
+	reuseDrawSize(){
 		this.turtle.x2 = this.$x2Old
 		this.turtle.y2 = this.$y2Old
 	}
 
-	proto.recompose = function(){
+	recompose(){
 	}
 
-	proto.$drawCleanFalse = function(){
+	$drawCleanFalse(){
 		var node = this
 		while(node){//}] && node.$drawClean){
 			node.$drawClean = false
@@ -524,7 +659,7 @@ module.exports = require('base/class').extend(function View(proto){
 	}
 
 	// how do we incrementally redraw?
-	proto.redraw = function(){
+	redraw(){
 		//if(this.$drawClean){
 		this.$drawCleanFalse()
 		if(this.app && !this.app.redrawTimer){
@@ -536,23 +671,23 @@ module.exports = require('base/class').extend(function View(proto){
 		//}
 	}
 
-	proto.relayout = function(){
+	relayout(){
 		this.app.$layoutClean = false
 		this.redraw()
 	}
 
-	proto.setFocus = function(){
+	setFocus(){
 		var old = this.app.focusView
 		this.app.setWorkerKeyboardFocus()
 		if(old !== this){
 			this.app.focusView = this
-			old.hasFocus = false
+			if(old) old.hasFocus = false
 			this.hasFocus = true
 			if(this.app.onFocusChange) this.app.onFocusChange(this, old)
 		}
 	}
 
-	proto.clearFocus = function(){
+	clearFocus(){
 		var old = this.app.focusView		
 		this.app.focusView = undefined
 		if(old){
@@ -561,147 +696,8 @@ module.exports = require('base/class').extend(function View(proto){
 		if(this.app.onFocusChange) this.app.onFocusChange(undefined, old)
 	}
 
-	proto.animateUniform = function(value){
+	animateUniform(value){
 		var timeMax = value[0] + value[1]
 		if(timeMax > this.todo.timeMax) this.todo.timeMax = timeMax
 	}
-
-	proto.onFlag1 = proto.recompose
-	proto.onFlag2 = proto.redraw
-	proto.onFlag4 = proto.relayout
-
-	proto.tools = {
-		ScrollBar: require('base/stamp').extend(function ScrollBarStamp(proto){
-			proto.props = {
-				vertical:0.,
-				moveScroll:0.,
-				borderRadius:4
-			}
-			proto.cursor = 'default'
-			proto.tools = {
-				ScrollBar: require('tools/quad').extend({
-					props:{
-						x:{noTween:1, noInPlace:1, value:NaN},
-						y:{noTween:1, noInPlace:1, value:NaN},
-						vertical:{noTween:1, value:0.},
-						bgColor:'#000',
-						handleColor:'#111',
-						borderRadius:4
-					},
-					vertexStyle:function(){$ // bypass the worker roundtrip :)
-						var pos = vec2()
-						if(this.vertical < .5){
-							this.y += .5///this.pixelRatio
-							this.handleSize = this.viewSpace.x / this.viewSpace.z
-							this.handlePos = this.viewScroll.x / this.viewSpace.z
-						}
-						else{
-							this.x += .5///this.pixelRatio
-							this.handleSize = this.viewSpace.y / this.viewSpace.w
-							this.handlePos = this.viewScroll.y / this.viewSpace.w
-						}
-					},
-					pixelStyle:function(){},
-					pixel:function(){
-						this.pixelStyle()
-						var p = this.mesh.xy * vec2(this.w, this.h)
-						var aa = this.antialias(p)
-						
-						// background field
-						var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
-
-						var fHan = 0.						
-						if(this.vertical < 0.5){
-							fHan = this.boxDistance(p, this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
-						}
-						else{
-							fHan = this.boxDistance(p, 0., this.h*this.handlePos, this.w, this.handleSize*this.h, this.borderRadius)
-						}
-						
-						// mix the fields
-						var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*aa+1.,0.,1.))
-						return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
-					}
-				})
-			}
-
-			proto.styles = {
-				default:{
-					ScrollBar:{
-						//tween:1,
-						//duration:0.3,
-						bgColor:'#4448',
-						handleColor:'#888'
-					}
-				},
-				hover:{
-					ScrollBar:{
-						//tween:1,
-						//duration:0.1,
-						bgColor:'#555f',
-						handleColor:'yellow'
-					}
-				}
-			}
-
-			proto.inPlace = true
-
-			proto.onFingerDown = function(){
-				this.state = this.styles.hover
-			}
-
-			proto.onFingerUp = function(){
-				this.state = this.styles.default
-			}
-
-			proto.onDraw = function(){
-				this.drawScrollBar(this)
-			}
-
-			proto.toolMacros = {
-				draw:function(overload){
-					this.$STYLESTAMP(overload)
-					this.$DRAWSTAMP()
-					return $stamp
-				}
-			}
-		}),
-		Debug:require('tools/quad'),
-		Surface:require('base/shader').extend(function Surface(proto){
-			proto.props = {
-				x: NaN,
-				y: NaN,
-				w: NaN,
-				h: NaN,
-				z: 0,
-				mesh:{kind:'geometry', type:types.vec2},
-				colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
-				pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
-			}
-			proto.mesh = painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1)
-			proto.drawTrace = 1
-			proto.vertex = function(){$
-				var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
-				return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
-			}
-
-			proto.pixelMain = function(){$
-				if(this.workerId < 0.){
-					gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
-				}
-				else{
-					gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
-				}
-			}
-
-			proto.toolMacros = {
-				draw:function(overload){
-					this.$STYLEPROPS(overload)
-					this.$ALLOCDRAW()
-					this.$WRITEPROPS()
-				}
-			}
-		})
-	}
-
-})
+}

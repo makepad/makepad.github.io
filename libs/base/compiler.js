@@ -1,19 +1,20 @@
-module.exports = require('base/class').extend(function Compiler(proto){
+var painter = require('services/painter')
+var types = require('base/types')
+var parser = require('parsers/js')
+var ShaderInfer = require('base/infer')
 
-	var painter = require('services/painter')
-	var types = require('base/types')
-	var parser = require('parsers/js')
-	var ShaderInfer = require('base/infer')
+for(let i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
-	for(var i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
+const compName = ['x','y','z','w']
 
-	proto.$mapExceptions = true
+module.exports = require('base/class').extend(function(proto){
 
-	proto.$uniformHeader = ""
-	proto.$pixelHeader = ""
-	proto.$vertexHeader = ""
-
-	var compName = ['x','y','z','w']
+	proto.prototype = function(){
+		this.$mapExceptions = true
+		this.$uniformHeader = ""
+		this.$pixelHeader = ""
+		this.$vertexHeader = ""
+	}
 
 	proto.$compileShader = function(){
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
@@ -22,20 +23,20 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		if(vtx.exception || pix.exception) return
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
-		for(var key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
-		for(var key in pix.geometryProps) inputs[key] = geometryProps[key] = pix.geometryProps[key]
-		for(var key in vtx.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = vtx.instanceProps[key]
-		for(var key in pix.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = pix.instanceProps[key]
-		for(var key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
-		for(var key in pix.uniforms){
+		for(let key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
+		for(let key in pix.geometryProps) inputs[key] = geometryProps[key] = pix.geometryProps[key]
+		for(let key in vtx.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = vtx.instanceProps[key]
+		for(let key in pix.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = pix.instanceProps[key]
+		for(let key in vtx.uniforms) uniforms[key] = vtx.uniforms[key]
+		for(let key in pix.uniforms){
 			var uni = pix.uniforms[key]
 			if(uniforms[key]) uniforms[key].refcount += uni.refcount
 			else uniforms[key] = uni
 		}
 
 		// the shaders
-		var vhead = proto.$vertexHeader, vpre = '', vpost = ''
-		var phead = proto.$pixelHeader, ppre = '', ppost = ''
+		var vhead = this.$vertexHeader, vpre = '', vpost = ''
+		var phead = this.$pixelHeader, ppre = '', ppost = ''
 
 		// Unpack and tween props
 		vhead += '// prop attributes\n'
@@ -45,7 +46,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		// calc prop size
 		var totalslots = 0
 
-		for(var key in instanceProps){
+		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.type.slots
 			if(prop.config.pack){
@@ -73,7 +74,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		// Unpack attributes
 		var lastslot = Math.floor(totalslots/4)
 		var propSlots = 0
-		for(var key in instanceProps){
+		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			// lets create the unpack / mix code here
@@ -149,7 +150,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 				if(prop.config.noTween){
 					var vdef = prop.type.name + '('
 					if(vdef === 'float(') vdef = '('
-					for(var i = 0, start = propSlots - slots; i < slots; i++){
+					for(let i = 0, start = propSlots - slots; i < slots; i++){
 						if(i) vdef += ', '
 						vdef += propSlot(start + i)
 					}
@@ -161,7 +162,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 					var vnew = prop.type.name + '('
 					if(vnew === 'float(') vnew = '('
 					var vold = vnew
-					for(var i = 0, start1 = propSlots - slots, start2 = propSlots - slots*2; i < slots; i++){
+					for(let i = 0, start1 = propSlots - slots, start2 = propSlots - slots*2; i < slots; i++){
 						if(i) vnew += ', ', vold += ', '
 						vnew += propSlot(start1 + i)
 						vold += propSlot(start2 + i)
@@ -174,7 +175,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		}
 
 		var attrid = 0
-		for(var i = totalslots, pid = 0; i > 0; i -= 4){
+		for(let i = totalslots, pid = 0; i > 0; i -= 4){
 			if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
 			if(i == 3) vhead += 'attribute vec3 ATTR_'+(attrid)+';\n'
 			if(i == 2) vhead += 'attribute vec2 ATTR_'+(attrid)+';\n'
@@ -182,7 +183,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			attrid++
 		}
 
-		for(var key in geometryProps){
+		for(let key in geometryProps){
 			var geom = geometryProps[key]
 			var slots = geom.type.slots
 
@@ -190,13 +191,13 @@ module.exports = require('base/class').extend(function Compiler(proto){
 				var v1 = geom.type.name + '('
 				if(v1 === 'float(') v1 = '('
 				vpre += '\t' + key + ' = ' + v1
-				for(var i = 0; i < slots; i++){
+				for(let i = 0; i < slots; i++){
 					if(i) vpre += ', '
 					vpre += '\tATTR_' + (attrpid + Math.floor(i/4)) + '.' + compName[i%4]
 				}
 				vpre += ');\n'
 
-				for(var i = slots, pid = 0; i > 0; i -= 4){
+				for(let i = slots, pid = 0; i > 0; i -= 4){
 					if(i >= 4) vhead = 'attribute vec4 ATTR_'+(attrid)+';\n' + vhead
 					if(i == 3) vhead = 'attribute vec3 ATTR_'+(attrid)+';\n' + vhead
 					if(i == 2) vhead = 'attribute vec2 ATTR_'+(attrid)+';\n' + vhead
@@ -213,24 +214,24 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		vhead = '// mesh attributes\n' + vhead
 
 		// define structs
-		for(var key in vtx.structs){
+		for(let key in vtx.structs){
 			var struct = vtx.structs[key]
 			// lets output the struct
 			vhead += '\nstruct ' + key + '{\n'
 			var fields = struct.fields
-			for(var fieldname in fields){
+			for(let fieldname in fields){
 				var field = fields[fieldname]
 				vhead += '	'+field.name +' '+fieldname+';\n'
 			}
 			vhead += '};\n'
 		}
 
-		for(var key in pix.structs){
+		for(let key in pix.structs){
 			var struct = pix.structs[key]
 			// lets output the struct
 			phead += '\nstruct ' + key + '{\n'
 			var fields = struct.fields
-			for(var fieldname in fields){
+			for(let fieldname in fields){
 				var field = fields[fieldname]
 				phead += '	'+field.name +' '+fieldname+';\n'
 			}
@@ -239,27 +240,27 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 		// define the input variables
 		vhead += '\n// inputs\n'
-		for(var key in inputs){
+		for(let key in inputs){
 			var input = inputs[key]
 			vhead += input.type.name + ' ' + key + ';\n'
 		}
 
 		// define the varying targets
-		for(var key in vtx.varyOut){
+		for(let key in vtx.varyOut){
 			var vary = vtx.varyOut[key]
 			vhead += vary.type.name + ' ' + key + ';\n'
 		}
 
 		// lets pack/unpack varying and props and attributes used in pixelshader
 		var allvary = {}
-		for(var key in pix.geometryProps) allvary[key] = pix.geometryProps[key]
-		for(var key in pix.varyOut) allvary[key] = pix.varyOut[key]
-		for(var key in pix.instanceProps) allvary[key] = pix.instanceProps[key]
+		for(let key in pix.geometryProps) allvary[key] = pix.geometryProps[key]
+		for(let key in pix.varyOut) allvary[key] = pix.varyOut[key]
+		for(let key in pix.instanceProps) allvary[key] = pix.instanceProps[key]
 
 		// make varying packing and unpacking
 		var vid = 0, curslot = 0, varystr = ''
 		var varyslots = 0
-		for(var key in allvary){
+		for(let key in allvary){
 			var prop = allvary[key]
 			var type = prop.type
 			var slots = type.slots
@@ -270,7 +271,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			varyslots += slots
 
 			// pack the varying
-			for(var i = 0; i < slots; i++, curslot++){
+			for(let i = 0; i < slots; i++, curslot++){
 				// lets allocate a slot
 				if(curslot%4 === 0){
 					if(curslot === 0){
@@ -297,13 +298,13 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			var v1 = prop.type.name + '('
 			if(v1 === 'float(') v1 = '('
 			ppre += '\t' + key + ' = ' + v1
-			for(var i = 0; i < slots; i++){
+			for(let i = 0; i < slots; i++){
 				if(i) ppre += ', '
 				ppre += 'VARY_'+Math.floor((i+start)/4) + '.' + compName[(i+start)%4]
 			}
 			ppre += ');\n'
 		}
-		for(var i =(4 - curslot%4)%4 - 1; i >= 0; i--){
+		for(let i =(4 - curslot%4)%4 - 1; i >= 0; i--){
 			vpost += ',0.'
 		}
 		if(curslot) vpost += ');\n'
@@ -316,7 +317,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		// create uniformBlocks
 		var uboDefs = {}
 		var props = this._props
-		for(var key in props){
+		for(let key in props){
 			var prop = props[key]
 			if(prop.kind === 'uniform'){
 				var blockName = prop.block
@@ -331,11 +332,11 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			}
 		}
 
-		for(var blockName in uboDefs){
+		for(let blockName in uboDefs){
 			var block = uboDefs[blockName]
 			vhead += '// Uniform block '+blockName+';\n'
 			phead += '// Uniform block '+blockName+';\n'
-			for(var key in block){
+			for(let key in block){
 				var uniform = block[key]
 				vhead += 'uniform ' + uniform.type.name + ' ' + key + ';\n'
 				phead += 'uniform ' + uniform.type.name + ' ' + key + ';\n'
@@ -345,14 +346,14 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		// the sampler uniforms
 		var hassamplers = 0
 		var samplers = {}
-		for(var key in vtx.samplers){
+		for(let key in vtx.samplers){
 			var sampler = samplers[key] = vtx.samplers[key].sampler
 			if(!hassamplers++)vhead += '\n// samplers\n'
 			vhead += 'uniform ' + sampler.type.name + ' ' + key + ';\n'
 		}
 
 		var hassamplers = 0
-		for(var key in pix.samplers){
+		for(let key in pix.samplers){
 			var sampler = samplers[key] = pix.samplers[key].sampler
 			if(!hassamplers++)phead += '\n// samplers\n'
 			phead += 'uniform ' + sampler.type.name + ' ' + key + ';\n'
@@ -360,14 +361,14 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 		// define output variables in pixel shader
 		phead += '\n// outputs\n'
-		for(var key in pix.outputs){
+		for(let key in pix.outputs){
 			var output = pix.outputs[key]
 			phead += output.name + ' ' + key + ';\n'
 		}
 
 		// how do we order these dependencies so they happen top down
 		var vfunc = ''
-		for(var i = 0; i < vtx.genFunctions.length; i++){//key in vtx.genFunctions){
+		for(let i = 0; i < vtx.genFunctions.length; i++){//key in vtx.genFunctions){
 			var fn =  vtx.genFunctions[i].value
 			vfunc = '\n'+fn.code + '\n' + vfunc
 		}
@@ -393,7 +394,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		vertex += '}\n'
 
 		var pfunc = ''
-		for(var i = 0; i < pix.genFunctions.length; i++){//key in pix.genFunctions){
+		for(let i = 0; i < pix.genFunctions.length; i++){//key in pix.genFunctions){
 			var fn = pix.genFunctions[i].value
 			pfunc = '\n'+fn.code + '\n' + pfunc
 		}
@@ -406,7 +407,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		pixel += ppost + '}\n'
 
 		// add all the props we didnt compile but we do need for styling to styleProps
-		for(var key in this._props){
+		for(let key in this._props){
 			var config = this._props[key]
 			var propname = 'this_DOT_' + key
 			if(config.styleLevel && !styleProps[propname]){
@@ -443,7 +444,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 	function stylePropCode(indent, inobj, styleProps, styleLevel, noif){
 		var code = ''
-		for(var key in styleProps){
+		for(let key in styleProps){
 			var prop = styleProps[key]
 			var name = prop.name
 			if(prop.config.noStyle) continue
@@ -460,7 +461,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 	function styleStampRootCode(indent, inobj, props, styleProps, styleLevel){
 		var code = ''
-		for(var key in styleProps){
+		for(let key in styleProps){
 			var prop = styleProps[key]
 			var name = prop.name
 			if(prop.config.noStyle) continue
@@ -491,7 +492,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		// lets make the vars
 		var code = indent + 'var $turtle = this.turtle'
 		var styleLevel = macroargs[1]
-		for(var key in styleProps){
+		for(let key in styleProps){
 			var prop = styleProps[key]
 			if(prop.config.noStyle) continue
 			if(styleLevel && prop.config.styleLevel > styleLevel) continue
@@ -547,7 +548,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		//console.log(code)
 		// store it on the turtle
 		code += '\n'
-		for(var key in styleProps){
+		for(let key in styleProps){
 			var prop = styleProps[key]
 			var name = prop.name
 			if(prop.config.noStyle) continue
@@ -597,7 +598,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += '	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
 		code += '	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
 
-		for(var key in uniforms){
+		for(let key in uniforms){
 			var uniform = uniforms[key]
 			
 			if(key === 'this_DOT_time' && uniform.refcount > 1){
@@ -617,7 +618,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 
 		// do the samplers
 		var samplers = info.samplers
-		for(var key in samplers){
+		for(let key in samplers){
 			var sampler = samplers[key]
 
 			var thisname = key.slice(9)
@@ -656,19 +657,19 @@ module.exports = require('base/class').extend(function Compiler(proto){
 	proto.$DUMPPROPS = function(){
 		var code = ''
 		var instanceProps = this.$compileInfo.instanceProps
-		for(var key in instanceProps){
+		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
 			var notween = prop.config.noTween
 			if(!notween){
 				// new, old
-				for(var i = 0; i < slots; i++){
+				for(let i = 0; i < slots; i++){
 					code += 'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i+slots)+']+"->"+$a[$o+'+(o+i)+'])\n'
 				}
 			}
 			else{
-				for(var i = 0; i < slots; i++){
+				for(let i = 0; i < slots; i++){
 					code +=  'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i)+'])\n'
 				}
 			}
@@ -685,7 +686,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		code += indent +'var $o = (this.turtle.$propoffset - 1) * ' + info.propSlots +'\n'
 		var instanceProps = info.instanceProps
 		var argobj = macroargs[0]
-		for(var key in argobj){
+		for(let key in argobj){
 			var prop = instanceProps['this_DOT_'+key]
 			// lets write prop
 			if(prop.config.pack) throw new Error('Please implement PREVPROP packing support '+key)
@@ -777,7 +778,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		var copyfwd = ''
 		var copyprev = ''
 		// lets generate the tween
-		for(var key in instanceProps){
+		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
@@ -794,7 +795,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 				var pack = prop.config.pack
 				if(pack){
 					// we have to unpack before interpolating
-					for(var i = 0; i < slots; i++){
+					for(let i = 0; i < slots; i++){
 						tweencode += indent + 'var _upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
 						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
 							'(($1mcf * Math.floor(_upo/4096) +' +
@@ -810,7 +811,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 				}
 				else{
 
-					for(var i = 0; i < slots; i++){
+					for(let i = 0; i < slots; i++){
 						//if(key === 'this_DOT_open') tweencode += 'if($o===2*' + info.propSlots +')console.error($duration,$cf, $a[$o+'+(o +i)+'])\n'
 
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
@@ -947,7 +948,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 					propcode += indent + 'var _' + prop.name + ' = '+propsource+'\n'
 					//propcode += indent + 'if(_'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
 					//propcode += indent + 'else '
-					for(var i = 0; i < slots; i++){
+					for(let i = 0; i < slots; i++){
 						if(i) propcode += ','
 						propcode += '$a[$o+'+(o+i)+']=_'+prop.name+'['+i+']\n'
 					}
@@ -1044,14 +1045,14 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			if(!this.hasOwnProperty('_props')){
 				this._props = this._props?Object.create(this._props):{}
 			}
-			for(var key in props){
+			for(let key in props){
 				var config = props[key]
 				if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
 					config = {value:config}
 				}
 				var old = this._props[key]
 				if(old && !('value' in config)){
-					for(var key in old) if(!(key in config)){
+					for(let key in old) if(!(key in config)){
 						config[key] = old[key]
 					}
 				}
@@ -1071,7 +1072,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			if(!this.hasOwnProperty('_defines')){
 				this._defines = this._defines? Object.create(this._defines): {}
 			}
-			for(var key in defines){
+			for(let key in defines){
 				this._defines[key] = defines[key]
 			}
 		}
@@ -1085,7 +1086,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			if(!this.hasOwnProperty('_requires')){
 				this._requires = this._requires? Object.create(this._requires): {}
 			}
-			for(var key in requires){
+			for(let key in requires){
 				this._requires[key] = requires[key]
 			}
 		}
@@ -1099,7 +1100,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 			if(!this.hasOwnProperty('_structs')){
 				this._structs = this._structs?Object.create(this._structs):{}
 			}
-			for(var key in structs){
+			for(let key in structs){
 				var struct = structs[key]
 				// auto name the struct based on the key
 				if(!struct.name){
@@ -1119,7 +1120,7 @@ module.exports = require('base/class').extend(function Compiler(proto){
 		},
 		set:function(macros){
 			if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-			for(var key in macros) this._toolMacros[key] = macros[key]
+			for(let key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
 })

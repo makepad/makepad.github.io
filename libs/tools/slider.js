@@ -2,11 +2,12 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 
 	proto.props = {
 		vertical:false,
-		value:0,
+		value:{this:'view',value:0},
 		knobSize:20,
 		range:[0,1],
 		step:0,
-		onValue:undefined
+		onValue:undefined,
+		onValueStamp:undefined
 	}
 
 	proto.dragOffset = -1
@@ -89,7 +90,8 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 				// compute pos
 				this.dragOffset = 0.5*this.knobSize + this.innerPadding[0]
 				this.value = this.mapValue((e.y -  this.dragOffset)/this.dragSize)
-				if(this.onValue) this.onValue({value:this.value})
+				if(this.onValueStamp) this.onValueStamp({value:this.value})
+				//if(this.onValue) this.onValue.call(this.view, this.value)
 			}
 		}
 		else{
@@ -102,23 +104,23 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 				// compute pos
 				this.dragOffset = 0.5*this.knobSize + this.innerPadding[3]
 				this.value = this.mapValue((e.x - this.dragOffset)/this.dragSize)
-				if(this.onValueStamp) this.onValueStamp(this.value)
-				if(this.onValue) this.onValue.call(this.view, this.value)
+				if(this.onValueStamp) this.onValueStamp({value:this.value})
+				//if(this.onValue) this.onValue.call(this.view, this.value)
 			}
 		}
 		this.state = this.styles.sliding
 	}
 
 	proto.onFingerMove = function(e){
+		//console.log(this.view.name)
 		if(this.vertical){
 			this.value = this.mapValue((e.y - this.dragOffset)/this.dragSize)
 		}
 		else{
 			this.value = this.mapValue((e.x - this.dragOffset)/this.dragSize)
 		}
-		if(this.onValueStamp) this.onValueStamp(this.value)
-		if(this.onValue) this.onValue.call(this.view, this.value)
-		this.redraw
+		if(this.onValueStamp) this.onValueStamp({value:this.value})
+		//if(this.onValue) this.onValue.call(this.view, this.value)
 	}
 
 	proto.onFingerOver = function(){

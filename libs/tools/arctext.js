@@ -235,7 +235,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 		var endpoint = arc_endpoint_t()
 		var endpoint_prev = this.arcEndpointDecode(this.atlasLookup(arc_list.offset, _atlas_pos), nominalSize)
 
-		for(var i = 1; i < MAX_NUM_ENDPOINTS; i++){
+		for(let i = 1; i < MAX_NUM_ENDPOINTS; i++){
 			if(i >= arc_list.num_endpoints) {
 				break
 			}
@@ -307,7 +307,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 		}
 		var endpoint  = arc_endpoint_t()
 		var endpoint_prev = this.arcEndpointDecode(atlas.lookup(arc_list.offset, _atlas_pos), nominalSize)
-		for(var i = 1; i < MAX_NUM_ENDPOINTS; i++) {
+		for(let i = 1; i < MAX_NUM_ENDPOINTS; i++) {
 			if(i >= arc_list.num_endpoints) {
 				break
 			}

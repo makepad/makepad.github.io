@@ -12,7 +12,7 @@ exports.onRequire = function(args, buildPath, absParent){
 		if(!obj.list) obj.list = [dt]
 		else obj.list.push(dt)
 		var avg = 0
-		for(var i = 0; i < obj.list.length;i++)avg += obj.list[i]
+		for(let i = 0; i < obj.list.length;i++)avg += obj.list[i]
 		avg = avg / obj.list.length
 		require.log('Perf'+(id?'('+id+')':'')+':'+dt+ ' Avg: '+avg)
 		obj.sample = undefined

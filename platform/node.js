@@ -47,7 +47,7 @@ function workerBinaryComm(Buffer, bufferSize){
 			var l = value.length
 			su32[s32++] = l
 			var o = s32<<1
-			for(var i = 0; i < l; i++){
+			for(let i = 0; i < l; i++){
 				su16[o++] = value.charCodeAt(i)
 			}
 			if(o&1)o++
@@ -64,7 +64,7 @@ function workerBinaryComm(Buffer, bufferSize){
 				su32[s32++] = 4
 				var l = value.length
 				su32[s32++] = l
-				for(var i = 0; i < l; i++){
+				for(let i = 0; i < l; i++){
 					serializeBinary(value[i])
 				}
 				return
@@ -83,7 +83,7 @@ function workerBinaryComm(Buffer, bufferSize){
 				su32[s32++] = 5
 				var l = keys.length
 				su32[s32++] = l
-				for(var i = 0; i < l; i++){
+				for(let i = 0; i < l; i++){
 					var key = keys[i]
 					serializeBinary(key)
 					serializeBinary(value[key])
@@ -117,7 +117,7 @@ function workerBinaryComm(Buffer, bufferSize){
 			var l = pu32[p32++]
 			var o = p32<<1
 			var s = ''
-			for(var i = 0; i < l; i++){
+			for(let i = 0; i < l; i++){
 				s += String.fromCharCode(pu16[o++])
 			}
 			if(o&1) o ++
@@ -130,7 +130,7 @@ function workerBinaryComm(Buffer, bufferSize){
 		if(type === 4){
 			var l = pu32[p32++]
 			var arr = []
-			for(var i = 0; i < l; i++){
+			for(let i = 0; i < l; i++){
 				arr.push(parseBinary())
 			}
 			return arr
@@ -138,7 +138,7 @@ function workerBinaryComm(Buffer, bufferSize){
 		if(type === 5){
 			var l = pu32[p32++]
 			var obj = {}
-			for(var i = 0; i < l; i++){
+			for(let i = 0; i < l; i++){
 				var key = parseBinary()
 				obj[key] = parseBinary()
 			}
@@ -155,7 +155,7 @@ function workerBinaryComm(Buffer, bufferSize){
 
 	return {
 		serialize:function(msg, transfers, stream){
-			if(transfers) for(var i = 0; i < transfers.length ; i++){
+			if(transfers) for(let i = 0; i < transfers.length ; i++){
 				var trans = transfers[i]
 				head32[0] = trans.byteLength
 				head32[1] = 2
@@ -227,7 +227,7 @@ function workerCleanup(a){
 		global:1
 	}
 
-	for(var key in global){
+	for(let key in global){
 		if(!(key in ignore)){
 			delete global[key] 
 		}
@@ -334,7 +334,7 @@ root.downloadResource = function(localFile, isBinary){
 
 		var split = localFile.split('/')
 		var total = httpCachePath
-		for(var i = 0; i < split.length - 1; i++){
+		for(let i = 0; i < split.length - 1; i++){
 			total += split[i]
 			if(!pathExists(total)) fs.mkdirSync(total)
 			total += '/'

@@ -18,7 +18,7 @@ module.exports = function(proto){
 		}
 
 		var config = this._props[key] = this._props[key]?Object.create(this._props[key]):{}
-		for(var cpy in value) config[cpy] = value[cpy]
+		for(let cpy in value) config[cpy] = value[cpy]
 
 		// lets define a property
 		var _key = '_' + key
@@ -26,7 +26,7 @@ module.exports = function(proto){
 		var _onkey = '_on' + key.charAt(0).toUpperCase() + key.slice(1)
 
 		this[_key] = initvalue
-
+		var onthis = config.this
 		Object.defineProperty(this, key, {
 			configurable:true,
 			get:function(){
@@ -48,8 +48,10 @@ module.exports = function(proto){
 							id = id<<1, flags = flags>>1
 						}
 					}
-
-					if(this[onkey])this[onkey]({setter:true, old:old, value:value})
+					var fn = this[onkey]
+					if(fn){
+						fn.call(onthis?this[onthis]:this, {setter:true, old:old, value:value})
+					}
 				}
 			}
 		})
@@ -57,7 +59,7 @@ module.exports = function(proto){
 
 	Object.defineProperty(proto, 'props', {
 		set:function(props){
-			for(var key in props){
+			for(let key in props){
 				defineProp.call(this, key, props[key])
 			}
 		},

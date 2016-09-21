@@ -4,10 +4,6 @@ module.exports = require('base/class').extend(function Stamp(proto){
 	require('base/props')(proto)
 	require('base/tools')(proto)
 
-	proto._onConstruct = function(){
-		throw new Error("Cannot new a stamp")
-	}
-
 	proto.onFlag0 = 1
 	proto.onFlag1 =
 	proto.redraw = function(){
@@ -16,7 +12,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 			// figure out all the shader props lengths 
 			var keys = Object.keys(this)
 			var lengths = {}
-			for(var i = 0; i < keys.length; i++){
+			for(let i = 0; i < keys.length; i++){
 				var key = keys[i]
 				if(key.indexOf('$propsLen') === 0){
 					var shader = key.slice(9)
@@ -44,7 +40,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 			this.onDraw()
 
 			// putback the lengths
-			for(var key in lengths){
+			for(let key in lengths){
 				var props = this.$shaders[key].$props
 				props.length = lengths[key]
 				props.updateMesh()
@@ -76,7 +72,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 
 	function styleStampCode(indent, inobj, props, noif){
 		var code = ''
-		for(var key in props){
+		for(let key in props){
 			if(noif){
 				code += indent + '_'+key+' = ' + inobj +'.' + key + '\n'
 			}
@@ -97,7 +93,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
 		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+' || $stamp.$layer !== '+macroargs[0]+'.$layer){\n'
-		code += indent + '	$stamp = $view.$stamps[$stampId] = Object.create(this._'+classname+'.prototype)\n'
+		code += indent + '	$stamp = $view.$stamps[$stampId] = new this._'+classname+'()\n'
 		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
 		code += indent + '	var $layer = '+macroargs[0]+'.$layer\n'
@@ -111,7 +107,6 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
 		code += indent + '	}'
 		code += indent + '	if($stamp._styles) $stamp._state = $stamp._styles.default\n'
-		code += indent + '	if($stamp.onConstruct) $stamp.onConstruct()\n'
 		code += indent + '}\n'
 		code += indent + 'if('+mainargs[0]+'){\n'
 		code += indent + '	var $styles = '+mainargs[0]+'.styles\n'
@@ -134,7 +129,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 
 		code += indent + 'var '
 		var nprops = 0
-		for(var key in props){
+		for(let key in props){
 			if(nprops++) code +=', '
 			code += '_'+key
 		}
@@ -156,7 +151,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += styleStampCode(indent+'	', '$p1', props)
 		code += indent +'}\n'
 
-		for(var key in props){
+		for(let key in props){
 			code += indent + 'if(_'+key+' !== undefined) $stamp._'+key+' = _'+key+'\n'
 		}
 
@@ -185,13 +180,13 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		},
 		set:function(macros){
 			if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-			for(var key in macros) this._toolMacros[key] = macros[key]
+			for(let key in macros) this._toolMacros[key] = macros[key]
 		}
 	})
 
 	function deepOverlay(tgtobj, tgtkey, copyobj){
 		var newobj = tgtobj[tgtkey] = tgtobj[tgtkey]?Object.create(tgtobj[tgtkey]):{}
-		for(var key in copyobj){
+		for(let key in copyobj){
 			var value = copyobj[key]
 			if(typeof value === 'object' && !Array.isArray(value)){
 				deepOverlay(newobj, key, value)
@@ -206,7 +201,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		},
 		set:function(states){
 			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(this._states):{}
-			for(var key in states){
+			for(let key in states){
 				deepOverlay(this._states, key, states[key])
 			}
 		}

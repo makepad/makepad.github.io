@@ -1,10 +1,11 @@
-module.exports = require('/platform/service').extend(function worker1(proto, base){
+module.exports = class worker1 extends require('/platform/service'){
 
-	proto.onConstruct = function(){
+	constructor(...args){
+		super(...args)
 		this.workers = []
 	}
 
-	proto.user_toParent = function(msg){
+	user_toParent(msg){
 		// slap on the local ID
 		msg.localId = this.worker.localId
 		this.parent.batchMessages.push({
@@ -20,7 +21,7 @@ module.exports = require('/platform/service').extend(function worker1(proto, bas
 		}
 	}
 
-	proto.user_toWorker = function(msg){
+	user_toWorker(msg){
 		var worker = this.workers[msg.localId]
 
 		worker.batchMessages.push({
@@ -37,16 +38,16 @@ module.exports = require('/platform/service').extend(function worker1(proto, bas
 		}
 	}
 
-	proto.pong = function(worker){
+	pong(worker){
 		this.postMessage({fn:'pong', localId: worker.localId})
 	}
 
-	proto.user_ping = function(msg){
+	user_ping(msg){
 		var worker = this.workers[msg.localId]
 		worker.postMessage({$:'ping'})
 	}
 
-	proto.user_start = function(msg){
+	user_start(msg){
 		// start a worker
 		var worker = this.workers[msg.localId] = this.root.startWorker(
 			msg.serviceList || this.worker.serviceList, 
@@ -56,13 +57,13 @@ module.exports = require('/platform/service').extend(function worker1(proto, bas
 		worker.localId = msg.localId
 	}
 
-	proto.user_init = function(msg){
+	user_init(msg){
 		var worker = this.workers[msg.localId]
 		this.root.initWorker(worker, msg.main, msg.resources, msg.init)
 	}
 
-	proto.user_terminate = function(msg){
+	user_terminate(msg){
 		var worker = this.workers[msg.localId]
 		worker.terminate()
 	}
-})
+}

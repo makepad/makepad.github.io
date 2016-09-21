@@ -35,7 +35,7 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		mesh:{kind:'geometry', type:types.vec3},
 	}
 
-	proto.mesh = painter.Mesh(types.vec3).pushQuad(
+	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
 		0, 0, 0,
 		0, 1, 0,
 		1, 0, 0,

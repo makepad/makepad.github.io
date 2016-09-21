@@ -96,6 +96,7 @@ module.exports = {
 
 	// other
 	DebuggerStatement:{},
+	RestElement:{argument:1},
 	SpreadElement:{argument:1},
 	LabeledStatement:{label:1, body:1},
 	WithStatement:{object:1, body:1}

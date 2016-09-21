@@ -1,15 +1,9 @@
-module.exports = require('/platform/service').extend(function painter1(proto){
+module.exports = class painter1 extends require('/platform/service'){
 
-	require('/platform/painteruser')(proto)
-	require('/platform/paintertodo')(proto)
-	require('/platform/painterscroll')(proto)
-	require('/platform/painterubos')(proto)
-	require('/platform/painterpaint')(proto)
-	
 	//proto.debug = 1
 
-	proto.onConstruct = function(){
-
+	constructor(...args){
+		super(...args)
 		if(!this.parent){
 
 			this.args.timeBoot = Date.now()
@@ -19,14 +13,13 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 			this.args.x = 0
 			this.args.y = 0
 			this.onRepaint = this.onRepaint.bind(this)
-		
 			this.onScreenResize()
 			this.runBootCache()
 		}
 		else{
 			// ok we have a parent.
 			// lets connect to it
-			this.parentPainter = this.parent.services[this.name]
+			this.parentPainter = this.parent.services[this.constructor.name]
 			this.parentPainter.addChild(this, this.platform.parentFbId)
 		}
 
@@ -37,7 +30,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.onConstructPainterPaint()
 	}
 
-	proto.createGLCanvas = function(){
+	createGLCanvas(){
 		window.addEventListener('resize', function(){
 			this.onScreenResize()
 			this.worker.services.keyboard1.onWindowResize()
@@ -73,7 +66,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		gl.WEBGL_depth_texture = gl.getExtension("WEBGL_depth_texture") || gl.getExtension("WEBKIT_WEBGL_depth_texture")
 	}
 
-	proto.onScreenResize = function(dy){
+	onScreenResize(dy){
 		var pixelRatio = window.devicePixelRatio
 		var w, h
 		// if a canvas is fullscreen we should size it to fullscreen
@@ -108,7 +101,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		this.requestRepaint()
 	}
 
-	proto.requestRepaint = function(){
+	requestRepaint(){
 		if(this.parentPainter){
 			return this.parentPainter.requestRepaint()
 		}
@@ -118,23 +111,23 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 		}
 	}
 	
-	proto.runBootCache = function(){
+	runBootCache(){
 		// bootcache errors on windows.
 		if(!this.root.isWindows){
-			this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
+		//	this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
 		}
 	}
 
-	proto.stopBootCache = function(){
+	stopBootCache(){
 		if(this.bootCacheTimeout) clearTimeout(this.bootCacheTimeout)
 	}
 
-	proto.writeBootCache = function(cacheid){
+	writeBootCache(cacheid){
 		if(this.parent) return
 		localStorage.setItem(cacheid, 1)
 	}
 	
-	proto.bootCache = function(){
+	bootCache(){
 		this.bootCacheTimeout = undefined
 		var gl = this.gl
 		// now we have to bind the textures
@@ -166,7 +159,7 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 			--i
 			if(shader){
 				gl.useProgram(shader.program)
-				for(var t = 0; t< 8; t++){
+				for(let t = 0; t< 8; t++){
 					gl.activeTexture(gl.TEXTURE0 + t)
 					gl.bindTexture(gl.TEXTURE_2D, gltex)
 				}
@@ -179,7 +172,10 @@ module.exports = require('/platform/service').extend(function painter1(proto){
 			}
 		}
 	}
+}
 
-})
-
-
+require('/platform/painteruser')(module.exports.prototype)
+require('/platform/paintertodo')(module.exports.prototype)
+require('/platform/painterscroll')(module.exports.prototype)
+require('/platform/painterubos')(module.exports.prototype)
+require('/platform/painterpaint')(module.exports.prototype)

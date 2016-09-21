@@ -108,7 +108,7 @@ module.exports = require('base/view').extend({
 	fontSize:11,
 	computePath:function(find){
 		function walker(nodes){
-			for(var i=0;i<nodes.length;i++){
+			for(let i=0;i<nodes.length;i++){
 				var node=nodes[i]
 				if(node === find) return [node]
 				if(node.folder&&!node.closed){
@@ -142,7 +142,7 @@ module.exports = require('base/view').extend({
 	onKeyDown:function(e){
 		var list=[]
 		function flattenTree(nodes){
-			for(var i=0;i<nodes.length;i++){
+			for(let i=0;i<nodes.length;i++){
 				var node=nodes[i]
 				list.push(nodes[i])
 				if(node.folder&&!node.closed){
@@ -178,14 +178,14 @@ module.exports = require('base/view').extend({
 		this.pickId=1
 		var p=this
 		var drawText=function(nodes,depth,closed){
-			for(var i=0,len=nodes.length-1;i<=len;i++){
+			for(let i=0,len=nodes.length-1;i<=len;i++){
 				var node=nodes[i]
 				this.pickMap[this.addPickId()]=node
 
 				this.beginCursor({
 					selected:this.selected===node
 				})
-				for(var j=0,dl=depth.length-1;j<=dl;j++){
+				for(let j=0,dl=depth.length-1;j<=dl;j++){
 					var isFolder=j==dl&&node.folder&&node.folder.length?1:0
 					//var pid=pickId
 					//if(isFolder)this.pickMap[pid=this.pickId++]=node

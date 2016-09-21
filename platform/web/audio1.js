@@ -1,12 +1,49 @@
-module.exports = require('/platform/service').extend(function audio1(proto, base){
-	
-	var getUserMedia = (navigator.getUserMedia ||
-					navigator.webkitGetUserMedia ||
-					navigator.mozGetUserMedia)
 
-	proto.onConstruct = function(){
+var getUserMedia = (navigator.getUserMedia ||
+				navigator.webkitGetUserMedia ||
+				navigator.mozGetUserMedia)
+
+function recorderOnAudioProcess(flow, name, e){
+	var inBuf = e.inputBuffer
+	var outBuf = e.outputBuffer
+	// Loop through the output channels (in this case there is only one)
+	var data = []
+	for (var c = 0; c < outBuf.numberOfChannels; c++) {
+		var inp = inBuf.getChannelData(c)
+		var outp = outBuf.getChannelData(c)
+		var cpy = new Float32Array(inBuf.length)
+		for (var s = inBuf.length-1; s>=0; s--){
+			cpy[s] = outp[s] = inp[s]
+		}
+		data.push(cpy)
+	}
+	
+	// we have to sync this thing to the renderer
+
+	this.postMessage({
+		fn:'onRecorderData',
+		pileupTime:Date.now(),
+		id:flow.id,
+		node:name,
+		data:data
+	})
+}
+
+var nodeParamDefs = {
+	gain:{
+		gain:1
+	},
+	buffer:{
+		detune:1,
+		playbackRate:1
+	}
+}
+module.exports = class audio1 extends require('/platform/service'){
+	
+	constructor(...args){
+		super(...args)
 		// lets create an audio context
-		this.parentAudio = this.parent && this.parent.services[this.name]
+		this.parentAudio = this.parent && this.parent.services[this.constructor.name]
 		this.context = this.parentAudio && this.parentAudio.addChild(this) || new (window.AudioContext || window.webkitAudioContext)()
 		this.ids = {}
 		this.queue = []
@@ -16,23 +53,23 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		}
 	}
 
-	proto.addChild = function(child){
+	addChild(child){
 		this.children.push(child)
 		return this.context
 	}
 
-	proto.onInit = function(){
+	onInit(){
 		this.initialized = true
-		for(var i = 0; i < this.children.length; i++){
+		for(let i = 0; i < this.children.length; i++){
 			this.children[i].onInit()
 		}
-		for(var i = 0; i < this.queue.length; i++){
+		for(let i = 0; i < this.queue.length; i++){
 			this.onMessage(this.queue[i])
 		}
 	}
 
 	// initialize audio on iOS
-	proto.onTouchEnd = function(){
+	onTouchEnd(){
 		if(this.initialized) return
  		var o = this.context.createOscillator()
  		o.frequency = 500
@@ -42,7 +79,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
  		this.onInit()
 	}
 	
-	proto.onMessage = function(msg){
+	onMessage(msg){
 		if(!msg) return
 		if(!this.initialized){
 			this.queue.push(msg)
@@ -50,74 +87,39 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		else base.onMessage.call(this,msg)
 	}
 	
-	proto.user_reset = function(){
-		for(var key in this.ids){
+	user_reset(){
+		for(let key in this.ids){
 			var flow = this.ids[key]
 			stopFlow(flow)
 			delete this.ids[key]
 		}
 	}
 
-	proto.user_init = function(msg){
+	user_init(msg){
 		this.ids[msg.id] = {
 			id:msg.id,
 			config:msg.config
 		}
 	}
 
-	function recorderOnAudioProcess(flow, name, e){
-		var inBuf = e.inputBuffer
-		var outBuf = e.outputBuffer
-		// Loop through the output channels (in this case there is only one)
-		var data = []
-		for (var c = 0; c < outBuf.numberOfChannels; c++) {
-			var inp = inBuf.getChannelData(c)
-			var outp = outBuf.getChannelData(c)
-			var cpy = new Float32Array(inBuf.length)
-			for (var s = inBuf.length-1; s>=0; s--){
-				cpy[s] = outp[s] = inp[s]
-			}
-			data.push(cpy)
-		}
-		
-		// we have to sync this thing to the renderer
 
-		this.postMessage({
-			fn:'onRecorderData',
-			pileupTime:Date.now(),
-			id:flow.id,
-			node:name,
-			data:data
-		})
-	}
-
-	var nodeParamDefs = {
-		gain:{
-			gain:1
-		},
-		buffer:{
-			detune:1,
-			playbackRate:1
-		}
-	}
-
-	proto.spawnFlow = function(flow, overlay){
+	spawnFlow(flow, overlay){
 		
 		// lets spawn all the nodes
 		var nodes = flow.nodes = {}
 		var flowConfig = flow.config
-		for(var name in flowConfig){
+		for(let name in flowConfig){
 			var nodeConfig = flowConfig[name]
 			// overlay config vars
 			var nodeOverlay = overlay[name]
 			if(nodeOverlay){
 				nodeConfig = Object.create(nodeConfig)
-				for(var key in nodeOverlay){
+				for(let key in nodeOverlay){
 					nodeConfig[key] = nodeOverlay[key]
 				}
 			}
 			// rip off the number of a node name
-			for(var j = 0, l = name.length; j < l; j++){
+			for(let j = 0, l = name.length; j < l; j++){
 				var code = name.charCodeAt(j)
 				if(code>=48 && code <=57) break
 			}
@@ -155,7 +157,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 				if(data){
 					// lets copy the data into an audiobuffer
 					var buffer = this.context.createBuffer(data.length, data[0].length, nodeConfig.rate)
-					for(var i = 0; i < data.length; i++){
+					for(let i = 0; i < data.length; i++){
 						buffer.copyToChannel(data[i], i)
 					}
 					node.audioNode.buffer = buffer
@@ -174,7 +176,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 			nodes[name] = node
 		}
 		// then connect and config them all
-		for(var name in nodes){
+		for(let name in nodes){
 			var node = nodes[name]
 			var audioNode = node.audioNode
 			if(!audioNode) continue
@@ -182,7 +184,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 			var config = node.config
 			var nodeParams = nodeParamDefs[node.type]
 
-			for(var key in nodeParams){
+			for(let key in nodeParams){
 				var value = config[key]
 				if(value === undefined) continue
 				// set the value. TODO add node param sequencing
@@ -199,7 +201,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 			}
 		}
 		// we need to start the nodes we are supposed to start
-		for(var name in nodes){
+		for(let name in nodes){
 			var node = nodes[name]
 			if(node.start !== undefined){
 				node.audioNode.start(node.start)
@@ -210,7 +212,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 	}
 
 	// lets spawn a flow
-	proto.user_start = function(msg){
+	user_start(msg){
 		var flow = this.ids[msg.id]
 		if(flow.started){
 			stopFlow(flow)
@@ -218,14 +220,14 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		this.spawnFlow(flow, msg.overlay)
 	}
 
-	function stopFlow(flow){
+	stopFlow(flow){
 		// lets terminate the whole thing
-		for(var name in flow.nodes){
+		for(let name in flow.nodes){
 			var node = flow.nodes[name]
 			if(node.stream){
 				// stop any running streams
 				var tracks = node.stream.getAudioTracks()
-				for(var i = 0;i < tracks.length; i++){
+				for(let i = 0;i < tracks.length; i++){
 					tracks[i].stop()
 				}
 			}
@@ -238,7 +240,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 	}
 
 	// ok how do we stop this thing?
-	proto.user_stop = function(msg){
+	user_stop(msg){
 		var flow = this.ids[msg.id]
 		if(!flow.started) return
 		stopFlow(flow)
@@ -294,7 +296,7 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 			var n = this.context.createMediaStreamSource(stream)
 			this.ids[msg.id] = n 
 			if(ph.queue){
-				for(var i = 0; i < ph.queue.length; i++){
+				for(let i = 0; i < ph.queue.length; i++){
 					this.onMessage(ph.queue[i])
 				}
 			}
@@ -317,10 +319,10 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		var buf = this.ids[msg.id]
 		var chans = buf.numberOfChannels
 		var o = msg.offset
-		for(var c = 0; c < chans; c++){
+		for(let c = 0; c < chans; c++){
 			var of32 = buf.getChannelData(c)
 			var if32 = msg.data[c]
-			for(var i = if32.length - 1; i >= 0; i--){
+			for(let i = if32.length - 1; i >= 0; i--){
 				of32[o+i] = if32[i]
 			}
 		}
@@ -378,4 +380,4 @@ module.exports = require('/platform/service').extend(function audio1(proto, base
 		var key = msg.key
 		dst[key].value = msg.value
 	}*/
-})
+}

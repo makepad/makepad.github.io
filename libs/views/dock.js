@@ -52,12 +52,13 @@ module.exports=require('base/view').extend({
 				}
 			]
 			var selIndex = 0
-			for(var i = 0; i < node.tabs.length; i++){
+			for(let i = 0; i < node.tabs.length; i++){
 				var page = node.tabs[i]
 				if(page.open) selIndex = i
  				args.push(this.composeFromData(page))
 			}
-			var tabs = this.Tabs.apply(null,args)
+
+			var tabs = new this.Tabs(...args)
 			tabs.onAfterCompose = function(){
 				this.selectTab(selIndex)
 				this.onAfterCompose =null
@@ -65,7 +66,7 @@ module.exports=require('base/view').extend({
 			return tabs
 		}
 		else if(node.left || node.top){ // splitter
-			return this.Splitter({
+			return new this.Splitter({
 					dock:this,
 					vertical:node.left?true:false,
 					isLocked:node.locked,
@@ -77,7 +78,7 @@ module.exports=require('base/view').extend({
 			)
 		}
 		else{ // other type
-			var pane = this.classes[node.type](
+			var pane = new this.classes[node.type](
 				node,{
 					dock:this
 				}
@@ -132,14 +133,14 @@ module.exports=require('base/view').extend({
 	toggleSplitterSettings:function(show){
 		var splitters = []
 		this.findSplitters(this.children[0], splitters)
-		for(var i = 0; i < splitters.length; i++){
+		for(let i = 0; i < splitters.length; i++){
 			splitters[i].toggleSplitterSettings(show)
 		}
 	},
 	toggleTabSettings:function(show){
 		var tabs = []
 		this.findTabs(this.children[0], tabs)
-		for(var i = 0; i < tabs.length; i++){
+		for(let i = 0; i < tabs.length; i++){
 			tabs[i].toggleTabSettings(show)
 		}
 	},
@@ -160,7 +161,7 @@ module.exports=require('base/view').extend({
 		})
 		this.dragTabDrop = undefined
 		// lets find out the drop area
-		for(var i = 0; i < allTabs.length; i++){
+		for(let i = 0; i < allTabs.length; i++){
 			var tabs = allTabs[i]
 
 			var fx = e.x

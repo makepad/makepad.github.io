@@ -20,7 +20,7 @@ var pileupQueue = []
 var pileupTimer
 
 function flushPileupQueue(){
-	for(var i = 0; i < pileupQueue.length; i++){
+	for(let i = 0; i < pileupQueue.length; i++){
 		var msg = pileupQueue[i]
 		if(painter[msg.fn]) painter[msg.fn](msg)
 	}
@@ -85,7 +85,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 	proto.initalloc = 256
 
-	proto.onConstruct = function(initalloc){
+	proto.constructor = function(initalloc){
 
 		var todoId = todoIdsAlloc++
 
@@ -125,7 +125,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 
 	proto.toMessage = function(){
 		var deps = []
-		for(var key in this.deps){
+		for(let key in this.deps){
 			deps.push(key)
 		}
 		return [{
@@ -195,7 +195,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		var oldi32 = this.i32
 		this.f32 = new Float32Array(this.allocated)
 		var newi32 = this.i32 = new Int32Array(this.f32.buffer)
-		for(var i = 0 ; i < lastlen; i++){
+		for(let i = 0 ; i < lastlen; i++){
 			newi32[i] = oldi32[i]
 		}
 	}
@@ -451,7 +451,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		}
 	}
 
-	for(var key in proto){
+	for(let key in proto){
 		if(typeof proto[key] === 'function'){
 			proto[key] = wrapFn(key, proto[key])
 		}
@@ -477,7 +477,7 @@ painter.Shader = require('base/class').extend(function Shader(proto){
 			"}\n"
 	}
 
-	proto.onConstruct = function(code){
+	proto.constructor = function(code){
 		if(!code) code = this.code
 
 		var shaderId = shaderIdsAlloc++
@@ -487,7 +487,7 @@ painter.Shader = require('base/class').extend(function Shader(proto){
 		parseShaderAttributes(code.vertex, refs)
 		parseShaderUniforms(code.vertex, refs)
 		parseShaderUniforms(code.pixel, refs)
-		for(var name in refs) if(!nameIds[name]) painter.nameId(name)
+		for(let name in refs) if(!nameIds[name]) painter.nameId(name)
 
 		service.postMessage({
 			fn:'newShader',
@@ -549,7 +549,8 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		service.batchMessage(this)
 	}
 
-	proto.onConstruct = function(type, initalloc){
+	proto.constructor = function(type, initalloc){
+
 		var slots = 0
 		if(typeof type === 'number'){
 			slots = type
@@ -591,7 +592,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		var newarray = new this.arraytype(this.allocated * this.slots)
 		var oldarray = this.array
 
-		for(var i = 0; i < oldalloc; i++){
+		for(let i = 0; i < oldalloc; i++){
 			newarray[i] = oldarray[i]
 		}
 		this.array = newarray
@@ -612,7 +613,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		var array = this.array
 		var off = this.length * this.slots
 
-		for(var i = 0; i < arglen; i++){
+		for(let i = 0; i < arglen; i++){
 			array[off + i] = arguments[i]
 		}
 
@@ -638,7 +639,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		var off = this.length * this.slots
 		var slots = this.slots
 
-		for(var i = 0, len = this.slots; i < len; i++){
+		for(let i = 0, len = this.slots; i < len; i++){
 			// TL
 			array[off + i] = arguments[i]
 			// TR
@@ -717,7 +718,7 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 		}, transfer]
 	}
 
-	proto.onConstruct = function(bufType, dataType, flags, w, h, array){
+	proto.constructor= function(bufType, dataType, flags, w, h, array){
 		var texId = textureIdsAlloc++
 		textureIds[texId] = this
 
@@ -757,7 +758,7 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		}]
 	}
 
-	proto.onConstruct = function(shader){
+	proto.constructor = function(shader){
 		var vaoId = vaoIdsAlloc++
 		vaoIds[vaoId] = this
 		service.batchMessage(this)
@@ -779,7 +780,7 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		this.allocated = len > this.allocated * 2? len: this.allocated * 2
 		var oldi32 = this.i32
 		var newi32 = this.i32 = new Int32Array(this.allocated)
-		for(var i = 0 ; i < lastlen; i++){
+		for(let i = 0 ; i < lastlen; i++){
 			newi32[i] = oldi32[i]
 		}
 	}
@@ -870,13 +871,13 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		}]
 	}
 
-	proto.onConstruct = function(layoutDef){
+	proto.constructor = function(layoutDef){
 		var uboId = uboIdsAlloc++
 		uboIds[uboId] = this
 		var offsets = this.offsets = {}
 		var order = this.order = []
 		var size = 0
-		for(var key in layoutDef){
+		for(let key in layoutDef){
 			var item = layoutDef[key]
 			var slots = item.type.slots
 			var nameId = nameIds[key] || painter.nameId(key)
@@ -977,13 +978,13 @@ var framebufferIds = {}
 
 painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 
-	proto.onConstruct = function(w, h, attachments, xStart, yStart){
+	proto.constructor = function(w, h, attachments, xStart, yStart){
 		var fbId = framebufferIdsAlloc ++
 		framebufferIds[fbId] = this
 
 		var attach
 
-		for(var key in attachments){
+		for(let key in attachments){
 			if(!attach) attach = {}
 			var texture = attachments[key]
 			if(texture){

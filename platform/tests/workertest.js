@@ -5,7 +5,7 @@ var worker = require('services/worker')(function(){
 	owner.onMessage = function(msg){
 		console.log("GOT MESSAGE FROM OWNER", msg)
 	}
-	//for(var i = 0; i < 10000000000000;i++);
+	//for(let i = 0; i < 10000000000000;i++);
 	owner.postMessage("ho!")
 })
 

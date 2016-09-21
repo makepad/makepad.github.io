@@ -165,7 +165,11 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				$bgColor:'#537b',
 				open:{$open:1},
 				close:{$open:0}
-			}
+			},
+			ClassBody:{
+				$bgColor:'#533b',
+				$open:1
+			},
 		},
 		Marker:{
 			$borderRadius:3.5,
@@ -348,6 +352,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			$boldness:0.1,
 			$color:'#797'
 		},
+		RestElement:{},
 		Super:{},
 		// await
 		AwaitExpression:{},
@@ -454,10 +459,18 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		TemplateLiteral:{},
 
 		// classes
-		ClassDeclaration:{},
-		ClassExpression:{},
+		ClassDeclaration:{
+			class:{},
+			extends:{}
+		},
+		ClassExpression:{
+			class:{},
+			extends:{}
+		},
 		ClassBody:{},
-		MethodDefinition:{},
+		MethodDefinition:{
+			static:{}
+		},
 		
 		// modules
 		ExportAllDeclaration:{},
@@ -490,6 +503,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			})
 		}
 		catch(e){
+			console.log(e, e.stack)
 			//console.log(e, e.stack)
 			this.error = e
 		}
@@ -576,7 +590,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 					if((oldrem === ' ' || oldrem === ';') && newins === ''){
 						var lengthText = this.lengthText()
 						this.wasNoopChange = true
-						for(var i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
+						for(let i =0 ; i < lengthText; i++) this.$setTweenStartText(i, 0)
 					}
 				}
 				
@@ -588,14 +602,14 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				var lengthBlock = this.lengthBlock()
 				if(this.$lengthBlock !== lengthBlock){
 					this.$lengthBlock = lengthBlock
-					for(var i = 0; i < lengthBlock; i++){
+					for(let i = 0; i < lengthBlock; i++){
 						this.$setTweenStartBlock(i, 0)
 					}
 				}
 				var lengthMarker = this.lengthMarker()
 				if(this.$lengthMarker !== lengthMarker){
 					this.$lengthMarker = lengthMarker
-					for(var i = 0; i < lengthMarker; i++){
+					for(let i = 0; i < lengthMarker; i++){
 						this.$setTweenStartMarker(i, 0)
 					}
 				}
@@ -626,7 +640,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				}
 				else{
 					this._text = ''
-					for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+					for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 						this.turtle.sx = ann[i+5]
 						this.$fastTextFontSize = ann[i+4]
 						this.fastText(ann[i], ann[i+1], ann[i+2], ann[i+3])
@@ -639,7 +653,10 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 							this.error.pos = pos
 						}
 					}
+
 					var epos = clamp(this.error.pos, 0, this.$lengthText()-1)
+
+
 					var rd = this.$readOffsetText(epos)
 
 					if(rd){
@@ -666,15 +683,16 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		}
 
 		if(this.hasFocus){
+			
 			var cursors = this.cs.cursors
-			for(var i = 0; i < cursors.length; i++){
+			for(let i = 0; i < cursors.length; i++){
 				var cursor = cursors[i]
 				var t = this.cursorRect(cursor.end)
 				if(cursor.max < 0) cursor.max = t.x
 
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
 
-				for(var j = 0; j < boxes.length;j++){
+				for(let j = 0; j < boxes.length;j++){
 					var box = boxes[j]
 					var pbox = boxes[j-1]
 					var nbox = boxes[j+1]
@@ -707,7 +725,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var stack = []
 		var close = {'{':'}','(':')','[':']'}
 		var pos = 0
-		for(var i = 0, l = ann.length, step = ann.step; i < l; i += step){
+		for(let i = 0, l = ann.length, step = ann.step; i < l; i += step){
 			var txt = ann[i]
 			var sx = ann[i+5]
 			if(txt === '{' || txt === '[' || txt === '(') stack.push(txt, sx, pos)
@@ -820,7 +838,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var body = node.body
 		var bodylen = body.length - 1
 		var first = 0
-		for(var i = 0 ; i <= bodylen; i++){
+		for(let i = 0 ; i <= bodylen; i++){
 			var statement = body[i]
 			if(statement.type === 'ExpressionStatement')statement = statement.expression
 			if(statement.type === 'AssignmentExpression'){
@@ -837,7 +855,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			else if(statement.type === 'CallExpression'){
 				var args = statement.arguments
 				var argslen = args.length - 1
-				for(var j = 0; j <= argslen; j++){
+				for(let j = 0; j <= argslen; j++){
 					var arg = args[j]
 					if(arg.type === 'FunctionExpression'){
 						first = toggleASTNode(arg.body, first) || first
@@ -850,7 +868,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			else if(statement.type === 'VariableDeclaration'){
 				var decls = statement.declarations
 				var declslen = decls.length - 1
-				for(var j = 0; j <= declslen; j++){
+				for(let j = 0; j <= declslen; j++){
 					var decl = decls[j]
 					var init = decl.init
 					if(!init) continue
@@ -876,13 +894,13 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var props = node.properties
 		var propslen = props.length - 1
 		var first = 0
-		for(var i = 0 ; i <= propslen; i++){
+		for(let i = 0 ; i <= propslen; i++){
 			var prop = props[i]
 			var value = prop.value
 			if(value.type === 'CallExpression'){
 				var args = value.arguments
 				var argslen = args.length - 1
-				for(var j = 0; j <= argslen; j++){
+				for(let j = 0; j <= argslen; j++){
 					var arg = args[j]
 					if(arg.type === 'FunctionExpression'){
 						first = toggleASTNode(arg.body, first) || first
@@ -904,7 +922,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 	function toggleArrayExpression(node){
 		var elems = node.elements
 		var elemslen = elems.length - 1
-		for(var i = 0 ; i <= elemslen; i++){
+		for(let i = 0 ; i <= elemslen; i++){
 			var elem = elems[i]
 			if(!elem) continue
 			if(elem.type === 'FunctionExpression'){
@@ -1049,7 +1067,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var ann = this.ann
 		// process insert into annotated array
 		var pos = 0
-		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+		for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			pos += txt.length
 			if(offset<=pos){
@@ -1087,7 +1105,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		var s =''
 		var fs = this.$fastTextFontSize
 		var padLeft = this.drawPadding && this.drawPadding[3] || this.padding[3]
-		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+		for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			var style = ann[i+1]
 			//var fs = ann[i+4]
@@ -1145,7 +1163,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		// process a remove from the annotated array
 		var ann = this.ann
 		var pos = 0
-		for(var i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+		for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			pos += txt.length
 			if(start<pos){

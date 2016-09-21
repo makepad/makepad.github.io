@@ -6,23 +6,26 @@ var keyboard = require('services/keyboard')
 
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
-module.exports = require('base/view').extend(function App(proto, base){
-	proto.name = 'App'
+
+module.exports = class App extends require('base/view'){
+	
 	// lets define some props
-	proto.props = {
+	prototype(){
+		this.name = 'App'
+		this.cursor = 'default'
 	}
-	proto.cursor = 'default'
-	proto._onConstruct = function(){
-		
-		base._onConstruct.call(this)
-		
-		var viewTodoMap = this.$viewTodoMap = []
+
+	constructor(previous){
+		super()
+		// create app
 		var app = this
+		
+		var viewTodoMap = app.$viewTodoMap = []
 
 		// our layout object used for running turtles on the view tree
-		var layout = this.$turtleLayout = {
+		var layout = app.$turtleLayout = {
 			$writeList: [],
-			Turtle:this.Turtle,
+			Turtle:app.Turtle,
 			beginTurtle:function(context){
 				var len = ++this.$turtleStack.len
 				var outer = this.turtle
@@ -40,7 +43,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			$moveWritten:function(start, dx, dy){
 				var writes = this.$writeList
 				var current = this.$turtleStack.len
-				for(var i = start; i < writes.length; i += 2){
+				for(let i = start; i < writes.length; i += 2){
 					var node = writes[i]
 					var level = writes[i+1]
 					if(current > level) continue
@@ -49,18 +52,18 @@ module.exports = require('base/view').extend(function App(proto, base){
 				}
 			}
 		}
-		layout.turtle = new this.Turtle(layout)
+		layout.turtle = new app.Turtle(layout)
 		layout.$turtleStack = [layout.turtle]
 		layout.$writeList = []
 		layout.view = layout
 
-		this.camPosition = mat4.create()
-		this.camProjection = mat4.create()
+		app.camPosition = mat4.create()
+		app.camProjection = mat4.create()
 		
-		var painterUboDef = this.Surface.prototype.$compileInfo.uboDefs.painter
-		this.painterUbo = new painter.Ubo(painterUboDef)
+		var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
+		app.painterUbo = new painter.Ubo(painterUboDef)
 
-		this._frameId = 0
+		app._frameId = 0
 
 		function fingerMessage(event, todoId, pickId, msg, isOut){
 			var view = viewTodoMap[todoId]
@@ -151,18 +154,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			fingerMessage('onFingerForce', msg.todoId, msg.pickId, msg)
 		}
 
-		//var hoverTodoId = {}
-		//var hoverPickId = {}
 		fingers.onFingerHover = function(msg){
-			// we want mouse in/out messages to go to the right view and stamp.
-			//var todoId = msg.todoId
-			//var pickId = msg.pickId
-			//if(todoId !== hoverTodoId[msg.digit] || pickId !== hoverPickId[msg.digit]){
-			//	fingerMessage('onFingerOut', hoverTodoId[msg.digit], hoverPickId[msg.digit], msg, true)
-			//	fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
-			//}
-			//hoverTodoId[msg.digit] = todoId
-			//hoverPickId[msg.digit] = pickId
 			fingerMessage('onFingerHover', msg.todoId, msg.pickId, msg)
 		}
 
@@ -208,62 +200,72 @@ module.exports = require('base/view').extend(function App(proto, base){
 			if(focus && focus.onKeyboardClose) focus.onKeyboardClose(msg)
 		}
 
+		var appBlur
+		keyboard.onAppBlur = function(){
+			appBlur = app.focusView
+			if(appBlur) appBlur.clearFocus()
+		}
+
+		keyboard.onAppFocus = function(){
+			if(appBlur) appBlur.setFocus()
+		}
+
 
 		painter.onResize = function(){
 			app.relayout()
 		}
 
 		// lets do our first redraw
-		this.app = this
+		app.app = app
 		// we are the default focus
-		this.focusView = this
+		app.focusView = app
 
 		// compose the tree
-		this.$composeTree(this)
+		app.$composeTree(app)
 
 		// lets attach our todo and ubo to the main framebuffer
-		painter.mainFramebuffer.assignTodoAndUbo(this.todo, this.painterUbo)
+		painter.mainFramebuffer.assignTodoAndUbo(app.todo, app.painterUbo)
 		// first draw
-		this.$redrawViews()
+		app.$redrawViews()
 	}
 
-	proto.transferFingerMove = function(digit, todoId, pickId){
+	transferFingerMove(digit, todoId, pickId){
 		this.$fingerMove[digit] = {
 			todoId:todoId,
 			pickId:pickId
 		}
 	}
 
-	proto.startFingerDrag = function(digit, dragObject){
+	startFingerDrag(digit, dragObject){
 		this.$fingerDragObject[digit] = dragObject
 		fingers.startFingerDrag(digit)
 	}
 
-	proto.setClipboardText = function(text){
+	setClipboardText(text){
 		keyboard.setClipboardText(text)
 	}
 
-	proto.useSystemEditMenu = function(capture){
+	useSystemEditMenu(capture){
 		keyboard.useSystemEditMenu(capture)
 	}
 
-	proto.setCharacterAccentMenuPos = function(x,y){
+	setCharacterAccentMenuPos(x,y){
 		keyboard.setCharacterAccentMenuPos(x,y)
 	}
 
-	proto.setWorkerKeyboardFocus = function(focus){
+	setWorkerKeyboardFocus(focus){
 		keyboard.setWorkerKeyboardFocus()
 	}
 
-	proto.setTextInputFocus = function(focus){
+	setTextInputFocus(focus){
 		keyboard.setTextInputFocus(focus)
 	}
 
-	proto._onDestroy = function(){
+	_onDestroy(){
 		base._onDestroy.call(this)
 	}
 
-	proto.$composeTree = function(node, oldChildren){
+	$composeTree(node, oldChildren){
 		// it calls compose recursively
 		if(node.onCompose){
 			node.onflag = 1
@@ -283,7 +285,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 			if(node.onInit) node.onInit()
 		}
 
-		for(var i = 0; i < children.length; i++){
+		for(let i = 0; i < children.length; i++){
 			var child = children[i]
 			child.parent = node
 			child.app = node.app
@@ -326,7 +328,7 @@ module.exports = require('base/view').extend(function App(proto, base){
 	}*/
 
 	// relayout the viewtree
-	proto.$relayoutViews = function(){
+	$relayoutViews(){
 		var iter = this
 		var layout = this.$turtleLayout
 
@@ -440,12 +442,12 @@ module.exports = require('base/view').extend(function App(proto, base){
 		}
 	}
 
-	proto.$updateTime = function(){
+	$updateTime(){
 		this._time = (Date.now() - painter.timeBoot) / 1000
 		this._frameId++
 	}
 
-	proto.$redrawViews = function(){
+	$redrawViews(){
 		this.$updateTime()
 		// we can submit a todo now
 		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
@@ -467,4 +469,4 @@ module.exports = require('base/view').extend(function App(proto, base){
 			this.$redrawView()
 		}
 	}
-})
+}

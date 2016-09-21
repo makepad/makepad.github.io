@@ -95,7 +95,7 @@ module.exports = require('base/view').extend({
 		this.drawButton(this.styles.playButton)
 		// lets add a slider widget
 		var probes = this.probes
-		if(probes) for(var i = 0; i < probes.length; i++){
+		if(probes) for(let i = 0; i < probes.length; i++){
 			var probe = probes[i]
 			this.drawItem({
 				text:probe.name

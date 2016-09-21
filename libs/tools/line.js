@@ -36,7 +36,7 @@ module.exports = require('base/shader').extend(function RectShader(proto){
 		dy: {noStyle:1, value:NaN},
 	}
 
-	proto.mesh = painter.Mesh(types.vec3).pushQuad(
+	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
 		0, 0, 0,
 		1, 0, 0,
 		0, 1, 0,

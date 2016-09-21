@@ -1,7 +1,7 @@
 var types = exports
 
 function getPrimary(fields){
-	for(var key in fields){
+	for(let key in fields){
 		var type = fields[key]
 		if(type.constructor === Type) return type
 		type = getPrimary(type.fields)
@@ -9,7 +9,7 @@ function getPrimary(fields){
 	}
 }
 function getArray(fields){
-	for(var key in fields){
+	for(let key in fields){
 		var type = fields[key]
 		if(type.array) return type.array
 	}
@@ -17,7 +17,7 @@ function getArray(fields){
 
 function getSlots(fields){
 	var total = 0
-	for(var key in fields){
+	for(let key in fields){
 		var type = fields[key]
 		total += type.slots
 	}
@@ -30,7 +30,7 @@ function Type(config){
 		type = Object.create(Type.prototype)
 		type.constructor = Type
 	}
-	for(var key in config){
+	for(let key in config){
 		type[key] = config[key]
 	}
 	return type
@@ -259,7 +259,7 @@ types.typeFromValue = function(value){
 }
 
 var hex = Array(128)
-for(var hexl = 0; hexl <10; hexl++){
+for(let hexl = 0; hexl <10; hexl++){
 	hex[String(hexl).charCodeAt(0)] = hexl
 	hex["ABCDEF".charCodeAt(hexl)] = 10+hexl
 	hex["abcdef".charCodeAt(hexl)] = 10+hexl

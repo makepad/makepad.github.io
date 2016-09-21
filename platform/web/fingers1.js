@@ -1,12 +1,15 @@
-module.exports = require('/platform/service').extend(function fingers1(proto, base){
 
-	proto.TAP_TIME = 350
-	proto.TAP_DIST_TOUCH = 50
-	proto.TAP_DIST_MOUSE = 5
 
-	proto.onConstruct = function(){
+module.exports = class fingers1 extends require('/platform/service'){
+	constructor(...args){
+		super(...args)
+		
+		this.TAP_TIME = 350
+		this.TAP_DIST_TOUCH = 50
+		this.TAP_DIST_MOUSE = 5
+
 		if(this.parent){
-			this.parentFingers = this.parent.services[this.name]
+			this.parentFingers = this.parent.services[this.constructor.name]
 			return this.parentFingers.addChild(this)
 		}
 		this.children = {}
@@ -16,6 +19,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.tapMap = {}
 		this.fingerMapAlloc = 1
 		this.onForceInterval = this.onForceInterval.bind(this)
+		this.mouseIsDown = false
 
 		var canvas = this.platform.canvas
 
@@ -39,16 +43,16 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		window.addEventListener('webkitmouseforcechanged', this.onCheckMacForce.bind(this), false)
 	}
 
-	proto.addChild = function(child){
+	addChild(child){
 		if(this.parent){
 			return this.parentFingers.addChild(this)
 		}
 		this.children[child.worker.workerId] = child
 	}
 
-	proto.batchMessage = function(msg){
+	batchMessage(msg){
 		if(msg.workerId === this.worker.workerId){
-			return base.batchMessage.call(this, msg)
+			return super.batchMessage(msg)
 		}
 		// otherwise post to a child
 		var child = this.children[msg.workerId]
@@ -62,15 +66,15 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		else console.log('fingers1 invalid worker ID', msg)
 	}
 
-	proto.postMessage = function(msg){
+	postMessage(msg){
 		if(!msg.workerId){
-			 base.postMessage.call(this, msg)
-			 for(var key in this.children) this.children[key].postMessage(msg)
+			 super.postMessage(msg)
+			 for(let key in this.children) this.children[key].postMessage(msg)
 			 return
 		}
 
 		if(msg.workerId === this.worker.workerId){
-			return base.postMessage.call(this, msg)
+			return super.postMessage(msg)
 		}
 		// otherwise post to a child
 		var child = this.children[msg.workerId]
@@ -78,57 +82,13 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		else console.log('fingers1 invalid worker ID', msg)
 	}
 
-	// 
-	// 
-	// User api
-	// 
-	// 
-	var cursors = {
-		'none':1,
-		'auto':1,
-		'default':1, 
-		'contextMenu':1,
-		'help':1,
-		'alias':1,
-		'copy':1,
-		'progress':1,
-		'wait':1,
-		'not-allowed':1,
-		'pointer':1,
-		'no-drop':1,
-		'grab':1,
-		'grabbing':1,
-		'zoom-in':1,
-		'zoom-out':1,
-		'move':1,
-		'all-scroll':1,
-		'text':1,
-		'vertical-text':1,
-		'cell':1,
-		'crosshair':1,
-		'col-resize':1,
-		'row-resize':1,
-		'n-resize':1,
-		'e-resize':1,
-		's-resize':1,
-		'w-resize':1,
-		'ne-resize':1,
-		'nw-resize':1,
-		'se-resize':1,
-		'sw-resize':1,
-		'ew-resize':1,
-		'ns-resize':1,
-		'nesw-resize':1,
-		'nwse-resize':1,
-	}
-
-	proto.user_setCursor = function(msg){
+	user_setCursor(msg){
 		if(!cursors[msg.cursor]) return
 		// use the body as the cursor container
 		document.body.style.cursor = msg.cursor
 	}
 
-	proto.user_startFingerDrag = function(msg){
+	user_startFingerDrag(msg){
 		this.dragMap[msg.digit] = 1
 	}
 
@@ -138,9 +98,9 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 	// 
 	// 
 
-	proto.nearestFinger = function(x, y){
+	nearestFinger(x, y){
 		var near_dist = Infinity, near_digit = -1
-		for(var digit in this.fingerMap){
+		for(let digit in this.fingerMap){
 			var f = this.fingerMap[digit]
 			if(!f) continue
 			var dx = x - f.x, dy = y - f.y
@@ -150,7 +110,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		return this.fingerMap[near_digit]
 	}
 
-	proto.storeNewFinger = function(f){
+	storeNewFinger(f){
 			// find the hole in fingers
 		for(var digit in this.fingerMap){
 			if(!this.fingerMap[digit]) break
@@ -167,11 +127,11 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 	// 
 	// 
 
-	proto.onFingerDown = function(fingers){
+	onFingerDown(fingers){
 		if(!this.worker.services.painter1) return
 		// pick all fingers in set
 		// send 
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
 			this.storeNewFinger(f)
@@ -208,7 +168,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 				// post the message
 				this.postMessage(f)
 				if(f.queue){
-					for(var i = 0; i < f.queue.length; i++){
+					for(let i = 0; i < f.queue.length; i++){
 						var q = f.queue[i]
 						q.pick = pick
 						this.postMessage(q)
@@ -218,9 +178,9 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	proto.onFingerMove = function(fingers){
+	onFingerMove(fingers){
 		if(!this.worker.services.painter1) return
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 			
 			var oldf = this.nearestFinger(f.x, f.y)
@@ -272,10 +232,10 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.worker.onAfterEntry()
 	}
 
-	proto.onFingerUp = function(fingers){
+	onFingerUp(fingers){
 		if(!this.worker.services.painter1) return
 
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
 			var oldf = this.nearestFinger(f.x, f.y)
@@ -336,9 +296,9 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	proto.cloneFinger = function(f, fn, pick){
+	cloneFinger(f, fn, pick){
 		var o = {}
-		for(var key in f){
+		for(let key in f){
 			o[key] = f[key]
 		}
 		o.fn = fn
@@ -348,9 +308,9 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		return o
 	}
 
-	proto.onFingerHover = function(fingers){
+	onFingerHover(fingers){
 		if(!this.worker.services.painter1) return
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
 			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
@@ -379,9 +339,9 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	proto.onFingerForce = function(fingers){
+	onFingerForce(fingers){
 		if(!this.worker.services.painter1) return
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 			var oldf = this.nearestFinger(f.x, f.y)
 
@@ -395,8 +355,8 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	proto.onFingerWheel = function(fingers){
-		for(var i = 0; i < fingers.length; i++){
+	onFingerWheel(fingers){
+		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
 			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
@@ -412,54 +372,21 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	function mouseToFinger(e){
-		return [{
-			x:e.pageX,
-			y:e.pageY,
-			button: e.button === 0? 1: e.button===1? 3: 2,
-			touch: false,
-			time:Date.now(),
-			digit:1,
-			ctrl:e.ctrlKey,
-			alt:e.altKey,
-			shift:e.shiftKey,
-			meta:e.metaKey
-		}]
-	}
-
-	function touchToFinger(e){
-		var f = []
-		for(var i = 0; i < e.changedTouches.length; i++){
-			var t = e.changedTouches[i]
-			f.push({
-				x:t.pageX,
-				y:t.pageY,
-				force:t.force,
-				button:1,
-				touch: true,
-				time:Date.now()
-			})
-		}
-		return f
-	}
-
-	proto.mouseIsDown = false
-
-	proto.onMouseDown = function(e){
+	onMouseDown(e){
 		e.preventDefault()
 		if(this.worker.services.keyboard1.onMouseDown(e))return
 		this.mouseIsDown = true
 		this.onFingerDown(mouseToFinger(e))
 	}
 
-	proto.onMouseUp = function(e){
+	onMouseUp(e){
 		this.mouseIsDown = false
 		e.preventDefault()
 		if(this.worker.services.keyboard1.onMouseUp(e)) return
 		this.onFingerUp(mouseToFinger(e))
 	}
 
-	proto.onMouseMove = function(e){
+	onMouseMove(e){
 		if(this.mouseIsDown){
 			this.onFingerMove(mouseToFinger(e))
 		}
@@ -468,20 +395,20 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		}
 	}
 
-	proto.onForceInterval = function(){
+	onForceInterval(){
 		this.onFingerForce(touchToFinger(this.touchPollEvent))
 	}
 
-	proto.onCheckMacForce = function(e){
+	onCheckMacForce(e){
 		// lets reuse our mouse
 		var fingers = touchToFinger(touchPollEvent)
-		for(var i = 0; i < fingers.length; i++){
+		for(let i = 0; i < fingers.length; i++){
 			fingers[i].force = e.webkitForce / 3.0
 		}
 		this.onFingerForce(fingers)
 	}
 
-	proto.onTouchStart = function(e){
+	onTouchStart(e){
 		e.preventDefault()
 		if(e.changedTouches[0].force !== undefined){
 			this.touchPollEvent = e
@@ -495,11 +422,11 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.onFingerDown(touchToFinger(e))
 	}
 
-	proto.onTouchMove = function(e){
+	onTouchMove(e){
 		this.onFingerMove(touchToFinger(e))
 	}
 
-	proto.onTouchEnd = function(e){
+	onTouchEnd(e){
 		if(this.worker.services.audio1) this.worker.services.audio1.onTouchEnd()
 		if(this.touchPollRefs){
 			if(!--this.touchPollRefs){
@@ -511,7 +438,7 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		this.worker.services.keyboard1.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY, tapCount)
 	}
 
-	proto.onWheel = function(e){
+	onWheel(e){
 		if(this.worker.services.keyboard1.onMouseWheel(e)) return
 		var f = mouseToFinger(e)
 		e.preventDefault()
@@ -522,4 +449,79 @@ module.exports = require('/platform/service').extend(function fingers1(proto, ba
 		f[0].yWheel = e.deltaY * fac
 		return this.onFingerWheel(f)
 	}
-})
+}
+
+// 
+// 
+// Utils
+// 
+// 
+var cursors = {
+	'none':1,
+	'auto':1,
+	'default':1, 
+	'contextMenu':1,
+	'help':1,
+	'alias':1,
+	'copy':1,
+	'progress':1,
+	'wait':1,
+	'not-allowed':1,
+	'pointer':1,
+	'no-drop':1,
+	'grab':1,
+	'grabbing':1,
+	'zoom-in':1,
+	'zoom-out':1,
+	'move':1,
+	'all-scroll':1,
+	'text':1,
+	'vertical-text':1,
+	'cell':1,
+	'crosshair':1,
+	'col-resize':1,
+	'row-resize':1,
+	'n-resize':1,
+	'e-resize':1,
+	's-resize':1,
+	'w-resize':1,
+	'ne-resize':1,
+	'nw-resize':1,
+	'se-resize':1,
+	'sw-resize':1,
+	'ew-resize':1,
+	'ns-resize':1,
+	'nesw-resize':1,
+	'nwse-resize':1,
+}
+
+function mouseToFinger(e){
+	return [{
+		x:e.pageX,
+		y:e.pageY,
+		button: e.button === 0? 1: e.button===1? 3: 2,
+		touch: false,
+		time:Date.now(),
+		digit:1,
+		ctrl:e.ctrlKey,
+		alt:e.altKey,
+		shift:e.shiftKey,
+		meta:e.metaKey
+	}]
+}
+
+function touchToFinger(e){
+	var f = []
+	for(let i = 0; i < e.changedTouches.length; i++){
+		var t = e.changedTouches[i]
+		f.push({
+			x:t.pageX,
+			y:t.pageY,
+			force:t.force,
+			button:1,
+			touch: true,
+			time:Date.now()
+		})
+	}
+	return f
+}

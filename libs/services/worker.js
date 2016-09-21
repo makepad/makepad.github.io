@@ -7,7 +7,7 @@ var pingTimeouts
 
 service.onMessage = function(msg){
 	if(msg.fn === 'toWorker'){
-		for(var key in requires){
+		for(let key in requires){
 			requires[key].onMessage(msg.msg)
 		}
 	}
@@ -22,7 +22,7 @@ service.onMessage = function(msg){
 exports.onRequire = function(args, absParent, buildPath){
 
 	var Worker = require('base/class').extend(function Worker(proto){
-		proto.onConstruct = function(serviceList, platform){
+		proto.constructor = function(serviceList, platform){
 			var run
 			if(typeof serviceList === 'function') run = serviceList, serviceList = undefined
 
@@ -62,7 +62,7 @@ exports.onRequire = function(args, absParent, buildPath){
 			this.run = function(run){
 				var myres = module.worker.resources
 				var resources = {}
-				for(var key in myres){
+				for(let key in myres){
 					resources[key] = myres[key]
 				}
 				resources['main'] = run.toString().replace(/function\s*\([^\)]*?\)\s*\{([\S\s]*)\}\s*$/, function(m,b){return b})

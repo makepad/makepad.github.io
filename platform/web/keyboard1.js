@@ -1,9 +1,22 @@
-module.exports = require('/platform/service').extend(function keyboard1(proto){
+var magicClip = '\n\u00A0\u00A0\u00B7\n'
+var androidBackspace = '\n\u00A0\u00B7\n'
 
-	proto.onConstruct = function(){
+// firefox has a different keymap, remap keys.
+var fireFoxKeyRemap = {
+	91:93,
+	92:93,
+	224:93, // right meta
+	61:187, // equals
+	173:189, // minus
+	59:186 // semicolon
+}
+module.exports = class keyboard1 extends require('/platform/service'){
+
+	constructor(...args){
+		super(...args)
 
 		if(this.parent){
-			this.parentKeyboard = this.parent.services[this.name]
+			this.parentKeyboard = this.parent.services[this.constructor.name]
 			return this.parentKeyboard.addChild(this)
 		}
 
@@ -128,18 +141,23 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		ta.addEventListener('keyup', this.onKeyUp.bind(this))
 
 		document.body.appendChild(ta)
-	}
 
-	var magicClip = '\n\u00A0\u00A0\u00B7\n'
-	var androidBackspace = '\n\u00A0\u00B7\n'
-	
+		window.addEventListener("focus", function(){
+			this.postAllEvent({fn:'onAppFocus'})	
+			if(!this.root.isIOSDevice)ta.focus()
+		}.bind(this))
+
+		window.addEventListener("blur", function(){
+			this.postAllEvent({fn:'onAppBlur'})
+		}.bind(this))
+	}
 	//
 	//
 	// Polling
 	//
 	//
 
-	proto.idlePoll = function(){
+	idlePoll(){
 		var now = Date.now()	
 		if(now - this.lastIdlePoll > 500 ){
 			this.postAllEvent({
@@ -159,7 +177,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 
 	// poll for arrow keys on iOS. Yes this is horrible, but the only way
 	// we watch how the selection changes in a time loop poll
-	proto.arrowCursorPoll = function(){
+	arrowCursorPoll(){
 		if(!this.keyboardAnimPlaying && document.body.scrollTop)document.body.scrollTop = 0
 		if(this.ignoreCursorPoll) return
 		if((this.lastEnd !== this.textArea.selectionEnd || this.lastStart !== this.textArea.selectionStart)){
@@ -204,7 +222,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	//
 	//
 
-	proto.addChild = function(child){
+	addChild(child){
 		if(this.parentKeyboard){
 			return this.parentKeyboard.addChild(this)
 		}
@@ -212,7 +230,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	}
 
 	// we shouldnt post faster than the framerate
-	proto.postKeyEvent = function(msg){
+	postKeyEvent(msg){
 		if(!this.focussedWorkerId){
 
 			return this.postMessage(msg)
@@ -221,9 +239,9 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		this.children[this.focussedWorkerId].postMessage(msg)
 	}
 
-	proto.postAllEvent = function(msg){
+	postAllEvent(msg){
 		this.postMessage(msg)
-		for(var key in this.children){
+		for(let key in this.children){
 			this.children[key].postMessage(msg)
 		}
 	}
@@ -234,7 +252,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	//
 	//
 
-	proto.user_setClipboardText = function(msg){
+	user_setClipboardText(msg){
 		
 		if(this.parentKeyboard) return this.parentKeyboard.user_setClipboardText(msg)
 
@@ -250,7 +268,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 
 	}
 
-	proto.user_useSystemEditMenu = function(msg){
+	user_useSystemEditMenu(msg){
 		if(this.parentKeyboard)return this.parentKeyboard.user_useSystemEditMenu(msg)
 
 		this.useSystemEditMenu = msg.capture
@@ -263,18 +281,18 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		}
 	}
 
-	proto.user_setCharacterAccentMenuPos = function(msg){
+	user_setCharacterAccentMenuPos(msg){
 		if(this.parentKeyboard)return this.parentKeyboard.user_setCharacterAccentMenuPos(msg)
 
 		this.characterAccentMenuPos = msg
 	}
 
-	proto.user_setWorkerKeyboardFocus = function(msg, workerId){
+	user_setWorkerKeyboardFocus(msg, workerId){
 		if(this.parentKeyboard)return this.parentKeyboard.user_setWorkerKeyboardFocus(msg, workerId)
 		this.focussedWorkerId = workerId
 	}
 
-	proto.user_setTextInputFocus = function(msg){
+	user_setTextInputFocus(msg){
 		if(this.parentKeyboard)return this.parentKeyboard.user_setTextInputFocus(msg)
 
 		this.hasTextInputFocus = msg.focus
@@ -293,7 +311,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	//
 	//
 
-	proto.showTextArea = function(){
+	showTextArea(){
 		if(this.root.isTouchDevice){
 			this.textArea.style.top = -15
 		}
@@ -301,7 +319,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		this.hasTextInputFocus = true
 	}
 
-	proto.hideTextArea = function(){
+	hideTextArea(){
 		if(this.root.isTouchDevice){
 			this.textArea.style.top = 0
 		}
@@ -309,22 +327,22 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		this.hasTextInputFocus = false
 	}
 
-	proto.moveTextArea = function(x, y){
+	moveTextArea(x, y){
 		this.textArea.style.left = x
 		this.textArea.style.top = y
 	}
 
-	proto.textAreaMouseMode = function(){
+	textAreaMouseMode(){
 		this.textArea.style.position = 'absolute'
 		this.textArea.style.left = -100
 	}
 
-	proto.textAreaTouchMode = function(){
+	textAreaTouchMode(){
 		this.textArea.style.position = 'relative'
 		this.textArea.style.top = 0
 	}
 
-	proto.finalizeSelection = function(){
+	finalizeSelection(){
 
 		var len = this.textArea.value.length
 		if(len > 5) this.textArea.selectionStart = 3
@@ -340,7 +358,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	//
 
 
-	proto.orientationChange = function(e){
+	orientationChange(e){
 
 		this.defaultHeight = window.innerHeight
 		this.hideTextArea()
@@ -360,7 +378,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		})
 	}
 
-	proto.onFocusOut = function(e) {
+	onFocusOut(e) {
 		this.hideTextArea()
 		this.worker.services.painter1.onScreenResize()
 		this.postAllEvent({
@@ -368,7 +386,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		})
 	}
 
-	proto.onWindowResize = function(){
+	onWindowResize(){
 		if(this.root.isTouchDevice){
 			if(window.innerHeight < this.defaultHeight){
 				this.postAllEvent({
@@ -384,18 +402,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		}
 	}
 
-
-	// firefox has a different keymap, remap keys.
-	var fireFoxKeyRemap = {
-		91:93,
-		92:93,
-		224:93, // right meta
-		61:187, // equals
-		173:189, // minus
-		59:186 // semicolon
-	}
-
-	proto.onKeyDown = function(e){
+	onKeyDown(e){
 
 		this.keyDownTriggered = true
 		var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
@@ -428,7 +435,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	}
 
 
-	proto.onKeyUp = function(e){
+	onKeyUp(e){
 		var code = fireFoxKeyRemap[e.keyCode] || e.keyCode
 		
 		// Put the text area back (the character accent menu)
@@ -450,7 +457,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		})
 	}
 
-	proto.onCut = function(e){
+	onCut(e){
 		this.lastClipboard = ''
 		if(this.keyboardCut) return this.keyboardCut = false
 		//if(cliptext.value.length<5)return
@@ -470,7 +477,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		})
 	}
 
-	proto.onPaste = function(e){
+	onPaste(e){
 		this.postKeyEvent({
 			fn:'onKeyPaste',
 			pileupTime:Date.now(),
@@ -479,7 +486,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		e.preventDefault()
 	}
 
-	proto.onSelect = function(e){
+	onSelect(e){
 		//console.log('selectall?', keyboardSelectAll, mouseIsDown)
 		if(this.keyboardSelectAll) return this.keyboardSelectAll = false
 		if(this.textArea.selectionStart === 0 && this.textArea.selectionEnd === this.textArea.value.length){
@@ -500,7 +507,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		}
 	}
 
-	proto.onInput = function(){
+	onInput(){
 		
 		window.stamp = performance.now()
 
@@ -545,7 +552,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 			}
 			// the main keypress entry including multiple characters
 			// like swipe android keyboards 
-			else for(var i = 0, len = value.length - 2 - this.defaultStart; i < len; i++){
+			else for(let i = 0, len = value.length - 2 - this.defaultStart; i < len; i++){
 				var charcode = value.charCodeAt(i + this.defaultStart)
 
 				var msg = {
@@ -566,13 +573,13 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		}
 	}
 
-	proto.onTouchMove = function(e){
+	onTouchMove(e){
 		e.preventDefault()
 		return false
 	}
 
 
-	proto.onBlur = function(){
+	onBlur(){
 		this.hideTextArea()
 	}
 
@@ -582,7 +589,7 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 	//
 	//
 
-	proto.onMouseDown = function(e){
+	onMouseDown(e){
 		if(this.root.isTouchDevice){
 			this.textAreaMouseMode()
 			this.finalizeSelection()
@@ -606,25 +613,25 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		return true
 	}
 
-	proto.onMouseUp = function(e){
+	onMouseUp(e){
 		if(e.button !==2 || !this.useSystemEditMenu) return
 		this.textArea.focus()
 		return true
 	}
 
-	proto.onMouseWheel = function(e){
+	onMouseWheel(e){
 		this.textArea.blur()
 		this.textArea.focus()
 	}
 
-	proto.onTouchStart = function(x, y){
+	onTouchStart(x, y){
 		this.ignoreCursorPoll = true
 		return true
 	}
 
-	proto.onTouchEnd = function(x, y, tapCount){
+	onTouchEnd(x, y, tapCount){
 		//document.body.requestFullscreen();
-		return
+		//return
 		if(this.root.isTouchDevice && tapCount === 1){
 			this.textAreaTouchMode()
 			this.showTextArea()
@@ -658,4 +665,4 @@ module.exports = require('/platform/service').extend(function keyboard1(proto){
 		// lets make the selection now
 		if(this.hasTextInputFocus) this.finalizeSelection()
 	}
-})
+}

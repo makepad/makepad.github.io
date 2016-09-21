@@ -1,7 +1,7 @@
-module.exports = require('/platform/service').extend(function dropfiles1(proto){
+module.exports = class dropfiles1 extends require('/platform/service'){
 
-	proto.onConstruct = function(){
-
+	constructor(...args){
+		super(...args)
 		function dragenter(e) {
 			e.stopPropagation()
 			e.preventDefault()
@@ -19,7 +19,7 @@ module.exports = require('/platform/service').extend(function dropfiles1(proto){
 			var dt = e.dataTransfer
 			var files = dt.files
 			
-			for(var i = 0; i < files.length; i++){
+			for(let i = 0; i < files.length; i++){
 				var file = files[i]
 				var reader = new FileReader()
 				reader.onload = function(e){
@@ -39,4 +39,4 @@ module.exports = require('/platform/service').extend(function dropfiles1(proto){
 		canvas.addEventListener("dragover", dragover, false)
 		canvas.addEventListener("drop", drop, false)
 	}
-})
+}

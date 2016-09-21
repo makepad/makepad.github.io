@@ -113,13 +113,13 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 		if(this.hasFocus){
 			var cursors = this.cs.cursors
-			for(var i = 0; i < cursors.length; i++){
+			for(let i = 0; i < cursors.length; i++){
 				var cursor = cursors[i]
 
 				var t = this.cursorRect(cursor.end)
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi())
 				if(cursor.max < 0) cursor.max = t.x
-				for(var j = 0; j < boxes.length; j++){
+				for(let j = 0; j < boxes.length; j++){
 					var box = boxes[j]
 					var pbox = boxes[j-1]
 					var nbox = boxes[j+1]
@@ -173,7 +173,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	//
 
 	var Cursor = require('base/class').extend(function Cursor(proto){
-		proto.onConstruct = function(cursorSet, editor){
+		proto.constructor = function(cursorSet, editor){
 			this.cursorSet = cursorSet
 			this.editor = editor 
 			this.start = 0
@@ -411,7 +411,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				}
 				var arr = oldText.split('')
 				var s= ''
-				for(var k =0; k < arr.length;k++){
+				for(let k =0; k < arr.length;k++){
 					s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
 				}
 				if(Math.abs(pos-i) < Math.abs(pos-j)){
@@ -470,7 +470,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			return function(){
 				this.delta = 0
 				var cursors = this.cursors
-				for(var i = 0; i < cursors.length; i++){
+				for(let i = 0; i < cursors.length; i++){
 					var cursor = cursors[i]
 					cursor.start += this.delta
 					cursor.end += this.delta
@@ -479,11 +479,11 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				this.updateSet()
 			}
 		}
-		for(var key in Cursor.prototype){
+		for(let key in Cursor.prototype){
 			proto[key] = makeSetCall(key, Cursor.prototype[key])
 		}
 
-		proto.onConstruct = function(editor){
+		proto.constructor = function(editor){
 			this.editor = editor
 			this.cursors = []
 			this.addCursor()
@@ -507,7 +507,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 		proto.serializeToArray = function(){
 			var out = []
-			for(var i = 0; i < this.cursors.length; i++){
+			for(let i = 0; i < this.cursors.length; i++){
 				var cursor = this.cursors[i]
 				out.push(cursor.start, cursor.end, cursor.max)
 			}
@@ -516,7 +516,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 		proto.deserializeFromArray = function(inp){
 			this.cursors = []
-			for(var i = 0; i < inp.length; i += 3){
+			for(let i = 0; i < inp.length; i += 3){
 				var cursor = new Cursor(this, this.editor)
 				cursor.start = inp[i]
 				cursor.end = inp[i+1]
@@ -530,7 +530,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 			this.cursors.sort(function(a,b){ return (a.start<a.end?a.start:a.end) < (b.start<b.end?b.start:b.end)? -1: 1})
 			// lets do single pass
-			for(var i = 0; i < this.cursors.length - 1;){
+			for(let i = 0; i < this.cursors.length - 1;){
 				var cur = this.cursors[i]
 				var nxt = this.cursors[i + 1]
 				if(cur.hi() >= nxt.lo()){
@@ -665,14 +665,14 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	}
 
 	proto.scanLineLeft = function(start){
-		for(var i = start - 1; i >= 0; i--){
+		for(let i = start - 1; i >= 0; i--){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i + 1
 	}
 
 	proto.scanLineRight = function(start){
-		for(var i = start; i < this._text.length; i++){
+		for(let i = start; i < this._text.length; i++){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i
@@ -690,8 +690,8 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 
 		//console.log(rd.y - this.todo.yScroll, this.todo.yView)
 		this.app.setCharacterAccentMenuPos(
-			rd.x + 0.5 * rd.advance - this.todo.xScroll, 
-			rd.y - this.todo.yScroll
+			this.$xAbs + rd.x + 0.5 * rd.advance - this.todo.xScroll, 
+			this.$yAbs + rd.y - this.todo.yScroll
 		)
 	}
 
@@ -705,7 +705,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.cs.fuse()
 
 			var txt = ''
-			for(var i = 0; i < this.cs.cursors.length; i++){
+			for(let i = 0; i < this.cs.cursors.length; i++){
 				var cursor = this.cs.cursors[i]
 				txt += this._text.slice(cursor.lo(), cursor.hi())
 			}
@@ -730,7 +730,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 		if(last && last.type === 'insert' && last.start == end){
 			var group = last.group
 			last.group = this.$undoGroup
-			for(var i = stack.length - 2; i >= 0; i--){
+			for(let i = stack.length - 2; i >= 0; i--){
 				if(stack[i].group === group) stack[i].group = this.$undoGroup
 			}
 		}

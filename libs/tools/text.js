@@ -50,7 +50,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 
 	proto.lineSpacing = 1.3
 
-	proto.mesh = painter.Mesh(types.vec3).pushQuad(
+	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
 		0, 0, 0,
 		0, 1, 0,
 		1, 0, 0,
@@ -233,7 +233,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			var boxes = []
 			var curBox
 			var lty, ltx, lfs, lad
-			for(var i = start; i < end; i++){
+			for(let i = start; i < end; i++){
 				var tx = this.$PROP(i, 'x')
 				var ty = this.$PROP(i, 'y')
 				var fs = this.$PROP(i, 'fontSize')
@@ -329,7 +329,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 				absx = absy = false
 				turtle.walk()
 
-				for(var i = start; i < off; i++){
+				for(let i = start; i < off; i++){
 					var unicode = txt.charCodeAt(i)
 					var g = glyphs[unicode] || glyphs[63]
 					this.$WRITEPROPS({

@@ -35,7 +35,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 			x:0,y:0
 		}
 	}
-	proto.mesh = painter.Mesh(types.vec3).pushQuad(
+	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
 		0,0, 1,
 		1,0, 1,
 		0, 1, 1,
@@ -112,7 +112,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 
 			var color = style.color
 			var boldness = style.boldness
-			for(var i = 0; i <= len; i++){
+			for(let i = 0; i <= len; i++){
 				var unicode = txt.charCodeAt(i)
 				var basei = base + i
 				if(basei === changeOffset){
