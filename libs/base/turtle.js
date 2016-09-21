@@ -1,12 +1,19 @@
-module.exports = require('base/class').extend(function Turtle(proto){
+var xcache = {}
+var ycache = {}
+var wcache = {}
+var hcache = {}
 
-	proto.constructor = function(view){
+module.exports = class Turtle extends require('base/class'){
+
+	constructor(view){
+		super()
 		this.view = view
 		this.x1 = this.y1 = Infinity
 		this.x2 = this.y2 = -Infinity
 		this.mh = 0
 	}
-	proto.dump = function(){
+
+	dump(){
 		return (
 		'sx:'+this.sx+
 		',sy:'+this.sy+
@@ -19,7 +26,8 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		',wx:'+this.wx+
 		',wy:'+this.wy)
 	}
-	proto.begin = function(outer, dump){
+	
+	begin(outer, dump){
 
 		this.outer = outer
 
@@ -85,7 +93,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
 	}	
 
-	proto.walk = function(oldturtle){
+	walk(oldturtle){
 		if(this.view.$inPlace) return
 
 		var _w = this._w
@@ -153,13 +161,13 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		}
 	}
 
-	proto.lineBreak = function(){
+	lineBreak(){
 		this.wx = this.sx
 		this.wy += this.mh
 		this.mh = 0
 	}
 
-	proto.end = function(doBounds){
+	end(doBounds){
 		var padding = this.padding
 		var outer = this.outer
 
@@ -183,7 +191,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		}
 	}
 
-	proto.shiftPadding = function(shift){
+	shiftPadding(shift){
 		var pad = this._padding
 		if(typeof shift === 'number'){
 			if(!shift) return
@@ -215,9 +223,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 	}
 
 	// evaluators of string x/y/w/h
-
-	var xcache = {}
-	proto.evalx = function(str){
+	evalx(str){
 		var cache = xcache[str]
 		if(!cache){
 			var pf = parseFloat(str)
@@ -231,8 +237,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		return ret
 	}
 
-	var ycache = {}
-	proto.evaly = function(str){
+	evaly(str){
 		var cache = ycache[str]
 		if(!cache){
 			var pf = parseFloat(str)
@@ -245,8 +250,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		return cache.call(this.context,this)
 	}
 
-	var wcache = {}
-	proto.evalw = function(str){
+	evalw(str){
 		var cache = wcache[str]
 		if(!cache){
 			var pf = parseFloat(str)
@@ -257,8 +261,7 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		return cache.call(this.context,this)
 	}
 
-	var hcache = {}
-	proto.evalh = function(str){
+	evalh(str){
 		var cache = hcache[str]
 		if(!cache){
 			var pf = parseFloat(str)
@@ -269,4 +272,4 @@ module.exports = require('base/class').extend(function Turtle(proto){
 		var r= cache.call(this.context,this)
 		return r
 	}
-})
+}

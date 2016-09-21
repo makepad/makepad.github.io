@@ -2,49 +2,44 @@ var painter = require('services/painter')
 //var fingers = require('fingers')
 var types = require('base/types')
 
-module.exports = function(proto){
+module.exports = class Tools extends require('base/mixin'){
 
-	proto.Turtle = require('base/turtle')
+	static mixin(proto){
+		this._mixin(proto)
 
-	function defineToolGetterSetter(proto, key){
-		Object.defineProperty(proto, key, {
-			configurable:true,
+		proto.Turtle = require('base/turtle')
+
+		Object.defineProperty(proto, 'tools', {
 			get:function(){
-				var cls = this['_' + key]
-				cls.outer = this
-				return cls
+				throw new Error('Please only assign to tools, use _tools if you need to access the data')
 			},
-			set:function(prop){
-				var base = this['_' + key]
-				var cls = this['_' + key] = base.extend(prop)
-				this.$compileToolMacros(key, cls)
+			set:function(tools){
+				if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
+				for(let key in tools){
+					var cls =  tools[key]
+					if(cls && cls.constructor === Object){ // subclass it
+						this[key] = cls
+						continue
+					}
+					this._tools[key] = true
+					this['_' + key] = cls
+					defineToolGetterSetter(this, key)
+					this.$compileToolMacros(key, cls)
+				}	
+			}
+		})
+
+		Object.defineProperty(proto,'styles',{
+			get:function(){ return this._styles },
+			set:function(inStyles){
+				// rewrite the styles system.
+				this._stylesProto = protoInherit(this._stylesProto, inStyles)
+				this._styles = protoProcess(this._stylesProto)
 			}
 		})
 	}
 
-	Object.defineProperty(proto, 'tools', {
-		get:function(){
-			throw new Error('Please only assign to tools, use _tools if you need to access the data')
-		},
-		set:function(tools){
-			if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
-			for(let key in tools){
-				var cls =  tools[key]
-				if(cls && cls.constructor === Object){ // subclass it
-					this[key] = cls
-					continue
-				}
-				this._tools[key] = true
-				this['_' + key] = cls
-				defineToolGetterSetter(this, key)
-				this.$compileToolMacros(key, cls)
-			}	
-		}
-	})
-
-	var zeroMargin = [0,0,0,0]
-	var zeroAlign = [0,0]
-	proto.beginLayout = function(opts){
+	beginLayout(opts){
 		var turtle = this.turtle
 		if(opts){
 			turtle._margin = opts.margin || zeroMargin
@@ -59,12 +54,12 @@ module.exports = function(proto){
 		this.beginTurtle(1)
 	}
 
-	proto.endLayout = function(){
+	endLayout(){
 		var ot = this.endTurtle()
 		this.turtle.walk(ot)
 	}
 
-	proto.beginTurtle = function(dump){
+	beginTurtle(dump){
 		var view = this.view
 		// add a turtle to the stack
 		var len = ++view.$turtleStack.len
@@ -80,7 +75,7 @@ module.exports = function(proto){
 		return turtle
 	}
 
-	proto.endTurtle = function(doBounds){
+	endTurtle(doBounds){
 		// call end on a turtle and pop it off the stack
 		var view = this.view
 		this.turtle.end(doBounds)
@@ -92,11 +87,11 @@ module.exports = function(proto){
 		return last
 	}
 
-	proto.lineBreak = function(){
+	lineBreak(){
 		this.turtle.lineBreak()
 	}
 
-	proto.$moveWritten = function(start, dx, dy){
+	$moveWritten(start, dx, dy){
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len
@@ -117,16 +112,16 @@ module.exports = function(proto){
 		}
 	}
 
-	proto.setPickId = function(pickId){
+	setPickId(pickId){
 		this.turtle._pickId = pickId
 	}
 
-	proto.addPickId = function(){
+	addPickId(){
 		return this.turtle._pickId = ++this.$pickId
 	}
 
 	// internal API used by canvas macros
-	proto.$allocShader = function(classname){
+	$allocShader(classname){
 		var shaders = this.$shaders
 		var proto = new this['_' + classname]()
 		
@@ -174,7 +169,7 @@ module.exports = function(proto){
 		return shader
 	}
 
-	proto.parseColor = function(str, alpha){
+	parseColor(str, alpha){
 		var out = []
 		if(!types.colorFromString(str, alpha, out, 0)){
 			console.log("Cannot parse color" + str)
@@ -182,135 +177,21 @@ module.exports = function(proto){
 		return out
 	}
 
-	proto.$parseColor = function(str, alpha, a, o){
+	$parseColor(str, alpha, a, o){
 		if(!types.colorFromString(str, alpha, a, o)){
 			console.log("Cannot parse color "+str)
 		}
 	}
 
-	proto.$parseColorPacked = function(str, alpha, a, o){
+	$parseColorPacked(str, alpha, a, o){
 		if(!types.colorFromStringPacked(str, alpha, a, o)){
 			console.log("Cannot parse color "+str)
 		}
 	}
 
-	Object.defineProperty(proto,'styles',{
-		get:function(){ return this._styles },
-		set:function(inStyles){
-			// rewrite the styles system.
-			this._stylesProto = protoInherit(this._stylesProto, inStyles)
-			this._styles = protoProcess(this._stylesProto)
-		}
-	})
-
-	// creates a prototypical inheritance overload from an object
-	function protoInherit(oldobj, newobj){
-		// copy oldobj
-		var outobj = oldobj?Object.create(oldobj):{}
-		// copy old object subobjects
-		for(let key in oldobj){
-			var item = oldobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(item, newobj && newobj[key])
-			}
-		}
-		// overwrite new object
-		for(let key in newobj){
-			var item = newobj[key]
-			if(item && item.constructor === Object){
-				outobj[key] = protoInherit(oldobj && oldobj[key], newobj && newobj[key])
-			}
-			else{
-				if(typeof item === 'string' && item.charAt(0) === '#'){
-					item = proto.parseColor(item,1)
-				}
-				outobj[key] = item
-			}
-		}
-		return outobj
-	}
-
-	// we have to return a new objectect
-	function protoProcess(base, ovl, parent, incpy){
-		var cpy = incpy
-		var out = {_:parent}
-		// make sure our copy props are read first
-		for(let key in base){
-			var value = base[key]
-			var $index = key.indexOf('$')
-			if($index === 0){
-				cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
-				cpy[key.slice(1)] = value
-			}
-		}
-		for(let key in ovl){
-			var value = ovl[key]
-			var $index = key.indexOf('$')
-			if($index === 0){
-				cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
-				cpy[key.slice(1)] = value
-			}
-		}
-		for(let key in base){
-			if(key === '_') continue
-			var value = base[key]
-			var $index = key.indexOf('$')
-			if($index === 0){}
-			else if($index >0){
-				var keys = key.split('$')
-				var o = out, bc = keys[1]
-				while(o && !o[bc]) o = o._
-				out[keys[0]] = protoProcess(o && o[bc], value, out, cpy)
-			}
-			else if(value && value.constructor === Object){
-				out[key] = protoProcess(value, null, out, cpy)
-			}
-			else{
-				out[key] = value
-			}
-		}
-		for(let key in ovl){
-			if(key === '_') continue
-			var value = ovl[key]
-			var $index = key.indexOf('$')
-			if($index === 0){ }
-			else if($index>0){
-				var keys = key.split('$')
-				var o = out, bc = keys[1]
-				while(o && !o[bc]) o = o._
-				out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy), out, cpy)
-			}
-			else if(value && value.constructor === Object){
-				out[key] = protoProcess(out[key], value, out, cpy)
-			}
-			else{
-				out[key] = value
-			}
-		}
-		for(let key in cpy){
-			out[key] = cpy[key]
-		}
-		return out
-	}
-
-
-	var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
-	var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
-	var comment2Rx = new RegExp(/\/\/[^\n]*/g)
-	var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*)/)
-	var macroRx = new RegExp(/([\t]*)this\.([\$][A-Z][A-Z0-9\_]*)\s*\(([^\)]*)\)/g)
-	var argSplitRx = new RegExp(/[^,\s]+/g)
-	var nameRx = new RegExp(/NAME/g)
-	var fnnameRx = new RegExp(/^function\s*\(/)
-	var dumpRx = new RegExp(/DUMP/g)
-
-	var fnCache = {}
-
-	// can we reasonably cache these?
-	proto.$compileToolMacros = function(className, sourceClass){
+	$compileToolMacros(className, sourceClass){
 		var sourceProto = sourceClass.prototype
 		var macros = sourceProto._toolMacros
-
 
 		var target = this
 		for(let macroName in macros){
@@ -369,5 +250,125 @@ module.exports = function(proto){
 			}
 		}
 	}
-
 }
+
+
+function defineToolGetterSetter(proto, key){
+	Object.defineProperty(proto, key, {
+		configurable:true,
+		get:function(){
+			var cls = this['_' + key]
+			cls.outer = this
+			return cls
+		},
+		set:function(prop){
+			var base = this['_' + key]
+			var cls = this['_' + key] = base.extend(prop)
+			this.$compileToolMacros(key, cls)
+		}
+	})
+}
+
+
+// creates a prototypical inheritance overload from an object
+function protoInherit(oldobj, newobj){
+	// copy oldobj
+	var outobj = oldobj?Object.create(oldobj):{}
+	// copy old object subobjects
+	for(let key in oldobj){
+		var item = oldobj[key]
+		if(item && item.constructor === Object){
+			outobj[key] = protoInherit(item, newobj && newobj[key])
+		}
+	}
+	// overwrite new object
+	for(let key in newobj){
+		var item = newobj[key]
+		if(item && item.constructor === Object){
+			outobj[key] = protoInherit(oldobj && oldobj[key], newobj && newobj[key])
+		}
+		else{
+			if(typeof item === 'string' && item.charAt(0) === '#'){
+				item = module.exports.prototype.parseColor(item,1)
+			}
+			outobj[key] = item
+		}
+	}
+	return outobj
+}
+
+// we have to return a new objectect
+function protoProcess(base, ovl, parent, incpy){
+	var cpy = incpy
+	var out = {_:parent}
+	// make sure our copy props are read first
+	for(let key in base){
+		var value = base[key]
+		var $index = key.indexOf('$')
+		if($index === 0){
+			cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
+			cpy[key.slice(1)] = value
+		}
+	}
+	for(let key in ovl){
+		var value = ovl[key]
+		var $index = key.indexOf('$')
+		if($index === 0){
+			cpy = cpy?cpy === incpy?Object.create(cpy):cpy:{}
+			cpy[key.slice(1)] = value
+		}
+	}
+	for(let key in base){
+		if(key === '_') continue
+		var value = base[key]
+		var $index = key.indexOf('$')
+		if($index === 0){}
+		else if($index >0){
+			var keys = key.split('$')
+			var o = out, bc = keys[1]
+			while(o && !o[bc]) o = o._
+			out[keys[0]] = protoProcess(o && o[bc], value, out, cpy)
+		}
+		else if(value && value.constructor === Object){
+			out[key] = protoProcess(value, null, out, cpy)
+		}
+		else{
+			out[key] = value
+		}
+	}
+	for(let key in ovl){
+		if(key === '_') continue
+		var value = ovl[key]
+		var $index = key.indexOf('$')
+		if($index === 0){ }
+		else if($index>0){
+			var keys = key.split('$')
+			var o = out, bc = keys[1]
+			while(o && !o[bc]) o = o._
+			out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy), out, cpy)
+		}
+		else if(value && value.constructor === Object){
+			out[key] = protoProcess(out[key], value, out, cpy)
+		}
+		else{
+			out[key] = value
+		}
+	}
+	for(let key in cpy){
+		out[key] = cpy[key]
+	}
+	return out
+}
+var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
+var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
+var comment2Rx = new RegExp(/\/\/[^\n]*/g)
+var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*)/)
+var macroRx = new RegExp(/([\t]*)this\.([\$][A-Z][A-Z0-9\_]*)\s*\(([^\)]*)\)/g)
+var argSplitRx = new RegExp(/[^,\s]+/g)
+var nameRx = new RegExp(/NAME/g)
+var fnnameRx = new RegExp(/^function\s*\(/)
+var dumpRx = new RegExp(/DUMP/g)
+
+var fnCache = {}
+var zeroMargin = [0,0,0,0]
+var zeroAlign = [0,0]

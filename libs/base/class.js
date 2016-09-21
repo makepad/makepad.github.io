@@ -36,30 +36,12 @@ function extend(body){
 	}
 
 	//!TODO remove this, we dont support extend classes that replace the constructor
+	
 	if(proto.constructor !== Constructor){
-
-		Constructor = proto.constructor
-		Constructor.prototype = proto
-		Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
-		// Fake ES6 constructor static methods by copying them
-		var cons = this.prototype.constructor
-		while(cons && cons !== Object){
-			var props = Object.getOwnPropertyNames(cons)
-			for(let i = 0; i < props.length; i++){
-				var name = props[i]
-				if(name in staticSkip) continue
-				if(!(name in Constructor)) Constructor[name] = cons[name]
-			}
-			if(cons.hasOwnProperty('__body__')) cons = null
-			else{
-				var cproto =  Object.getPrototypeOf(cons.prototype)
-				cons = cproto && cproto.constructor
-			}
-		}
+		throw new Error("Please use ES6 constructor syntax")
 	}
-
 	if(this.prototype.onExtendClass) this.prototype.onExtendClass.call(proto)
-	Object.defineProperty(Constructor, '__body__', {value:body})
+
 	return Constructor
 }
 

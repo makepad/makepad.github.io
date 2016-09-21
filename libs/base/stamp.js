@@ -1,8 +1,8 @@
 module.exports = require('base/class').extend(function Stamp(proto){
 	//var types = require('types')
 
-	require('base/props')(proto)
-	require('base/tools')(proto)
+	require('base/props').mixin(proto)
+	require('base/tools').mixin(proto)
 
 	proto.onFlag0 = 1
 	proto.onFlag1 =

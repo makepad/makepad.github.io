@@ -1,9 +1,11 @@
 var service = require('$painter1')
 var types = require('base/types')
 
-var Painter = require('base/class').extend(function Painter(proto){
-	require('base/events')(proto)
-})
+var Painter = class Painter extends require('base/class'){
+	prototype(){
+		require('base/events').mixin(this)
+	}
+}
 
 var painter = module.exports = new Painter()
 
@@ -81,11 +83,71 @@ painter.onScrollTodo = function(msg){
 	}
 }
 
-painter.Todo = require('base/class').extend(function Todo(proto){
+// min/magfilter values
+painter.NEAREST = 0
+painter.LINEAR = 1
+painter.NEAREST_MIPMAP_NEAREST = 2
+painter.LINEAR_MIPMAP_NEAREST = 3
+painter.NEAREST_MIPMAP_LINEAR = 4
+painter.LINEAR_MIPMAP_LINEAR = 5
 
-	proto.initalloc = 256
+// wraps/t values
+painter.REPEAT = 0
+painter.CLAMP_TO_EDGE = 1
+painter.MIRRORED_REPEAT = 2
 
-	proto.constructor = function(initalloc){
+// prefab sampler types
+painter.SAMPLER2DNEAREST = {
+	type: types.sampler2D,
+	minfilter: painter.NEAREST,
+	magfilter: painter.NEAREST,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
+
+painter.SAMPLER2DLINEAR = {
+	type: types.sampler2D,
+	minfilter: painter.LINEAR,
+	magfilter: painter.LINEAR,
+	wraps: painter.CLAMP_TO_EDGE,
+	wrapt: painter.CLAMP_TO_EDGE
+}
+
+painter.TRIANGLES = 0
+painter.TRIANGLE_STRIP = 1
+painter.TRIANGLE_FAN = 2
+painter.LINES = 3
+painter.LINE_STRIP = 4
+painter.LINE_LOOP = 5
+
+// blending sources
+painter.ZERO = 0
+painter.ONE = 1
+painter.SRC_COLOR = 2
+painter.ONE_MINUS_SRC_COLOR = 3
+painter.SRC_ALPHA = 4
+painter.ONE_MINUS_SRC_ALPHA = 5
+painter.DST_ALPHA = 6
+painter.ONE_MINUS_DST_ALPHA = 7
+painter.DST_COLOR = 8
+painter.ONE_MINUS_DST_COLOR = 9
+painter.SRC_ALPHA_SATURATE = 10
+painter.CONSTANT_COLOR = 11
+painter.ONE_MINUS_CONSTANT_COLOR = 12
+
+// blending function
+painter.FUNC_SUBTRACT = 0
+painter.FUNC_REVERSE_SUBTRACT = 1
+painter.FUNC_ADD = 2
+painter.MIN = 3
+painter.MAX = 4
+
+painter.Todo = class Todo extends require('base/class'){
+
+	constructor(initalloc){
+		super()
+
+		this.initalloc = 256
 
 		var todoId = todoIdsAlloc++
 
@@ -114,7 +176,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		todoIds[todoId] = this
 	}
 
-	proto.updateTodoTime = function(){
+	updateTodoTime(){
 		service.batchMessage({
 			fn:'updateTodoTime',
 			todoId:this.todoId,
@@ -123,7 +185,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		})
 	}
 
-	proto.toMessage = function(){
+	toMessage(){
 		var deps = []
 		for(let key in this.deps){
 			deps.push(key)
@@ -163,7 +225,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		}]
 	}
 
-	proto.scrollTo = function(x, y, scrollToSpeed){
+	scrollTo(x, y, scrollToSpeed){
 		if(x !== undefined) this.xScroll = x
 		if(y !== undefined) this.yScroll = y
 
@@ -176,7 +238,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		})
 	}
 	
-	proto.scrollSet = function(x, y){
+	scrollSet(x, y){
 		if(x !== undefined) this.xScroll = x
 		if(y !== undefined) this.yScroll = y
 		
@@ -188,7 +250,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		})
 	}
 
-	proto.resize = function(){
+	resize(){
 		var len = this.length
 		var lastlen = this.last
 		this.allocated = len > this.allocated * 2? len: this.allocated * 2
@@ -200,7 +262,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		}
 	}
 
-	proto.clearTodo = function(){
+	clearTodo(){
 		this.length = 0
 		this.deps = {}
 		this.children = []
@@ -210,11 +272,11 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		service.batchMessage(this)
 	}
 
-	proto.dependOnFramebuffer = function(framebuffer){
+	dependOnFramebuffer(framebuffer){
 		this.root.deps[framebuffer.fbId] = true
 	}
 
-	proto.addChildTodo = function(todo){ // id: 20
+	addChildTodo(todo){ // id: 20
 		var o = (this.last = this.length)
 		if((this.length += 3) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -228,7 +290,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		todo.rootId = this.root.todoId
 	}
 
-	proto.useShader = function(shader){
+	useShader(shader){
 		var o = (this.last = this.length)
 		if((this.length += 3) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -238,37 +300,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+2] = shader.shaderId
 	}
 
-	// min/magfilter values
-	painter.NEAREST = 0
-	painter.LINEAR = 1
-	painter.NEAREST_MIPMAP_NEAREST = 2
-	painter.LINEAR_MIPMAP_NEAREST = 3
-	painter.NEAREST_MIPMAP_LINEAR = 4
-	painter.LINEAR_MIPMAP_LINEAR = 5
-
-	// wraps/t values
-	painter.REPEAT = 0
-	painter.CLAMP_TO_EDGE = 1
-	painter.MIRRORED_REPEAT = 2
-
-	// prefab sampler types
-	painter.SAMPLER2DNEAREST = {
-		type: types.sampler2D,
-		minfilter: painter.NEAREST,
-		magfilter: painter.NEAREST,
-		wraps: painter.CLAMP_TO_EDGE,
-		wrapt: painter.CLAMP_TO_EDGE
-	}
-
-	painter.SAMPLER2DLINEAR = {
-		type: types.sampler2D,
-		minfilter: painter.LINEAR,
-		magfilter: painter.LINEAR,
-		wraps: painter.CLAMP_TO_EDGE,
-		wrapt: painter.CLAMP_TO_EDGE
-	}
-
-	proto.sampler = function(nameId, texture, sam){
+	sampler(nameId, texture, sam){
 		var o = (this.last = this.length)
 		if((this.length += 5) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -291,7 +323,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+4] = (sam.minfilter<<0) | (sam.magfilter<<4) | (sam.wraps<<8)| (sam.wrapt<<12) //(sampler.minfilter<<0) | (sampler.magfilter<<4) | (sampler.wraps<<8)| (sampler.wrapt<<12)
 	}
 
-	proto.ubo = function(nameId, block){
+	ubo(nameId, block){
 		var o = (this.last = this.length)
 		if((this.length += 4) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -302,7 +334,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+3] = block.uboId
 	}
 
-	proto.vao = function(vao){
+	vao(vao){
 		var o = (this.last = this.length)
 		if((this.length += 3) > this.allocated) this.resize()
 		var i32 = this.i32, f32 = this.f32
@@ -312,14 +344,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+2] = vao.vaoId
 	}
 
-	painter.TRIANGLES = 0
-	painter.TRIANGLE_STRIP = 1
-	painter.TRIANGLE_FAN = 2
-	painter.LINES = 3
-	painter.LINE_STRIP = 4
-	painter.LINE_LOOP = 5
-
-	proto.drawArrays = function(type, from, to, instances){ // id:10
+	drawArrays(type, from, to, instances){ // id:10
 		var o = (this.last = this.length)
 		if((this.length += 6) > this.allocated) this.resize()
 		var i32 = this.i32
@@ -332,7 +357,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+5] = instances || -1
 	}
 
-	proto.clearColor = function(red, green, blue, alpha){ // id:0
+	clearColor(red, green, blue, alpha){ // id:0
 		// patch previous
 		if(this.last >= 0 && this.i32[this.last] === 40){
 			var o = this.last
@@ -358,7 +383,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+6] = alpha
 	}
 
-	proto.clearDepth = function(depth){ // id:0
+	clearDepth(depth){ // id:0
 		// patch previous
 		if(this.last >= 0 && this.array[this.last] === 40){
 			var o = this.last
@@ -378,7 +403,7 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		f32[o+7] = depth
 	}
 
-	proto.clearStencil = function(stencil){
+	clearStencil(stencil){
 		// patch previous
 		if(this.last >= 0 && this.array[this.last] === 40){
 			var o = this.last 
@@ -398,30 +423,8 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 		i32[o+8] = stencil
 	}
 
-	// blending sources
-	painter.ZERO = 0
-	painter.ONE = 1
-	painter.SRC_COLOR = 2
-	painter.ONE_MINUS_SRC_COLOR = 3
-	painter.SRC_ALPHA = 4
-	painter.ONE_MINUS_SRC_ALPHA = 5
-	painter.DST_ALPHA = 6
-	painter.ONE_MINUS_DST_ALPHA = 7
-	painter.DST_COLOR = 8
-	painter.ONE_MINUS_DST_COLOR = 9
-	painter.SRC_ALPHA_SATURATE = 10
-	painter.CONSTANT_COLOR = 11
-	painter.ONE_MINUS_CONSTANT_COLOR = 12
-
-	// blending function
-	painter.FUNC_SUBTRACT = 0
-	painter.FUNC_REVERSE_SUBTRACT = 1
-	painter.FUNC_ADD = 2
-	painter.MIN = 3
-	painter.MAX = 4
-
 	// array is src, fn, dest, alphasrc, alphafn, alphadest
-	proto.blending = function(array, color){
+	blending (array, color){
 
 		var o = (this.last = this.length)
 		if((this.length += 12) > this.allocated) this.resize()
@@ -456,30 +459,15 @@ painter.Todo = require('base/class').extend(function Todo(proto){
 			proto[key] = wrapFn(key, proto[key])
 		}
 	}*/
-})
+}
 
 var shaderIds = {}
 var shaderIdsAlloc = 1
 
-painter.Shader = require('base/class').extend(function Shader(proto){
+painter.Shader = class Shader extends require('base/class'){
 
-	// default code
-	proto.code = {
-		pixel:
-			"uniform vec2 prop;\n"+
-			"void main(){\n"+
-			"	gl_FragColor = vec4(0., prop.x, 0., 1.);\n"+
-			"}\n",
-		vertex:
-			"attribute vec2 mesh;\n"+
-			"void main(){\n"+
-			"	gl_Position = vec4(mesh.x, mesh.y, 0, 1.);\n"+
-			"}\n"
-	}
-
-	proto.constructor = function(code){
-		if(!code) code = this.code
-
+	constructor(code){
+		super()
 		var shaderId = shaderIdsAlloc++
 
 		var refs = {}
@@ -505,16 +493,16 @@ painter.Shader = require('base/class').extend(function Shader(proto){
 
 		shaderIds[shaderId] = this
 	}
-})
+}
 
 var meshIdsAlloc = 1
 var meshIds = {}
 
 //painter.ids = nameIds
 
-painter.Mesh = require('base/class').extend(function Mesh(proto){
+painter.Mesh = class Mesh extends require('base/class'){
 
-	proto.toMessage = function(){
+	toMessage(){
 		
 		if(!this.dirty || !this.array){
 			return null
@@ -545,12 +533,12 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		}, [sendarray.buffer]]
 	}
 
-	proto.updateMesh = function(){
+	updateMesh(){
 		service.batchMessage(this)
 	}
 
-	proto.constructor = function(type, initalloc){
-
+	constructor(type, initalloc){
+		super()
 		var slots = 0
 		if(typeof type === 'number'){
 			slots = type
@@ -559,7 +547,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 
 		if(!type) debugger
 
-		if(!initalloc) initalloc = this.initalloc
+		if(!initalloc) initalloc = 1
 
 		var meshId = meshIdsAlloc++
 
@@ -583,10 +571,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		}
 	}
 
-	proto.type = types.vec4
-	proto.initalloc = 1
-
-	proto.alloc = function(newlength){
+	alloc(newlength){
 		var oldalloc = this.allocated * this.slots
 		this.allocated = newlength > this.allocated * 2? newlength: this.allocated * 2
 		var newarray = new this.arraytype(this.allocated * this.slots)
@@ -599,7 +584,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		this.dirty = true
 	}
 
-	proto.push = function(){
+	push(){
 		var arglen = arguments.length
 		var argtuples = arglen / this.slots
 
@@ -623,7 +608,7 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		return this
 	}
 
-	proto.pushQuad = function(){
+	pushQuad(){
 
 		var arglen = arguments.length
 		
@@ -656,40 +641,39 @@ painter.Mesh = require('base/class').extend(function Mesh(proto){
 		this.length = newlength
 		return this
 	}
-})
+}
 
 var textureIdsAlloc = 1
 var textureIds = {}
 
-painter.Texture = require('base/class').extend(function Texture(proto){
-	var Texture = proto.constructor
+// texture buffer type flags
+painter.RGBA = 0
+painter.RGB = 1
+painter.ALPHA = 2
+painter.LUMINANCE = 3
+painter.LUMINANCE_ALPHA = 4
+painter.DEPTH_COMPONENT16 = 5
+painter.STENCIL_INDEX = 6
+painter.DEPTH_STENCIL = 7
 
-	// texture buffer type flags
-	painter.RGBA = 0
-	painter.RGB = 1
-	painter.ALPHA = 2
-	painter.LUMINANCE = 3
-	painter.LUMINANCE_ALPHA = 4
-	painter.DEPTH_COMPONENT16 = 5
-	painter.STENCIL_INDEX = 6
-	painter.DEPTH_STENCIL = 7
+// data type
+painter.UNSIGNED_BYTE = 0
+painter.UNSIGNED_SHORT = 1
+painter.FLOAT = 2
+painter.HALF_FLOAT = 3
+painter.FLOAT_LINEAR = 4
+painter.HALF_FLOAT_LINEAR = 5
 
-	// data type
-	painter.UNSIGNED_BYTE = 0
-	painter.UNSIGNED_SHORT = 1
-	painter.FLOAT = 2
-	painter.HALF_FLOAT = 3
-	painter.FLOAT_LINEAR = 4
-	painter.HALF_FLOAT_LINEAR = 5
+// other flags
+painter.FLIP_Y = 1<<0
+painter.PREMULTIPLY_ALPHA = 1<<1
+painter.CUBEMAP = 1<<2
+painter.SAMPLELINEAR = 1<<3
+painter.TRANSFER_DATA = 1<<4
 
-	// other flags
-	painter.FLIP_Y = 1<<0
-	painter.PREMULTIPLY_ALPHA = 1<<1
-	painter.CUBEMAP = 1<<2
-	painter.SAMPLELINEAR = 1<<3
-	painter.TRANSFER_DATA = 1<<4
-
-	proto.toMessage = function(){
+painter.Texture = class Texture extends require('base/class'){
+	
+	toMessage(){
 
 		var transfer = []
 		var sendbuffer
@@ -718,7 +702,8 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 		}, transfer]
 	}
 
-	proto.constructor= function(bufType, dataType, flags, w, h, array){
+	constructor(bufType, dataType, flags, w, h, array){
+		super()
 		var texId = textureIdsAlloc++
 		textureIds[texId] = this
 
@@ -733,7 +718,7 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 		service.batchMessage(this)
 	}
 
-	proto.resize = function(w, h){
+	resize(w, h){
 		service.batchMessage({
 			fn:'resizeTexture',
 			id: this.texId,
@@ -741,14 +726,14 @@ painter.Texture = require('base/class').extend(function Texture(proto){
 			h:h
 		})
 	}
-})
+}
 
 var vaoIdsAlloc = 1
 var vaoIds = {}
 
 // Vertex attribute object
-painter.Vao = require('base/class').extend(function Vao(proto){
-	proto.toMessage = function(){
+painter.Vao = class Vao extends require('base/class'){
+	toMessage(){
 		return [{
 			fn:'newVao',
 			vaoId:this.vaoId,
@@ -758,7 +743,8 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		}]
 	}
 
-	proto.constructor = function(shader){
+	constructor(shader){
+		super()
 		var vaoId = vaoIdsAlloc++
 		vaoIds[vaoId] = this
 		service.batchMessage(this)
@@ -771,10 +757,8 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
 	}
-	// copy relevant todo functions
-	proto.resize = painter.Todo.prototype.resize
 
-	proto.resize = function(){
+	resize(){
 		var len = this.length
 		var lastlen = this.last
 		this.allocated = len > this.allocated * 2? len: this.allocated * 2
@@ -785,7 +769,7 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		}
 	}
 
-	proto.attributes = function(startnameid, range, mesh, offset, stride){
+	attributes(startnameid, range, mesh, offset, stride){
 
 		var o = (this.last = this.length)
 		if((this.length += 7) > this.allocated) this.resize()
@@ -805,7 +789,7 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		i32[o+6] = offset
 	}
 
-	proto.instances = function(startnameid, range, mesh, divisor, offset, stride){
+	instances(startnameid, range, mesh, divisor, offset, stride){
 
 		var o = (this.last = this.length)
 		if((this.length += 8) > this.allocated) this.resize()
@@ -825,7 +809,7 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		i32[o+7] = divisor || 1
 	}
 
-	proto.indices = function(mesh){
+	indices(mesh){
 
 		var o = (this.last = this.length)
 		if((this.length += 3) > this.allocated) this.resize()
@@ -840,15 +824,15 @@ painter.Vao = require('base/class').extend(function Vao(proto){
 		i32[o+1] = 1
 		i32[o+2] = mesh.meshId
 	}
-})
+}
 
 var uboIdsAlloc = 1
 var uboIds = {}
 
 // uniform buffer object
-painter.Ubo = require('base/class').extend(function Ubo(proto){
+painter.Ubo = class Ubo extends require('base/class'){
 
-	proto.toMessage = function(){
+	toMessage(){
 		this.updating = false
 		// do a change check on the uniforms
 		var i32a = this.i32
@@ -871,7 +855,8 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		}]
 	}
 
-	proto.constructor = function(layoutDef){
+	constructor(layoutDef){
+		super()
 		var uboId = uboIdsAlloc++
 		uboIds[uboId] = this
 		var offsets = this.offsets = {}
@@ -900,17 +885,17 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		this.i32last = new Int32Array(this.f32last.buffer)
 	}
 
-	proto.int = function(nameId, x){
+	int(nameId, x){
 		if(!this.updating) this.update()
 		this.i32[this.offsets[nameId]] = x
 	}
 
-	proto.float = function(nameId, x){
+	float(nameId, x){
 		if(!this.updating) this.update()
 		this.f32[this.offsets[nameId]] = x
 	}
 
-	proto.vec2 = function(nameId, v){
+	vec2(nameId, v){
 		if(!this.updating) this.update()
 		var o = this.offsets[nameId]
 		var f32 = this.f32
@@ -918,7 +903,7 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		f32[o+1] = v[1]
 	}
 
-	proto.vec3 = function(nameId, v){
+	vec3(nameId, v){
 		if(!this.updating) this.update()
 		var o = this.offsets[nameId]
 		var f32 = this.f32
@@ -927,7 +912,7 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		f32[o+2] = v[2]
 	}
 
-	proto.vec4 = function(nameId, v){ // id:6
+	vec4(nameId, v){ // id:6
 		if(!this.updating) this.update()
 		var o = this.offsets[nameId]
 		var f32 = this.f32
@@ -945,7 +930,7 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		}
 	}
 
-	proto.mat4 = function(nameId, m){
+	mat4(nameId, m){
 		if(!this.updating) this.update()
 		var o = this.offsets[nameId]
 		var f32 = this.f32
@@ -967,18 +952,19 @@ painter.Ubo = require('base/class').extend(function Ubo(proto){
 		f32[o+15] = m[15]
 	}
 
-	proto.update = function(){
+	update(){
 		this.updating = true
 		service.batchMessage(this)
 	}
-})
+}
 
 var framebufferIdsAlloc = 1
 var framebufferIds = {}
 
-painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
+painter.Framebuffer = class Framebuffer extends require('base/class'){
 
-	proto.constructor = function(w, h, attachments, xStart, yStart){
+	constructor(w, h, attachments, xStart, yStart){
+		super()
 		var fbId = framebufferIdsAlloc ++
 		framebufferIds[fbId] = this
 
@@ -1007,7 +993,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 		})
 	}
 
-	proto.resize = function(w, h, xStart, yStart){
+	resize(w, h, xStart, yStart){
 		service.batchMessage({
 			fn:'newFramebuffer',
 			fbId: this.fbId,
@@ -1019,7 +1005,7 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 		})
 	}
 
-	proto.assignTodoAndUbo = function(todo, ubo){
+	assignTodoAndUbo(todo, ubo){
 		service.batchMessage({
 			fn:'assignTodoAndUboToFramebuffer',
 			fbId:this.fbId,
@@ -1027,7 +1013,8 @@ painter.Framebuffer = require('base/class').extend(function Framebuffer(proto){
 			uboId:ubo.uboId
 		})
 	}
-})
+}
+
 // create the main framebuffer
 painter.mainFramebuffer = new painter.Framebuffer()
 

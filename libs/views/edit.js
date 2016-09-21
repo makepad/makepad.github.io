@@ -172,8 +172,10 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 	//
 	//
 
-	var Cursor = require('base/class').extend(function Cursor(proto){
-		proto.constructor = function(cursorSet, editor){
+	class Cursor extends require('base/class'){
+		
+		constructor(cursorSet, editor){
+			super()
 			this.cursorSet = cursorSet
 			this.editor = editor 
 			this.start = 0
@@ -181,23 +183,23 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.max = 0
 		}
 
-		proto.hi = function(){
+		hi(){
 			return this.start > this.end? this.start: this.end
 		}
 
-		proto.lo = function(){
+		lo(){
 			return this.start > this.end? this.end: this.start
 		}
 
-		proto.span = function(){
+		span(){
 			return abs(this.start - this.end)
 		}
 
-		proto.hasSelection = function(){
+		hasSelection(){
 			return this.start !== this.end
 		}
 
-		proto.moveDelta = function(delta, onlyEnd){
+		moveDelta(delta, onlyEnd){
 			this.end = clamp(this.end + delta, 0, this.editor.textLength())
 			if(!onlyEnd){
 				this.start = this.end
@@ -208,7 +210,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.moveHome = function(onlyEnd){
+		moveHome(onlyEnd){
 			this.end = 0
 			if(!onlyEnd) this.start = this.end
 			//var rect = this.editor.cursorRect(this.end)
@@ -217,7 +219,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.moveEnd = function(onlyEnd){
+		moveEnd(onlyEnd){
 			this.end = this.editor.textLength()
 			if(!onlyEnd) this.start = this.end
 			//var rect = this.editor.cursorRect(this.end)
@@ -226,7 +228,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.moveLine = function(lines, onlyEnd){
+		moveLine(lines, onlyEnd){
 			var rect = this.editor.cursorRect(this.end)
 			this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
 			if(this.end < 0) this.end = 0
@@ -235,7 +237,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 		
-		proto.moveTo = function(x, y, onlyEnd){
+		moveTo(x, y, onlyEnd){
 			var end = this.editor.offsetFromPos(x, y)
 
 			if(this.end === end && (onlyEnd || this.start === end)) return
@@ -248,38 +250,38 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.moveWordRight = function(onlyEnd){
+		moveWordRight(onlyEnd){
 			this.moveDelta(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
 		}
 
-		proto.moveWordLeft = function(onlyEnd){
+		moveWordLeft(onlyEnd){
 			this.moveDelta(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
 		}
 
-		proto.moveLineLeft = function(onlyEnd){
+		moveLineLeft(onlyEnd){
 			var delta = this.editor.scanLineLeft(this.end) - this.end
 			this.moveDelta(delta, onlyEnd)
 			return delta
 		}
 
-		proto.moveLineRight = function(onlyEnd){
+		moveLineRight(onlyEnd){
 			var delta = this.editor.scanLineRight(this.end) - this.end
 			if(delta) this.moveDelta(delta, onlyEnd)
 		}
 
-		proto.moveLineLeftUp = function(onlyEnd){
+		moveLineLeftUp(onlyEnd){
 			var delta = this.editor.scanLineLeft(this.end) - this.end
 			if(delta) this.moveDelta(delta, onlyEnd)
 			else this.moveLine(-1, onlyEnd)
 		}
 
-		proto.moveLineRightDown = function(onlyEnd){
+		moveLineRightDown(onlyEnd){
 			var delta = this.editor.scanLineRight(this.end) - this.end
 			if(delta) this.moveDelta(delta, onlyEnd)
 			else this.moveLine(1, onlyEnd)
 		}
 
-		proto.insertText = function(text){
+		insertText(text){
    			var lo = this.lo(), hi = this.hi()
 
 			this.editor.addUndoInsert(lo, hi)
@@ -301,7 +303,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.deleteRange = function(lo, hi){
+		deleteRange(lo, hi){
 			if(lo === undefined) lo = this.lo()
 			if(hi === undefined) hi = this.hi()
 			this.editor.addUndoInsert(lo, hi)
@@ -313,7 +315,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.delete = function(){
+		delete(){
 			if(this.start !== this.end) return this.deleteRange()
 			var next = this.end + 1
 			this.editor.addUndoInsert(this.end, next)
@@ -325,19 +327,19 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.deleteWord = function(){
+		deleteWord(){
 			// move start to beginning of word
 			if(this.start !== this.end) return this.deleteRange()
 			this.deleteRange(this.end, this.editor.scanWordRight(this.end))
 		}
 
-		proto.deleteLine = function(){
+		deleteLine(){
 			// move start to beginning of word
 			if(this.start !== this.end) return this.deleteRange()
 			this.deleteRange(this.end, this.editor.scanLineRight(this.end))
 		}
 
-		proto.backSpace = function(){
+		backSpace(){
 			if(this.start !== this.end) return this.deleteRange()
 			if(this.start === 0) return
 			var prev = this.end - 1
@@ -351,30 +353,30 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.editor.cursorChanged(this)
 		}
 
-		proto.backSpaceWord = function(){
+		backSpaceWord(){
 			// move start to beginning of word
 			if(this.start !== this.end) return this.deleteRange()
 			this.deleteRange(this.editor.scanWordLeft(this.end))
 		}
 
-		proto.backSpaceLine = function(){
+		backSpaceLine(){
 			// move start to beginning of word
 			if(this.start !== this.end) return this.deleteRange()
 			this.deleteRange(this.editor.scanLineLeft(this.end))
 		}
 
-		proto.select = function(start, end){
+		select(start, end){
 			this.start = start
 			this.end = end
 			this.editor.cursorChanged()
 		}
 
-		proto.clampCursor = function(mi, ma){
+		clampCursor(mi, ma){
 			this.start = clamp(this.start, mi, ma)
 			this.end = clamp(this.end, mi, ma)
 		}
 
-		proto.scanChange = function(pos, oldText, newText){
+		scanChange(pos, oldText, newText){
 			if(this.start !== this.end) return
 			if(pos < this.end){
 
@@ -421,11 +423,11 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			}
 		}
 
-		proto.invalidateMax = function(){
+		invalidateMax(){
 			this.max = -1
 		}
 
-		proto.toggleSlashComment = function(){
+		toggleSlashComment(){
 			// toggle a line comment on or off
 			var start = this.end
 			var ct = 0
@@ -462,50 +464,58 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.end += d
 			this.editor.cursorChanged()
 		}
-	})
+	}
 
-	var CursorSet = require('base/class').extend(function CursorSet(proto){
-
-		function makeSetCall(key, fn){
-			return function(){
-				this.delta = 0
-				var cursors = this.cursors
-				for(let i = 0; i < cursors.length; i++){
-					var cursor = cursors[i]
-					cursor.start += this.delta
-					cursor.end += this.delta
-					cursor[key].apply(cursor, arguments)
+	class CursorSet extends require('base/class'){
+		prototype(){
+			function makeSetCall(key, fn){
+				return function(){
+					this.delta = 0
+					var cursors = this.cursors
+					for(let i = 0; i < cursors.length; i++){
+						var cursor = cursors[i]
+						cursor.start += this.delta
+						cursor.end += this.delta
+						cursor[key].apply(cursor, arguments)
+					}
+					this.updateSet()
 				}
-				this.updateSet()
+			}
+
+			var props = Object.getOwnPropertyNames(Cursor.prototype)
+			for(var i = 0; i < props.length; i++){
+				var key = props[i]
+				var value = Cursor.prototype[key]
+				if(key !== 'constructor' && typeof value === 'function'){
+					this[key] = makeSetCall(key, value)
+				}
 			}
 		}
-		for(let key in Cursor.prototype){
-			proto[key] = makeSetCall(key, Cursor.prototype[key])
-		}
 
-		proto.constructor = function(editor){
+		constructor(editor){
+			super()
 			this.editor = editor
 			this.cursors = []
 			this.addCursor()
 		}
 
-		proto.addCursor = function(){
+		addCursor(){
 			var cur = new Cursor(this, this.editor)
 			this.cursors.push(cur)
 			return cur
 		}
 
-		proto.clearCursors = function(){
+		clearCursors(){
 			this.cursors = []
 			return this.addCursor()
 		}
 
 		// set has changed
-		proto.updateSet = function(){
+		updateSet(){
 			this.editor.redraw()
 		}
 
-		proto.serializeToArray = function(){
+		serializeToArray(){
 			var out = []
 			for(let i = 0; i < this.cursors.length; i++){
 				var cursor = this.cursors[i]
@@ -514,7 +524,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			return out
 		}
 
-		proto.deserializeFromArray = function(inp){
+		deserializeFromArray(inp){
 			this.cursors = []
 			for(let i = 0; i < inp.length; i += 3){
 				var cursor = new Cursor(this, this.editor)
@@ -526,7 +536,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 			this.updateSet()
 		}
 
-		proto.fuse = function(){
+		fuse(){
 
 			this.cursors.sort(function(a,b){ return (a.start<a.end?a.start:a.end) < (b.start<b.end?b.start:b.end)? -1: 1})
 			// lets do single pass
@@ -549,7 +559,7 @@ module.exports = require('base/view').extend(function EditView(proto, base){
 				else i++
 			}
 		}
-	})
+	}
 
 
 	//

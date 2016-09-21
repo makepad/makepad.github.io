@@ -7,18 +7,106 @@ for(let i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
 const compName = ['x','y','z','w']
 
-module.exports = require('base/class').extend(function(proto){
+module.exports = class Compiler extends require('base/class'){
 
-	proto.prototype = function(){
+	prototype(){
 		this.$mapExceptions = true
 		this.$uniformHeader = ""
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
+
+
+		Object.defineProperty(this, 'props', {
+			get:function(){
+				throw new Error('props is a configurator, please only assign objects: this.props = {...}')
+			},
+			set:function(props){
+				if(!this.hasOwnProperty('_props')){
+					this._props = this._props?Object.create(this._props):{}
+				}
+				for(let key in props){
+					var config = props[key]
+					if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
+						config = {value:config}
+					}
+					var old = this._props[key]
+					if(old && !('value' in config)){
+						for(let key in old) if(!(key in config)){
+							config[key] = old[key]
+						}
+					}
+					this._props[key] = config
+					if(config.value !== undefined) this[key] = config.value
+					if(!config.type) config.type = types.typeFromValue(config.value)
+					if(!config.kind) config.kind = 'instance'
+				}
+			}
+		})
+
+		Object.defineProperty(this, 'defines', {
+			get:function(){
+				throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+			},
+			set:function(defines){
+				if(!this.hasOwnProperty('_defines')){
+					this._defines = this._defines? Object.create(this._defines): {}
+				}
+				for(let key in defines){
+					this._defines[key] = defines[key]
+				}
+			}
+		})
+
+		Object.defineProperty(this, 'requires', {
+			get:function(){
+				throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+			},
+			set:function(requires){
+				if(!this.hasOwnProperty('_requires')){
+					this._requires = this._requires? Object.create(this._requires): {}
+				}
+				for(let key in requires){
+					this._requires[key] = requires[key]
+				}
+			}
+		})
+
+		Object.defineProperty(this, 'structs', {
+			get:function(){
+				throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
+			},
+			set:function(structs){
+				if(!this.hasOwnProperty('_structs')){
+					this._structs = this._structs?Object.create(this._structs):{}
+				}
+				for(let key in structs){
+					var struct = structs[key]
+					// auto name the struct based on the key
+					if(!struct.name){
+						var newstruct = Object.create(struct)
+						newstruct.constructor = struct.constructor
+						newstruct.name = key
+						struct = newstruct
+					}
+					this._structs[key] = struct
+				}
+			}
+		})
+
+		Object.defineProperty(this, 'toolMacros', {
+			get:function(){
+				return this._toolMacros
+			},
+			set:function(macros){
+				if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
+				for(let key in macros) this._toolMacros[key] = macros[key]
+			}
+		})
 	}
 
-	proto.$compileShader = function(){
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, proto.$mapExceptions)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, proto.$mapExceptions)
+	$compileShader(){
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions)
 
 		if(vtx.exception || pix.exception) return
 
@@ -320,7 +408,7 @@ module.exports = require('base/class').extend(function(proto){
 		for(let key in props){
 			var prop = props[key]
 			if(prop.kind === 'uniform'){
-				var blockName = prop.block
+				let blockName = prop.block
 				var uniName = 'this_DOT_'+ key
 				if(!blockName || blockName === 'draw'){
 					// if the draw uniform is not used skip it
@@ -442,36 +530,6 @@ module.exports = require('base/class').extend(function(proto){
 	}
 
 
-	function stylePropCode(indent, inobj, styleProps, styleLevel, noif){
-		var code = ''
-		for(let key in styleProps){
-			var prop = styleProps[key]
-			var name = prop.name
-			if(prop.config.noStyle) continue
-			if(styleLevel && prop.config.styleLevel > styleLevel) continue
-			if(!noif){
-				code += indent+'if(_'+name+' === undefined) _'+name+ ' = '+inobj+'.' + name +'\n'
-			}
-			else{
-				code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
-			}
-		}
-		return code
-	}
-
-	function styleStampRootCode(indent, inobj, props, styleProps, styleLevel){
-		var code = ''
-		for(let key in styleProps){
-			var prop = styleProps[key]
-			var name = prop.name
-			if(prop.config.noStyle) continue
-			if(styleLevel && prop.config.styleLevel > styleLevel) continue
-			if(name in props){
-				code += indent+'_'+name+ ' = '+inobj+'._' + name +'\n'
-			}
-		}
-		return code
-	}
 	/*
 	function styleTweenCode(indent, inobj){
 		var code = ''
@@ -482,7 +540,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}*/
 
-	proto.$STYLEPROPS = function(target, classname, macroargs, mainargs, indent){
+	$STYLEPROPS(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// first generate property overload stack
 		// then write them on the turtles' propbag
@@ -559,7 +617,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$ALLOCDRAW = function(target, classname, macroargs, mainargs, indent){
+	$ALLOCDRAW(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
@@ -654,7 +712,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$DUMPPROPS = function(){
+	$DUMPPROPS(){
 		var code = ''
 		var instanceProps = this.$compileInfo.instanceProps
 		for(let key in instanceProps){
@@ -677,7 +735,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$PREVPROPS = function(target, classname, macroargs, mainargs, indent){
+	$PREVPROPS(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -697,11 +755,11 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$PROPLEN = function(target, classname, macroargs, mainargs, indent){
+	$PROPLEN(target, classname, macroargs, mainargs, indent){
 		return 'this.$shaders.'+classname+'.$props.length'
 	}
 
-	proto.$PROPVARDEF = function(target, classname, macroargs, mainargs, indent){
+	$PROPVARDEF(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -712,7 +770,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$PROP = function(target, classname, macroargs, mainargs, indent){
+	$PROP(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -720,7 +778,7 @@ module.exports = require('base/class').extend(function(proto){
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
 	}
 
-	proto.$PREV = function(target, classname, macroargs, mainargs, indent){
+	$PREV(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
@@ -729,7 +787,7 @@ module.exports = require('base/class').extend(function(proto){
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
-	proto.$WRITEPROPS = function(target, classname, macroargs, mainargs, indent){
+	$WRITEPROPS(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		// load the turtle
 
@@ -1022,7 +1080,7 @@ module.exports = require('base/class').extend(function(proto){
 		return code
 	}
 
-	proto.$monitorMethod = function(name){
+	$monitorMethod(name){
 		var _name = '_' + name
 		var value = this[name]
 		this[_name] = value
@@ -1037,90 +1095,35 @@ module.exports = require('base/class').extend(function(proto){
 		})
 	}
 
-	Object.defineProperty(proto, 'props', {
-		get:function(){
-			throw new Error('props is a configurator, please only assign objects: this.props = {...}')
-		},
-		set:function(props){
-			if(!this.hasOwnProperty('_props')){
-				this._props = this._props?Object.create(this._props):{}
-			}
-			for(let key in props){
-				var config = props[key]
-				if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
-					config = {value:config}
-				}
-				var old = this._props[key]
-				if(old && !('value' in config)){
-					for(let key in old) if(!(key in config)){
-						config[key] = old[key]
-					}
-				}
-				this._props[key] = config
-				if(config.value !== undefined) this[key] = config.value
-				if(!config.type) config.type = types.typeFromValue(config.value)
-				if(!config.kind) config.kind = 'instance'
-			}
-		}
-	})
+}
 
-	Object.defineProperty(proto, 'defines', {
-		get:function(){
-			throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-		},
-		set:function(defines){
-			if(!this.hasOwnProperty('_defines')){
-				this._defines = this._defines? Object.create(this._defines): {}
-			}
-			for(let key in defines){
-				this._defines[key] = defines[key]
-			}
+function stylePropCode(indent, inobj, styleProps, styleLevel, noif){
+	var code = ''
+	for(let key in styleProps){
+		var prop = styleProps[key]
+		var name = prop.name
+		if(prop.config.noStyle) continue
+		if(styleLevel && prop.config.styleLevel > styleLevel) continue
+		if(!noif){
+			code += indent+'if(_'+name+' === undefined) _'+name+ ' = '+inobj+'.' + name +'\n'
 		}
-	})
+		else{
+			code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
+		}
+	}
+	return code
+}
 
-	Object.defineProperty(proto, 'requires', {
-		get:function(){
-			throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-		},
-		set:function(requires){
-			if(!this.hasOwnProperty('_requires')){
-				this._requires = this._requires? Object.create(this._requires): {}
-			}
-			for(let key in requires){
-				this._requires[key] = requires[key]
-			}
+function styleStampRootCode(indent, inobj, props, styleProps, styleLevel){
+	var code = ''
+	for(let key in styleProps){
+		var prop = styleProps[key]
+		var name = prop.name
+		if(prop.config.noStyle) continue
+		if(styleLevel && prop.config.styleLevel > styleLevel) continue
+		if(name in props){
+			code += indent+'_'+name+ ' = '+inobj+'._' + name +'\n'
 		}
-	})
-
-	Object.defineProperty(proto, 'structs', {
-		get:function(){
-			throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
-		},
-		set:function(structs){
-			if(!this.hasOwnProperty('_structs')){
-				this._structs = this._structs?Object.create(this._structs):{}
-			}
-			for(let key in structs){
-				var struct = structs[key]
-				// auto name the struct based on the key
-				if(!struct.name){
-					var newstruct = Object.create(struct)
-					newstruct.constructor = struct.constructor
-					newstruct.name = key
-					struct = newstruct
-				}
-				this._structs[key] = struct
-			}
-		}
-	})
-
-	Object.defineProperty(proto, 'toolMacros', {
-		get:function(){
-			return this._toolMacros
-		},
-		set:function(macros){
-			if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-			for(let key in macros) this._toolMacros[key] = macros[key]
-		}
-	})
-})
+	}
+	return code
+}

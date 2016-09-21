@@ -1,12 +1,11 @@
-module.exports = require('base/class').extend(function ShaderInfer(proto){
-	
-	var types  = require('base/types')
-	var parser = require('parsers/js')
-	var canvas 
-	var parsecache = {}
-	var painter = require('services/painter')
+var types  = require('base/types')
+var parser = require('parsers/js')
+var parsecache = {}
+var painter = require('services/painter')
 
-	proto.constructor.generateGLSL = function(root, fn, varyIn, mapexception){
+module.exports = class ShaderInfer extends require('base/class'){
+
+	static generateGLSL(root, fn, varyIn, mapexception){
 		
 		var gen = new this()
 
@@ -71,7 +70,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return gen
 	}
 
-	proto.mapException = function(error){
+	mapException(error){
 		// lets get this to the right file/line
 		// first of all we need to grab the current function
 		var state = error.state
@@ -130,7 +129,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		}
 	}
 
-	proto.walk = function(node, parent){
+	walk(node, parent){
 		node.parent = parent
 		node.infer = undefined
 		var typefn = this[node.type]
@@ -138,7 +137,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return typefn.call(this,node)
 	}
 
-	proto.block = function(array, parent){
+	block(array, parent){
 		var ret = ''
 		for(let i = 0; i < array.length; i++){
 			var line = this.walk(array[i], parent)
@@ -150,12 +149,12 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return ret
 	}
 	
-	proto.Program = function(node){
+	Program(node){
 		// ok lets fetch the first function declaration if we have one
 		return this.block(node.body, node)
 	}
 
-	proto.BlockStatement = function(node){
+	BlockStatement(node){
 		var oi = this.indent
 		this.indent += '\t'
 		var ret = '{\n'
@@ -166,19 +165,19 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//EmptyStatement:{}
-	proto.EmptyStatement = function(node){
+	EmptyStatement(node){
 		return ''
 	}
 
 	//ExpressionStatement:{expression:1},
-	proto.ExpressionStatement = function(node){
+	ExpressionStatement(node){
 		var ret = this.walk(node.expression, node)
 		node.infer = node.expression.infer
 		return ret
 	}
 
 	//SequenceExpression:{expressions:2}
-	proto.SequenceExpression = function(node){
+	SequenceExpression(node){
 		var ret = ''
 		var exps = node.expressions
 		for(let i = 0; i < exps.length; i++){
@@ -190,14 +189,14 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//ParenthesizedExpression:{expression:1}
-	proto.ParenthesizedExpression = function(node){
+	ParenthesizedExpression(node){
 		var ret = '(' + this.walk(node.expression, node) + ')'
 		node.infer = node.expression.infer
 		return ret
 	}
 
 	//Literal:{raw:0, value:0},
-	proto.Literal = function(node){
+	Literal(node){
 		var infer = {
 			kind:'value'
 		}
@@ -239,15 +238,8 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		throw this.SyntaxErr(node,'Unknown literal kind'+node.kind)
 	}
 
-	var uniformslotmap = {
-		1:types.float,
-		2:types.vec2,
-		3:types.vec3,
-		4:types.vec4
-	}
-
 	//Identifier:{name:0},
-	proto.Identifier = function(node){
+	Identifier(node){
 		var name = node.name
 
 		if(name === '$') return ''
@@ -386,7 +378,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//ThisExpression:{},
-	proto.ThisExpression = function(node){
+	ThisExpression(node){
 		node.infer = {
 			kind:'this',
 			prefix:this.ctxprefix || 'this_DOT_'
@@ -394,18 +386,9 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return ''
 	}
 
-	// the swizzle lookup tables
-	var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
-	var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
-	var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
-	var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
-	var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
-	var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
-	var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
-
 
 	//MemberExpression:{object:1, property:types.gen, computed:0},
-	proto.MemberExpression = function(node){
+	MemberExpression(node){
 		// just chuck This
 		//if(node.object.type === 'ThisExpression' || node.object.type === 'Identifier' && ignore_objects[node.object.name]){
 		//	var ret = this.walk(node.property)
@@ -692,32 +675,9 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		}
 	}
 
-	function recursiveDependencyUpdate(genfn, dep, key){
-		for(var i = 0; i < genfn.length; i++){
-			if(genfn[i].key === key) break
-		}
-		// remove it
-		genfn.splice(i, 1)
-		// add it to the end
-		genfn.push({
-			key:key,
-			value:dep
-		})
-	
-		for(let key in dep.deps){
-			recursiveDependencyUpdate(genfn, dep.deps[key], key)
-		}
-	}
-
-	function lookupGenFunction(genfn, key){
-		for(let i = 0; i < genfn.length; i++){
-			var item = genfn[i]
-			if(item.key === key) return item.value
-		}
-	}
 
 	//CallExpression:{callee:1, arguments:2},
-	proto.CallExpression = function(node){
+	CallExpression(node){
 		var calleestr = this.walk(node.callee, node)
 		var callee = node.callee
 		var calleeinfer = node.callee.infer
@@ -934,7 +894,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//ReturnStatement:{argument:1},
-	proto.ReturnStatement = function(node){
+	ReturnStatement(node){
 		var ret = 'return ' 
 		var infer
 		if(node.argument !== null){
@@ -960,20 +920,20 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
-	proto.FunctionExpression = function(node){
+	FunctionExpression(node){
 		console.error("FunctionExpression not implemented")
 		return ''
 	}
 
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
-	proto.FunctionDeclaration = function(node){
+	FunctionDeclaration(node){
 		// an inline function declaration
 		console.error("FunctionDeclaration not implemented")
 		return ''
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
-	proto.VariableDeclaration = function(node){
+	VariableDeclaration(node){
 		// ok we have to split into the types of the declarations
 		var decls = node.declarations
 		var ret = ''
@@ -989,7 +949,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	proto.VariableDeclarator = function(node){
+	VariableDeclarator(node){
 
 		if(!node.init){
 			throw this.InferErr(node, node.type + ' cant infer type without initializer '+node.id.name)
@@ -1022,35 +982,16 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
-	proto.LogicalExpression = function(node){
+	LogicalExpression(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
 		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
 		node.infer = node.right.infer
 		return ret
 	}
 
-	var tableBinaryExpression = {
-		float:{float:types.float, vec2:types.vec2, vec3:types.vec3, vec4:types.vec4},
-		int:{int:types.int, ivec2:types.ivec2, ivec3:types.ivec3, ivec4:types.ivec4},
-		vec2:{float:types.vec2, vec2:types.vec2, mat2:types.vec2},
-		vec3:{float:types.vec3, vec3:types.vec3, mat3:types.vec3},
-		vec4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-		ivec2:{int:types.ivec2, ivec2:types.ivec2},
-		ivec3:{int:types.ivec3, ivec3:types.ivec3},
-		ivec4:{int:types.ivec4, ivec4:types.ivec4},
-		mat2:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-		mat3:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-		mat4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-	}
-
-	var groupBinaryExpression = {
-		'+':1,'-':1,'*':1,'/':1,
-		'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
-		'===':3,'!==':3,
-	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
-	proto.BinaryExpression = function(node){
+	BinaryExpression(node){
 		var leftstr = this.walk(node.left, node)
 		var rightstr = this.walk(node.right, node)
 		var leftinfer = node.left.infer
@@ -1100,7 +1041,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//AssignmentExpression: {left:1, right:1},
-	proto.AssignmentExpression = function(node){
+	AssignmentExpression(node){
 		var leftstr = this.walk(node.left, node)
 		var rightstr =  this.walk(node.right, node)
 
@@ -1154,7 +1095,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
-	proto.ConditionalExpression = function(node){
+	ConditionalExpression(node){
 		//!TODO check types
 		var ret = this.walk(node.test, node) + '? ' + this.walk(node.consequent, node) + ': ' + this.walk(node.alternate, node)
 		// check types
@@ -1166,7 +1107,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
-	proto.UpdateExpression = function(node){
+	UpdateExpression(node){
 		var ret = this.walk(node.argument, node)
 		node.infer = node.argument.infer
 		if(node.prefix){
@@ -1177,7 +1118,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
-	proto.UnaryExpression = function(node){
+	UnaryExpression(node){
 		var ret = this.walk(node.argument, node)
 		node.infer = node.argument.infer
 		if(node.prefix){
@@ -1187,7 +1128,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
  	}
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
-	proto.IfStatement = function(node){
+	IfStatement(node){
 		var ret = 'if(' + this.walk(node.test) + ') ' 
 
 		ret += this.walk(node.consequent, node)
@@ -1200,7 +1141,7 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
-	proto.ForStatement = function(node){
+	ForStatement(node){
 		var oldscope = this.curFunction.scope 
 		this.curFunction.scope = Object.create(oldscope)
 		var ret = 'for(' + this.walk(node.init, node) + ';' 
@@ -1211,21 +1152,21 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return ret
 	}
 
-	proto.BreakStatement = function(node){
+	BreakStatement(node){
 		return 'break'
 	}
 
-	proto.ContinueStatement = function(node){
+	ContinueStatement(node){
 		return 'continue'
 	}
 
 	// non GLSL literals
-	proto.ArrayExpression = function(node){
+	ArrayExpression(node){
 		throw this.SyntaxErr(node,'ArrayExpression')
 	}
 
 
-	proto.ObjectExpression = function(node){
+	ObjectExpression(node){
 		node.infer = {
 			kind:'objectexpression',
 			object:node
@@ -1233,174 +1174,235 @@ module.exports = require('base/class').extend(function ShaderInfer(proto){
 		return ''
 	}
 
-	function Err(state, node, type, message){
-		this.type = type
-		this.message = message
-		this.node = node
-		this.state = state
-	}
-
-	Err.prototype.toString = function(){
-		return this.message
-	}
-
 	// Exceptions
-	proto.ResolveErr = function(node, message){
+	ResolveErr(node, message){
 		return new Err(this, node, 'ResolveError', message)
 	}
 
-	proto.SyntaxErr = function(node, message){
+	SyntaxErr(node, message){
 		return new Err(this, node, 'SyntaxError', message)
 	}
 
-	proto.InferErr = function(node, message){
+	InferErr(node, message){
 		return new Err(this, node, 'InferenceError', message)
 	}
 
 
-	proto.YieldExpression = function(node){throw this.SyntaxErr(node,'YieldExpression')}
-	proto.ThrowStatement = function(node){throw this.SyntaxErr(node,'ThrowStatement')}
-	proto.TryStatement = function(node){throw this.SyntaxErr(node,'TryStatement')}
-	proto.CatchClause = function(node){throw this.SyntaxErr(node,'CatchClause')}
-	proto.Super = function(node){throw this.SyntaxErr(node,'Super')}
-	proto.AwaitExpression = function(node){throw this.SyntaxErr(node,'AwaitExpression')}
-	proto.MetaProperty = function(node){throw this.SyntaxErr(node,'MetaProperty')}
-	proto.NewExpression = function(node){throw this.SyntaxErr(node,'NewExpression')}
-	proto.ObjectPattern = function(node){throw this.SyntaxErr(node,'ObjectPattern')}
-	proto.ArrowFunctionExpression = function(node){throw this.SyntaxErr(node,'ArrowFunctionExpression')}
-	proto.ForInStatement = function(node){throw this.SyntaxErr(node,'ForInStatement')}
-	proto.ForOfStatement = function(node){throw this.SyntaxErr(node,'ForOfStatement')}
-	proto.WhileStatement = function(node){throw this.SyntaxErr(node,'WhileStatement')}
-	proto.DoWhileStatement = function(node){throw this.SyntaxErr(node,'DoWhileStatement')}
-	proto.SwitchStatement = function(node){throw this.SyntaxErr(node,'SwitchStatement')}
-	proto.SwitchCase = function(node){throw this.SyntaxErr(node,'SwitchCase')}
-	proto.TaggedTemplateExpression = function(node){throw this.SyntaxErr(node,'TaggedTemplateExpression')}
-	proto.TemplateElement = function(node){throw this.SyntaxErr(node,'TemplateElement')}
-	proto.TemplateLiteral = function(node){throw this.SyntaxErr(node,'TemplateLiteral')}
-	proto.ClassDeclaration = function(node){throw this.SyntaxErr(node,'ClassDeclaration')}
-	proto.ClassExpression = function(node){throw this.SyntaxErr(node,'ClassExpression')}
-	proto.ClassBody = function(node){throw this.SyntaxErr(node,'ClassBody')}
-	proto.MethodDefinition = function(node){throw this.SyntaxErr(node,'MethodDefinition')}
-	proto.ExportAllDeclaration = function(node){throw this.SyntaxErr(node,'ExportAllDeclaration')}
-	proto.ExportDefaultDeclaration = function(node){throw this.SyntaxErr(node,'ExportDefaultDeclaration')}
-	proto.ExportNamedDeclaration = function(node){throw this.SyntaxErr(node,'ExportNamedDeclaration')}
-	proto.ExportSpecifier = function(node){throw this.SyntaxErr(node,'ExportSpecifier')}
-	proto.ImportDeclaration = function(node){throw this.SyntaxErr(node,'ImportDeclaration')}
-	proto.ImportDefaultSpecifier = function(node){throw this.SyntaxErr(node,'ImportDefaultSpecifier')}
-	proto.ImportNamespaceSpecifier = function(node){throw this.SyntaxErr(node,'ImportNamespaceSpecifier')}
-	proto.ImportSpecifier = function(node){throw this.SyntaxErr(node,'ImportSpecifier')}
-	proto.DebuggerStatement = function(node){throw this.SyntaxErr(node,'DebuggerStatement')}
-	proto.LabeledStatement = function(node){throw this.SyntaxErr(node,'LabeledStatement')}
-	proto.WithStatement = function(node){throw this.SyntaxErr(node,'WithStatement')}
+	YieldExpression(node){throw this.SyntaxErr(node,'YieldExpression')}
+	ThrowStatement(node){throw this.SyntaxErr(node,'ThrowStatement')}
+	TryStatement(node){throw this.SyntaxErr(node,'TryStatement')}
+	CatchClause(node){throw this.SyntaxErr(node,'CatchClause')}
+	Super(node){throw this.SyntaxErr(node,'Super')}
+	AwaitExpression(node){throw this.SyntaxErr(node,'AwaitExpression')}
+	MetaProperty(node){throw this.SyntaxErr(node,'MetaProperty')}
+	NewExpression(node){throw this.SyntaxErr(node,'NewExpression')}
+	ObjectPattern(node){throw this.SyntaxErr(node,'ObjectPattern')}
+	ArrowFunctionExpression(node){throw this.SyntaxErr(node,'ArrowFunctionExpression')}
+	ForInStatement(node){throw this.SyntaxErr(node,'ForInStatement')}
+	ForOfStatement(node){throw this.SyntaxErr(node,'ForOfStatement')}
+	WhileStatement(node){throw this.SyntaxErr(node,'WhileStatement')}
+	DoWhileStatement(node){throw this.SyntaxErr(node,'DoWhileStatement')}
+	SwitchStatement(node){throw this.SyntaxErr(node,'SwitchStatement')}
+	SwitchCase(node){throw this.SyntaxErr(node,'SwitchCase')}
+	TaggedTemplateExpression(node){throw this.SyntaxErr(node,'TaggedTemplateExpression')}
+	TemplateElement(node){throw this.SyntaxErr(node,'TemplateElement')}
+	TemplateLiteral(node){throw this.SyntaxErr(node,'TemplateLiteral')}
+	ClassDeclaration(node){throw this.SyntaxErr(node,'ClassDeclaration')}
+	ClassExpression(node){throw this.SyntaxErr(node,'ClassExpression')}
+	ClassBody(node){throw this.SyntaxErr(node,'ClassBody')}
+	MethodDefinition(node){throw this.SyntaxErr(node,'MethodDefinition')}
+	ExportAllDeclaration(node){throw this.SyntaxErr(node,'ExportAllDeclaration')}
+	ExportDefaultDeclaration(node){throw this.SyntaxErr(node,'ExportDefaultDeclaration')}
+	ExportNamedDeclaration(node){throw this.SyntaxErr(node,'ExportNamedDeclaration')}
+	ExportSpecifier(node){throw this.SyntaxErr(node,'ExportSpecifier')}
+	ImportDeclaration(node){throw this.SyntaxErr(node,'ImportDeclaration')}
+	ImportDefaultSpecifier(node){throw this.SyntaxErr(node,'ImportDefaultSpecifier')}
+	ImportNamespaceSpecifier(node){throw this.SyntaxErr(node,'ImportNamespaceSpecifier')}
+	ImportSpecifier(node){throw this.SyntaxErr(node,'ImportSpecifier')}
+	DebuggerStatement(node){throw this.SyntaxErr(node,'DebuggerStatement')}
+	LabeledStatement(node){throw this.SyntaxErr(node,'LabeledStatement')}
+	WithStatement(node){throw this.SyntaxErr(node,'WithStatement')}
 
 	// Types
+	prototype(){
+		this.glslvariables = {
+			gl_Position:types.vec4,
+			gl_FragColor:types.vec4,
+			gl_FragCoord:types.vec4,
+			gl_PointCoord:types.vec2,
+			gl_PointSize:types.float,
+			gl_VertexID:types.int,
+			gl_InstanceID:types.int,
+			gl_FrontFacing:types.bool,
+			gl_ClipDistance:types.float,
+			gl_MaxVertexAttribs:types.int,
+			gl_MaxVertexUniformVectors:types.int,
+			gl_MaxVaryingVectors:types.int,
+			gl_MaxVertexTextureImageUnits:types.int,
+			gl_MaxCombinedTextureImageUnits:types.int,
+			gl_MaxTextureImageUnits:types.int,
+			gl_MaxFragmentUniformVectors:types.int,
+			gl_MaxDrawBuffers:types.int,
+			discard:types.void
+		}
 
-	proto.glslvariables = {
-		gl_Position:types.vec4,
-		gl_FragColor:types.vec4,
-		gl_FragCoord:types.vec4,
-		gl_PointCoord:types.vec2,
-		gl_PointSize:types.float,
-		gl_VertexID:types.int,
-		gl_InstanceID:types.int,
-		gl_FrontFacing:types.bool,
-		gl_ClipDistance:types.float,
-		gl_MaxVertexAttribs:types.int,
-		gl_MaxVertexUniformVectors:types.int,
-		gl_MaxVaryingVectors:types.int,
-		gl_MaxVertexTextureImageUnits:types.int,
-		gl_MaxCombinedTextureImageUnits:types.int,
-		gl_MaxTextureImageUnits:types.int,
-		gl_MaxFragmentUniformVectors:types.int,
-		gl_MaxDrawBuffers:types.int,
-		discard:types.void
+		this.glsltypes = {
+			float:types.float,
+			int:types.int,
+			bool:types.bool,
+			vec2:types.vec2,
+			vec3:types.vec3,
+			vec4:types.vec4,
+			bvec2:types.bvec2,
+			bvec3:types.bvec3,
+			bvec4:types.bvec4,
+			ivec2:types.ivec2,
+			ivec3:types.ivec3,
+			ivec4:types.ivec4,
+			mat2:types.mat2,
+			mat3:types.mat3,
+			mat4:types.mat4
+		}
+
+		this.glslfunctions ={
+			typeof:{return:types.gen, params:[{name:'type',type:types.gen}]}, 
+			sizeof:{return:types.int, params:[{name:'type',type:types.gen}]},
+
+			radians:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			degrees:{return:types.gen, params:[{name:'x', type:types.gen}]},
+
+			sin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			cos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			tan:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			asin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			acos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			atan:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.genopt}]},
+
+			pow:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]}, 
+			exp:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			log:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			exp2:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			log2:{return:types.gen, params:[{name:'x', type:types.gen}]},
+
+			sqrt:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			inversesqrt:{return:types.gen, params:[{name:'x', type:types.gen}]},
+
+			abs:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			sign:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			floor:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			ceil:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			fract:{return:types.gen, params:[{name:'x', type:types.gen}]},
+
+			mod:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			min:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			max:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			clamp:{return:types.gen, params:[{name:'x', type:types.gen},{name:'min', type:types.gen},{name:'max', type:types.gen}]},
+
+			mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.genfloat}]},
+			step:{return:types.gen, params:[{name:'edge', type:types.gen},{name:'x', type:types.gen}]}, 
+			smoothstep:{return:types.gen, params:[{name:'edge0', type:types.genfloat}, {name:'edge1', type:types.genfloat}, {name:'x', type:types.gen}]},
+
+			length:{return:types.float, params:[{name:'x', type:types.gen}]}, 
+			distance:{return:types.float, params:[{name:'p0', type:types.gen}, {name:'p1', type:types.gen}]}, 
+			dot:{return:types.float, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			cross:{return:types.vec3, params:[{name:'x', type:types.vec3},{name:'y', type:types.vec3}]},
+			normalize:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			faceforward:{return:types.gen, params:[{name:'n', type:types.gen}, {name:'i', type:types.gen}, {name:'nref', type:types.gen}]},
+			reflect:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}]}, 
+			refract:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}, {name:'eta', type:types.float}]},
+			matrixCompMult:{return:types.mat4,params:[{name:'a', type:types.mat4},{name:'b', type:types.mat4}]},
+
+			lessThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			lessThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			greaterThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			greaterThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			equal:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			notEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
+			any:{return:types.bool, params:[{name:'x', type:types.bvec}]},
+			all:{return:types.bool, params:[{name:'x', type:types.bvec}]},
+			not:{return:types.bvec, params:[{name:'x', type:types.bvec}]},
+
+			dFdx:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
+			dFdy:{return:types.gen, params:[{name:'x', type:types.gen}]},
+
+			texture2DLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
+			texture2DProjLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
+			textureCubeLod:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'lod', type:types.float}]},
+			texture2D:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
+			texture2DProj:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
+			textureCube:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'bias', type:types.floatopt}]},
+		}
 	}
+}
 
-	proto.glsltypes = {
-		float:types.float,
-		int:types.int,
-		bool:types.bool,
-		vec2:types.vec2,
-		vec3:types.vec3,
-		vec4:types.vec4,
-		bvec2:types.bvec2,
-		bvec3:types.bvec3,
-		bvec4:types.bvec4,
-		ivec2:types.ivec2,
-		ivec3:types.ivec3,
-		ivec4:types.ivec4,
-		mat2:types.mat2,
-		mat3:types.mat3,
-		mat4:types.mat4
+function Err(state, node, type, message){
+	this.type = type
+	this.message = message
+	this.node = node
+	this.state = state
+}
+
+Err.prototype.toString = function(){
+	return this.message
+}
+
+
+var tableBinaryExpression = {
+	float:{float:types.float, vec2:types.vec2, vec3:types.vec3, vec4:types.vec4},
+	int:{int:types.int, ivec2:types.ivec2, ivec3:types.ivec3, ivec4:types.ivec4},
+	vec2:{float:types.vec2, vec2:types.vec2, mat2:types.vec2},
+	vec3:{float:types.vec3, vec3:types.vec3, mat3:types.vec3},
+	vec4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+	ivec2:{int:types.ivec2, ivec2:types.ivec2},
+	ivec3:{int:types.ivec3, ivec3:types.ivec3},
+	ivec4:{int:types.ivec4, ivec4:types.ivec4},
+	mat2:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+	mat3:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+	mat4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+}
+
+var groupBinaryExpression = {
+	'+':1,'-':1,'*':1,'/':1,
+	'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
+	'===':3,'!==':3,
+}
+
+function recursiveDependencyUpdate(genfn, dep, key){
+	for(var i = 0; i < genfn.length; i++){
+		if(genfn[i].key === key) break
 	}
+	// remove it
+	genfn.splice(i, 1)
+	// add it to the end
+	genfn.push({
+		key:key,
+		value:dep
+	})
 
-	proto.glslfunctions ={
-		typeof:{return:types.gen, params:[{name:'type',type:types.gen}]}, 
-		sizeof:{return:types.int, params:[{name:'type',type:types.gen}]},
-
-		radians:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		degrees:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
-		sin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		cos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		tan:{return:types.gen, params:[{name:'x', type:types.gen}]},
-		asin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		acos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		atan:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.genopt}]},
-
-		pow:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]}, 
-		exp:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		log:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		exp2:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		log2:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
-		sqrt:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		inversesqrt:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
-		abs:{return:types.gen, params:[{name:'x', type:types.gen}]},
-		sign:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		floor:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		ceil:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		fract:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
-		mod:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		min:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		max:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		clamp:{return:types.gen, params:[{name:'x', type:types.gen},{name:'min', type:types.gen},{name:'max', type:types.gen}]},
-
-		mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.genfloat}]},
-		step:{return:types.gen, params:[{name:'edge', type:types.gen},{name:'x', type:types.gen}]}, 
-		smoothstep:{return:types.gen, params:[{name:'edge0', type:types.genfloat}, {name:'edge1', type:types.genfloat}, {name:'x', type:types.gen}]},
-
-		length:{return:types.float, params:[{name:'x', type:types.gen}]}, 
-		distance:{return:types.float, params:[{name:'p0', type:types.gen}, {name:'p1', type:types.gen}]}, 
-		dot:{return:types.float, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		cross:{return:types.vec3, params:[{name:'x', type:types.vec3},{name:'y', type:types.vec3}]},
-		normalize:{return:types.gen, params:[{name:'x', type:types.gen}]},
-		faceforward:{return:types.gen, params:[{name:'n', type:types.gen}, {name:'i', type:types.gen}, {name:'nref', type:types.gen}]},
-		reflect:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}]}, 
-		refract:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}, {name:'eta', type:types.float}]},
-		matrixCompMult:{return:types.mat4,params:[{name:'a', type:types.mat4},{name:'b', type:types.mat4}]},
-
-		lessThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		lessThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		greaterThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		greaterThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		equal:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		notEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-		any:{return:types.bool, params:[{name:'x', type:types.bvec}]},
-		all:{return:types.bool, params:[{name:'x', type:types.bvec}]},
-		not:{return:types.bvec, params:[{name:'x', type:types.bvec}]},
-
-		dFdx:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-		dFdy:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
-		texture2DLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
-		texture2DProjLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
-		textureCubeLod:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'lod', type:types.float}]},
-		texture2D:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
-		texture2DProj:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
-		textureCube:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'bias', type:types.floatopt}]},
+	for(let depName in dep.deps){
+		recursiveDependencyUpdate(genfn, dep.deps[depName], depName)
 	}
+}
 
-})
+function lookupGenFunction(genfn, key){
+	for(let i = 0; i < genfn.length; i++){
+		var item = genfn[i]
+		if(item.key === key) return item.value
+	}
+}
+
+var uniformslotmap = {
+	1:types.float,
+	2:types.vec2,
+	3:types.vec3,
+	4:types.vec4
+}
+
+// the swizzle lookup tables
+var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
+var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
+var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
+var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
+var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
+var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
+var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}

@@ -1,6 +1,10 @@
-module.exports = function(proto){
+module.exports = class extends require('base/mixin'){
 
-	proto.on = function(key, fn, reverse){
+	static mixin(proto){
+		this._mixin(proto)
+	}
+
+	on(key, fn, reverse){
 
 		function _onchain(event){
 			var ret = _onchain.fn.call(this, event)
@@ -27,7 +31,7 @@ module.exports = function(proto){
 		}
 	}
 	
-	proto.off = function(key, fn){
+	off(key, fn){
 		var onkey = 'on' + key.charAt(0).toUpperCase()+key.slice(1)
 		var cb = this[onkey], last
 		while(cb.name === '_onchain'){

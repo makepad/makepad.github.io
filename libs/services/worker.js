@@ -21,8 +21,9 @@ service.onMessage = function(msg){
 
 exports.onRequire = function(args, absParent, buildPath){
 
-	var Worker = require('base/class').extend(function Worker(proto){
-		proto.constructor = function(serviceList, platform){
+	var Worker = class Worker extends require('base/class'){
+		constructor(serviceList, platform){
+			super()
 			var run
 			if(typeof serviceList === 'function') run = serviceList, serviceList = undefined
 
@@ -122,28 +123,28 @@ exports.onRequire = function(args, absParent, buildPath){
 			if(run) this.run(run)
 		}
 
-		proto.onRun = function(){}
+		onRun(){}
 		
-		proto.onMessage = function(msg){}
+		onMessage(msg){}
 
-		var construct = proto.constructor
+		static onMessage(msg){}
 
-		construct.onMessage = function(msg){}
-		construct.postMessage = function(msg, transfers){
+		static postMessage(msg, transfers){
 			service.postMessage({
 				fn:'toParent',
 				msg:msg,
 				transfers:transfers
 			}, transfers)
 		}
-		construct.batchMessage = function(msg, transfers){
+
+		static batchMessage(msg, transfers){
 			service.batchMessage({
 				fn:'toParent',
 				msg:msg,
 				transfers:transfers
 			}, transfers)
 		}
-	})
+	}
 
 	if(requires[absParent]) return requires[absParent]
 	requires[absParent] = Worker

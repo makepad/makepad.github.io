@@ -11,9 +11,9 @@ var identityMat4 = mat4.create()
 module.exports = class View extends require('base/class'){
 
 	prototype(){
-		require('base/props')(this)
-		require('base/events')(this)
-		require('base/tools')(this)
+		require('base/props').mixin(this)
+		require('base/events').mixin(this)
+		require('base/tools').mixin(this)
 		this.Turtle = require('base/turtle')
 		this.props = {
 			visible:true,

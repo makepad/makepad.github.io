@@ -1244,8 +1244,8 @@ module.exports = function(proto){
 			this[id.type](id)
 
 			if(node.space){
-				this.trace += node.space
-				this.fastText(node.space, this._styles.ClassDeclaration.class)
+				this.trace += ' '
+				this.fastText(' ', this._styles.ClassDeclaration.class)
 			}
 		}
 		var base = node.superClass
@@ -1268,8 +1268,8 @@ module.exports = function(proto){
 			this[id.type](id)
 			
 			if(node.space){
-				this.trace += node.space
-				this.fastText(node.space, this._styles.ClassExpression.class)
+				this.trace += ' '
+				this.fastText(' ', this._styles.ClassExpression.class)
 			}
 		}	
 		var base = node.superClass

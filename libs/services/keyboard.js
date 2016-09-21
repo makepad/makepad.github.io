@@ -24,7 +24,7 @@ var idToKeyName = {
 }
 
 var Keyboard = require('base/class').extend(function Keyboard(proto){
-	require('base/events')(proto)
+	require('base/events').mixin(proto)
 })
 
 var keyboard = module.exports = new Keyboard()
