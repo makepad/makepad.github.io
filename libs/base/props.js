@@ -1,3 +1,20 @@
+module.exports = class Props extends require('base/mixin'){
+	// special names for property with name: key
+	// this.key  <- getter setter for the key
+	// this._key  <- the storage for a key
+	// this.onkey  <- the listener chain for a key value change if(this.onkey) this.onkey({...})
+	// this._onkey <- the listener flagset for flagged value change monitoring
+	set props(props){
+		for(let key in props){
+			defineProp.call(this, key, props[key])
+		}
+	}
+
+	get props(){
+		return this._props
+	}
+}
+
 // define props
 function defineProp(key, value){
 	// default
@@ -48,25 +65,4 @@ function defineProp(key, value){
 			}
 		}
 	})
-}
-
-module.exports = class Props extends require('base/mixin'){
-	// special names for property with name: key
-	// this.key  <- getter setter for the key
-	// this._key  <- the storage for a key
-	// this.onkey  <- the listener chain for a key value change if(this.onkey) this.onkey({...})
-	// this._onkey <- the listener flagset for flagged value change monitoring
-	static mixin(proto){
-		Object.defineProperty(proto, 'props', {
-			set:function(props){
-				for(let key in props){
-					defineProp.call(this, key, props[key])
-				}
-			},
-			get:function(){
-				return this._props
-			}
-		})
-		this._mixin(proto)
-	}
 }

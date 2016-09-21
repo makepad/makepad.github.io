@@ -14,94 +14,89 @@ module.exports = class Compiler extends require('base/class'){
 		this.$uniformHeader = ""
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
+	}
 
-
-		Object.defineProperty(this, 'props', {
-			get:function(){
-				throw new Error('props is a configurator, please only assign objects: this.props = {...}')
-			},
-			set:function(props){
-				if(!this.hasOwnProperty('_props')){
-					this._props = this._props?Object.create(this._props):{}
-				}
-				for(let key in props){
-					var config = props[key]
-					if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
-						config = {value:config}
-					}
-					var old = this._props[key]
-					if(old && !('value' in config)){
-						for(let key in old) if(!(key in config)){
-							config[key] = old[key]
-						}
-					}
-					this._props[key] = config
-					if(config.value !== undefined) this[key] = config.value
-					if(!config.type) config.type = types.typeFromValue(config.value)
-					if(!config.kind) config.kind = 'instance'
+	get props(){
+		throw new Error('props is a configurator, please only assign objects: this.props = {...}')
+	}
+	
+	set props(props){
+		if(!this.hasOwnProperty('_props')){
+			this._props = this._props?Object.create(this._props):{}
+		}
+		for(let key in props){
+			var config = props[key]
+			if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
+				config = {value:config}
+			}
+			var old = this._props[key]
+			if(old && !('value' in config)){
+				for(let key in old) if(!(key in config)){
+					config[key] = old[key]
 				}
 			}
-		})
+			this._props[key] = config
+			if(config.value !== undefined) this[key] = config.value
+			if(!config.type) config.type = types.typeFromValue(config.value)
+			if(!config.kind) config.kind = 'instance'
+		}
+	}
 
-		Object.defineProperty(this, 'defines', {
-			get:function(){
-				throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-			},
-			set:function(defines){
-				if(!this.hasOwnProperty('_defines')){
-					this._defines = this._defines? Object.create(this._defines): {}
-				}
-				for(let key in defines){
-					this._defines[key] = defines[key]
-				}
-			}
-		})
+	get defines(){
+		throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+	}
 
-		Object.defineProperty(this, 'requires', {
-			get:function(){
-				throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-			},
-			set:function(requires){
-				if(!this.hasOwnProperty('_requires')){
-					this._requires = this._requires? Object.create(this._requires): {}
-				}
-				for(let key in requires){
-					this._requires[key] = requires[key]
-				}
-			}
-		})
+	set defines(defines){
+		if(!this.hasOwnProperty('_defines')){
+			this._defines = this._defines? Object.create(this._defines): {}
+		}
+		for(let key in defines){
+			this._defines[key] = defines[key]
+		}
+	}
 
-		Object.defineProperty(this, 'structs', {
-			get:function(){
-				throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
-			},
-			set:function(structs){
-				if(!this.hasOwnProperty('_structs')){
-					this._structs = this._structs?Object.create(this._structs):{}
-				}
-				for(let key in structs){
-					var struct = structs[key]
-					// auto name the struct based on the key
-					if(!struct.name){
-						var newstruct = Object.create(struct)
-						newstruct.constructor = struct.constructor
-						newstruct.name = key
-						struct = newstruct
-					}
-					this._structs[key] = struct
-				}
-			}
-		})
+	get requires(){
+		throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
+	}
 
-		Object.defineProperty(this, 'toolMacros', {
-			get:function(){
-				return this._toolMacros
-			},
-			set:function(macros){
-				if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-				for(let key in macros) this._toolMacros[key] = macros[key]
+	set requires(requires){
+		if(!this.hasOwnProperty('_requires')){
+			this._requires = this._requires? Object.create(this._requires): {}
+		}
+		for(let key in requires){
+			this._requires[key] = requires[key]
+		}
+	}
+
+
+	get structs(){
+		throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
+	}
+	
+	set structs(structs){
+		if(!this.hasOwnProperty('_structs')){
+			this._structs = this._structs?Object.create(this._structs):{}
+		}
+		for(let key in structs){
+			var struct = structs[key]
+			// auto name the struct based on the key
+			if(!struct.name){
+				var newstruct = Object.create(struct)
+				newstruct.constructor = struct.constructor
+				newstruct.name = key
+				struct = newstruct
 			}
-		})
+			this._structs[key] = struct
+		}
+	}
+
+	get toolMacros(){
+		return this._toolMacros
+	}
+
+	set toolMacros(macros){
+		if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
+		for(let key in macros) this._toolMacros[key] = macros[key]
 	}
 
 	$compileShader(){
