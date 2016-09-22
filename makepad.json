@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["./examples/tiny.js"],
-	"run":["./examples/tiny.js"],
+	"open":["./examples/audio.js"],
+	"run":["./examples/audio.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","closed":true,"folder":[
@@ -38,6 +38,7 @@
 				{"name":"codeblock.js"},
 				{"name":"codemarker.js"},
 				{"name":"codetext.js"},
+				{"name":"grid.js"},
 				{"name":"hover.js"},
 				{"name":"icon.js"},
 				{"name":"line.js"},

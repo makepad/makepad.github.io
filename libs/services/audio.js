@@ -42,8 +42,9 @@ function deepCopy(obj){
 	return out
 }
 
-exports.Flow = require('base/class').extend({
-	constructor:function(config){
+exports.Flow = class Flow extends require('base/class'){
+	constructor(config){
+		super()
 		this.config = config
 		this.id = flowIdsAlloc ++
 		this.running
@@ -56,8 +57,9 @@ exports.Flow = require('base/class').extend({
 			id: this.id,
 			config:deepCopy(config)
 		})
-	},
-	start:function(overlay){
+	}
+
+	start(overlay){
 		this.running = true
 		service.batchMessage({
 			fn:'start',
@@ -65,20 +67,22 @@ exports.Flow = require('base/class').extend({
 			overlay:deepCopy(overlay)
 		})
 		return this
-	},
-	stop:function(){
+	}
+
+	stop(){
 		this.running = false
 		service.batchMessage({
 			fn:'stop',
 			id:this.id
 		})
 		return this
-	},
-	play:function(){
+	}
+
+	play(){
 		// todo
 		return this
 	}
-})
+}
 
 exports.reset = function(){
 	service.batchMessage({

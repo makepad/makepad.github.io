@@ -217,6 +217,7 @@ class Cursor extends require('base/class'){
 			// scan for the closest position for the cursor
 			
 			var d = 0
+			var oc1
 			if(this.editor.wasNewlineChange){
 				oc1 = oldText.charCodeAt(this.end)
 				d = 2
@@ -674,14 +675,14 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	scanLineLeft(start){
-		for(let i = start - 1; i >= 0; i--){
+		for(var i = start - 1; i >= 0; i--){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i + 1
 	}
 
 	scanLineRight(start){
-		for(let i = start; i < this._text.length; i++){
+		for(var i = start; i < this._text.length; i++){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i

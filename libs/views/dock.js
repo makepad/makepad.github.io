@@ -264,7 +264,7 @@ module.exports=require('base/view').extend({
 
 			var idx = splitter.children[0] === oldTabs?0:1
 
-			var newTabs = this.Tabs({
+			var newTabs = new this.Tabs({
 					dock:this,
 					isBottom:this.dragTab.parent.isBottom
 				},
@@ -279,7 +279,7 @@ module.exports=require('base/view').extend({
 			var newSplitter
 			var part = this.dragTabDrop.part
 			if(part === 0){
-				newSplitter = this.Splitter({
+				newSplitter = new this.Splitter({
 						dock:this,
 						vertical:true,
 						pos:isParent?0.25:0.5
@@ -289,7 +289,7 @@ module.exports=require('base/view').extend({
 				)
 			}
 			else if(part === 1){
-				newSplitter = this.Splitter({
+				newSplitter = new this.Splitter({
 						dock:this,
 						vertical:true,
 						pos:isParent?0.75:0.5
@@ -299,7 +299,7 @@ module.exports=require('base/view').extend({
 				)
 			}
 			else if(part === 2){
-				newSplitter = this.Splitter({
+				newSplitter = new this.Splitter({
 						dock:this,
 						vertical:false,
 						pos:isParent?0.25:0.5
@@ -309,7 +309,7 @@ module.exports=require('base/view').extend({
 				)
 			}
 			else if(part === 3){
-				newSplitter = this.Splitter({
+				newSplitter = new this.Splitter({
 						dock:this,
 						vertical:false,
 						pos:isParent?0.75:0.5

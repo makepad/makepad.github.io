@@ -2,20 +2,17 @@ var audio=require('services/audio')
 var wav=require('parsers/wav')
 var painter=require('services/painter')
 
-console.log("HERE")
-
-module.exports = class extends require('base/drawapp'){
-
+module.exports=class extends require('base/drawapp'){
+	
 	prototype(){
-		console.log("PROTO")
-		this.props = {
+		this.props={
 			zoom:1000.,
 			selStart:0,
 			selEnd:0,
 			zoomRange:[2,1000],
 			zoomScroll:0,
 		}
-		this.tools = {
+		this.tools={
 			Slider:require('tools/slider').extend({
 				Bg:{moveScroll:0},
 				Knob:{moveScroll:0}
@@ -25,12 +22,12 @@ module.exports = class extends require('base/drawapp'){
 				Text:{moveScroll:0}
 			}),
 			Quad:{color:'red'},
+			Grid:require('tools/grid')
 		}
 	}
 	
-	constructor(...args){
-		super(...args)
-		console.log("ONCONSTRUCT")
+	constructor(){
+		super()
 		audio.reset()
 		this.recording=[]
 		this.samples=0
@@ -55,9 +52,9 @@ module.exports = class extends require('base/drawapp'){
 				device:'Microphone'
 			}
 		})
-		var out=wav.parse(require('./audio.wav'),true)
-		this.recording.push(out.data)
-		this.samples=out.data[0].length
+		//var out=wav.parse(require('./audio.wav'),true)
+		//this.recording.push(out.data)
+		//this.samples=out.data[0].length
 		
 		this.playFlow=new audio.Flow({
 			buffer1:{
@@ -74,9 +71,9 @@ module.exports = class extends require('base/drawapp'){
 	}
 	
 	xToTime(x){
-		return (x+this.todo.xScroll)*this.zoom
+		return x*this.zoom
 	}
-
+	
 	setZoom(z,x){
 		var zoom=clamp(z,this.zoomRange[0],this.zoomRange[1])
 		var x1=x*this.zoom
@@ -84,22 +81,23 @@ module.exports = class extends require('base/drawapp'){
 		this.zoom=zoom
 		this.scrollAtDraw((x1-x2)/zoom,0,true)
 	}
-
+	
 	onFingerWheel(e){
 		var z=this.zoom*(1+e.yWheel/1500)
 		this.setZoom(z,e.x)
 	}
-
+	
 	onFingerDown(e){
+		this.selEnd=
 		this.selStart=this.xToTime(e.x)
 	}
-
+	
 	onFingerMove(e){
-		this.selEnd=this.xToTime(e.x)
+		var end=this.selEnd=this.xToTime(e.x)
+		if(end<this.selStart)this.selEnd=this.selStart,this.selStart=end
 	}
-
+	
 	onDraw(){
-		console.log("ONDRAW")
 		this.drawButton({
 			text:this.recFlow.running?"Stop":"Rec",
 			onClick:function(){
@@ -123,9 +121,9 @@ module.exports = class extends require('base/drawapp'){
 				// lets combine all the recording buffers
 				var out=new Float32Array(this.samples)
 				var o=0
-				for(let c=0;c<this.recording.length;c++){
+				for(var c=0;c<this.recording.length;c++){
 					var left=this.recording[c][0]
-					for(let i=0;i<left.length;i++)out[o++]=left[i]
+					for(var i=0;i<left.length;i++)out[o++]=left[i]
 				}
 				
 				this.playFlow.start({
@@ -168,18 +166,19 @@ module.exports = class extends require('base/drawapp'){
 			var xmin=this.todo.xScroll-this.$w
 			var xmax=xmin+this.$w*3
 			outer:
-			for(let c=0;c<this.recording.length;c++){
+			for(var c=0;c<this.recording.length;c++){
 				var left=this.recording[c][0]
 				if((t+left.length)/scale<xmin){
 					t+=left.length
 					continue
 				}
-				for(let i=0;i<left.length;i++){
+				for(var i=0;i<left.length;i++){
 					var v=left[i]
 					if(v<minv)minv=v
 					if(v>maxv)maxv=v
 					if(!(t++%smod)&&t/scale>xmin){
 						this.drawQuad({
+							color:t>this.selStart&&t<this.selEnd?'red':'green',
 							x:t/scale,
 							y:minv*100+300,
 							w:1,///painter.pixelRatio,//t / scale,
@@ -197,7 +196,7 @@ module.exports = class extends require('base/drawapp'){
 		if(this.scopeData){
 			var left=this.scopeData[0]
 			this.drawLine({sx:0,sy:100})
-			for(let i=0;i<left.length;i++){
+			for(var i=0;i<left.length;i++){
 				this.drawLine({
 					x:i,
 					y:left[i]*100+100

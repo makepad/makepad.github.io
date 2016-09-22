@@ -1,43 +1,3 @@
-
-var getUserMedia = (navigator.getUserMedia ||
-				navigator.webkitGetUserMedia ||
-				navigator.mozGetUserMedia)
-
-function recorderOnAudioProcess(flow, name, e){
-	var inBuf = e.inputBuffer
-	var outBuf = e.outputBuffer
-	// Loop through the output channels (in this case there is only one)
-	var data = []
-	for (var c = 0; c < outBuf.numberOfChannels; c++) {
-		var inp = inBuf.getChannelData(c)
-		var outp = outBuf.getChannelData(c)
-		var cpy = new Float32Array(inBuf.length)
-		for (var s = inBuf.length-1; s>=0; s--){
-			cpy[s] = outp[s] = inp[s]
-		}
-		data.push(cpy)
-	}
-	
-	// we have to sync this thing to the renderer
-
-	this.postMessage({
-		fn:'onRecorderData',
-		pileupTime:Date.now(),
-		id:flow.id,
-		node:name,
-		data:data
-	})
-}
-
-var nodeParamDefs = {
-	gain:{
-		gain:1
-	},
-	buffer:{
-		detune:1,
-		playbackRate:1
-	}
-}
 module.exports = class audio1 extends require('/platform/service'){
 	
 	constructor(...args){
@@ -84,7 +44,7 @@ module.exports = class audio1 extends require('/platform/service'){
 		if(!this.initialized){
 			this.queue.push(msg)
 		}
-		else base.onMessage.call(this,msg)
+		else super.onMessage(msg)
 	}
 	
 	user_reset(){
@@ -102,7 +62,6 @@ module.exports = class audio1 extends require('/platform/service'){
 		}
 	}
 
-
 	spawnFlow(flow, overlay){
 		
 		// lets spawn all the nodes
@@ -119,7 +78,7 @@ module.exports = class audio1 extends require('/platform/service'){
 				}
 			}
 			// rip off the number of a node name
-			for(let j = 0, l = name.length; j < l; j++){
+			for(var j = 0, l = name.length; j < l; j++){
 				var code = name.charCodeAt(j)
 				if(code>=48 && code <=57) break
 			}
@@ -220,164 +179,70 @@ module.exports = class audio1 extends require('/platform/service'){
 		this.spawnFlow(flow, msg.overlay)
 	}
 
-	stopFlow(flow){
-		// lets terminate the whole thing
-		for(let name in flow.nodes){
-			var node = flow.nodes[name]
-			if(node.stream){
-				// stop any running streams
-				var tracks = node.stream.getAudioTracks()
-				for(let i = 0;i < tracks.length; i++){
-					tracks[i].stop()
-				}
-			}
-			if(node.audioNode && node.audioNode.disconnect){
-				node.audioNode.disconnect()
-				node.audioNode = undefined
-			}
-		}
-		flow.started = false
-	}
-
 	// ok how do we stop this thing?
 	user_stop(msg){
 		var flow = this.ids[msg.id]
 		if(!flow.started) return
 		stopFlow(flow)
 	}
+}
 
-	/*
-	proto.user_createOsc = function(msg){
-		var n = this.context.createOscillator()
-		this.ids[msg.id] = n
+var getUserMedia = (navigator.getUserMedia ||
+				navigator.webkitGetUserMedia ||
+				navigator.mozGetUserMedia)
+
+function recorderOnAudioProcess(flow, name, e){
+	var inBuf = e.inputBuffer
+	var outBuf = e.outputBuffer
+	// Loop through the output channels (in this case there is only one)
+	var data = []
+	for (var c = 0; c < outBuf.numberOfChannels; c++) {
+		var inp = inBuf.getChannelData(c)
+		var outp = outBuf.getChannelData(c)
+		var cpy = new Float32Array(inBuf.length)
+		for (var s = inBuf.length-1; s>=0; s--){
+			cpy[s] = outp[s] = inp[s]
+		}
+		data.push(cpy)
 	}
+	
+	// we have to sync this thing to the renderer
 
-	proto.user_createGain = function(msg){
-		var n = this.context.createGain()
-		this.ids[msg.id] = n
-	}
+	this.postMessage({
+		fn:'onRecorderData',
+		pileupTime:Date.now(),
+		id:flow.id,
+		node:name,
+		data:data
+	})
+}
 
-	proto.user_createRecorder = function(msg){
-		var n = this.context.createScriptProcessor(
-			msg.chunk,
-			msg.channels,
-			msg.channels
-		)
-		this.ids[msg.id] = n
-		n.onaudioprocess = function(e){
-			var inBuf = e.inputBuffer
-			var outBuf = e.outputBuffer
-			// Loop through the output channels (in this case there is only one)
-			var data = []
-			for (var c = 0; c < outBuf.numberOfChannels; c++) {
-				var inp = inBuf.getChannelData(c)
-				var outp = outBuf.getChannelData(c)
-				for (var s = inBuf.length-1; s>=0; s--) outp[s] = inp[s]
-				data.push(inp)
-			}
-
-			this.postMessage({
-				fn:'onRecorderData',
-				id:msg.id,
-				data:data
-			})
-		}.bind(this)
-	}
-
-	proto.user_createInput = function(msg){
-		var ph = this.ids[msg.id] = {queue:[]}
-
-		 var getUserMedia = (navigator.getUserMedia ||
-			navigator.webkitGetUserMedia ||
-			navigator.mozGetUserMedia)
-
-		getUserMedia.call(navigator, {audio:true}, function(stream){
-			if(!this.ids[msg.id]) return
-			var n = this.context.createMediaStreamSource(stream)
-			this.ids[msg.id] = n 
-			if(ph.queue){
-				for(let i = 0; i < ph.queue.length; i++){
-					this.onMessage(ph.queue[i])
-				}
-			}
-		}.bind(this), function(err){
-
-		})
-	}
-
-	proto.user_createPlayer = function(msg){
-		var n = this.context.createBufferSource()
-		this.ids[msg.id] = n
-	}
-
-	proto.user_createBuffer = function(msg){
-		var n = this.context.createBuffer(msg.channels, msg.samples, msg.rate)
-		this.ids[msg.id] = n
-	}
-
-	proto.user_updateBuffer = function(msg){
-		var buf = this.ids[msg.id]
-		var chans = buf.numberOfChannels
-		var o = msg.offset
-		for(let c = 0; c < chans; c++){
-			var of32 = buf.getChannelData(c)
-			var if32 = msg.data[c]
-			for(let i = if32.length - 1; i >= 0; i--){
-				of32[o+i] = if32[i]
+function stopFlow(flow){
+	// lets terminate the whole thing
+	for(let name in flow.nodes){
+		var node = flow.nodes[name]
+		if(node.stream){
+			// stop any running streams
+			var tracks = node.stream.getAudioTracks()
+			for(let i = 0;i < tracks.length; i++){
+				tracks[i].stop()
 			}
 		}
-		if(buf.dest){
-			buf.dest.buffer = buf
+		if(node.audioNode && node.audioNode.disconnect){
+			node.audioNode.disconnect()
+			node.audioNode = undefined
 		}
 	}
+	flow.started = false
+}
 
-	proto.user_setBuffer = function(msg){
-		var dst = this.ids[msg.id]
-		if(dst.queue) return dst.queue.push(msg)
-		var buf = this.ids[msg.bufferId]
-		dst.buffer = buf
-		// lets mark the buffer as readonly
-		// meaning we need to copy it next updateBuffer
 
+var nodeParamDefs = {
+	gain:{
+		gain:1
+	},
+	buffer:{
+		detune:1,
+		playbackRate:1
 	}
-
-	proto.user_connect = function(msg){
-		var src = this.ids[msg.srcId]
-		var dst = this.ids[msg.dstId]
-		if(src.queue){
-			src.queue.push(msg)
-			return
-		}
-		if(!dst)dst = this.context.destination
-		src.connect(dst)
-	}
-
-	proto.user_startNode = function(msg){
-		var dst = this.ids[msg.id]
-		if(dst.queue) return dst.queue.push(msg)
-		
-		if(typeof msg.value !== 'number'){
-			if(dst.wasStarted){
-				dst.stop()
-				dst.wasStarted = false
-			}
-		}
-		else{
-			dst.wasStarted = true
-			dst.start(msg.value)
-		}
-	}
-
-	proto.user_setLoop = function(msg){
-		var dst = this.ids[msg.id]
-		dst.loop = msg.value
-	}
-
-	proto.user_setValue = function(msg){
-		var dst = this.ids[msg.id]
-		if(dst.queue) return dst.queue.push(msg)
-
-		var key = msg.key
-		dst[key].value = msg.value
-	}*/
 }

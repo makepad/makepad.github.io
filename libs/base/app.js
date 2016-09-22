@@ -226,7 +226,8 @@ module.exports = class App extends require('base/view'){
 		// lets attach our todo and ubo to the main framebuffer
 		painter.mainFramebuffer.assignTodoAndUbo(app.todo, app.painterUbo)
 		// first draw
-		app.$redrawViews()
+		app.redraw()
+		//app.$redrawViews()
 	}
 
 	transferFingerMove(digit, todoId, pickId){

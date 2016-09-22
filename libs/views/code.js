@@ -1043,8 +1043,8 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			if(text === '[' && (char === '\n' || char === ',') && (!this.error || char!==']')) text = '[]'
 			if(text === '(' && (char === '\n' || char === ',') &&(!this.error ||char!==')')) text = '()'
 
-			if(text === '"' && (!this.error || char !== '"') && prev !=='"') text = '""'
-			if(text === "'" && (!this.error || char !== "'") && prev !=="'") text = "''"
+			if(text === '"' && (!this.error || this.error.msg !== 'Unterminated string constant') && char !== '"' && prev !=='"') text = '""'
+			if(text === "'" && (!this.error || this.error.msg !== 'Unterminated string constant') && char !== "'" && prev !=="'") text = "''"
 		}
 
 		this.$fastTextDelta += text.length

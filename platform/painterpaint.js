@@ -118,11 +118,11 @@ module.exports = function painterPaint(proto){
 	]
 
 	proto.findDeps = function(todo, deps){
-		if(todo.deps.length){
+		if(todo.deps && todo.deps.length){
 			deps.push.apply(deps, todo.deps)
 		}
 		var children = todo.children
-		for(let i = 0; i < children.length; i++){
+		if(children) for(let i = 0; i < children.length; i++){
 			this.findDeps(this.todoIds[children[i]], deps)
 		}
 	}

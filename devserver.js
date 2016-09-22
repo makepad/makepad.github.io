@@ -1,3 +1,4 @@
+"use strict"
 var Https = require('https')
 var Http = require('http')
 var Fs = require('fs')
@@ -182,9 +183,9 @@ server.listen(server_port, server_interface, function(err){
 	// dump what we are listening on
 	var interfaces = Os.networkInterfaces()
 	for(let ifacekey in interfaces){
-		var interface = interfaces[ifacekey]
-		for(let i = 0; i < interface.length; i++){
-			var subiface = interface[i]
+		var iface = interfaces[ifacekey]
+		for(let i = 0; i < iface.length; i++){
+			var subiface = iface[i]
 			if(subiface.family !== 'IPv4') continue
 			console.log('Server is listening on http://'+subiface.address+':'+server_port+'/')
 		}
