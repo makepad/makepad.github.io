@@ -477,8 +477,8 @@ module.exports = class Edit extends require('base/view'){
 	//
 	//
 
-	_onInit(){
-		super._onInit()
+	constructor(...args){
+		super(...args)
 		this.cs = new CursorSet(this)
 		this.$undoStack = []
 		this.$redoStack = []

@@ -595,7 +595,7 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		*/
 		// last one is the class
-		code += 'var $p9 = this._'+classname+'.prototype\n'
+		code += 'var $p9 = this.'+classname+'.prototype\n\n'
 		code += stylePropCode('', '$p9', styleProps, styleLevel)
 
 		//console.log(code)
@@ -626,7 +626,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'var $view = this.view\n'
 		code += indent+'var $shader = this.$shaders.'+classname+' || this.$allocShader("'+classname+'")\n'
 		code += indent+'var $props = $shader.$props\n'
-		code += indent+'var $proto = this._' + classname +'.prototype\n'
+		code += indent+'var $proto = this.' + classname +'.prototype\n'
 		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
 		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.oldLength = $props.length\n'
@@ -797,7 +797,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!fastWrite){
 			code += indent + 'var $view = this.view\n'
 			code += indent + 'var $inPlace = $view.$inPlace\n\n'
-			code += indent +'var $proto = this._' + classname +'.prototype\n'
+			code += indent +'var $proto = this.' + classname +'.prototype\n'
 			code += indent +'var $shader = this.$shaders.'+classname+'\n'
 			code += indent +'var $props = $shader.$props\n'
 			code += indent +'var $a = $props.array\n'

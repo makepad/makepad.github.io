@@ -11,10 +11,14 @@ var identityMat4 = mat4.create()
 module.exports = class View extends require('base/class'){
 
 	prototype(){
-		require('base/props').mixin(this)
-		require('base/events').mixin(this)
-		require('base/tools').mixin(this)
+		this.mixin(
+			require('base/props'),
+			require('base/events'),
+			require('base/tools')
+		)
+
 		this.Turtle = require('base/turtle')
+
 		this.props = {
 			visible:true,
 			x:'0',
@@ -186,20 +190,6 @@ module.exports = class View extends require('base/class'){
 		this.onFlag2 = this.redraw
 		this.onFlag4 = this.relayout
 
-		Object.defineProperty(this, 'viewGeom', {
-			get:function(){
-				return {
-					moveScroll:0.,
-					noBounds:1,
-					w:this.$w,
-					h:this.$h,
-					padding:this.drawPadding || this.padding
-				}
-			},
-			set:function(){
-				throw new Error('Dont call set on geom')
-			}
-		})
 	}
 
 	constructor(...args){
@@ -400,6 +390,19 @@ module.exports = class View extends require('base/class'){
 		this.app.transferFingerMove(digit, this.todo.todoId, pickId)
 	}
 
+	get viewGeom(){
+		return {
+			moveScroll:0.,
+			noBounds:1,
+			w:this.$w,
+			h:this.$h,
+			padding:this.drawPadding || this.padding
+		}
+	}
+
+	set viewGeom(v){
+		throw new Error('Dont call set on viewGeom')
+	}
 
 	scrollIntoView(x, y, w, h){
 		// we figure out the scroll-to we need

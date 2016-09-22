@@ -15,7 +15,9 @@ function extend(body){
 	var Constructor = ExtendClass
 	var proto = ExtendClass.prototype
 	
-	if(!protoReady.get(proto)) proto.__initproto__()
+	// make sure we initialize our prototype
+	var parentProto = this.prototype
+	if(!protoReady.get(parentProto)) parentProto.__initproto__()
 
 	Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
 
@@ -47,8 +49,6 @@ function extend(body){
 	return Constructor
 }
 
-var protoReady = new WeakMap()
-
 module.exports = class RootClass{
 	constructor(){
 		var proto = Object.getPrototypeOf(this)
@@ -56,24 +56,115 @@ module.exports = class RootClass{
 	}
 }
 
+Object.defineProperty(module.exports.prototype, 'mixin',{
+	enumerable:false,
+	configurable:true,
+	writable:true,
+	value:function mixin(...args){
+		for(var a = 0; a < args.length; a++){
+			var proto = args[a]
+			if(!proto) continue
+			if(typeof proto === 'function'){
+				// passed in a class
+				if(proto.prototype && proto.prototype !== Object){
+					proto = proto.prototype
+				}
+				// plain function
+				else{
+					proto.call(this, this)
+					continue
+				}
+			}
+
+			if(!protoReady.get(proto) && proto.__initproto__) proto.__initproto__()
+
+			var props = Object.getOwnPropertyNames(proto)
+			for(var i = 0; i < props.length; i++){
+				var key = props[i]
+				var desc = Object.getOwnPropertyDescriptor(proto, key)
+				if(key === '__inheritable__'){ // copying inheritable is different
+					var value = proto[key]
+					for(var j = 0; j < value.length; j++){
+						var val = value[j]
+						this.inheritable(val.name, val.cb)
+					}
+				}
+				else if(key !== 'constructor' && desc.configurable){
+					Object.defineProperty(this, key, desc)
+				}
+			}
+		}
+	}
+})
+
+Object.defineProperty(module.exports.prototype, 'inheritable',{
+	enumerable:false,
+	configurable:true,
+	writable:true,
+	value:function(name, callback){
+		if(!this.hasOwnProperty('__inheritable__')) this.__inheritable__ = this.__inheritable__?Array.prototype.slice.apply(this.__inheritable__):[]
+		this.__inheritable__.push({name:name, cb:callback})
+	}
+})
+
+Object.defineProperty(module.exports.prototype, '__inheritable__',{
+	enumerable:false,
+	configurable:true,
+	writable:true,
+	value:null
+})
+
+
+var protoReady = new WeakMap()
+var inheritReady = new WeakMap()
+
+function scanInheritable(proto, key){
+
+}
+
 Object.defineProperty(module.exports.prototype, '__initproto__',{
 	value: function(){
-		var proto = this
 		if(protoReady.get(proto)) return
-		// lazily initialize the prototype chain
+	
 		var stack = []	
 
+		// run prototype functions
+		var proto = this
 		while(proto && proto.prototype){
 			if(!protoReady.get(proto) && proto.hasOwnProperty('prototype')){
 				stack.push(proto)
 			}
+			protoReady.set(proto, true)
 			proto = Object.getPrototypeOf(proto)
 		}
-
 		for(let i = stack.length - 1;i>=0;i--){
 			proto = stack[i]
 			proto.prototype()
-			protoReady.set(proto, true)
+		}
+
+		// run inheritable callbacks
+		if(!this.__inheritable__) return
+		for(let j = 0; j< this.__inheritable__.length; j++){
+			var inherit = this.__inheritable__[j]
+			var key = inherit.name
+			// scan this inheritable
+			stack.length = 0
+			proto = this
+			while(proto && proto[key]){
+				if(!inheritReady.get(proto) && proto.hasOwnProperty(key)){
+					stack.push(proto)
+				}
+				proto = Object.getPrototypeOf(proto)
+			}
+			var cb = inherit.cb
+			for(let i = stack.length - 1;i>=0;i--){
+				cb.call(stack[i])
+			}
+		}
+		proto = this
+		while(proto && !inheritReady.get(proto)){
+			inheritReady.set(proto, true)
+			proto = Object.getPrototypeOf(proto)
 		}
 	}
 })

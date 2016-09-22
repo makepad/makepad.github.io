@@ -2,41 +2,51 @@ var painter = require('services/painter')
 //var fingers = require('fingers')
 var types = require('base/types')
 
-module.exports = class Tools extends require('base/mixin'){
+function defineToolInheritable(proto, key){
+	proto.inheritable(key, function(){
+		var inherit = this[key]
+		var base = Object.getPrototypeOf(this)[key]
+		if(!base) return
+		var cls
+		if(inherit && inherit.constructor === Object){ 
+			// write it back
+			cls = this[key] = base.extend(inherit)
+		}
+		else{
+			cls = this[key] = inherit
+		}
+		this.$compileToolMacros(key, cls)
+	})
+}
 
-	static mixin(proto){
-		this._mixin(proto)
+module.exports = class Tools extends require('base/class'){
 
-		proto.Turtle = require('base/turtle')
+	prototype(){
+		this.Turtle = require('base/turtle')
 
-		Object.defineProperty(proto, 'tools', {
-			get:function(){
-				throw new Error('Please only assign to tools, use _tools if you need to access the data')
-			},
-			set:function(tools){
-				if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
-				for(let key in tools){
-					var cls =  tools[key]
-					if(cls && cls.constructor === Object){ // subclass it
-						this[key] = cls
-						continue
-					}
-					this._tools[key] = true
-					this['_' + key] = cls
-					
-					defineToolGetterSetter(this, key)
+		this.inheritable('tools', function(nesting){
+			//if(!this.hasOwnProperty('_tools')) this._tools = this._tools?Object.create(this._tools):{}
+			var tools = this.tools
+			for(let key in tools){
+				var inherit = tools[key]
+				if(inherit && inherit.constructor === Object){ // subclass it
+					var base = this[key]
+					var cls = this[key] = base.extend(inherit)
 					this.$compileToolMacros(key, cls)
-				}	
-			}
+					continue
+				}
+				// else replace it
+				this[key] = inherit
+				this.$compileToolMacros(key, inherit)
+				// make it inheritable
+				defineToolInheritable(this, key)
+			}	
 		})
 
-		Object.defineProperty(proto,'styles',{
-			get:function(){ return this._styles },
-			set:function(inStyles){
-				// rewrite the styles system.
-				this._stylesProto = protoInherit(this._stylesProto, inStyles)
-				this._styles = protoProcess(this._stylesProto)
-			}
+		this.inheritable('styles', function(){
+			var styles = this.styles
+			this._stylesProto = protoInherit(this._stylesProto, styles)
+			this._styles = protoProcess(this._stylesProto, null, null, null, new WeakMap())
 		})
 	}
 
@@ -124,7 +134,7 @@ module.exports = class Tools extends require('base/mixin'){
 	// internal API used by canvas macros
 	$allocShader(classname){
 		var shaders = this.$shaders
-		var proto = new this['_' + classname]()
+		var proto = new this[classname]()
 		
 		var info = proto.$compileInfo
 
@@ -254,22 +264,6 @@ module.exports = class Tools extends require('base/mixin'){
 }
 
 
-function defineToolGetterSetter(proto, key){
-	Object.defineProperty(proto, key, {
-		configurable:true,
-		get:function(){
-			var cls = this['_' + key]
-			cls.outer = this
-			return cls
-		},
-		set:function(prop){
-			var base = this['_' + key]
-			var cls = this['_' + key] = base.extend(prop)
-			this.$compileToolMacros(key, cls)
-		}
-	})
-}
-
 
 // creates a prototypical inheritance overload from an object
 function protoInherit(oldobj, newobj){
@@ -299,9 +293,10 @@ function protoInherit(oldobj, newobj){
 }
 
 // we have to return a new objectect
-function protoProcess(base, ovl, parent, incpy){
+function protoProcess(base, ovl, parent, incpy, parents){
 	var cpy = incpy
-	var out = {_:parent}
+	var out = {}
+	parents.set(out, parent)
 	// make sure our copy props are read first
 	for(let key in base){
 		var value = base[key]
@@ -320,36 +315,34 @@ function protoProcess(base, ovl, parent, incpy){
 		}
 	}
 	for(let key in base){
-		if(key === '_') continue
 		var value = base[key]
 		var $index = key.indexOf('$')
 		if($index === 0){}
 		else if($index >0){
 			var keys = key.split('$')
 			var o = out, bc = keys[1]
-			while(o && !o[bc]) o = o._
-			out[keys[0]] = protoProcess(o && o[bc], value, out, cpy)
+			while(o && !o[bc]) o = parents.get(o)
+			out[keys[0]] = protoProcess(o && o[bc], value, out, cpy, parents)
 		}
 		else if(value && value.constructor === Object){
-			out[key] = protoProcess(value, null, out, cpy)
+			out[key] = protoProcess(value, null, out, cpy, parents)
 		}
 		else{
 			out[key] = value
 		}
 	}
 	for(let key in ovl){
-		if(key === '_') continue
 		var value = ovl[key]
 		var $index = key.indexOf('$')
 		if($index === 0){ }
 		else if($index>0){
 			var keys = key.split('$')
 			var o = out, bc = keys[1]
-			while(o && !o[bc]) o = o._
-			out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy), out, cpy)
+			while(o && !o[bc]) o = parents.get(o)
+			out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy, parents), out, cpy, parents)
 		}
 		else if(value && value.constructor === Object){
-			out[key] = protoProcess(out[key], value, out, cpy)
+			out[key] = protoProcess(out[key], value, out, cpy, parents)
 		}
 		else{
 			out[key] = value

@@ -1,8 +1,10 @@
 var service = require('$fingers1')
 
-var Fingers = require('base/class').extend(function Fingers(proto){
-	require('base/events').mixin(proto)
-})
+class Fingers extends require('base/class'){
+	prototype(){
+		this.mixin(require('base/events'))
+	}
+}
 
 var fingers = module.exports = new Fingers()
 

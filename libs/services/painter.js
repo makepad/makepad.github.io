@@ -1,9 +1,9 @@
 var service = require('$painter1')
 var types = require('base/types')
 
-var Painter = class Painter extends require('base/class'){
+class Painter extends require('base/class'){
 	prototype(){
-		require('base/events').mixin(this)
+		this.mixin(require('base/events'))
 	}
 }
 

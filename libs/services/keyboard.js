@@ -23,9 +23,11 @@ var idToKeyName = {
 	220:'backSlash',221:'closeBracket',222:'singleQuote'
 }
 
-var Keyboard = require('base/class').extend(function Keyboard(proto){
-	require('base/events').mixin(proto)
-})
+class Keyboard extends require('base/class'){
+	prototype(){
+		this.mixin(require('base/events'))
+	}
+}
 
 var keyboard = module.exports = new Keyboard()
 

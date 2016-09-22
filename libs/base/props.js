@@ -1,4 +1,4 @@
-module.exports = class Props extends require('base/mixin'){
+module.exports = class Props extends require('base/class'){
 	// special names for property with name: key
 	// this.key  <- getter setter for the key
 	// this._key  <- the storage for a key

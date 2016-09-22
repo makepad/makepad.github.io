@@ -1,4 +1,4 @@
-module.exports = require('base/quad').extend({
+module.exports = require('tools/quad').extend({
 	pixel:function(){$
 		return 'red'
 		/*

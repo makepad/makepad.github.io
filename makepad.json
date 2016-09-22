@@ -8,7 +8,6 @@
 			{"name":"base","closed":true,"folder":[
 				{"name":"app.js"},
 				{"name":"class.js"},
-				{"name":"mixin.js"},
 				{"name":"view.js"},
 				{"name":"stamp.js"},
 				{"name":"shader.js"},

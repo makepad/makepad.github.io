@@ -1,12 +1,580 @@
-module.exports = require('views/edit').extend(function Code(proto, base){
+var parser = require('parsers/js')
+var storage = require('services/storage')
+
+module.exports = class Code extends require('views/edit'){
 	
-	var parser = require('parsers/js')
-
 	// mixin the formatter
-	require('parsers/jsformatter')(proto, this.styles)
+	prototype(){
+		this.mixin(require('parsers/jsformatter'))
 
-	proto._onInit = function(){
-		base._onInit.call(this)
+		this.allowOperatorSpaces = 0
+		this.overflow = 'scroll'
+		this.padding = [0, 0, 0, 4]
+		this.$fastTextFontSize = 12
+		this._onText = 8
+
+		this.tools = {
+
+			Text:require('tools/codetext').extend({
+				font:require('fonts/ubuntu_monospace_256.font'),
+				tween:2.,
+				ease:[0, 10, 1.0, 1.0],
+				duration:0.,
+				displace:{
+					0:{x:0,y:0.08},
+					42:{x:0,y:-0.08} // * 
+				},
+				vertexStyle:function(){$
+					// get distance to mouse
+					/*
+					if(this.fontSize < 6.){
+						var pos = vec2()
+						if(this.isFingerOver(pos)>0){
+							var fontSize = this.fontSize
+							this.fontSize = max(1.,14.-0.3*abs(this.y-pos.y))
+							if(this.fontSize>1.){
+								this.y += (this.y - pos.y)*4.
+								this.x += this.x*(this.fontSize / fontSize)
+							}
+						}
+					}*/
+				}
+			}),
+			Block:require('tools/codeblock').extend({
+				borderRadius:2.5,
+				tween:2.,
+				ease: [0,10,1.0,1.0],
+				duration:0.,
+				pickAlpha:0.,
+				vertexStyle:function(){$
+					this.x -= (6./12.)*this.fontSize
+					this.w += 3.
+					this.w += 10.
+					this.h2 += 2.
+					var pos = vec2()
+					if(this.isFingerOver(pos)>0){
+						this.bgColor.rgb += vec3(0.2)
+					}
+					else{
+						this.bgColor.a*=.25
+					}
+					// lets figure out a hover anim here?
+					this.bgColor.rgb += vec3(this.indent*0.05)
+					this.borderColor = this.bgColor
+				}
+			}),
+			Marker:require('tools/codemarker').extend({
+				tween:2.,
+				ease: [0,10,1.0,1.0],
+				duration:0.,
+				vertexStyle:function(){$
+					this.opColor = this.bgColor*1.1
+					this.borderColor = this.bgColor
+					this.x -= 2.
+					this.x2 += 2.
+					this.x3 += 2.
+					this.w += 4.
+					this.y += this.level*1.
+					this.h -= this.level*2.
+					this.borderRadius -= this.level
+				}
+			}),
+
+			ErrorMarker:require('tools/codemarker').extend({
+				bgColor:'#522',
+				opMargin:1,
+				duration:0.15,
+				tween:2,
+				ease:[0,10,0,0],
+				closed:0,
+				vertexStyle:function(){$
+					this.errorTime = max(0.,.1 -this.errorTime)
+					if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1.
+					this.x2 -= 2.
+					this.x3 += 2.
+					this.opColor = this.bgColor*2.3
+					this.borderColor = this.bgColor*1.4
+				}
+			}),
+			ErrorText:require('tools/text').extend({
+				font:require('fonts/ubuntu_medium_256.font'),
+				color:'#cbb',
+				boldness: -.5,
+				moveScroll:0.,
+				fontSize:16,
+				y:2,
+				x:'@15'
+			})
+		}
+		
+		this.styles = {
+			$boldness:0.,
+			$color:'#fff',
+			$italic:0,
+			$head:0,
+			$tail:0,
+			NewText:{
+				$color:'#ccc'
+			},
+			Block:{
+				$borderColor:'#fff',
+				$bgColor:'red',
+				$borderWidth:1,
+				$borderRadius:3.75,
+				FunctionDeclaration:{
+					$bgColor:'#363b',
+					open:{$open:1},
+					close:{$open:0},
+				},
+				IfStatement:{
+					$bgColor:'#335b',
+					if:{
+						open:{$open:1},
+						close:{$open:0},
+					},
+					else:{
+						$bgColor:'#535b',
+						open:{$open:1},
+						close:{$open:0},
+					}
+				},
+				ForStatement:{
+					$bgColor:'#550b',
+					open:{$open:1},
+					close:{$open:0},
+				},
+				BlockStatement:{
+					$bgColor:'#533b',
+					open:{$open:1},
+					close:{$open:0},
+				},
+				ArrayExpression:{
+					$bgColor:'#353b',
+					open:{$open:1},
+					close:{$open:0},
+				},
+				ObjectExpression:{
+					$bgColor:'#537b',
+					open:{$open:1},
+					close:{$open:0}
+				},
+				ClassBody:{
+					$bgColor:'#533b',
+					$open:1
+				},
+			},
+			Marker:{
+				$borderRadius:3.5,
+				$opColor:'#7',
+				$borderColor:'#7',
+				$bgColor:'#7778',
+				$borderWidth:1.,
+				'+':{
+					$bgColor:'#3739'
+				},
+				'-':{
+					$bgColor:'#0779'
+				},
+				'/':{
+					$bgColor:'#7379'
+				},
+				'*':{
+					$bgColor:'#3379'
+				}
+			},
+			Comment:{
+				$boldness:0.1,
+				$color:'#0083f8',
+				side:{
+					$head:0.5
+				},
+				above:{},
+				top:{$head:0.5},
+				bottom:{$head:0.},
+				around:{}
+			},
+			Paren:{
+				$boldness:0.,
+				FunctionDeclaration:{
+					left:{},
+					right:{$tail:0.5}
+				},
+				CallExpression:{
+					$color:'#f70',
+					$boldness:0.3,
+				},
+				NewExpression:{},
+				ParenthesizedExpression:{},
+				IfStatement:{
+					left:{},
+					right:{$tail:0.5}
+				},
+				ForStatement:{
+					left:{},
+					right:{$tail:0.5}
+				},
+				SwitchStatement:{
+					left:{},
+					right:{$tail:0.5}
+				},
+				CatchClause:{
+					left:{},
+					right:{$tail:0.5}
+				},
+				DoWhileStatement:{
+					left:{},
+					right:{}
+				},
+				WhileStatement:{
+					left:{},
+					right:{}
+				}
+
+			},
+			Comma:{
+				$color:'#777',
+				FunctionDeclaration:{$tail:0.5},
+				CallExpression:{
+					open:{$tail:0.},
+					close:{$tail:0.5}
+				},
+				ArrayExpression:{
+					open:{$tail:0.},
+					close:{$tail:0.5},
+				},
+				ObjectExpression:{
+					open:{$tail:0.},
+					close:{$tail:0.5},
+				},
+				VariableDeclaration:{},
+				SequenceExpression:{$tail:0.5},
+				NewExpression:{$tail:0.5}
+			},
+			Curly:{
+				BlockStatement:{},
+				ObjectExpression:{$color:'#bac'},
+				SwitchStatement:{}
+			},
+			Dot:{
+				MemberExpression:{}
+			},
+			SemiColon:{
+				ForStatement:{$tail:0.5}
+			},
+			Bracket:{
+				MemberExpression:{},
+				ArrayExpression:{
+					$boldness:0.
+				}
+			},
+			QuestionMark:{
+				$tail:0.5
+			},
+			Colon:{
+				ObjectExpression:{
+					$boldness:0.,
+					$tail:0.5,
+					$color:'#fff'
+				},
+				ConditionalExpression:{
+					$tail:0.5
+				},
+				SwitchCase:{}
+			},
+			Program:{},
+			EmptyStatement:{},
+			ExpressionStatement:{},
+			BlockStatement:{},
+			SequenceExpression:{},
+			ParenthesizedExpression:{},
+			ReturnStatement:{},
+			YieldExpression:{},
+			ThrowStatement:{},
+			TryStatement:{},
+			CatchClause:{},
+			// simple bits
+			Identifier:{
+				$color:'#eee',
+				glsl:{
+					$color:'#3c9'
+				},
+				local:{
+					$color:'#ccc'
+				},
+				closure:{
+					$boldness:0.3,
+					$color:'#ff9'
+				},
+				localArg:{
+					$color:'#beb'
+				},
+				iterator:{
+					$color:'#bb0'
+				},
+				closureArg:{
+					boldness:0.3,
+					$color:'#f70'
+				},
+				unknown:{
+					//boldness:0.3,
+					$color:'#f99'
+				},
+				ObjectExpression:{
+					$color:'#f77'
+				},
+				FunctionDeclaration:{
+					$color:"#bbb"
+				}
+			},
+			Literal:{
+				string:{
+					$color:'#0d0'
+				},
+				num:{
+					boldness:0.1,
+					$color:'#bbf'
+				},
+				boolean:{
+					$color:'#f33'
+				},
+				regexp:{},
+				object:{}
+			},
+			ThisExpression:{
+				$boldness:0.1,
+				$color:'#797'
+			},
+			RestElement:{},
+			Super:{},
+			// await
+			AwaitExpression:{},
+
+			// new and call
+			MetaProperty:{},
+			NewExpression:{
+				$boldness:0.1,
+				$color:'#ffdf00'
+			},
+			CallExpression:{},
+
+			// Objects and arrays
+			ArrayExpression:{},
+			ObjectExpression:{
+				key:{
+					$alignLeft:0.,
+					$alignRight:0.5,
+					$boldness:0.1,
+					$color:'#bac'
+				}
+			},
+			ObjectPattern:{},
+			MemberExpression:{
+				$color:'#eeb'
+			},
+
+			// functions
+			FunctionExpression:{},
+			ArrowFunctionExpression:{},
+			FunctionDeclaration:{
+				$boldness:0.1,
+				$color:'#797'
+			//	color:'#ffdf00'
+			},
+
+			// variable declarations
+			VariableDeclaration:{
+				$boldness:0.1,
+				$color:'#ffdf00'
+			},
+			VariableDeclarator:{},
+
+			// a+b
+			LogicalExpression:{
+				$head:0.5,
+				$tail:0.5,
+				$color:'#ff9f00'
+			},
+			BinaryExpression:{
+				$head:0.5,
+				$tail:0.5,
+				$color:'#ff9f00'
+			},
+			AssignmentExpression:{
+				$boldness:0.1,
+				$head:0.5,
+				$tail:0.5,
+				$color:'#ff9f00'
+			},
+			ConditionalExpression:{
+				$head:0.5,
+				$tail:0.5
+			},
+			UpdateExpression:{
+				$color:'#ff9f00'
+			},
+			UnaryExpression:{
+				$color:'#ff9f00'
+			},
+
+			// if and for
+			IfStatement:{
+				if:{$color:'#779'},
+				else:{$color:'#979'}
+			},
+			ForStatement:{
+				$color:'#bb0',
+				in:{}
+			},
+			ForInStatement:{},
+			ForOfStatement:{},
+			WhileStatement:{
+				$color:'#bb0',
+			},
+			DoWhileStatement:{
+				$color:'#bb0',
+				do:{$tail:0.5},
+				while:{$head:0.5}
+			},
+			WhileStatement:{
+				while:{}
+			},
+			BreakStatement:{},
+			ContinueStatement:{},
+
+			// switch
+			SwitchStatement:{},
+			SwitchCase:{},
+
+			// templates
+			TaggedTemplateExpression:{},
+			TemplateElement:{},
+			TemplateLiteral:{},
+
+			// classes
+			ClassDeclaration:{
+				class:{},
+				extends:{}
+			},
+			ClassExpression:{
+				class:{},
+				extends:{}
+			},
+			ClassBody:{},
+			MethodDefinition:{
+				static:{}
+			},
+			
+			// modules
+			ExportAllDeclaration:{},
+			ExportDefaultDeclaration:{},
+			ExportNamedDeclaration:{},
+			ExportSpecifier:{},
+			ImportDeclaration:{},
+			ImportDefaultSpecifier:{},
+			ImportNamespaceSpecifier:{},
+			ImportSpecifier:{},
+
+			// other
+			DebuggerStatement:{},
+			LabeledStatement:{},
+			WithStatement:{}
+		}
+
+		this.defaultScope = {
+			console:1,
+			eval:1,
+			Infinity:1,
+			NaN:1,
+			undefined:1,
+			null:1,
+			isFinite:1,
+			isNaN:1,
+			parseFloat:1,
+			parseInt:1,
+			Symbol:1,
+			Error:1,
+			EvalError:1,
+			InternalError:1,
+			RangeError:1,
+			ReferenceError:1,
+			TypeError:1,
+			URIError:1,
+			Map:1,
+			Set:1,
+			WeakMap:1,
+			WeakSet:1,
+			SIMD:1,
+			JSON:1,
+			Generator:1,
+			GeneratorFunction:1,
+			Intl:1,
+			SyntaxError:1,
+			Function:1,
+			RegExp:1,
+			Math:1,
+			Object:1,
+			String:1,
+			Number:1,
+			Boolean:1,
+			Date:1,
+			Array:1,
+			Int8Array:1,
+			Uint8Array:1,
+			Uint8ClampedArray:1,
+			Int16Array:1,
+			Uint16Array:1,
+			Int32Array:1,
+			Uint32Array:1,
+			Float32Array:1,
+			Float64Array:1,
+			DataView:1,
+			ArrayBuffer:1,
+			require:1,
+			exports:1,
+			module:1,
+			E:1,
+			E:1,
+			LN10:1,
+			LN2:1,
+			LOG10E:1,
+			LOG10:1,
+			PI:1,
+			SQRT2:1,
+			SQRT1_2:1,
+			random:1,
+			radians:1,
+			degrees:1,
+			sin:1,
+			cos:1,
+			tan:1,
+			asin:1,
+			acos:1,
+			atan:1,
+			pow:1,
+			exp:1,
+			log:1,
+			exp2:1,
+			log2:1,
+			sqrt:1,
+			inversesqrt:1,
+			abs:1,
+			sign:1,
+			floor:1,
+			ceil:1,
+			fract:1,
+			mod:1,
+			min:1,
+			max:1,
+			clamp:1,
+			step:1,
+			smoothstep:1,
+			mix:1,
+			arguments:2
+		}
+	}
+
+	constructor(...args){
+		super(...args)
 		this.$fastTextOutput = this
 		this.ann = []
 		this.ann.step = 6
@@ -15,487 +583,12 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
-	proto.allowOperatorSpaces = 0
-	proto.overflow = 'scroll'
-	proto.padding = [0,0,0,4]
-
-	proto.$fastTextFontSize = 12
-
-	proto.tools = {
-
-		Text:require('tools/codetext').extend({
-			font:require('fonts/ubuntu_monospace_256.font'),
-			tween:2.,
-			ease:[0, 10, 1.0, 1.0],
-			duration:0.,
-			displace:{
-				0:{x:0,y:0.08},
-				42:{x:0,y:-0.08} // * 
-			},
-			vertexStyle:function(){$
-				// get distance to mouse
-				/*
-				if(this.fontSize < 6.){
-					var pos = vec2()
-					if(this.isFingerOver(pos)>0){
-						var fontSize = this.fontSize
-						this.fontSize = max(1.,14.-0.3*abs(this.y-pos.y))
-						if(this.fontSize>1.){
-							this.y += (this.y - pos.y)*4.
-							this.x += this.x*(this.fontSize / fontSize)
-						}
-					}
-				}*/
-			}
-		}),
-		Block:require('tools/codeblock').extend({
-			borderRadius:2.5,
-			tween:2.,
-			ease: [0,10,1.0,1.0],
-			duration:0.,
-			pickAlpha:0.,
-			vertexStyle:function(){$
-				this.x -= (6./12.)*this.fontSize
-				this.w += 3.
-				this.w += 10.
-				this.h2 += 2.
-				var pos = vec2()
-				if(this.isFingerOver(pos)>0){
-					this.bgColor.rgb += vec3(0.2)
-				}
-				else{
-					this.bgColor.a*=.25
-				}
-				// lets figure out a hover anim here?
-				this.bgColor.rgb += vec3(this.indent*0.05)
-				this.borderColor = this.bgColor
-			}
-		}),
-		Marker:require('tools/codemarker').extend({
-			tween:2.,
-			ease: [0,10,1.0,1.0],
-			duration:0.,
-			vertexStyle:function(){$
-				this.opColor = this.bgColor*1.1
-				this.borderColor = this.bgColor
-				this.x -= 2.
-				this.x2 += 2.
-				this.x3 += 2.
-				this.w += 4.
-				this.y += this.level*1.
-				this.h -= this.level*2.
-				this.borderRadius -= this.level
-			}
-		}),
-
-		ErrorMarker:require('tools/codemarker').extend({
-			bgColor:'#522',
-			opMargin:1,
-			duration:0.15,
-			tween:2,
-			ease:[0,10,0,0],
-			closed:0,
-			vertexStyle:function(){$
-				this.errorTime = max(0.,.1 -this.errorTime)
-				if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1.
-				this.x2 -= 2.
-				this.x3 += 2.
-				this.opColor = this.bgColor*2.3
-				this.borderColor = this.bgColor*1.4
-			}
-		}),
-		ErrorText:require('tools/text').extend({
-			font:require('fonts/ubuntu_medium_256.font'),
-			color:'#cbb',
-			boldness: -.5,
-			moveScroll:0.,
-			fontSize:16,
-			y:2,
-			x:'@15'
-		})
-	}
-	
-	proto.styles = {
-		$boldness:0.,
-		$color:'#fff',
-		$italic:0,
-		$head:0,
-		$tail:0,
-		NewText:{
-			$color:'#ccc'
-		},
-		Block:{
-			$borderColor:'#fff',
-			$bgColor:'red',
-			$borderWidth:1,
-			$borderRadius:3.75,
-			FunctionDeclaration:{
-				$bgColor:'#363b',
-				open:{$open:1},
-				close:{$open:0},
-			},
-			IfStatement:{
-				$bgColor:'#335b',
-				if:{
-					open:{$open:1},
-					close:{$open:0},
-				},
-				else:{
-					$bgColor:'#535b',
-					open:{$open:1},
-					close:{$open:0},
-				}
-			},
-			ForStatement:{
-				$bgColor:'#550b',
-				open:{$open:1},
-				close:{$open:0},
-			},
-			BlockStatement:{
-				$bgColor:'#533b',
-				open:{$open:1},
-				close:{$open:0},
-			},
-			ArrayExpression:{
-				$bgColor:'#353b',
-				open:{$open:1},
-				close:{$open:0},
-			},
-			ObjectExpression:{
-				$bgColor:'#537b',
-				open:{$open:1},
-				close:{$open:0}
-			},
-			ClassBody:{
-				$bgColor:'#533b',
-				$open:1
-			},
-		},
-		Marker:{
-			$borderRadius:3.5,
-			$opColor:'#7',
-			$borderColor:'#7',
-			$bgColor:'#7778',
-			$borderWidth:1.,
-			'+':{
-				$bgColor:'#3739'
-			},
-			'-':{
-				$bgColor:'#0779'
-			},
-			'/':{
-				$bgColor:'#7379'
-			},
-			'*':{
-				$bgColor:'#3379'
-			}
-		},
-		Comment:{
-			$boldness:0.1,
-			$color:'#0083f8',
-			side:{
-				$head:0.5
-			},
-			above:{},
-			top:{$head:0.5},
-			bottom:{$head:0.},
-			around:{}
-		},
-		Paren:{
-			$boldness:0.,
-			FunctionDeclaration:{
-				left:{},
-				right:{$tail:0.5}
-			},
-			CallExpression:{
-				$color:'#f70',
-				$boldness:0.3,
-			},
-			NewExpression:{},
-			ParenthesizedExpression:{},
-			IfStatement:{
-				left:{},
-				right:{$tail:0.5}
-			},
-			ForStatement:{
-				left:{},
-				right:{$tail:0.5}
-			},
-			SwitchStatement:{
-				left:{},
-				right:{$tail:0.5}
-			},
-			CatchClause:{
-				left:{},
-				right:{$tail:0.5}
-			},
-			DoWhileStatement:{
-				left:{},
-				right:{}
-			},
-			WhileStatement:{
-				left:{},
-				right:{}
-			}
-
-		},
-		Comma:{
-			$color:'#777',
-			FunctionDeclaration:{$tail:0.5},
-			CallExpression:{
-				open:{$tail:0.},
-				close:{$tail:0.5}
-			},
-			ArrayExpression:{
-				open:{$tail:0.},
-				close:{$tail:0.5},
-			},
-			ObjectExpression:{
-				open:{$tail:0.},
-				close:{$tail:0.5},
-			},
-			VariableDeclaration:{},
-			SequenceExpression:{$tail:0.5},
-			NewExpression:{$tail:0.5}
-		},
-		Curly:{
-			BlockStatement:{},
-			ObjectExpression:{$color:'#bac'},
-			SwitchStatement:{}
-		},
-		Dot:{
-			MemberExpression:{}
-		},
-		SemiColon:{
-			ForStatement:{$tail:0.5}
-		},
-		Bracket:{
-			MemberExpression:{},
-			ArrayExpression:{
-				$boldness:0.
-			}
-		},
-		QuestionMark:{
-			$tail:0.5
-		},
-		Colon:{
-			ObjectExpression:{
-				$boldness:0.,
-				$tail:0.5,
-				$color:'#fff'
-			},
-			ConditionalExpression:{
-				$tail:0.5
-			},
-			SwitchCase:{}
-		},
-		Program:{},
-		EmptyStatement:{},
-		ExpressionStatement:{},
-		BlockStatement:{},
-		SequenceExpression:{},
-		ParenthesizedExpression:{},
-		ReturnStatement:{},
-		YieldExpression:{},
-		ThrowStatement:{},
-		TryStatement:{},
-		CatchClause:{},
-		// simple bits
-		Identifier:{
-			$color:'#eee',
-			glsl:{
-				$color:'#3c9'
-			},
-			local:{
-				$color:'#ccc'
-			},
-			closure:{
-				$boldness:0.3,
-				$color:'#ff9'
-			},
-			localArg:{
-				$color:'#beb'
-			},
-			iterator:{
-				$color:'#bb0'
-			},
-			closureArg:{
-				boldness:0.3,
-				$color:'#f70'
-			},
-			unknown:{
-				//boldness:0.3,
-				$color:'#f99'
-			},
-			ObjectExpression:{
-				$color:'#f77'
-			},
-			FunctionDeclaration:{
-				$color:"#bbb"
-			}
-		},
-		Literal:{
-			string:{
-				$color:'#0d0'
-			},
-			num:{
-				boldness:0.1,
-				$color:'#bbf'
-			},
-			boolean:{
-				$color:'#f33'
-			},
-			regexp:{},
-			object:{}
-		},
-		ThisExpression:{
-			$boldness:0.1,
-			$color:'#797'
-		},
-		RestElement:{},
-		Super:{},
-		// await
-		AwaitExpression:{},
-
-		// new and call
-		MetaProperty:{},
-		NewExpression:{
-			$boldness:0.1,
-			$color:'#ffdf00'
-		},
-		CallExpression:{},
-
-		// Objects and arrays
-		ArrayExpression:{},
-		ObjectExpression:{
-			key:{
-				$alignLeft:0.,
-				$alignRight:0.5,
-				$boldness:0.1,
-				$color:'#bac'
-			}
-		},
-		ObjectPattern:{},
-		MemberExpression:{
-			$color:'#eeb'
-		},
-
-		// functions
-		FunctionExpression:{},
-		ArrowFunctionExpression:{},
-		FunctionDeclaration:{
-			$boldness:0.1,
-			$color:'#797'
-		//	color:'#ffdf00'
-		},
-
-		// variable declarations
-		VariableDeclaration:{
-			$boldness:0.1,
-			$color:'#ffdf00'
-		},
-		VariableDeclarator:{},
-
-		// a+b
-		LogicalExpression:{
-			$head:0.5,
-			$tail:0.5,
-			$color:'#ff9f00'
-		},
-		BinaryExpression:{
-			$head:0.5,
-			$tail:0.5,
-			$color:'#ff9f00'
-		},
-		AssignmentExpression:{
-			$boldness:0.1,
-			$head:0.5,
-			$tail:0.5,
-			$color:'#ff9f00'
-		},
-		ConditionalExpression:{
-			$head:0.5,
-			$tail:0.5
-		},
-		UpdateExpression:{
-			$color:'#ff9f00'
-		},
-		UnaryExpression:{
-			$color:'#ff9f00'
-		},
-
-		// if and for
-		IfStatement:{
-			if:{$color:'#779'},
-			else:{$color:'#979'}
-		},
-		ForStatement:{
-			$color:'#bb0',
-			in:{}
-		},
-		ForInStatement:{},
-		ForOfStatement:{},
-		WhileStatement:{
-			$color:'#bb0',
-		},
-		DoWhileStatement:{
-			$color:'#bb0',
-			do:{$tail:0.5},
-			while:{$head:0.5}
-		},
-		WhileStatement:{
-			while:{}
-		},
-		BreakStatement:{},
-		ContinueStatement:{},
-
-		// switch
-		SwitchStatement:{},
-		SwitchCase:{},
-
-		// templates
-		TaggedTemplateExpression:{},
-		TemplateElement:{},
-		TemplateLiteral:{},
-
-		// classes
-		ClassDeclaration:{
-			class:{},
-			extends:{}
-		},
-		ClassExpression:{
-			class:{},
-			extends:{}
-		},
-		ClassBody:{},
-		MethodDefinition:{
-			static:{}
-		},
-		
-		// modules
-		ExportAllDeclaration:{},
-		ExportDefaultDeclaration:{},
-		ExportNamedDeclaration:{},
-		ExportSpecifier:{},
-		ImportDeclaration:{},
-		ImportDefaultSpecifier:{},
-		ImportNamespaceSpecifier:{},
-		ImportSpecifier:{},
-
-		// other
-		DebuggerStatement:{},
-		LabeledStatement:{},
-		WithStatement:{}
-	}
-	// abuse a flag as a listener so we keep onText clean without having to use
-	// on('text') API
-	proto._onText = 8
-	proto.onFlag8 = function(){
+	onFlag8(){
 		this.textClean = false
 		this.redraw()
 	}
 
-	proto.parseText = function(){
+	parseText(){
 		this.ast = undefined
 		try{
 			this.ast = parser.parse(this._text, {
@@ -509,7 +602,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		}
 	}
 
-	proto.onDraw = function(){
+	onDraw(){
 
 		this.beginBg(this.viewGeom)
 		// ok lets parse the code
@@ -527,7 +620,11 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 			this.error = undefined
 			this.$fastTextDelay = 0			
 
-			if(this.textClean === false){
+			if(this.debugShow){
+				this.debugShow = false
+				this.error = {}
+			}
+			else if(this.textClean === false){
 				this.parseText()
 			}
 
@@ -720,7 +817,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		this.endBg(true)
 	}
 
-	proto.indentFindParenError = function(){
+	indentFindParenError(){
 		var ann = this.ann
 		var stack = []
 		var close = {'{':'}','(':')','[':']'}
@@ -750,7 +847,26 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		return -1
 	}
 
-	proto.onFingerDown = function(f){
+	onKeySingleQuote(k){
+		if(!k.meta) return true
+		storage.save("/debug.json", JSON.stringify({step:this.ann.step,ann:this.ann}))
+	}	
+
+	onKeySemiColon(k){
+		if(!k.meta) return true
+		storage.load("/debug.json").then( result => {
+			this.error = {}
+			var res = JSON.parse(result)
+			this.ann = res.ann
+			this.ann.step = res.step
+			this.textClean = false
+			this.ast = undefined
+			this.debugShow = true
+			this.redraw()
+		})
+	}
+
+	onFingerDown(f){
 		// check if we are a doubleclick on a block
 		var node = this.pickIds[f.pickId]
 		if(node){
@@ -785,248 +901,10 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 				return
 			}
 		}
-		return base.onFingerDown.call(this, f)
+		return super.onFingerDown(f)
 	}
 
-
-	// nice cascading high perf styles for the text
-
-
-
-	function toggleASTNode(node, override){
-		if(!node)return
-		if(node.type === 'IfStatement'){
-			override = toggleASTNode(node.consequent, override) || override
-			override = toggleASTNode(node.alternate, override) || override
-			return override
-		}
-		var top = node.top
-	
-		// special handling of our {$ shader code
-		if(node.type === 'BlockStatement' && 
-			node.body.length > 0 && 
-			node.body[0].type === 'ExpressionStatement' &&  
-			node.body[0].expression.type === 'Identifier' && 
-			node.body[0].expression.name === '$'){
-			node = node.body[0]
-			var side = node.side
-			var charCode = override || side.charCodeAt(side.length-1)
-			if(charCode=== 10){
-				node.side = side.slice(0,-1)+'\r'
-				return 10
-			}
-			else{
-				node.side = side.slice(0,-1)+'\n'
-				return 13
-			}	
-		}
-
-		if(!top)return
-
-		var charCode = override || top.charCodeAt(top.length-1)
-		if(charCode=== 10){
-			node.top = top.slice(0,-1)+'\r'
-			return 10
-		}
-		else{
-			node.top = top.slice(0,-1)+'\n'
-			return 13
-		}	
-	}
-
-	function toggleBlockStatement(node){
-		var body = node.body
-		var bodylen = body.length - 1
-		var first = 0
-		for(let i = 0 ; i <= bodylen; i++){
-			var statement = body[i]
-			if(statement.type === 'ExpressionStatement')statement = statement.expression
-			if(statement.type === 'AssignmentExpression'){
-				if(statement.right.type === 'FunctionExpression'){
-					first = toggleASTNode(statement.right.body, first) || first
-				}
-				else if(statement.right.type === 'ObjectExpression' || statement.right.type === 'ArrayExpression'){
-					first = toggleASTNode(statement.right, first) || first
-				}
-			}
-			else if(statement.type === 'FunctionDeclaration'){
-				first = toggleASTNode(statement.body, first) || first
-			}
-			else if(statement.type === 'CallExpression'){
-				var args = statement.arguments
-				var argslen = args.length - 1
-				for(let j = 0; j <= argslen; j++){
-					var arg = args[j]
-					if(arg.type === 'FunctionExpression'){
-						first = toggleASTNode(arg.body, first) || first
-					}
-					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
-						first = toggleASTNode(arg, first) || first
-					}
-				}
-			}
-			else if(statement.type === 'VariableDeclaration'){
-				var decls = statement.declarations
-				var declslen = decls.length - 1
-				for(let j = 0; j <= declslen; j++){
-					var decl = decls[j]
-					var init = decl.init
-					if(!init) continue
-					if(init.type === 'FunctionExpression'){
-						first = toggleASTNode(init.body, first) || first
-					}
-					else if(init.type === 'ObjectExpression' || init.type === 'ArrayExpression'){
-						first = toggleASTNode(init, first) || first
-					}
-				}
-			}
-			else if(statement.type === 'IfStatement'){
-				first = toggleASTNode(statement.consequent, first) || first
-				first = toggleASTNode(statement.alternate, first) || first
-			}
-			else if(statement.type === 'ForStatement' || statement.type === 'ForInStatement'){
-				first = toggleASTNode(statement.body, first) || first
-			}
-		}
-	}
-
-	function toggleObjectExpression(node){
-		var props = node.properties
-		var propslen = props.length - 1
-		var first = 0
-		for(let i = 0 ; i <= propslen; i++){
-			var prop = props[i]
-			var value = prop.value
-			if(value.type === 'CallExpression'){
-				var args = value.arguments
-				var argslen = args.length - 1
-				for(let j = 0; j <= argslen; j++){
-					var arg = args[j]
-					if(arg.type === 'FunctionExpression'){
-						first = toggleASTNode(arg.body, first) || first
-					}
-					else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
-						first = toggleASTNode(arg, first) || first
-					}
-				}
-			}
-			else if(value.type === 'FunctionExpression'){
-				first = toggleASTNode(value.body, first) || first
-			}
-			else if(value.type === 'ObjectExpression' || value.type === 'ArrayExpression'){
-				first = toggleASTNode(value, first) || first
-			}
-		}
-	}
-
-	function toggleArrayExpression(node){
-		var elems = node.elements
-		var elemslen = elems.length - 1
-		for(let i = 0 ; i <= elemslen; i++){
-			var elem = elems[i]
-			if(!elem) continue
-			if(elem.type === 'FunctionExpression'){
-				toggleASTNode(elem.body)
-			}
-			else if(elem.type === 'ObjectExpression' || elem.type === 'ArrayExpression'){
-				toggleASTNode(elem)
-			}
-		}
-	}
-
-	proto.defaultScope = {
-		console:1,
-		eval:1,
-		Infinity:1,
-		NaN:1,
-		undefined:1,
-		null:1,
-		isFinite:1,
-		isNaN:1,
-		parseFloat:1,
-		parseInt:1,
-		Symbol:1,
-		Error:1,
-		EvalError:1,
-		InternalError:1,
-		RangeError:1,
-		ReferenceError:1,
-		TypeError:1,
-		URIError:1,
-		Map:1,
-		Set:1,
-		WeakMap:1,
-		WeakSet:1,
-		SIMD:1,
-		JSON:1,
-		Generator:1,
-		GeneratorFunction:1,
-		Intl:1,
-		SyntaxError:1,
-		Function:1,
-		RegExp:1,
-		Math:1,
-		Object:1,
-		String:1,
-		Number:1,
-		Boolean:1,
-		Date:1,
-		Array:1,
-		Int8Array:1,
-		Uint8Array:1,
-		Uint8ClampedArray:1,
-		Int16Array:1,
-		Uint16Array:1,
-		Int32Array:1,
-		Uint32Array:1,
-		Float32Array:1,
-		Float64Array:1,
-		DataView:1,
-		ArrayBuffer:1,
-		require:1,
-		exports:1,
-		module:1,
-		E:1,
-		E:1,
-		LN10:1,
-		LN2:1,
-		LOG10E:1,
-		LOG10:1,
-		PI:1,
-		SQRT2:1,
-		SQRT1_2:1,
-		random:1,
-		radians:1,
-		degrees:1,
-		sin:1,
-		cos:1,
-		tan:1,
-		asin:1,
-		acos:1,
-		atan:1,
-		pow:1,
-		exp:1,
-		log:1,
-		exp2:1,
-		log2:1,
-		sqrt:1,
-		inversesqrt:1,
-		abs:1,
-		sign:1,
-		floor:1,
-		ceil:1,
-		fract:1,
-		mod:1,
-		min:1,
-		max:1,
-		clamp:1,
-		step:1,
-		smoothstep:1,
-		mix:1,
-		arguments:2
-	}
-
-	proto.insertText = function(offset, text, isUndo){
+	insertText(offset, text, isUndo){
 
 		var char = this._text.charAt(offset)
 
@@ -1100,7 +978,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		return text.length
 	}
 
-	proto.serializeWithFormatting = function(){
+	serializeWithFormatting(){
 		var ann = this.ann
 		var s =''
 		var fs = this.$fastTextFontSize
@@ -1123,7 +1001,7 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		return s
 	}
 
-	proto.removeText = function(start, end, isUndo){
+	removeText(start, end, isUndo){
 		this.textClean = false
 		var delta = 0
 		this.wasNewlineChange = 0
@@ -1196,9 +1074,150 @@ module.exports = require('views/edit').extend(function Code(proto, base){
 		return delta
 	}
 
-	proto.serializeSlice = function(start, end, arg){
+	serializeSlice(start, end, arg){
 		if(arg) return arg.slice(start, end)
 		return this._text.slice(start, end)
 	}
+}
 
-})
+function toggleASTNode(node, override){
+	if(!node)return
+	if(node.type === 'IfStatement'){
+		override = toggleASTNode(node.consequent, override) || override
+		override = toggleASTNode(node.alternate, override) || override
+		return override
+	}
+	var top = node.top
+
+	// special handling of our {$ shader code
+	if(node.type === 'BlockStatement' && 
+		node.body.length > 0 && 
+		node.body[0].type === 'ExpressionStatement' &&  
+		node.body[0].expression.type === 'Identifier' && 
+		node.body[0].expression.name === '$'){
+		node = node.body[0]
+		var side = node.side
+		var charCode = override || side.charCodeAt(side.length-1)
+		if(charCode=== 10){
+			node.side = side.slice(0,-1)+'\r'
+			return 10
+		}
+		else{
+			node.side = side.slice(0,-1)+'\n'
+			return 13
+		}	
+	}
+
+	if(!top)return
+
+	var charCode = override || top.charCodeAt(top.length-1)
+	if(charCode=== 10){
+		node.top = top.slice(0,-1)+'\r'
+		return 10
+	}
+	else{
+		node.top = top.slice(0,-1)+'\n'
+		return 13
+	}	
+}
+
+function toggleBlockStatement(node){
+	var body = node.body
+	var bodylen = body.length - 1
+	var first = 0
+	for(let i = 0 ; i <= bodylen; i++){
+		var statement = body[i]
+		if(statement.type === 'ExpressionStatement')statement = statement.expression
+		if(statement.type === 'AssignmentExpression'){
+			if(statement.right.type === 'FunctionExpression'){
+				first = toggleASTNode(statement.right.body, first) || first
+			}
+			else if(statement.right.type === 'ObjectExpression' || statement.right.type === 'ArrayExpression'){
+				first = toggleASTNode(statement.right, first) || first
+			}
+		}
+		else if(statement.type === 'FunctionDeclaration'){
+			first = toggleASTNode(statement.body, first) || first
+		}
+		else if(statement.type === 'CallExpression'){
+			var args = statement.arguments
+			var argslen = args.length - 1
+			for(let j = 0; j <= argslen; j++){
+				var arg = args[j]
+				if(arg.type === 'FunctionExpression'){
+					first = toggleASTNode(arg.body, first) || first
+				}
+				else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
+					first = toggleASTNode(arg, first) || first
+				}
+			}
+		}
+		else if(statement.type === 'VariableDeclaration'){
+			var decls = statement.declarations
+			var declslen = decls.length - 1
+			for(let j = 0; j <= declslen; j++){
+				var decl = decls[j]
+				var init = decl.init
+				if(!init) continue
+				if(init.type === 'FunctionExpression'){
+					first = toggleASTNode(init.body, first) || first
+				}
+				else if(init.type === 'ObjectExpression' || init.type === 'ArrayExpression'){
+					first = toggleASTNode(init, first) || first
+				}
+			}
+		}
+		else if(statement.type === 'IfStatement'){
+			first = toggleASTNode(statement.consequent, first) || first
+			first = toggleASTNode(statement.alternate, first) || first
+		}
+		else if(statement.type === 'ForStatement' || statement.type === 'ForInStatement'){
+			first = toggleASTNode(statement.body, first) || first
+		}
+	}
+}
+
+function toggleObjectExpression(node){
+	var props = node.properties
+	var propslen = props.length - 1
+	var first = 0
+	for(let i = 0 ; i <= propslen; i++){
+		var prop = props[i]
+		var value = prop.value
+		if(value.type === 'CallExpression'){
+			var args = value.arguments
+			var argslen = args.length - 1
+			for(let j = 0; j <= argslen; j++){
+				var arg = args[j]
+				if(arg.type === 'FunctionExpression'){
+					first = toggleASTNode(arg.body, first) || first
+				}
+				else if(arg.type === 'ObjectExpression' || arg.type === 'ArrayExpression'){
+					first = toggleASTNode(arg, first) || first
+				}
+			}
+		}
+		else if(value.type === 'FunctionExpression'){
+			first = toggleASTNode(value.body, first) || first
+		}
+		else if(value.type === 'ObjectExpression' || value.type === 'ArrayExpression'){
+			first = toggleASTNode(value, first) || first
+		}
+	}
+}
+
+function toggleArrayExpression(node){
+	var elems = node.elements
+	var elemslen = elems.length - 1
+	for(let i = 0 ; i <= elemslen; i++){
+		var elem = elems[i]
+		if(!elem) continue
+		if(elem.type === 'FunctionExpression'){
+			toggleASTNode(elem.body)
+		}
+		else if(elem.type === 'ObjectExpression' || elem.type === 'ArrayExpression'){
+			toggleASTNode(elem)
+		}
+	}
+}
+

@@ -333,7 +333,7 @@ function workerRequire(absParent, worker, modules, args){
 		}
 
 		if(module.exports.onRequire){
-			return module.exports.onRequire(arguments, absParent, buildPath)
+			return module.exports.onRequire(arguments, absParent)
 		}
 		if(module.exports)
 

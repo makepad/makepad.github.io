@@ -1,49 +1,55 @@
-module.exports=require('base/view').extend({
-	name:'Dock',
-	overflow:'none',
-	tools:{
-		Rect:require('tools/rect'),
-		Tab:require('tools/tab').extend({
-			Bg:{
-				color:'#8',
-				borderRadius:2,
-				pickAlpha:2.
-			},
-			Text:{
-				color:'#f',
-				pickAlpha:2.
-			}
-		}),
-		SplitZone:require('tools/quad').extend({
-			color:"#77f4",
-			tween:2,
-			ease:[0,10,0,0],
-			duration:0.3
-		}),
-		Tabs:require('views/tabs').extend({
-			onSelectTab:function(idx){
-				var newSel = this.children[idx]
-				var lastSel = this.lastSelectedTab
-				if(lastSel !== newSel && lastSel && lastSel.onTabHide){
-					lastSel.onTabHide()
+module.exports=class Dock extends require('base/view'){
+	prototype(){
+		this.mixin({
+			name:'Dock',
+			overflow:'none'
+		})
+
+		this.tools = {
+			Rect:require('tools/rect'),
+			Tab:require('tools/tab').extend({
+				Bg:{
+					color:'#8',
+					borderRadius:2,
+					pickAlpha:2.
+				},
+				Text:{
+					color:'#f',
+					pickAlpha:2.
 				}
-				if(lastSel !== newSel && newSel && newSel.onTabShow){
-					newSel.onTabShow()
+			}),
+			SplitZone:require('tools/quad').extend({
+				color:"#77f4",
+				tween:2,
+				ease:[0,10,0,0],
+				duration:0.3
+			}),
+			Tabs:require('views/tabs').extend({
+				onSelectTab:function(idx){
+					var newSel = this.children[idx]
+					var lastSel = this.lastSelectedTab
+					if(lastSel !== newSel && lastSel && lastSel.onTabHide){
+						lastSel.onTabHide()
+					}
+					if(lastSel !== newSel && newSel && newSel.onTabShow){
+						newSel.onTabShow()
+					}
+					this.lastSelectedTab = newSel
+				},
+				onTabRip:function(child, e){
+					if(this.children.length === 0) this.dock.onCloseFinalTab(this)
+					this.dock.onTabRip(child, e)
+				},
+				onCloseTab:function(index){
+					if(index !== 0) return
+					this.dock.onCloseFinalTab(this)
 				}
-				this.lastSelectedTab = newSel
-			},
-			onTabRip:function(child, e){
-				if(this.children.length === 0) this.dock.onCloseFinalTab(this)
-				this.dock.onTabRip(child, e)
-			},
-			onCloseTab:function(index){
-				if(index !== 0) return
-				this.dock.onCloseFinalTab(this)
-			}
-		}),
-		Splitter:require('views/splitter')
-	},
-	composeFromData:function(node){
+			}),
+			Splitter:require('views/splitter')
+		}
+	}
+	
+	composeFromData(node){
 		if(node.tabs){
 			var args = [{
 					isBottom:node.bottom,
@@ -85,16 +91,18 @@ module.exports=require('base/view').extend({
 			)
 			return pane
 		}
-	},
-	onTabRip:function(tab, e){
+	}
+
+	onTabRip(tab, e){
 		// lets transfer the mouse capture to us
 		this.transferFingerMove(e.digit,0)
 		this.tabDragFinger = e
 		tab.tabGeom = tab.tabStamp.stampGeom()
 		this.dragTab = tab
 		this.redraw() 
-	},
-	onCloseFinalTab:function(tabs){
+	}
+
+	onCloseFinalTab(tabs){
 		// remove the splitter and replace with the right child
 		var oldSplitter = tabs.parent
 		var splitter = oldSplitter.parent
@@ -109,8 +117,9 @@ module.exports=require('base/view').extend({
 		// make sure our splitter counters are ok
 		tabs.onSelectTab(1)
 		splitter.replaceOldChild(otherSide, tgtIdx)
-	},
-	findTabs:function(node, tabs){
+	}
+
+	findTabs(node, tabs){
 		// we need all the tabs objects in our tree
 		if(!node)return
 		if(node.name === 'Splitter'){
@@ -121,30 +130,34 @@ module.exports=require('base/view').extend({
 			//console.log(node.children[1].tabText, node.$yAbs, node.$h)
 			tabs.push(node)
 		}
-	},
-	findSplitters:function(node, splitters){
+	}
+
+	findSplitters(node, splitters){
 		if(!node)return
 		if(node.name === 'Splitter'){
 			splitters.push(node)
 			this.findSplitters(node.children[0], splitters)
 			this.findSplitters(node.children[1], splitters)
 		}
-	},
-	toggleSplitterSettings:function(show){
+	}
+
+	toggleSplitterSettings(show){
 		var splitters = []
 		this.findSplitters(this.children[0], splitters)
 		for(let i = 0; i < splitters.length; i++){
 			splitters[i].toggleSplitterSettings(show)
 		}
-	},
-	toggleTabSettings:function(show){
+	}
+
+	toggleTabSettings(show){
 		var tabs = []
 		this.findTabs(this.children[0], tabs)
 		for(let i = 0; i < tabs.length; i++){
 			tabs[i].toggleTabSettings(show)
 		}
-	},
-	onOverlay:function(){
+	}
+
+	onOverlay(){
 		// draw the tab drop options
 		if(!this.dragTab) return
 		var dragTab = this.dragTab
@@ -245,14 +258,15 @@ module.exports=require('base/view').extend({
 				}
 			}
 		}
+	}
 
-	},
-	onFingerMove:function(e){
+	onFingerMove(e){
 		if(!this.dragTab)return
 		this.tabDragFinger = e
 		this.redraw()
-	},
-	onFingerUp:function(e){
+	}
+
+	onFingerUp(e){
 		if(!this.dragTab)return
 		// splitting?
 
@@ -328,9 +342,10 @@ module.exports=require('base/view').extend({
 		}
 		this.dragTab = undefined
 		this.redraw()
-	},
-	onCompose:function(){
+	}
+
+	onCompose(){
 		// ok we have to generate stuff
 		return this.composeFromData(this.data)
 	}
-})
+}

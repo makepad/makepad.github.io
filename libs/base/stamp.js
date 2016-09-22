@@ -1,9 +1,11 @@
 module.exports = require('base/class').extend(function Stamp(proto){
 	//var types = require('types')
 
-	require('base/props').mixin(proto)
-	require('base/tools').mixin(proto)
-
+	proto.mixin(
+		require('base/props'),
+		require('base/tools')
+	)
+	
 	proto.onFlag0 = 1
 	proto.onFlag1 =
 	proto.redraw = function(){
@@ -92,8 +94,8 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		code += indent + 'var $stampId = ++$view.$pickId\n'
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
-		code += indent + 'if(!$stamp || $stamp.constructor !== this._'+classname+' || $stamp.$layer !== '+macroargs[0]+'.$layer){\n'
-		code += indent + '	$stamp = $view.$stamps[$stampId] = new this._'+classname+'()\n'
+		code += indent + 'if(!$stamp || $stamp.constructor !== this.'+classname+' || $stamp.$layer !== '+macroargs[0]+'.$layer){\n'
+		code += indent + '	$stamp = $view.$stamps[$stampId] = new this.'+classname+'()\n'
 		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
 		code += indent + '	var $layer = '+macroargs[0]+'.$layer\n'

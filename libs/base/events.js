@@ -1,8 +1,4 @@
-module.exports = class extends require('base/mixin'){
-
-	static mixin(proto){
-		this._mixin(proto)
-	}
+module.exports = class Events extends require('base/class'){
 
 	on(key, fn, reverse){
 

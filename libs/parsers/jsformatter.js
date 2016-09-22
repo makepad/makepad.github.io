@@ -1,6 +1,16 @@
-module.exports = function(proto){
+var logNonexisting = function(node){
+	console.log(node.type)
+}
 
-	proto.formatJS = function(indentSize, ast){
+module.exports = class JSFormatter extends require('base/class'){
+
+	prototype(){
+		this.glslGlobals = {$:1}
+		for(let glslKey in require('base/infer').prototype.glsltypes) this.glslGlobals[glslKey] = 1
+		for(let glslKey in require('base/infer').prototype.glslfunctions) this.glslGlobals[glslKey] = 1
+	}
+
+	formatJS(indentSize, ast){
 		this.indent = 0
 		this.currentIndent = this.drawPadding && this.drawPadding[3] || this.padding[3]
 		this.indentSize = indentSize
@@ -15,12 +25,8 @@ module.exports = function(proto){
 		this[this.ast.type](this.ast, null)
 	}
 
-	var logNonexisting = function(node){
-		console.log(node.type)
-	}
-	
 	//Program:{ body:2 },	
-	proto.Program = function(node){
+	Program(node){
 		var body = node.body
 		for(let i = 0; i < body.length; i++){
 			var statement = body[i]
@@ -34,7 +40,7 @@ module.exports = function(proto){
 	}
 
 	//BlockStatement:{body:2},
-	proto.indentIn = function(){
+	indentIn(){
 		this.indent++
 		this.currentIndent += this.indentSize * this.$fastTextFontSize 
 
@@ -45,7 +51,7 @@ module.exports = function(proto){
 		}
 	}
 
-	proto.lastIsNewline = function(){
+	lastIsNewline(){
 		var text = this.ann[this.ann.length - this.ann.step]
 		var last = text.charCodeAt(text.length - 1)
 		if(last === 10 || last === 13){
@@ -54,7 +60,7 @@ module.exports = function(proto){
 		return false
 	}
 
-	proto.indentOut = function(delta){
+	indentOut(delta){
 		this.indent--
 		this.currentIndent -= this.indentSize * this.$fastTextFontSize
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
@@ -64,7 +70,7 @@ module.exports = function(proto){
 		}
 	}
 
-	proto.BlockStatement = function(node, colorScheme, parent){
+	BlockStatement(node, colorScheme, parent){
 		// store the startx/y position
 		var turtle = this.turtle
 
@@ -163,7 +169,7 @@ module.exports = function(proto){
 	}
 
 	//ArrayExpression:{elements:2},
-	proto.ArrayExpression = function(node){
+	ArrayExpression(node){
 		var turtle = this.turtle
 
 		var startx = turtle.sx, starty = turtle.wy
@@ -245,7 +251,7 @@ module.exports = function(proto){
 	}
 
 	//ObjectExpression:{properties:3},
-	proto.ObjectExpression = function(node){
+	ObjectExpression(node){
 		var turtle = this.turtle
 		var keyStyle = this._styles.ObjectExpression.key
 
@@ -363,7 +369,7 @@ module.exports = function(proto){
 	}
 
 	//ClassBody:{body:2},
-	proto.ClassBody = function(node){
+	ClassBody(node){
 		var turtle = this.turtle
 		var startx = turtle.sx, starty = turtle.wy
 
@@ -410,18 +416,18 @@ module.exports = function(proto){
 	}
 
 	//EmptyStatement:{}
-	proto.EmptyStatement = function(node){
+	EmptyStatement(node){
 		console.log(node)
 	}
 
 	//ExpressionStatement:{expression:1},
-	proto.ExpressionStatement = function(node){
+	ExpressionStatement(node){
 		var exp = node.expression
 		this[exp.type](exp)
 	}
 
 	//SequenceExpression:{expressions:2}
-	proto.SequenceExpression = function(node){
+	SequenceExpression(node){
 
 		var exps = node.expressions
 		var expslength = exps.length - 1
@@ -436,7 +442,7 @@ module.exports = function(proto){
 	}
 
 	//ParenthesizedExpression:{expression:1}
-	proto.ParenthesizedExpression = function(node, level){
+	ParenthesizedExpression(node, level){
 		if(!level) level = 0
 		this.trace += '('
 		this.fastText('(', this._styles.Paren.ParenthesizedExpression)
@@ -472,17 +478,13 @@ module.exports = function(proto){
 	}
 
 	//Literal:{raw:0, value:0},
-	proto.Literal = function(node){
+	Literal(node){
 		this.trace += node.raw
 		this.fastText(node.raw, this._styles.Literal[node.kind])
 	}
 
-	proto.glslGlobals = {$:1}
-	for(let glslKey in require('base/infer').prototype.glsltypes) proto.glslGlobals[glslKey] = 1
-	for(let glslKey in require('base/infer').prototype.glslfunctions) proto.glslGlobals[glslKey] = 1
-
 	//Identifier:{name:0},
-	proto.Identifier = function(node){
+	Identifier(node){
 		var style
 		var name = node.name
 		var where
@@ -509,13 +511,13 @@ module.exports = function(proto){
 	}
 
 	//ThisExpression:{},
-	proto.ThisExpression = function(node){
+	ThisExpression(node){
 		this.trace += 'this'
 		this.fastText('this', this._styles.ThisExpression)
 	}
 
 	//MemberExpression:{object:1, property:1, computed:0},
-	proto.MemberExpression = function(node){
+	MemberExpression(node){
 		var obj = node.object
 		this[obj.type](obj)
 		var prop = node.property
@@ -548,7 +550,7 @@ module.exports = function(proto){
 	}
 
 	//CallExpression:{callee:1, arguments:2},
-	proto.CallExpression = function(node){
+	CallExpression(node){
 		var callee = node.callee
 		var args = node.arguments
 
@@ -607,7 +609,7 @@ module.exports = function(proto){
 	}
 
 	//NewExpression:{callee:1, arguments:2},
-	proto.NewExpression = function(node){
+	NewExpression(node){
 		var callee = node.callee
 		var args = node.arguments
 		this.trace += 'new '
@@ -619,7 +621,7 @@ module.exports = function(proto){
 	}
 
 	//ReturnStatement:{argument:1},
-	proto.ReturnStatement = function(node){
+	ReturnStatement(node){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'return '
@@ -633,12 +635,12 @@ module.exports = function(proto){
 	}
 
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
-	proto.FunctionExpression = function(node){
+	FunctionExpression(node){
 		this.FunctionDeclaration(node)
 	}
 
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
-	proto.FunctionDeclaration = function(node, method){
+	FunctionDeclaration(node, method){
 		var id = node.id
 		if(id){
 			this.scope[name] = 1
@@ -708,7 +710,7 @@ module.exports = function(proto){
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
-	proto.VariableDeclaration = function(node, level){
+	VariableDeclaration(node, level){
 		if(node.space !== undefined) this.fastText('var'+node.space, this._styles.VariableDeclaration)
 		else this.fastText('var ', this._styles.VariableDeclaration)
 		this.trace += 'var '
@@ -730,7 +732,7 @@ module.exports = function(proto){
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	proto.VariableDeclarator = function(node){
+	VariableDeclarator(node){
 		var id = node.id
 
 		if(node.probe){
@@ -764,7 +766,7 @@ module.exports = function(proto){
 	}
 
 	//LogicalExpression:{left:1, right:1, operator:0},
-	proto.LogicalExpression = function(node, level){
+	LogicalExpression(node, level){
 		level = typeof level === 'number'?level:0
 		var left = node.left
 		var right = node.right
@@ -785,7 +787,7 @@ module.exports = function(proto){
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
-	proto.BinaryExpression = function(node, level){
+	BinaryExpression(node, level){
 		level = level || 0
 		var left = node.left
 		var right = node.right
@@ -823,7 +825,7 @@ module.exports = function(proto){
 	}
 
 	//AssignmentExpression: {left:1, operator:0, right:1},
-	proto.AssignmentExpression = function(node){
+	AssignmentExpression(node){
 		var left = node.left
 		var right = node.right
 		var leftype = left.type
@@ -838,7 +840,7 @@ module.exports = function(proto){
 	}
 
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
-	proto.ConditionalExpression = function(node){
+	ConditionalExpression(node){
 		var test = node.test
 		this[test.type](test)
 		this.trace += '?'
@@ -859,7 +861,7 @@ module.exports = function(proto){
 	}
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
-	proto.UpdateExpression = function(node){
+	UpdateExpression(node){
 		if(node.prefix){
 			var op = node.operator
 			this.trace += op
@@ -891,7 +893,7 @@ module.exports = function(proto){
  	}
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
-	proto.UnaryExpression = function(node, lhs){
+	UnaryExpression(node, lhs){
 		if(node.prefix){
 			var op = node.operator
 			if(node.operator === '@'){
@@ -922,7 +924,7 @@ module.exports = function(proto){
  	}
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
-	proto.IfStatement = function(node){
+	IfStatement(node){
 		if(this.traceMap) this.trace += 'if(T$('+this.traceMap.push(node)+','
 		else this.trace += 'if('
 		this.fastText('if', this._styles.IfStatement.if)
@@ -947,7 +949,7 @@ module.exports = function(proto){
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
-	proto.ForStatement = function(node){
+	ForStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this._styles.ForStatement)
 		this.fastText('(', this._styles.Paren.ForStatement.left)
@@ -969,7 +971,7 @@ module.exports = function(proto){
 	}
 
 	//ForInStatement:{left:1, right:1, body:1},
-	proto.ForInStatement = function(node){
+	ForInStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this._styles.ForStatement)
 		this.fastText('(', this._styles.Paren.ForStatement.left)
@@ -986,7 +988,7 @@ module.exports = function(proto){
 	}
 
 	//ForOfStatement:{left:1, right:1, body:1},
-	proto.ForOfStatement = function(node){
+	ForOfStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this._styles.ForStatement)
 		this.fastText('(', this._styles.Paren.ForStatement.left)
@@ -1003,7 +1005,7 @@ module.exports = function(proto){
 	}
 
 	//WhileStatement:{body:1, test:1},
-	proto.WhileStatement = function(node){
+	WhileStatement(node){
 		this.fastText('while', this._styles.WhileStatement.while)
 		this.fastText('(', this._styles.Paren.WhileStatement.left)
 		this.trace += 'while('
@@ -1017,7 +1019,7 @@ module.exports = function(proto){
 	}
 
 	//DoWhileStatement:{body:1, test:1},
-	proto.DoWhileStatement = function(node){
+	DoWhileStatement(node){
 		this.trace += 'do'
 		this.fastText('do', this._styles.DoWhileStatement.do)
 		var body = node.body
@@ -1032,7 +1034,7 @@ module.exports = function(proto){
 	}
 
 	//BreakStatement:{label:1},
-	proto.BreakStatement = function(node){
+	BreakStatement(node){
 		if(node.label){
 			var label = node.label
 			this.trace += 'break '
@@ -1046,7 +1048,7 @@ module.exports = function(proto){
 	}
 
 	//ContinueStatement:{label:1},
-	proto.ContinueStatement = function(node){
+	ContinueStatement(node){
 		if(node.label){
 			var label = node.label
 			this.trace += 'continue '
@@ -1060,7 +1062,7 @@ module.exports = function(proto){
 	}
 
 	//YieldExpression:{argument:1, delegate:0}
-	proto.YieldExpression = function(node){
+	YieldExpression(node){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'yield '
@@ -1074,7 +1076,7 @@ module.exports = function(proto){
 	}
 	
 	//ThrowStatement:{argument:1},
-	proto.ThrowStatement = function(node){
+	ThrowStatement(node){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'throw '
@@ -1088,7 +1090,7 @@ module.exports = function(proto){
 	}
 
 	//TryStatement:{block:1, handler:1, finalizer:1},
-	proto.TryStatement = function(node){
+	TryStatement(node){
 		this.trace += 'try'
 		this.fastText('try', this._styles.TryStatement)
 		var block = node.block
@@ -1111,7 +1113,7 @@ module.exports = function(proto){
 	}
 
 	//CatchClause:{param:1, body:1},
-	proto.CatchClause = function(node){
+	CatchClause(node){
 		this.trace += 'catch('
 		this.fastText('catch', this._styles.CatchClause)
 		this.fastText('(', this._styles.Paren.CatchClause.left)
@@ -1124,7 +1126,7 @@ module.exports = function(proto){
 	}
 
 	//SpreadElement
-	proto.SpreadElement = function(node){
+	SpreadElement(node){
 		this.fastText('...', this._styles.RestElement)
 		this.trace += '...'
 		var arg = node.argument
@@ -1132,7 +1134,7 @@ module.exports = function(proto){
 	}
 
 	//RestElement:{argument:1}
-	proto.RestElement = function(node){
+	RestElement(node){
 		this.fastText('...', this._styles.RestElement)
 		this.trace += '...'
 		var arg = node.argument
@@ -1140,34 +1142,34 @@ module.exports = function(proto){
 	}
 
 	//Super:{},
-	proto.Super = function(node){
+	Super(node){
 		this.fastText('super', this._styles.Super)
 		this.trace += 'super'
 	}
 
 	//AwaitExpression:{argument:1},
-	proto.AwaitExpression = function(node){
+	AwaitExpression(node){
 		logNonexisting(node)
 	}
 
 	//MetaProperty:{meta:1, property:1},
-	proto.MetaProperty = function(node){
+	MetaProperty(node){
 		logNonexisting(node)
 	}
 
 
 	//ObjectPattern:{properties:3},
-	proto.ObjectPattern = function(node){
+	ObjectPattern(node){
 		logNonexisting(node)
 	}
 
 	//ArrowFunctionExpression:{params:2, expression:0, body:1},
-	proto.ArrowFunctionExpression = function(node){
+	ArrowFunctionExpression(node){
 		logNonexisting(node)
 	}
 
 	//SwitchStatement:{discriminant:1, cases:2},
-	proto.SwitchStatement = function(node){
+	SwitchStatement(node){
 		this.trace += 'switch('
 		this.fastText('switch', this._styles.SwitchStatement)
 		this.fastText('(', this._styles.Paren.SwitchStatement.left)
@@ -1193,7 +1195,7 @@ module.exports = function(proto){
 	}
 
 	//SwitchCase:{test:1, consequent:2},
-	proto.SwitchCase = function(node){
+	SwitchCase(node){
 		var above = node.above
 		if(above) this.fastText(above, this._styles.Comment.above)
 		this.trace += 'case '
@@ -1220,22 +1222,22 @@ module.exports = function(proto){
 	}
 
 	//TaggedTemplateExpression:{tag:1, quasi:1},
-	proto.TaggedTemplateExpression = function(node){
+	TaggedTemplateExpression(node){
 		logNonexisting(node)
 	}
 
 	//TemplateElement:{tail:0, value:0},
-	proto.TemplateElement = function(node){
+	TemplateElement(node){
 		logNonexisting(node)
 	}
 
 	//TemplateLiteral:{expressions:2, quasis:2},
-	proto.TemplateLiteral = function(node){
+	TemplateLiteral(node){
 		logNonexisting(node)
 	}
 
 	//ClassDeclaration:{id:1,superClass:1},
-	proto.ClassDeclaration = function(node){
+	ClassDeclaration(node){
 		this.trace += 'class '
 		this.fastText('class ', this._styles.ClassDeclaration.class)
 		var id = node.id
@@ -1259,7 +1261,7 @@ module.exports = function(proto){
 	}
 
 	//ClassExpression:{id:1,superClass:1},
-	proto.ClassExpression = function(node){
+	ClassExpression(node){
 		this.trace += 'class '
 		this.fastText('class ', this._styles.ClassExpression.class)
 		var id = node.id
@@ -1283,7 +1285,7 @@ module.exports = function(proto){
 	}
 
 	//MethodDefinition:{value:1, kind:0, static:0},
-	proto.MethodDefinition = function(node){
+	MethodDefinition(node){
 		var value = node.value
         var name = node.key.name
         if(node.static){
@@ -1294,45 +1296,45 @@ module.exports = function(proto){
 	}
 
 	//ExportAllDeclaration:{source:1},
-	proto.ExportAllDeclaration = function(node){
+	ExportAllDeclaration(node){
 		logNonexisting(node)
 	}
 
 	//ExportDefaultDeclaration:{declaration:1},
-	proto.ExportDefaultDeclaration = function(node){
+	ExportDefaultDeclaration(node){
 		logNonexisting(node)
 	}
 	//ExportNamedDeclaration:{declaration:1, source:1, specifiers:2},
-	proto.ExportNamedDeclaration = function(node){
+	ExportNamedDeclaration(node){
 		logNonexisting(node)
 	}
 	//ExportSpecifier:{local:1, exported:1},
-	proto.ExportSpecifier = function(node){
+	ExportSpecifier(node){
 		logNonexisting(node)
 	}
 	//ImportDeclaration:{specifiers:2, source:1},
-	proto.ImportDeclaration = function(node){
+	ImportDeclaration(node){
 		logNonexisting(node)
 	}
 	//ImportDefaultSpecifier:{local:1},
-	proto.ImportDefaultSpecifier = function(node){
+	ImportDefaultSpecifier(node){
 		logNonexisting(node)
 	}
 	//ImportNamespaceSpecifier:{local:1},
-	proto.ImportNamespaceSpecifier = function(node){
+	ImportNamespaceSpecifier(node){
 		logNonexisting(node)
 	}
 	//ImportSpecifier:{imported:1, local:1},
-	proto.ImportSpecifier = function(node){
+	ImportSpecifier(node){
 		logNonexisting(node)
 	}
 	//DebuggerStatement:{},
-	proto.DebuggerStatement = function(node){
+	DebuggerStatement(node){
 		this.trace += 'debugger'
 		this.fastText('debugger', this._styles.DebuggerStatement)
 	}
 	//LabeledStatement:{label:1, body:1},
-	proto.LabeledStatement = function(node){
+	LabeledStatement(node){
 		var label = node.label
 		this[label.type](label)
 		this.trace += ':'
@@ -1346,7 +1348,7 @@ module.exports = function(proto){
 		this[body.type](body)
 	}
 	// WithStatement:{object:1, body:1}
-	proto.WithStatement = function(node){
+	WithStatement(node){
 		logNonexisting(node)
 	}
 

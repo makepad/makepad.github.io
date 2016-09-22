@@ -174,7 +174,8 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			return this.$PROPLEN()
 		},
 		$readOffset:function(o){
-			var glyphs = this._NAME.prototype.font.fontmap.glyphs
+			var proto = this.NAME.prototype
+			var glyphs = proto.font.fontmap.glyphs
 			if(!this.$shaders.NAME) return {}
 			this.$PROPVARDEF()
 			var len = this.$PROPLEN()
@@ -189,8 +190,8 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 				italic:this.$PROP(o, 'italic')
 			}
 			read.w = (read.head + read.advance + read.tail) * read.fontSize
-			read.lineSpacing = this._NAME.prototype.lineSpacing
-			read.baseLine = this._NAME.prototype.baseLine
+			read.lineSpacing = proto.lineSpacing
+			read.baseLine = proto.baseLine
 			// write the bounding box
 			return read
 		},
@@ -198,7 +199,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			// lets find where we are inbetween
 			if(!this.$shaders.NAME) return {}
 			var len = this.$PROPLEN()
-			var lineSpacing = this._NAME.prototype.lineSpacing
+			var lineSpacing = this.NAME.prototype.lineSpacing
 			this.$PROPVARDEF()
 			if(len === 0){
 				return 0
@@ -227,8 +228,9 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 		},
 		$boundRects:function(start, end){
 			if(!this.$shaders.NAME) return {}
-			var glyphs = this._NAME.prototype.font.fontmap.glyphs
-			var lineSpacing = this._NAME.prototype.lineSpacing
+			var proto = this.NAME.prototype
+			var glyphs = proto.font.fontmap.glyphs
+			var lineSpacing = proto.lineSpacing
 			this.$PROPVARDEF()
 			var boxes = []
 			var curBox
@@ -271,8 +273,8 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			this.$ALLOCDRAW(len)
 
 			// lets fetch the font
-			var glyphs = this._NAME.prototype.font.fontmap.glyphs
-			var lineSpacing = this._NAME.prototype.lineSpacing
+			var glyphs = this.NAME.prototype.font.fontmap.glyphs
+			var lineSpacing = this.NAME.prototype.lineSpacing
 			var wrapping = turtle._wrapping
 			var fontSize = turtle._fontSize
 		
