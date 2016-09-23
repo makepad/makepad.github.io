@@ -15,7 +15,7 @@ function defineToolInheritable(proto, key){
 		else{
 			cls = this[key] = inherit
 		}
-		this.$compileToolMacros(key, cls)
+		this.$compileVerbs(key, cls)
 	})
 }
 
@@ -32,12 +32,12 @@ module.exports = class Tools extends require('base/class'){
 				if(inherit && inherit.constructor === Object){ // subclass it
 					var base = this[key]
 					var cls = this[key] = base.extend(inherit)
-					this.$compileToolMacros(key, cls)
+					this.$compileVerbs(key, cls)
 					continue
 				}
 				// else replace it
 				this[key] = inherit
-				this.$compileToolMacros(key, inherit)
+				this.$compileVerbs(key, inherit)
 				// make it inheritable
 				defineToolInheritable(this, key)
 			}	
@@ -200,17 +200,22 @@ module.exports = class Tools extends require('base/class'){
 		}
 	}
 
-	$compileToolMacros(className, sourceClass){
+	$compileVerbs(className, sourceClass){
 		var sourceProto = sourceClass.prototype
-		var macros = sourceProto._toolMacros
+
+		if(sourceProto.onCompileVerbs){
+			sourceProto.onCompileVerbs(this)
+		}
+
+		var verbs = sourceProto._verbs
 
 		var target = this
-		for(let macroName in macros){
-			var methodName = macroName + className
-			var thing = macros[macroName]
+		for(let verbName in verbs){
+			var methodName = verbName + className
+			var thing = verbs[verbName]
 			
 			var cacheKey = sourceProto.$toolCacheKey
-			if(false){//cacheKey){
+			if(cacheKey){
 				var cache = fnCache[cacheKey+methodName]
 				if(cache){
 					target[methodName] = cache

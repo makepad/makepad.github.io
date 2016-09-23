@@ -1,30 +1,34 @@
-module.exports=require('base/view').extend({
-	name:'Splitter',
-	props:{
-		vertical:true,
-		pos:.5,
-		mode:0,
-		lockedWidth:1,
-		unlockedWidth:6,
-		isLocked:false,
-		color:'red'
-	},
-	padDrawing:true,
-	padding:[0,0,0,0],
-	safety1:20,
-	safety2:24,
-	refSettings:0,
-	doAnim:true,
-	tools:{
-		Split:require('tools/split').extend({
-		})
-	},
-	toggleSplitterSettings:function(show){
+module.exports=class Splitter extends require('base/view'){
+	prototype(){
+		this.name = 'Splitter'
+		this.props = {
+			vertical:true,
+			pos:.5,
+			mode:0,
+			lockedWidth:1,
+			unlockedWidth:6,
+			isLocked:false,
+			color:'red'
+		}
+		this.padDrawing = true,
+		this.padding = [0,0,0,0],
+		this.safety1 = 20,
+		this.safety2 = 24,
+		this.refSettings = 0,
+		this.doAnim = true,
+		this.tools = {
+			Split:require('tools/split').extend({
+			})
+		}
+	}
+
+	toggleSplitterSettings(show){
 		this.refSettings = show?1:0
 		this.doAnim = true
 		this.redraw()
-	},
-	onMode:function(e){
+	}
+
+	onMode(e){
 		var pos
 		if(this.$wInside === undefined || this.$hInside === undefined) return
 		if(e.old === 1){
@@ -37,8 +41,9 @@ module.exports=require('base/view').extend({
 			pos  =  this.pos * (this.vertical?this.$wInside:this.$hInside)
 		}
 		this.onSplitMove({xSplit:pos, ySplit:pos, fromMode:1})
-	},
-	onSplitMove:function(e){
+	}
+
+	onSplitMove(e){
 		//if(this.isLocked) return
 		var size = this.unlockedWidth
 		if(this.vertical){
@@ -67,8 +72,9 @@ module.exports=require('base/view').extend({
 			this.mode = this.modeFromPos()
 		}
 		this.relayout()
-	},
-	modeFromPos:function(){
+	}
+
+	modeFromPos(){
 		var pos = this.getPos()
 		if(this.vertical){
 			if(pos<this.$hInside*.5) return 1
@@ -76,19 +82,22 @@ module.exports=require('base/view').extend({
 		}
 		if(pos<this.$wInside*.5) return 1
 		return 2
-	},
-	getPos:function(){
+	}
+
+	getPos(){
 		if(this.vertical){
 			return this.mode==1?this.pos:this.mode==2?this.$wInside-this.pos:this.pos * this.$wInside
 		}
 		else{
 			return this.mode==1?this.pos:this.mode==2?this.$hInside-this.pos:this.pos * this.$hInside
 		}
-	},
-	getSize:function(){
+	}
+
+	getSize(){
 		return this.isLocked?this.lockedWidth:this.unlockedWidth		
-	},
-	onSplitButtonClick:function(){
+	}
+
+	onSplitButtonClick(){
 		// lets check our state.
 		if(this.buttonClick.toggle&1){ // percentage
 			this.mode = 0
@@ -102,8 +111,9 @@ module.exports=require('base/view').extend({
 		else{
 			this.isLocked = 0
 		}
-	},
-	onOverlay:function(){
+	}
+
+	onOverlay(){
 		var pos = this.getPos()
 		var size = this.getSize()
 		this.buttonClick = {toggle:(this.isLocked?2:0)|(this.mode?0:1)}
@@ -135,8 +145,9 @@ module.exports=require('base/view').extend({
 			})
 		}
 		this.doAnim = false
-	},
-	onAfterCompose:function(){
+	}
+
+	onAfterCompose(){
 		var c0 = this.children[0]
 		var c1 = this.children[1]
 		if(this.vertical){
@@ -160,4 +171,4 @@ module.exports=require('base/view').extend({
 			c1.h = '100%-this.parent.getPos()-.5*this.parent.getSize()'
 		}
 	}
-})
+}

@@ -1,5 +1,5 @@
-module.exports = require('tools/quad').extend({
-	pixel:function(){$
+module.exports = class Grid extends require('tools/quad'){
+	pixel(){$
 		return 'red'
 		/*
 		this.pixelStyle()
@@ -22,4 +22,4 @@ module.exports = require('tools/quad').extend({
 		return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
 		*/
 	}
-})
+}

@@ -1,14 +1,51 @@
-module.exports = require('base/class').extend(function Stamp(proto){
+module.exports = class Stamp extends require('base/class'){
 	//var types = require('types')
+	prototype(){
+		this.mixin(
+			require('base/props'),
+			require('base/tools')
+		)
+		
+		this.$isStamp = true
+		this.inPlace = false
+		this.onFlag0 = 1
+		this.onFlag1 = this.redraw
+		this.stateExt = ''
 
-	proto.mixin(
-		require('base/props'),
-		require('base/tools')
-	)
+		this.props = {
+			x:NaN,
+			y:NaN,
+			w:NaN,
+			h:NaN,
+			margin:undefined,
+			cursor:undefined
+		}
+
+		this.inheritable('verbs', function(){
+			var verbs = this.verbs
+			if(!this.hasOwnProperty('_verbs')) this._verbs = this._verbs?Object.create(this._verbs):{}
+			for(let key in verbs) this._verbs[key] = verbs[key]
+		})
+
+		this.verbs = {
+			draw:function(overload){
+				this.$STYLESTAMP(overload)
+				this.$DRAWSTAMP()
+				return $stamp
+			}
+		}
+	}
 	
-	proto.onFlag0 = 1
-	proto.onFlag1 =
-	proto.redraw = function(){
+	get state(){
+		return this._state
+	}	
+
+	set state(state){
+		this._state = state
+		this.redraw()	
+	}
+
+	redraw(){
 		var view = this.view
 		if(view && this.inPlace){
 			// figure out all the shader props lengths 
@@ -58,34 +95,8 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		}
 		else if(view) view.redraw()
 	}
-	proto.$isStamp = true
-	proto.inPlace = false
 
-	proto.stateExt = ''
-
-	proto.props = {
-		x:NaN,
-		y:NaN,
-		w:NaN,
-		h:NaN,
-		margin:undefined,
-		cursor:undefined
-	}
-
-	function styleStampCode(indent, inobj, props, noif){
-		var code = ''
-		for(let key in props){
-			if(noif){
-				code += indent + '_'+key+' = ' + inobj +'.' + key + '\n'
-			}
-			else{
-				code += indent + 'if(_'+key+' === undefined) _'+key+' = ' + inobj +'.' + key + '\n'
-			}
-		}
-		return code
-	}
-
-	proto.$STYLESTAMP = function(target, classname, macroargs, mainargs, indent){
+	$STYLESTAMP(target, classname, macroargs, mainargs, indent){
 		// so how do we rexecute a stamp
 
 		var code = ''
@@ -160,7 +171,7 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		return code
 	}
 
-	proto.$DRAWSTAMP = function(target, classname, macroargs, mainargs, indent){
+	$DRAWSTAMP(target, classname, macroargs, mainargs, indent){
 		var code = ''
 		code += indent + '$stamp.$x = $turtle.wx\n'
 		code += indent + '$stamp.$y = $turtle.wy\n'
@@ -176,54 +187,20 @@ module.exports = require('base/class').extend(function Stamp(proto){
 		return code
 	}
 
-	Object.defineProperty(proto, 'toolMacros', { 
-		get:function(){
-			return this._toolMacros
-		},
-		set:function(macros){
-			if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-			for(let key in macros) this._toolMacros[key] = macros[key]
-		}
-	})
+	onCompileVerbs(){
+		this.__initproto__()
+	}
+}
 
-	function deepOverlay(tgtobj, tgtkey, copyobj){
-		var newobj = tgtobj[tgtkey] = tgtobj[tgtkey]?Object.create(tgtobj[tgtkey]):{}
-		for(let key in copyobj){
-			var value = copyobj[key]
-			if(typeof value === 'object' && !Array.isArray(value)){
-				deepOverlay(newobj, key, value)
-			}
-			else newobj[key] = value
+function styleStampCode(indent, inobj, props, noif){
+	var code = ''
+	for(let key in props){
+		if(noif){
+			code += indent + '_'+key+' = ' + inobj +'.' + key + '\n'
+		}
+		else{
+			code += indent + 'if(_'+key+' === undefined) _'+key+' = ' + inobj +'.' + key + '\n'
 		}
 	}
-
-/*	Object.defineProperty(proto, 'states', { 
-		get:function(){
-			return this._states
-		},
-		set:function(states){
-			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(this._states):{}
-			for(let key in states){
-				deepOverlay(this._states, key, states[key])
-			}
-		}
-	})*/
-
-	Object.defineProperty(proto, 'state', { 
-		get:function(){
-			return this._state
-		},
-		set:function(state){
-			this._state = state
-			this.redraw()	
-		}
-	})
-
-	proto.toolMacros = {
-		draw:function(overload){
-			this.$STYLESTAMP(overload)
-			this.$DRAWSTAMP()
-			return $stamp
-		}
-	}
-})
+	return code
+}

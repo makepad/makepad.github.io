@@ -46,7 +46,7 @@
 					}
 
 					// lets push in all masked
-					for(let i = 0; i < mask.length; i++){
+					for(var i = 0; i < mask.length; i++){
 						var name = mask[i]
 						if(!(name in global)){
 							globnames.push(name)
@@ -57,7 +57,7 @@
 					var args = arguments
 					var len = arguments.length
 					var code = '"use strict"\nreturn function('
-					for(let i = 0; i < len - 1; i++){
+					for(var i = 0; i < len - 1; i++){
 						if(i) code += ','
 						code += args[i]
 					}
@@ -177,7 +177,13 @@
 
 	var initApps 
 	function init(){
-
+		var failES6
+		try{
+			new Function("return class test{}")()
+		}
+		catch(e){
+			failES6 = true
+		}
 		var apps = []
 		for(let i = 0; i < canvasses.length; i++){
 			var canvas = canvasses[i]
@@ -188,7 +194,15 @@
 					search:location.search && location.search.slice(1)
 				}
 			})
+
+			if(failES6){
+				var span = document.createElement('span')
+				span.style.color = 'white'
+				canvas.parentNode.replaceChild(span, canvas)
+				span.innerHTML = "Sorry, makepad needs browser support for ES6 to run<br/>Please update your browser to a more modern one<br/>Update to atleast iOS 10, Safari 10, latest Chrome, Edge or Firefox<br/>Go and update and come back, your browser will be better, faster and more secure!"
+			}
 		}
+		if(failES6) return
 		if(root.onInitApps) root.onInitApps(apps) 
 		else initApps = apps
 	}

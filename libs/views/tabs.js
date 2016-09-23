@@ -1,14 +1,93 @@
-module.exports=require('base/view').extend({
-	name:'Tabs',
-	overflow:'none',
-	props:{
-		isBottom:false,
-		isFolded:false,
-	},
-	onIsFolded:function(){
+module.exports=class Tabs extends require('base/view'){
+	prototype(){
+		this.name = 'Tabs'
+		this.overflow = 'none'
+		this.props = {
+			isBottom:false,
+			isFolded:false
+		}
+		this.isFolded = false
+		this.isBottom = false
+
+		this.tools = {
+			Tab:require('tools/tab').extend({
+				onTabSelected:function(e){
+					this.view._tabSelected(this.index, e)
+				},
+				onTabSlide:function(e){
+					this.view._tabSlide(this, e)
+				},
+				onTabReleased:function(e){
+					this.view._tabReleased()
+				}
+			}),
+			Background:require('tools/bg').extend({
+				color:'#2',
+				wrap:false,
+			}),
+			Button:require('tools/button').extend({
+			})
+		}
+
+		this.styles = {
+			closeButton:{
+				x:'@1',
+				icon:'close',
+				Bg:{
+					margin:[2,0,0,0],
+					color:'#3',
+					padding:[4,0,0,8]
+				},
+				w:26,
+				h:23,
+				onClick:function(e){
+					this.view.closeTab(this.view.selectedIndex)
+				}
+			},
+			flipButton:{
+				x:'@1',
+				Bg:{
+					margin:[3,0,0,0],
+					color:'#9',
+					padding:0,
+					align:[.5,.5]
+				},
+				w:20,
+				h:23,
+				onClick:function(e){
+					this.view.isBottom = !this.view.isBottom
+				}
+			},
+			flipButtonBottom$flipButton:{
+				icon:'arrow-up'
+			},
+			flipButtonTop$flipButton:{
+				icon:'arrow-down'
+			},
+			foldButton:{
+				x:'@21',
+				icon:'eye-slash',
+				Bg:{
+					margin:[3,0,0,0],
+					color:'#9',
+					padding:0,
+					align:[.5,.5]
+				},
+				w:20,
+				h:23,
+				onClick:function(e){
+					this.view.isFolded = !this.view.isFolded
+					this.view.relayout()
+				}
+			}
+		}
+	}
+
+	onIsFolded(){
 		this.onIsBottom()
-	},
-	onIsBottom:function(){
+	}
+
+	onIsBottom(){
 		if(this.isFolded){
 			this.padding = [0,0,0,0]
 		}
@@ -18,81 +97,9 @@ module.exports=require('base/view').extend({
 		else{
 			this.padding = [0,0,26,0]
 		}
-	},
-	isFolded:false,
-	isBottom:false,
-	tools:{
-		Tab:require('tools/tab').extend({
-			onTabSelected:function(e){
-				this.view._tabSelected(this.index, e)
-			},
-			onTabSlide:function(e){
-				this.view._tabSlide(this, e)
-			},
-			onTabReleased:function(e){
-				this.view._tabReleased()
-			}
-		}),
-		Background:require('tools/bg').extend({
-			color:'#2',
-			wrap:false,
-		}),
-		Button:require('tools/button').extend({
-		})
-	},
-	styles:{
-		closeButton:{
-			x:'@1',
-			icon:'close',
-			Bg:{
-				margin:[2,0,0,0],
-				color:'#3',
-				padding:[4,0,0,8]
-			},
-			w:26,
-			h:23,
-			onClick:function(e){
-				this.view.closeTab(this.view.selectedIndex)
-			}
-		},
-		flipButton:{
-			x:'@1',
-			Bg:{
-				margin:[3,0,0,0],
-				color:'#9',
-				padding:0,
-				align:[.5,.5]
-			},
-			w:20,
-			h:23,
-			onClick:function(e){
-				this.view.isBottom = !this.view.isBottom
-			}
-		},
-		flipButtonBottom$flipButton:{
-			icon:'arrow-up'
-		},
-		flipButtonTop$flipButton:{
-			icon:'arrow-down'
-		},
-		foldButton:{
-			x:'@21',
-			icon:'eye-slash',
-			Bg:{
-				margin:[3,0,0,0],
-				color:'#9',
-				padding:0,
-				align:[.5,.5]
-			},
-			w:20,
-			h:23,
-			onClick:function(e){
-				this.view.isFolded = !this.view.isFolded
-				this.view.relayout()
-			}
-		}
-	},
-	_tabSelected:function(index, e){
+	}
+
+	_tabSelected(index, e){
 		// deselect the other tab
 		this.selectTab(index)
 		this.slidePos = undefined
@@ -100,8 +107,9 @@ module.exports=require('base/view').extend({
 		this.selSliding = false
 		this.slideDelta = e.x
 		this.slideStartY = e.yAbs
-	},
-	_tabSlide:function(tabStamp, e){
+	}
+
+	_tabSlide(tabStamp, e){
 		if(this.children[tabStamp.index].noDragTab || this.slideStartY === undefined) return
 		
 		var ts = tabStamp.stampGeom()
@@ -159,13 +167,15 @@ module.exports=require('base/view').extend({
 		
 		this.selectedIndex = ins
 		this.redraw()
-	},
-	_tabReleased:function(){
+	}
+
+	_tabReleased(){
 		this.slidePos = NaN
 		this.defSliding = false
 		this.selSliding = true
-	},
-	closeTab:function(index){
+	}
+
+	closeTab(index){
 		if(this.onCloseTab(index)){
 			return
 		}
@@ -176,8 +186,9 @@ module.exports=require('base/view').extend({
 			this.selectedIndex = -1
 			this.selectTab(next)
 		}
-	},
-	selectTab:function(index){
+	}
+
+	selectTab(index){
 		if(this.selectedIndex !== index){
 			this.selectedIndex = index
 			for(let i = 0; i < this.children.length; i++){
@@ -187,16 +198,20 @@ module.exports=require('base/view').extend({
 			this.onSelectTab(index)
 			this.redraw()
 		}
-	},
-	onSelectTab:function(index){
-	},
-	onCloseTab:function(index){
-	},
-	toggleTabSettings:function(show){
+	}
+
+	onSelectTab(index){
+	}
+
+	onCloseTab(index){
+	}
+
+	toggleTabSettings(show){
 		this.showTabSettings = show
 		this.redraw()
-	},
-	onOverlay:function(){
+	}
+
+	onOverlay(){
 		
 		if(!this.isBottom){
 			this.beginBackground({
@@ -256,4 +271,4 @@ module.exports=require('base/view').extend({
 		this.defSliding = false
 		this.selSliding = false
 	}
-})
+}

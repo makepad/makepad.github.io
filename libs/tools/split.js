@@ -1,167 +1,179 @@
-module.exports = require('base/stamp').extend(function Split(proto){
+module.exports = class Split extends require('base/stamp'){
 
-	proto.props = {
-		offset:0,
-		settings:0,
-		vertical:1,
-		buttonClick:{value:{}}
-	}
-	proto.inPlace = 1
+	prototype(){
 
-	proto.tools = {
-		Button:require('tools/button').extend({
-			w:25,
-			h:25,
-			onClick:function(){
-				this.view.onSplitButtonClick()
-			},
-			styles:{
-				default:{
-					Bg:{color:'#3c30'}
+		this.props = {
+			offset:0,
+			settings:0,
+			vertical:1,
+			buttonClick:{value:{}}
+		}
+		this.inPlace = 1
+	
+		this.verbs = {
+			draw:function(overload){
+				this.$STYLESTAMP(overload)
+				this.$DRAWSTAMP()
+
+				return $stamp
+			}
+		}
+
+		this.tools = {
+			Button:require('tools/button').extend({
+				w:25,
+				h:25,
+				onClick:function(){
+					this.view.onSplitButtonClick()
 				},
-				defaultOver:{
-					Bg:{color:'#ccc7'}
+				styles:{
+					default:{
+						Bg:{color:'#3c30'}
+					},
+					defaultOver:{
+						Bg:{color:'#ccc7'}
+					},
+					clicked:{
+						Bg:{color:'#3f37'}
+					},
+					clickedOver:{
+						Bg:{color:'#7f77'}
+					}
 				},
-				clicked:{
-					Bg:{color:'#3f37'}
-				},
-				clickedOver:{
-					Bg:{color:'#7f77'}
+				Bg:{
+					pickAlpha:-1,
+					align:[.5,.5],
+					padding:0
 				}
-			},
-			Bg:{
-				pickAlpha:-1,
+			}),
+			Bg:require('tools/quad').extend({
 				align:[.5,.5],
-				padding:0
-			}
-		}),
-		Bg:require('tools/quad').extend({
-			align:[.5,.5],
-			props:{
-				vertical:1,
-				settings:0,
-				setWidth:26,
-				borderWidth:0.,
-				boxSize:120.,
-				bgColor:'gray',
-				borderColor:'black'
-			},
-			vertexStyle:function(){
-				this.dv = this.settings*this.setWidth*.5
-				this.ds = this.settings*this.setWidth
-				// our width is X
-				// now our width is less
-				this.ow = this.w
-				this.oh = this.h
-				if(this.vertical>.5){
-					this.w = this.ds
-					if(this.w>this.ow){
-						this.x -= this.dv-this.ow*.5
+				props:{
+					vertical:1,
+					settings:0,
+					setWidth:26,
+					borderWidth:0.,
+					boxSize:120.,
+					bgColor:'gray',
+					borderColor:'black'
+				},
+				vertexStyle:function(){
+					this.dv = this.settings*this.setWidth*.5
+					this.ds = this.settings*this.setWidth
+					// our width is X
+					// now our width is less
+					this.ow = this.w
+					this.oh = this.h
+					if(this.vertical>.5){
+						this.w = this.ds
+						if(this.w>this.ow){
+							this.x -= this.dv-this.ow*.5
+						}
+						else this.w = this.ow, this.dv = this.ow*.5
 					}
-					else this.w = this.ow, this.dv = this.ow*.5
-				}
-				else{
-					this.h = this.ds
-					if(this.h>this.oh){
-						this.y -= this.dv-this.oh*.5
+					else{
+						this.h = this.ds
+						if(this.h>this.oh){
+							this.y -= this.dv-this.oh*.5
+						}
+						else this.h = this.oh, this.dv = this.oh*.5
 					}
-					else this.h = this.oh, this.dv = this.oh*.5
+					this.p = this.mesh.xy*vec2(this.w, this.h)
+				},
+				pixel:function(){$
+					var p = this.p
+					var aa = this.antialias(p)
+
+					var lineDist = 0.
+					var blobDist = 0.
+					if(this.vertical > .5){
+						lineDist = this.boxDistance(
+							p, 
+							this.dv-this.ow*.5, 
+							0., 
+							this.ow, 
+							this.h, 
+							1.
+						)
+						blobDist = this.boxDistance(
+							p, 
+							0., 
+							this.h*.5-.5*this.boxSize, 
+							this.w, 
+							this.boxSize, 
+							8.
+						)
+					}
+					else{
+						lineDist = this.boxDistance(
+							p, 
+							0., 
+							this.dv-this.oh*.5, 
+							this.w, 
+							this.oh, 
+							1.
+						)
+						blobDist = this.boxDistance(
+							p, 
+							this.w*0.5-.5*this.boxSize, 
+							0., 
+							this.boxSize, 
+							this.h, 
+							8.
+						)
+					}
+					var dist = this.blendDistance(lineDist,blobDist, .5)
+
+					return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
 				}
-				this.p = this.mesh.xy*vec2(this.w, this.h)
+			})
+		}
+
+		this.styles = {
+			$duration:0.3,
+			$tween:2,
+			$ease:[0,10,0,0],
+			default:{
+				settings:0.,
+				Button:{
+					$fontSize:0,
+					w:0,h:0,
+					Bg:{},
+					Text:{},
+					Icon:{}
+				},
+				Bg:{}
 			},
-			pixel:function(){$
-				var p = this.p
-				var aa = this.antialias(p)
-
-				var lineDist = 0.
-				var blobDist = 0.
-				if(this.vertical > .5){
-					lineDist = this.boxDistance(
-						p, 
-						this.dv-this.ow*.5, 
-						0., 
-						this.ow, 
-						this.h, 
-						1.
-					)
-					blobDist = this.boxDistance(
-						p, 
-						0., 
-						this.h*.5-.5*this.boxSize, 
-						this.w, 
-						this.boxSize, 
-						8.
-					)
+			settings:{
+				settings:1,
+				Button:{
+					w:22,h:22,
+					Bg:{},
+					$fontSize:14,
+					Text:{},
+					Icon:{}
+				},
+				Bg:{
+					//borderWidth:.5,
+					//borderColor:'black'
 				}
-				else{
-					lineDist = this.boxDistance(
-						p, 
-						0., 
-						this.dv-this.oh*.5, 
-						this.w, 
-						this.oh, 
-						1.
-					)
-					blobDist = this.boxDistance(
-						p, 
-						this.w*0.5-.5*this.boxSize, 
-						0., 
-						this.boxSize, 
-						this.h, 
-						8.
-					)
-				}
-				var dist = this.blendDistance(lineDist,blobDist, .5)
-
-				return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
+			},
+			default_noAnim$default:{
+				$duration:0.
+			},
+			settings_noAnim$settings:{
+				$duration:0.
+			},
+			default_drag$default:{
+				$duration:0.,
+			},
+			settings_drag$settings:{
+				$duration:0.
 			}
-		})
-	}
-
-	proto.styles = {
-		$duration:0.3,
-		$tween:2,
-		$ease:[0,10,0,0],
-		default:{
-			settings:0.,
-			Button:{
-				$fontSize:0,
-				w:0,h:0,
-				Bg:{},
-				Text:{},
-				Icon:{}
-			},
-			Bg:{}
-		},
-		settings:{
-			settings:1,
-			Button:{
-				w:22,h:22,
-				Bg:{},
-				$fontSize:14,
-				Text:{},
-				Icon:{}
-			},
-			Bg:{
-				//borderWidth:.5,
-				//borderColor:'black'
-			}
-		},
-		default_noAnim$default:{
-			$duration:0.
-		},
-		settings_noAnim$settings:{
-			$duration:0.
-		},
-		default_drag$default:{
-			$duration:0.,
-		},
-		settings_drag$settings:{
-			$duration:0.
 		}
 	}
 
-	proto.onFingerDown = function(e){
+	onFingerDown(e){
 		this.xStart = e.x + this.offset
 		this.yStart = e.y + this.offset
 		this.stateExt = '_drag'
@@ -173,7 +185,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 		}
 	}
 
-	proto.onFingerMove = function(e){
+	onFingerMove(e){
 		if(this.view.onSplitMove){
 			e.xSplit = e.xView - this.xStart
 			e.ySplit = e.yView - this.yStart
@@ -181,7 +193,7 @@ module.exports = require('base/stamp').extend(function Split(proto){
 		}
 	}
 
-	proto.onFingerUp = function(){ 
+	onFingerUp(){ 
 		this.stateExt = ''
 		if(this.settings>0.){
 			this.state = this.styles.settings
@@ -190,10 +202,10 @@ module.exports = require('base/stamp').extend(function Split(proto){
 			this.state = this.styles.default 
 		}
 	}
-	//proto.onFingerOver = function(){ this.state = this.states.over }
-	//proto.onFingerOut = function(){ this.state = this.states.default }
+	//onFingerOver(){ this.state = this.states.over }
+	//onFingerOut(){ this.state = this.states.default }
 
-	proto.onDraw = function(){
+	onDraw(){
 		this.beginBg(this)
 		this.drawButton({
 			text:'%',
@@ -205,13 +217,4 @@ module.exports = require('base/stamp').extend(function Split(proto){
 		}, this.buttonClick)
 		this.endBg()
 	}
-
-	proto.toolMacros = {
-		draw:function(overload){
-			this.$STYLESTAMP(overload)
-			this.$DRAWSTAMP()
-
-			return $stamp
-		}
-	}
-})
+}

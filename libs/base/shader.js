@@ -321,7 +321,7 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 	//
 	//
 
-	proto.toolMacros = {
+	proto.verbs = {
 		length:function(){
 			return this.$PROPLEN()
 		},
@@ -336,14 +336,6 @@ module.exports = require('base/compiler').extend(function Shader(proto){
 				$props.length = $props.oldLength
 				$props.dirty = false
 			}
-		}
-	}
-
-	proto.onExtendClass = function(){
-		if(this.prototype) this.prototype()
-		if(!this.$shaderClean){
-			this.$shaderClean = true
-			this.$compileShader()
 		}
 	}
 })

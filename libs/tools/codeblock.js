@@ -1,58 +1,90 @@
-module.exports = require('base/shader').extend(function QuadShader(proto){
+var types = require('base/types')
+var painter = require('services/painter')
 
-	var types = require('base/types')
-	var painter = require('services/painter')
+module.exports = class CodeBlock extends require('base/shader'){
 
-	// special
-	proto.props = {
-		visible: {noTween:true, value:1.0},
+	prototype(){
+		// special
+		this.props = {
+			visible: {noTween:true, value:1.0},
 
-		x: NaN,
-		y: NaN,
-		w: NaN,
-		h: NaN,
-		h2: NaN,
-		w2: NaN,
-		open:0,
-		z: 0,
-		indent:0,
-		borderWidth: 1,
-		borderRadius: 4,
-		fontSize:12.,
-		bgColor: {pack:'float12', value:'gray'},
-		borderColor: {pack:'float12', value:'gray'},
+			x: NaN,
+			y: NaN,
+			w: NaN,
+			h: NaN,
+			h2: NaN,
+			w2: NaN,
+			open:0,
+			z: 0,
+			indent:0,
+			borderWidth: 1,
+			borderRadius: 4,
+			fontSize:12.,
+			bgColor: {pack:'float12', value:'gray'},
+			borderColor: {pack:'float12', value:'gray'},
 
-		// make these uniforms
-		turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-		moveScroll:{kind:'uniform', noTween:1, value:1.},
+			// make these uniforms
+			turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
+			moveScroll:{kind:'uniform', noTween:1, value:1.},
 
-		errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
+			errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
 
-		tween: {kind:'uniform', value:0.},
-		ease: {kind:'uniform', value:[0,10,1.0,1.0]},
-		duration: {noTween:1., value:0.3},
-		delay: {styleLevel:1, value:0.},
-		mesh:{kind:'geometry', type:types.vec3},
+			tween: {kind:'uniform', value:0.},
+			ease: {kind:'uniform', value:[0,10,1.0,1.0]},
+			duration: {noTween:1., value:0.3},
+			delay: {styleLevel:1, value:0.},
+			mesh:{kind:'geometry', type:types.vec3},
+		}
+
+		this.verbs = {
+			$setTweenStart:function(o, v){
+				this.$PROPVARDEF()
+				this.$PROP(o, 'tweenStart') = v
+			},
+			fast:function(x, y, w, h, w2, h2, indent, pickId, style){
+				this.$ALLOCDRAW(1, true)
+				this.$WRITEPROPS({
+					$fastWrite:true,
+					visible:1,
+					delay:0.,
+					fontSize:this.$fastTextFontSize,
+					duration:$proto.duration,
+					x: x,
+					y: y,
+					w: w,
+					h: h,
+					w2: w2,
+					h2: h2,
+					indent:indent,
+					pickId:pickId,
+					open:style.open,
+					borderWidth: style.borderWidth,
+					borderRadius: style.borderRadius,
+					bgColor: style.bgColor,
+					borderColor: style.borderColor
+				})
+			},
+		}
+
+		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+			0, 0, 0,
+			0, 1, 0,
+			1, 0, 0,
+			1, 1, 0
+		).pushQuad(
+			0,0, 1,
+			1,0, 1,
+			0, 1, 1,
+			1, 1, 1
+		)
+
+		this.noInterrupt = 1
 	}
 
-	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
-		0, 0, 0,
-		0, 1, 0,
-		1, 0, 0,
-		1, 1, 0
-	).pushQuad(
-		0,0, 1,
-		1,0, 1,
-		0, 1, 1,
-		1, 1, 1
-	)
-
-	proto.noInterrupt = 1
-
-	proto.vertexStyle = function(){$
+	vertexStyle(){$
 	}
 
-	proto.vertex = function(){$
+	vertex(){$
 		this.vertexStyle()
 
 		if(this.visible < 0.5){
@@ -102,12 +134,12 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	proto.blend = function(a, b, k){
+	blend(a, b, k){
 	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
 	    return mix(b, a, h) - k * h * (1.0 - h)
 	}
 
-	proto.pixel = function(){$
+	pixel(){$
 
 		// ok lets draw things
 		var p = this.p
@@ -177,34 +209,4 @@ module.exports = require('base/shader').extend(function QuadShader(proto){
 		// compute color
 		return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
 	}
-
-	proto.toolMacros = {
-		$setTweenStart:function(o, v){
-			this.$PROPVARDEF()
-			this.$PROP(o, 'tweenStart') = v
-		},
-		fast:function(x, y, w, h, w2, h2, indent, pickId, style){
-			this.$ALLOCDRAW(1, true)
-			this.$WRITEPROPS({
-				$fastWrite:true,
-				visible:1,
-				delay:0.,
-				fontSize:this.$fastTextFontSize,
-				duration:$proto.duration,
-				x: x,
-				y: y,
-				w: w,
-				h: h,
-				w2: w2,
-				h2: h2,
-				indent:indent,
-				pickId:pickId,
-				open:style.open,
-				borderWidth: style.borderWidth,
-				borderRadius: style.borderRadius,
-				bgColor: style.bgColor,
-				borderColor: style.borderColor
-			})
-		},
-	}
-})
+}

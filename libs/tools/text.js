@@ -1,76 +1,268 @@
-module.exports = require('base/shader').extend(function Text(proto, base){
-	var types = require('base/types')
-	var painter = require('services/painter')
-	var fontloader = require('parsers/font')
-	// special
-	proto.props = {
-		//visible:{noTween:1, value:1.},
-		x:{noInPlace:1, value:NaN},
-		y:{noInPlace:1, value:NaN},
+var types = require('base/types')
+var painter = require('services/painter')
+var fontloader = require('parsers/font')
 
-		color:{pack:'float12', value:'black'},
-		outlineColor:{pack:'float12', value:'white'},
-		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
+module.exports = class Text extends require('base/shader'){
 
-		fontSize:12,
+	prototype(){
+		this.props = {
+			//visible:{noTween:1, value:1.},
+			x:{noInPlace:1, value:NaN},
+			y:{noInPlace:1, value:NaN},
 
-		italic:0.,
-		baseLine:{kind:'uniform', value:1.},
+			color:{pack:'float12', value:'black'},
+			outlineColor:{pack:'float12', value:'white'},
+			shadowColor: {pack:'float12', value:[0,0,0,0.5]},
 
-		shadowBlur: 1.0,
-		shadowSpread: -1.,
+			fontSize:12,
 
-		outlineWidth:0.,
-		boldness:0, 
-		shadowOffset: {pack:'int12', value:[0., 0.]},
+			italic:0.,
+			baseLine:{kind:'uniform', value:1.},
 
-		unicode:{noStyle:1, value:0},
+			shadowBlur: 1.0,
+			shadowSpread: -1.,
+
+			outlineWidth:0.,
+			boldness:0, 
+			shadowOffset: {pack:'int12', value:[0., 0.]},
+
+			unicode:{noStyle:1, value:0},
+			
+			// character head/tail margin and advance
+			advance:{noStyle:1, noTween:1, value:0},
+			head:{noStyle:1, noTween:1, value:0},
+			tail:{noStyle:1, noTween:1, value:0},
+
+			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
+
+			wrapping:{styleLevel:1, value:'line'},
+			margin:{styleLevel:1, value:[0,0,0,0]},
+			noBounds: {styleLevel:1, value:0},
+			text:{styleLevel:1, value:''},
+
+			x1:{noStyle:1, noTween:1, value:0},
+			y1:{noStyle:1, noTween:1, value:0},
+			x2:{noStyle:1, noTween:1, value:0},
+			y2:{noStyle:1, noTween:1, value:0},
+			tx1:{noStyle:1, noTween:1, value:0},
+			ty1:{noStyle:1, noTween:1, value:0},
+			tx2:{noStyle:1, noTween:1, value:0},
+			ty2:{noStyle:1, noTween:1, value:0}
+		}
+
+		this.lineSpacing = 1.3
+
+		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+			0, 0, 0,
+			0, 1, 0,
+			1, 0, 0,
+			1, 1, 0
+		).pushQuad(
+			0,0, 1,
+			1,0, 1,
+			0, 1, 1,
+			1, 1, 1
+		)
+
+		this.verbs = {
+			$length:function(){
+				return this.$PROPLEN()
+			},
+			$readOffset:function(o){
+				var proto = this.NAME.prototype
+				var glyphs = proto.font.fontmap.glyphs
+				if(!this.$shaders.NAME) return {}
+				this.$PROPVARDEF()
+				var len = this.$PROPLEN()
+				if(o < 0 || o >= len) return
+				var read = {
+					x:this.$PROP(o, 'x'),
+					y:this.$PROP(o, 'y'),
+					head:this.$PROP(o, 'head'),
+					advance:this.$PROP(o, 'advance'),
+					tail:this.$PROP(o, 'tail'),
+					fontSize:this.$PROP(o, 'fontSize'),
+					italic:this.$PROP(o, 'italic')
+				}
+				read.w = (read.head + read.advance + read.tail) * read.fontSize
+				read.lineSpacing = proto.lineSpacing
+				read.baseLine = proto.baseLine
+				// write the bounding box
+				return read
+			},
+			$seekPos:function(x, y){
+				// lets find where we are inbetween
+				if(!this.$shaders.NAME) return {}
+				var len = this.$PROPLEN()
+				var lineSpacing = this.NAME.prototype.lineSpacing
+				this.$PROPVARDEF()
+				if(len === 0){
+					return 0
+				}
+				for(var i = 0; i < len; i++){
+					var tx = this.$PROP(i, 'x')
+					var ty = this.$PROP(i, 'y')
+					var fs = this.$PROP(i, 'fontSize')
+					var total = this.$PROP(i, 'advance') + this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+
+					var xw = total * fs
+					if(ty >= y){
+						return i - 1
+					}
+					if(y<ty) return -1
+					if(y >= ty &&  x <= tx + xw && y <= ty + fs * lineSpacing){
+						if(x > tx + xw * 0.5){
+							if(ty !== this.$PROP(i+1, 'y')) return i
+							return i + 1
+						}
+						return i
+					}
+				}
+				if(this.$PROP(i-1, 'advance') < 0 && y <= ty + fs * lineSpacing) return len - 1
+				return len
+			},
+			$boundRects:function(start, end){
+				if(!this.$shaders.NAME) return {}
+				var proto = this.NAME.prototype
+				var glyphs = proto.font.fontmap.glyphs
+				var lineSpacing = proto.lineSpacing
+				this.$PROPVARDEF()
+				var boxes = []
+				var curBox
+				var lty, ltx, lfs, lad
+				for(let i = start; i < end; i++){
+					var tx = this.$PROP(i, 'x')
+					var ty = this.$PROP(i, 'y')
+					var fs = this.$PROP(i, 'fontSize')
+					var advance = this.$PROP(i, 'advance')
+					var total = abs(advance) +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+
+					if(curBox && lty !== undefined && lty !== ty){
+						curBox.w = (ltx + lfs * lad) - curBox.x
+						curBox = undefined
+					}
+					if(!curBox){
+						boxes.push(curBox = {fontSize:fs, x:tx, y:ty, h:fs * lineSpacing})
+					}
+					if(i === end-1){ // end current box
+						curBox.w = (tx + fs * total) - curBox.x
+						curBox = undefined
+					}
+					lty = ty, ltx = tx, lfs = fs, lad = total
+				}
+				return boxes
+			},
+			$resetBuffer:function(){
+				this.$PROPLEN() = 0
+			},
+			draw:function(overload){
+				var turtle = this.turtle
+				this.$STYLEPROPS(overload, 1)
+
+				var absx = turtle._x !== undefined
+				var absy = turtle._y !== undefined
+
+				var txt = turtle._text
+				var len = txt.length
 		
-		// character head/tail margin and advance
-		advance:{noStyle:1, noTween:1, value:0},
-		head:{noStyle:1, noTween:1, value:0},
-		tail:{noStyle:1, noTween:1, value:0},
+				this.$ALLOCDRAW(len)
 
-		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
+				// lets fetch the font
+				var glyphs = this.NAME.prototype.font.fontmap.glyphs
+				var lineSpacing = this.NAME.prototype.lineSpacing
+				var wrapping = turtle._wrapping
+				var fontSize = turtle._fontSize
+			
 
-		wrapping:{styleLevel:1, value:'line'},
-		margin:{styleLevel:1, value:[0,0,0,0]},
-		noBounds: {styleLevel:1, value:0},
-		text:{styleLevel:1, value:''},
+				var off = 0
 
-		x1:{noStyle:1, noTween:1, value:0},
-		y1:{noStyle:1, noTween:1, value:0},
-		x2:{noStyle:1, noTween:1, value:0},
-		y2:{noStyle:1, noTween:1, value:0},
-		tx1:{noStyle:1, noTween:1, value:0},
-		ty1:{noStyle:1, noTween:1, value:0},
-		tx2:{noStyle:1, noTween:1, value:0},
-		ty2:{noStyle:1, noTween:1, value:0}
+				turtle._h = fontSize * lineSpacing
+
+				while(off < len){
+					var width = 0
+					var start = off
+					// compute size of next chunk
+					if(!wrapping){
+						for(var b = off; b < len; b++){
+							var unicode = txt.charCodeAt(b)
+							var g = glyphs[unicode] || glyphs[63]
+							width += g.advance * fontSize
+						}
+						off = len
+					}
+					else if(wrapping === 'line'){
+						for(var b = off; b < len; b++){
+							var unicode = txt.charCodeAt(b)
+							var g = glyphs[unicode] || glyphs[63]
+							width += g.advance * fontSize
+							if(b >= off && unicode===10){
+								b++
+								break
+							}
+						}
+						off = b
+					}
+					else if(wrapping === 'char'){
+						var g = glyphs[txt.charCodeAt(off)] || glyphs[63]
+						if(g) width += g.advance * fontSize
+						off++
+					}
+					else{ // wrapping === 'word'
+						for(var b = off; b < len; b++){
+							var unicode = txt.charCodeAt(b)
+							var g = glyphs[unicode] || glyphs[63]
+							width += g.advance * fontSize
+							if(b >= off && (unicode === 32||unicode===9||unicode===10)){
+								b++
+								break
+							}
+						}
+						off = b
+					}
+
+					turtle._w = width
+					if(!absx) turtle._x = NaN
+					if(!absy) turtle._y = NaN
+					absx = absy = false
+					turtle.walk()
+
+					for(let i = start; i < off; i++){
+						var unicode = txt.charCodeAt(i)
+						var g = glyphs[unicode] || glyphs[63]
+						this.$WRITEPROPS({
+							advance:g.advance,
+							head:0.,
+							tail:0.,
+							tx1: g.tx1,
+							ty1: g.ty1,
+							tx2: g.tx2,
+							ty2: g.ty2,
+							x1: g.x1,
+							y1: g.y1,
+							x2: g.x2,
+							y2: g.y2,
+							unicode: unicode
+						})
+						turtle._x += g.advance * fontSize
+					}
+					//}
+					if(unicode===10){
+						this.turtle.lineBreak()
+					}
+				}
+			}
+		}
 	}
 
-	proto.lineSpacing = 1.3
-
-	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
-		0, 0, 0,
-		0, 1, 0,
-		1, 0, 0,
-		1, 1, 0
-	).pushQuad(
-		0,0, 1,
-		1,0, 1,
-		0, 1, 1,
-		1, 1, 1
-	)
-
-	proto.vertexStyle = function(){$
+	vertexStyle(){$
 	}
 
-	proto.pixelStyle = function(){$
+	pixelStyle(){$
 		//this.outlineWidth = abs(sin(this.mesh.y*10.))*3.+1.
 		//this.field += sin(this.mesh.y*10.)*3.*cos(this.mesh.x*10.)*3.
 	}
 
-	proto.vertex = function(){$
+	vertex(){$
 		this.visible = 1.0
 
 		this.vertexStyle()
@@ -134,7 +326,7 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 		return vec4(pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	proto.drawField = function(field){$
+	drawField(field){$
 		if(field > 1. + this.outlineWidth){
 			discard
 		}
@@ -149,12 +341,12 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 		return vec4(this.color.rgb, smoothstep(.75,-.75, field))
 	}
 
-	proto.drawShadow = function(field){
+	drawShadow(field){
 		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
 		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
 	}
 
-	proto.pixel = function(){$
+	pixel(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.01) / adjust * 1.4 
 		this.field = field
@@ -169,196 +361,8 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 		return this.drawField(field)
 	}
 
-	proto.toolMacros = {
-		$length:function(){
-			return this.$PROPLEN()
-		},
-		$readOffset:function(o){
-			var proto = this.NAME.prototype
-			var glyphs = proto.font.fontmap.glyphs
-			if(!this.$shaders.NAME) return {}
-			this.$PROPVARDEF()
-			var len = this.$PROPLEN()
-			if(o < 0 || o >= len) return
-			var read = {
-				x:this.$PROP(o, 'x'),
-				y:this.$PROP(o, 'y'),
-				head:this.$PROP(o, 'head'),
-				advance:this.$PROP(o, 'advance'),
-				tail:this.$PROP(o, 'tail'),
-				fontSize:this.$PROP(o, 'fontSize'),
-				italic:this.$PROP(o, 'italic')
-			}
-			read.w = (read.head + read.advance + read.tail) * read.fontSize
-			read.lineSpacing = proto.lineSpacing
-			read.baseLine = proto.baseLine
-			// write the bounding box
-			return read
-		},
-		$seekPos:function(x, y){
-			// lets find where we are inbetween
-			if(!this.$shaders.NAME) return {}
-			var len = this.$PROPLEN()
-			var lineSpacing = this.NAME.prototype.lineSpacing
-			this.$PROPVARDEF()
-			if(len === 0){
-				return 0
-			}
-			for(var i = 0; i < len; i++){
-				var tx = this.$PROP(i, 'x')
-				var ty = this.$PROP(i, 'y')
-				var fs = this.$PROP(i, 'fontSize')
-				var total = this.$PROP(i, 'advance') + this.$PROP(i, 'head') + this.$PROP(i, 'tail')
-
-				var xw = total * fs
-				if(ty >= y){
-					return i - 1
-				}
-				if(y<ty) return -1
-				if(y >= ty &&  x <= tx + xw && y <= ty + fs * lineSpacing){
-					if(x > tx + xw * 0.5){
-						if(ty !== this.$PROP(i+1, 'y')) return i
-						return i + 1
-					}
-					return i
-				}
-			}
-			if(this.$PROP(i-1, 'advance') < 0 && y <= ty + fs * lineSpacing) return len - 1
-			return len
-		},
-		$boundRects:function(start, end){
-			if(!this.$shaders.NAME) return {}
-			var proto = this.NAME.prototype
-			var glyphs = proto.font.fontmap.glyphs
-			var lineSpacing = proto.lineSpacing
-			this.$PROPVARDEF()
-			var boxes = []
-			var curBox
-			var lty, ltx, lfs, lad
-			for(let i = start; i < end; i++){
-				var tx = this.$PROP(i, 'x')
-				var ty = this.$PROP(i, 'y')
-				var fs = this.$PROP(i, 'fontSize')
-				var advance = this.$PROP(i, 'advance')
-				var total = abs(advance) +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
-
-				if(curBox && lty !== undefined && lty !== ty){
-					curBox.w = (ltx + lfs * lad) - curBox.x
-					curBox = undefined
-				}
-				if(!curBox){
-					boxes.push(curBox = {fontSize:fs, x:tx, y:ty, h:fs * lineSpacing})
-				}
-				if(i === end-1){ // end current box
-					curBox.w = (tx + fs * total) - curBox.x
-					curBox = undefined
-				}
-				lty = ty, ltx = tx, lfs = fs, lad = total
-			}
-			return boxes
-		},
-		$resetBuffer:function(){
-			this.$PROPLEN() = 0
-		},
-		draw:function(overload){
-			var turtle = this.turtle
-			this.$STYLEPROPS(overload, 1)
-
-			var absx = turtle._x !== undefined
-			var absy = turtle._y !== undefined
-
-			var txt = turtle._text
-			var len = txt.length
-	
-			this.$ALLOCDRAW(len)
-
-			// lets fetch the font
-			var glyphs = this.NAME.prototype.font.fontmap.glyphs
-			var lineSpacing = this.NAME.prototype.lineSpacing
-			var wrapping = turtle._wrapping
-			var fontSize = turtle._fontSize
-		
-
-			var off = 0
-
-			turtle._h = fontSize * lineSpacing
-
-			while(off < len){
-				var width = 0
-				var start = off
-				// compute size of next chunk
-				if(!wrapping){
-					for(var b = off; b < len; b++){
-						var unicode = txt.charCodeAt(b)
-						var g = glyphs[unicode] || glyphs[63]
-						width += g.advance * fontSize
-					}
-					off = len
-				}
-				else if(wrapping === 'line'){
-					for(var b = off; b < len; b++){
-						var unicode = txt.charCodeAt(b)
-						var g = glyphs[unicode] || glyphs[63]
-						width += g.advance * fontSize
-						if(b >= off && unicode===10){
-							b++
-							break
-						}
-					}
-					off = b
-				}
-				else if(wrapping === 'char'){
-					var g = glyphs[txt.charCodeAt(off)] || glyphs[63]
-					if(g) width += g.advance * fontSize
-					off++
-				}
-				else{ // wrapping === 'word'
-					for(var b = off; b < len; b++){
-						var unicode = txt.charCodeAt(b)
-						var g = glyphs[unicode] || glyphs[63]
-						width += g.advance * fontSize
-						if(b >= off && (unicode === 32||unicode===9||unicode===10)){
-							b++
-							break
-						}
-					}
-					off = b
-				}
-
-				turtle._w = width
-				if(!absx) turtle._x = NaN
-				if(!absy) turtle._y = NaN
-				absx = absy = false
-				turtle.walk()
-
-				for(let i = start; i < off; i++){
-					var unicode = txt.charCodeAt(i)
-					var g = glyphs[unicode] || glyphs[63]
-					this.$WRITEPROPS({
-						advance:g.advance,
-						head:0.,
-						tail:0.,
-						tx1: g.tx1,
-						ty1: g.ty1,
-						tx2: g.tx2,
-						ty2: g.ty2,
-						x1: g.x1,
-						y1: g.y1,
-						x2: g.x2,
-						y2: g.y2,
-						unicode: unicode
-					})
-					turtle._x += g.advance * fontSize
-				}
-				//}
-				if(unicode===10){
-					this.turtle.lineBreak()
-				}
-			}
-		}
-	}
-
-	proto.onExtendClass = function(){
+	onCompileVerbs(){
+		super.onCompileVerbs()
 		if(this.font){
 			if(!this.font.fontmap){
 				var map = this.font.fontmap = fontloader(this.font)
@@ -367,7 +371,5 @@ module.exports = require('base/shader').extend(function Text(proto, base){
 			// make the texture.
 			this.fontSampler = this.font.fontSampler
 		}
-
-		base.onExtendClass.apply(this, arguments)
 	}
-})
+}

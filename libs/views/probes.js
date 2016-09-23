@@ -22,56 +22,60 @@ function $P(id, arg){
 	return arg
 }
 
-module.exports = require('base/view').extend({
-	name:'Probes',
-	props:{
-	},
-	padding:[0,0,0,0],
-	tools:{
-		Text:require('tools/text').extend({
-			font:require('fonts/ubuntu_monospace_256.font'),
-			margin:[5,0,0,0],
-			fontSize:10,
-			wrapping:'char',
-			color:'#f'
-		}),
-		Background:require('tools/quad').extend({
-			color:'#0000',
-			wrap:1,
-		}),
-		Button:require('tools/button'),
-		Item:require('tools/button').extend({
-			w:'100%',
-			Bg:{
-				padding:4,
-				wrap:true
+module.exports = class Probes extends require('base/view'){
+	prototype(){
+		this.name = 'Probes'
+		this.props = {
+		}
+		this.padding = [0,0,0,0]
+		this.tools = {
+			Text:require('tools/text').extend({
+				font:require('fonts/ubuntu_monospace_256.font'),
+				margin:[5,0,0,0],
+				fontSize:10,
+				wrapping:'char',
+				color:'#f'
+			}),
+			Background:require('tools/quad').extend({
+				color:'#0000',
+				wrap:1,
+			}),
+			Button:require('tools/button'),
+			Item:require('tools/button').extend({
+				w:'100%',
+				Bg:{
+					padding:4,
+					wrap:true
+				},
+				Text:{
+					fontSize:7,
+					wrapping:'char'
+				}
+			}),
+			Slider:require('tools/slider')
+		}
+		this.styles = {
+			playButton:{
+				icon:'play',
+				onClick:function(){
+					this.view.onPlay()
+				}
 			},
-			Text:{
-				fontSize:7,
-				wrapping:'char'
-			}
-		}),
-		Slider:require('tools/slider')
-	},
-	styles:{
-		playButton:{
-			icon:'play',
-			onClick:function(){
-				this.view.onPlay()
-			}
-		},
-		stopButton:{
-			icon:'stop',
-			onClick:function(){
-				this.view.onStop()
+			stopButton:{
+				icon:'stop',
+				onClick:function(){
+					this.view.onStop()
+				}
 			}
 		}
-	},
-	onBeginFormatAST:function(){
+	}
+
+	onBeginFormatAST(){
 		this.code.trace = $P.toString()+';\n'
 		this.probes = []
-	},
-	onProbe:function(node, lhs){
+	}
+
+	onProbe(node, lhs){
 		// ok we have a probe, but what is it
 		var name='prop'
 		if(lhs){
@@ -83,13 +87,15 @@ module.exports = require('base/view').extend({
 			node:node,
 			name:name
 		}) - 1
-	},
-	onAfterCompose:function(){
+	}
+
+	onAfterCompose(){
 		this.code = this.parent
 		this.code.onBeginFormatAST = this.onBeginFormatAST.bind(this)
 		this.code.onProbe = this.onProbe.bind(this)
-	},
-	onDraw:function(){
+	}
+
+	onDraw(){
 		//alright so how are we going to select things
 		this.beginBackground(this.viewGeom)
 		this.drawButton(this.styles.playButton)
@@ -114,4 +120,4 @@ module.exports = require('base/view').extend({
 		}
 		this.endBackground()
 	}
-})
+}

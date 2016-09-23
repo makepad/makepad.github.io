@@ -1,23 +1,24 @@
-module.exports = require('tools/bg').extend(function Hover(proto){
+module.exports = class Hover extends require('tools/bg'){
 
-	proto.props = {
-		selected: {noTween:1, value:0},
+	prototype(){
+		this.props = {
+			selected: {noTween:1, value:0},
 
-		selectedColor: {noTween:1,pack:'float12', value:'red'},
-		selectedBorderColor: {noTween:1,pack:'float12', value:'yellow'},
-		selectedBorderRadius: {noTween:1,value:-1.},
-		selectedBorderWidth: {noTween:1,value:-1.},
+			selectedColor: {noTween:1,pack:'float12', value:'red'},
+			selectedBorderColor: {noTween:1,pack:'float12', value:'yellow'},
+			selectedBorderRadius: {noTween:1,value:-1.},
+			selectedBorderWidth: {noTween:1,value:-1.},
 
-		hoverColor: {noTween:1, pack:'float12', value:'blue'},
-		hoverBorderColor: {noTween:1, pack:'float12', value:'white'},
-		hoverBorderRadius: {noTween:1, value:-1.},
-		hoverBorderWidth: {noTween:1, value:-1.},
+			hoverColor: {noTween:1, pack:'float12', value:'blue'},
+			hoverBorderColor: {noTween:1, pack:'float12', value:'white'},
+			hoverBorderRadius: {noTween:1, value:-1.},
+			hoverBorderWidth: {noTween:1, value:-1.},
 
-		displace: {noTween:1, value:[0,0]},
-			
+			displace: {noTween:1, value:[0,0]},
+		}
 	}
 
-	proto.vertexPre = function(){$
+	vertexPre(){$
 		this.x += this.displace.x
 		this.y += this.displace.y
 		if(this.selected > .5){
@@ -36,5 +37,4 @@ module.exports = require('tools/bg').extend(function Hover(proto){
 			}
 		}
 	}
-
-})
+}

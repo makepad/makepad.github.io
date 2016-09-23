@@ -1,14 +1,17 @@
-module.exports=require('base/view').extend({
-	name:'Fill',
-	props:{
-		color:'red'
-	},
-	tools:{
-		Bg:require('tools/quad').extend({
-			color:''
-		})
-	},
-	onDraw:function(){
+module.exports=class Fill extends require('base/view'){
+	prototype(){
+		this.name = 'Fill'
+		this.props = {
+			color:'red'
+		}
+		this.tools = {
+			Bg:require('tools/quad').extend({
+				color:''
+			})
+		}
+	}
+
+	onDraw(){
 		this.drawBg({
 			x:0,
 			y:0,
@@ -17,4 +20,4 @@ module.exports=require('base/view').extend({
 			color:this.color
 		})
 	}
-})
+}

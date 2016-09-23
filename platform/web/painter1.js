@@ -52,6 +52,14 @@ module.exports = class painter1 extends require('/platform/service'){
 		         canvas.getContext('webgl-experimental', options) ||
 		         canvas.getContext('experimental-webgl', options)
 
+		if(!gl){
+			var span = document.createElement('span')
+			span.style.color = 'white'
+			canvas.parentNode.replaceChild(span, canvas)
+			span.innerHTML = "Sorry, makepad needs browser support for WebGL to run<br/>Please update your browser to a more modern one<br/>Update to atleast iOS 10, Safari 10, latest Chrome, Edge or Firefox<br/>Go and update and come back, your browser will be better, faster and more secure!"
+			return
+		}
+
 		gl.globalShaderCache = {}
 
 		gl.OES_standard_derivatives = gl.getExtension('OES_standard_derivatives')

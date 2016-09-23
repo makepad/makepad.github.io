@@ -1,76 +1,77 @@
-module.exports = require('base/stamp').extend(function Slider(proto){
+module.exports = class Slider extends require('base/stamp'){
 
-	proto.props = {
-		vertical:false,
-		value:{this:'view',value:0},
-		knobSize:20,
-		range:[0,1],
-		step:0,
-		onValue:undefined,
-		onValueStamp:undefined
-	}
+	prototype(){
+		this.props = {
+			vertical:false,
+			value:{this:'view',value:0},
+			knobSize:20,
+			range:[0,1],
+			step:0,
+			onValue:undefined,
+			onValueStamp:undefined
+		}
 
-	proto.dragOffset = -1
-	proto.inPlace = 1
-
-	proto.tools = {
-		Bg:require('tools/rect').extend({
-			color:'gray',
-			padding:5
-		}),
-		Knob:require('tools/rect').extend({
-			color:'white',
-			vertical:{noTween:1,value:0.},
-			pos:{noTween:1,value:0.},
-			poff:{noTween:1,value:-1},
-			psize:{noTween:1,value:0.},
-			step:{noTween:1,value:0.},
-			range:{noTween:1,value:[0.,1.]},
-			vertexPre:function(){$
-				var pos = vec2()
-				if(this.isFingerDown(pos) > 0 && this.poff > 0.){
-					var rw = (this.range.y-this.range.x)
-					var rs = 0., v=0.
-					if(this.vertical<0.5){
-						rs = (this.psize - this.w)
-						v = clamp((pos.x - this.x - this.poff) / rs,0.,1.)*rw+this.range.x
+		this.dragOffset = -1
+		this.inPlace = 1
+		this.tools = {
+			Bg:require('tools/rect').extend({
+				color:'gray',
+				padding:5
+			}),
+			Knob:require('tools/rect').extend({
+				color:'white',
+				vertical:{noTween:1,value:0.},
+				pos:{noTween:1,value:0.},
+				poff:{noTween:1,value:-1},
+				psize:{noTween:1,value:0.},
+				step:{noTween:1,value:0.},
+				range:{noTween:1,value:[0.,1.]},
+				vertexPre:function(){$
+					var pos = vec2()
+					if(this.isFingerDown(pos) > 0 && this.poff > 0.){
+						var rw = (this.range.y-this.range.x)
+						var rs = 0., v=0.
+						if(this.vertical<0.5){
+							rs = (this.psize - this.w)
+							v = clamp((pos.x - this.x - this.poff) / rs,0.,1.)*rw+this.range.x
+						}
+						else{
+							rs = (this.psize - this.h)
+							v = clamp((pos.y - this.y - this.poff) / rs,0.,1.)*rw+this.range.x
+						}
+						if(this.step>0.) v = floor(v/this.step+.5)*this.step
+						this.pos= ((v-this.range.x)/rw)*rs
+					}
+					if(this.vertical < 0.5){
+						this.x += this.pos
 					}
 					else{
-						rs = (this.psize - this.h)
-						v = clamp((pos.y - this.y - this.poff) / rs,0.,1.)*rw+this.range.x
+						this.y += this.pos
 					}
-					if(this.step>0.) v = floor(v/this.step+.5)*this.step
-					this.pos= ((v-this.range.x)/rw)*rs
 				}
-				if(this.vertical < 0.5){
-					this.x += this.pos
-				}
-				else{
-					this.y += this.pos
-				}
-			}
-		})
-	}
+			})
+		}
 
-	proto.styles = {
-		default:{
-			Knob:{
-				color:'#a'
-			}
-		},
-		over:{
-			Knob:{
-				color:'#c'
-			}
-		},
-		sliding:{
-			Knob:{
-				color:'#f'
+		this.styles = {
+			default:{
+				Knob:{
+					color:'#a'
+				}
+			},
+			over:{
+				Knob:{
+					color:'#c'
+				}
+			},
+			sliding:{
+				Knob:{
+					color:'#f'
+				}
 			}
 		}
 	}
-
-	proto.mapValue = function(pos){
+	
+	mapValue(pos){
 		var v = clamp(pos,0,1) * (this.range[1]-this.range[0])+this.range[0]
 		if(this.step){
 			v = floor(v / this.step+.5) * this.step
@@ -78,7 +79,7 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 		return v
 	}
 
-	proto.onFingerDown = function(e){
+	onFingerDown(e){
 		// check where we clicked
 		var pos = (this.value - this.range[0])/(this.range[1]-this.range[0])
 		if(this.vertical){
@@ -111,7 +112,7 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 		this.state = this.styles.sliding
 	}
 
-	proto.onFingerMove = function(e){
+	onFingerMove(e){
 		//console.log(this.view.name)
 		if(this.vertical){
 			this.value = this.mapValue((e.y - this.dragOffset)/this.dragSize)
@@ -123,20 +124,20 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 		//if(this.onValue) this.onValue.call(this.view, this.value)
 	}
 
-	proto.onFingerOver = function(){
+	onFingerOver(){
 		this.state = this.styles.over
 	}
 
-	proto.onFingerOut = function(){
+	onFingerOut(){
 		this.state = this.styles.default
 	}
 
-	proto.onFingerUp = function(e){
+	onFingerUp(e){
 		this.dragOffset = -1
 		this.state = e.samePick?this.styles.over:this.styles.default
 	}
 
-	proto.onDraw = function(){
+	onDraw(){
 		this.beginBg(this)
 		this.innerPadding = this.turtle.padding
 		var pos = (this.value - this.range[0])/(this.range[1]-this.range[0])
@@ -167,12 +168,4 @@ module.exports = require('base/stamp').extend(function Slider(proto){
 		}
 		this.endBg()
 	}
-
-	proto.toolMacros = {
-		draw:function(overload){
-			this.$STYLESTAMP(overload)
-			this.$DRAWSTAMP()
-			return $stamp
-		}
-	}
-})
+}

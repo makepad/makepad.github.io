@@ -63,7 +63,7 @@ module.exports = class fingers1 extends require('/platform/service'){
 			}
 			child.batchMessage(msg)
 		}
-		else console.log('fingers1 invalid worker ID', msg)
+		//else console.log('fingers1 invalid worker ID', msg)
 	}
 
 	postMessage(msg){

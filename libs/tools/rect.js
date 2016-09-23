@@ -1,58 +1,93 @@
-module.exports = require('base/shader').extend(function RectShader(proto){
+var types = require('base/types')
+var painter = require('services/painter')
 
-	var types = require('base/types')
-	var painter = require('services/painter')
+module.exports = class Rect extends require('base/shader'){
 
-	proto.props = {
-		visible: {noTween:true, value:1.0},
+	prototype(){
+		this.props = {
+			visible: {noTween:true, value:1.0},
 
-		x: {noInPlace:1, value:NaN},
-		y: {noInPlace:1, value:NaN},
-		w: {noInPlace:1, value:NaN},
-		h: {noInPlace:1, value:NaN},
-		z: 0,
+			x: {noInPlace:1, value:NaN},
+			y: {noInPlace:1, value:NaN},
+			w: {noInPlace:1, value:NaN},
+			h: {noInPlace:1, value:NaN},
+			z: 0,
 
-		wrap: {styleLevel:2, value:1},
-		align: {styleLevel:2, value:[0,0]},
-		padding: {styleLevel:2, value:[0,0,0,0]},
-		margin: {styleLevel:1, value:[0,0,0,0]},
-		noBounds: {styleLevel:1, value:0},
+			wrap: {styleLevel:2, value:1},
+			align: {styleLevel:2, value:[0,0]},
+			padding: {styleLevel:2, value:[0,0,0,0]},
+			margin: {styleLevel:1, value:[0,0,0,0]},
+			noBounds: {styleLevel:1, value:0},
 
-		color: {pack:'float12', value:'gray'},
-		borderColor: {pack:'float12' ,value:[0,0,0,1]},
-		shadowColor: {pack:'float12', value:[0,0,0,0.5]},
+			color: {pack:'float12', value:'gray'},
+			borderColor: {pack:'float12' ,value:[0,0,0,1]},
+			shadowColor: {pack:'float12', value:[0,0,0,0.5]},
 
-		borderWidth: {pack:'int12', value:[0,0,0,0]},
-		borderRadius: {pack:'int12', value:[8,8,8,8]},
+			borderWidth: {pack:'int12', value:[0,0,0,0]},
+			borderRadius: {pack:'int12', value:[8,8,8,8]},
 
-		moveScroll:{noTween:1, value:1.},
-		turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-		viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+			moveScroll:{noTween:1, value:1.},
+			turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
+			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 
-		shadowBlur: 0.0,
-		shadowSpread: 0.0,
-		shadowOffset: {pack:'int12', value:[0.0,0.0]},
-		
-		mesh:{kind:'geometry', type:types.vec3},
+			shadowBlur: 0.0,
+			shadowSpread: 0.0,
+			shadowOffset: {pack:'int12', value:[0.0,0.0]},
+			
+			mesh:{kind:'geometry', type:types.vec3},
+		}
+
+		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+			0,0, 0,
+			1,0, 0,
+			0, 1, 0,
+			1, 1, 0
+		)
+		.pushQuad(
+			0,0, 1,
+			1,0, 1,
+			0, 1, 1,
+			1, 1, 1
+		)
+
+		this.verbs = {
+			$readOffset:function(o){
+				this.$PROPVARDEF()
+				var len = this.$PROPLEN()
+				if(o < 0 || o >= len) return
+				return {
+					x:this.$PROP(o, 'x'),
+					y:this.$PROP(o, 'y'),
+					w:this.$PROP(o, 'w'),
+					h:this.$PROP(o, 'h')
+				}
+			},
+			draw:function(overload){
+				this.$STYLEPROPS(overload, 1)
+				this.$ALLOCDRAW()
+				this.turtle.walk()
+				this.$WRITEPROPS()
+			},
+			begin:function(overload){
+				this.$STYLEPROPS(overload, 2)
+				this.$ALLOCDRAW()
+				var t = this.turtle
+				t.shiftPadding(t._borderWidth)
+				this.beginTurtle()
+			},
+			end:function(){
+				var ot = this.endTurtle()
+				this.turtle.walk(ot)
+				this.$WRITEPROPS()
+			}
+		}
 	}
 
-	proto.mesh = new painter.Mesh(types.vec3).pushQuad(
-		0,0, 0,
-		1,0, 0,
-		0, 1, 0,
-		1, 1, 0
-	)
-	.pushQuad(
-		0,0, 1,
-		1,0, 1,
-		0, 1, 1,
-		1, 1, 1
-	)
-	proto.vertexPre = function(){}
-	proto.vertexStyle = function(){}
-	proto.pixelStyle = function(){}
+	vertexPre(){}
+	vertexStyle(){}
+	pixelStyle(){}
 
-	proto.vertex = function(){$
+	vertex(){$
 		this.vertexPre()
 		this.vertexStyle()
 
@@ -106,7 +141,7 @@ module.exports = require('base/shader').extend(function RectShader(proto){
 		return vec4(pos , 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	proto.pixel = function(){$
+	pixel(){$
 
 		var quick =  vec4(
 			max(this.borderRadius.x, this.borderRadius.w) + this.borderWidth.w,
@@ -198,36 +233,4 @@ module.exports = require('base/shader').extend(function RectShader(proto){
 			return mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.))
 		}
 	}
-
-	proto.toolMacros = {
-		$readOffset:function(o){
-			this.$PROPVARDEF()
-			var len = this.$PROPLEN()
-			if(o < 0 || o >= len) return
-			return {
-				x:this.$PROP(o, 'x'),
-				y:this.$PROP(o, 'y'),
-				w:this.$PROP(o, 'w'),
-				h:this.$PROP(o, 'h')
-			}
-		},
-		draw:function(overload){
-			this.$STYLEPROPS(overload, 1)
-			this.$ALLOCDRAW()
-			this.turtle.walk()
-			this.$WRITEPROPS()
-		},
-		begin:function(overload){
-			this.$STYLEPROPS(overload, 2)
-			this.$ALLOCDRAW()
-			var t = this.turtle
-			t.shiftPadding(t._borderWidth)
-			this.beginTurtle()
-		},
-		end:function(){
-			var ot = this.endTurtle()
-			this.turtle.walk(ot)
-			this.$WRITEPROPS()
-		}
-	}
-})
+}

@@ -95,7 +95,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			// lets count the linenumbers
 			var node = error.node
 			var off = 0, realcol = 0
-			for(let line = 0; line < lines.length; line++){
+			for(var line = 0; line < lines.length; line++){
 				if(off >= node.start){
 					realcol = off - node.start - 3
 					break
@@ -129,18 +129,12 @@ module.exports = class ShaderInfer extends require('base/class'){
 		}
 	}
 
-	walk(node, parent){
-		node.parent = parent
-		node.infer = undefined
-		var typefn = this[node.type]
-		if(!typefn) throw this.SyntaxErr(node, 'Type not found ' + node.type)
-		return typefn.call(this,node)
-	}
-
-	block(array, parent){
+	block(array){
 		var ret = ''
 		for(let i = 0; i < array.length; i++){
-			var line = this.walk(array[i], parent)
+			var item = array[i]
+			var line = this[item.type](item)
+			//var line = this.walk(array[i], parent)
 			if(line.length){
 				ret += this.indent + line + ';'
 				if(ret.charCodeAt(ret.length - 1) !== 10) ret += '\n'
@@ -151,14 +145,14 @@ module.exports = class ShaderInfer extends require('base/class'){
 	
 	Program(node){
 		// ok lets fetch the first function declaration if we have one
-		return this.block(node.body, node)
+		return this.block(node.body)
 	}
 
 	BlockStatement(node){
 		var oi = this.indent
 		this.indent += '\t'
 		var ret = '{\n'
-		ret += this.block(node.body, node)
+		ret += this.block(node.body)
 		this.indent = oi
 		ret += this.indent + '}'
 		return ret
@@ -171,7 +165,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//ExpressionStatement:{expression:1},
 	ExpressionStatement(node){
-		var ret = this.walk(node.expression, node)
+		var expr = node.expression
+		var ret = this[expr.type](expr)//this.walk(node.expression)
 		node.infer = node.expression.infer
 		return ret
 	}
@@ -183,14 +178,15 @@ module.exports = class ShaderInfer extends require('base/class'){
 		for(let i = 0; i < exps.length; i++){
 			var exp = exps[i]
 			if(i) ret += ', '
-			ret += this.walk(exp, node)
+			ret += this[exp.type](exp)//this.walk(exp)
 		}
 		return ret
 	}
 
 	//ParenthesizedExpression:{expression:1}
 	ParenthesizedExpression(node){
-		var ret = '(' + this.walk(node.expression, node) + ')'
+		var exp = node.expression
+		var ret = '(' + this[exp.type](exp) + ')'
 		node.infer = node.expression.infer
 		return ret
 	}
@@ -326,7 +322,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 			// just jump to it
 			var astnode = ast.body[0]
-			var ret = this.walk(astnode, node)
+			var ret = this[astnode.type](astnode)//.walk(astnode)
 			node.infer = astnode.infer
 			return ret
 		}		
@@ -395,8 +391,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 		//	node.infer = node.property.infer
 		//	return ret
 		//}
-
-		var objectstr = this.walk(node.object, node)
+		var obj = node.object
+		var objectstr = this[obj.type](obj)//this.walk(node.object)
 
 		if(node.computed){
 			var objinfer = node.object.infer
@@ -408,7 +404,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 			if(objtype.slots <= 1){
 				throw this.InferErr(node, 'cannot use index[] on item with size 1')
 			}
-			var argstr = this.walk(node.property, node)
+			var prop = node.property
+			var argstr = this[prop.type](prop)//this.walk(node.property)
 
 			var primtype = objtype.primary
 	
@@ -466,9 +463,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 				// its a function
 				if(typeof value === 'function'){
-					if(!this.root['_'+propname]){
-						this.root.$monitorMethod(propname)
-					}
+					this.root.$methodDeps[propname] = value
 					node.infer = {
 						kind: 'function',
 						name: propname,
@@ -480,9 +475,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 				// turn it into a property
 				if(typeof value === 'object' && value.constructor === Object){
-					var propgen = {}
-					propgen[propname] = value
-					this.root.props = propgen
+					this.root.$defineProp(propname, value)
 				}
 
 				var props = this.root._props
@@ -678,8 +671,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//CallExpression:{callee:1, arguments:2},
 	CallExpression(node){
-		var calleestr = this.walk(node.callee, node)
 		var callee = node.callee
+		var calleestr = this[callee.type](callee)//.walk(node.callee)
 		var calleeinfer = node.callee.infer
 
 		// its a macro overlay
@@ -691,7 +684,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 		var args = node.arguments
 		var argstrs = []
 		for(let i = 0; i < args.length; i++){
-			argstrs.push(this.walk(args[i], node))
+			var arg = args[i]
+			argstrs.push(this[arg.type](arg))//this.walk(args[i]))
 		}
 
 		if(calleeinfer.kind === 'type'){
@@ -740,6 +734,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 			// expand function macro
 			var source = calleeinfer.callee.toString()
+			if(source.indexOf('function')!== 0) source = 'function '+source
 
 			// parse it, should never not work since it already parsed 
 			try{
@@ -854,7 +849,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 
 			// alright lets run the function body.
-			var body = sub.walk(ast.body[0].body)
+			var fnbody = ast.body[0].body
+			var body = sub[fnbody.type](fnbody)
 
 			for(let i = 0; i < args.length; i++){
 				// write the args on the scope
@@ -898,7 +894,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 		var ret = 'return ' 
 		var infer
 		if(node.argument !== null){
-			ret += this.walk(node.argument, node)
+			var arg = node.argument
+			ret += this[arg.type](arg)//.walk(node.argument)
 			infer = node.argument.infer
 		}
 		else{
@@ -940,7 +937,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 		for(let i = 0; i < decls.length; i++){
 			if(i) ret += ';'
 			var decl = decls[i]
-			var str = this.walk(decl, node)
+			var str = this[decl.type](decl)//.walk(decl)
 			if(decl.infer.kind === 'value'){
 				ret += decl.infer.type.name + ' ' + str
 			}
@@ -955,8 +952,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 			throw this.InferErr(node, node.type + ' cant infer type without initializer '+node.id.name)
 		}
 
-		var initstr = this.walk(node.init, node)
 		var init = node.init
+		var initstr = this[init.type](init)//.walk(node.init)
 		var initinfer = init.infer
 
 		if(initinfer.kind === 'value' || initinfer.kind === 'type'){
@@ -984,7 +981,9 @@ module.exports = class ShaderInfer extends require('base/class'){
 	//LogicalExpression:{left:1, right:1, operator:0},
 	LogicalExpression(node){
 		//!TODO check node.left.infer and node.right.infer for compatibility
-		var ret = this.walk(node.left, node) + ' ' + node.operator + ' ' + this.walk(node.right, node)
+		var left = node.left //.walk(node.left)
+		var right = node.right
+		var ret = this[left.type](left) + ' ' + node.operator + ' ' + this[right.type](right)
 		node.infer = node.right.infer
 		return ret
 	}
@@ -992,8 +991,10 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//BinaryExpression:{left:1, right:1, operator:0},
 	BinaryExpression(node){
-		var leftstr = this.walk(node.left, node)
-		var rightstr = this.walk(node.right, node)
+		var left = node.left
+		var right = node.right
+		var leftstr = this[left.type](left)//.walk(node.left)
+		var rightstr = this[right.type](right)//.walk(node.right)
 		var leftinfer = node.left.infer
 		var rightinfer = node.right.infer
 
@@ -1042,8 +1043,10 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//AssignmentExpression: {left:1, right:1},
 	AssignmentExpression(node){
-		var leftstr = this.walk(node.left, node)
-		var rightstr =  this.walk(node.right, node)
+		var left = node.left
+		var right = node.right
+		var leftstr = this[left.type](left)//walk(node.left)
+		var rightstr =  this[right.type](right)//this.walk(node.right)
 
 		var ret = leftstr + ' '+ node.operator +' '+  rightstr
 		var leftinfer = node.left.infer
@@ -1097,7 +1100,10 @@ module.exports = class ShaderInfer extends require('base/class'){
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},
 	ConditionalExpression(node){
 		//!TODO check types
-		var ret = this.walk(node.test, node) + '? ' + this.walk(node.consequent, node) + ': ' + this.walk(node.alternate, node)
+		var test = node.test
+		var cons = node.consequent
+		var alt = node.alternate
+		var ret = this[test.type](test) + '? ' + this[cons.type](cons) + ': ' + this[alt.type](alt)
 		// check types
 		if(node.consequent.infer.type !== node.alternate.infer.type){
 			throw this.InferErr(node, 'Conditional expression returning more than one type '+ret)
@@ -1108,7 +1114,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//UpdateExpression:{operator:0, prefix:0, argument:1},
 	UpdateExpression(node){
-		var ret = this.walk(node.argument, node)
+		var arg = node.argument
+		var ret = this[arg.type](arg)
 		node.infer = node.argument.infer
 		if(node.prefix){
 			return node.operator + ret
@@ -1119,7 +1126,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
 	UnaryExpression(node){
-		var ret = this.walk(node.argument, node)
+		var arg = node.argument
+		var ret = this[arg.type](arg)//.walk(node.argument)
 		node.infer = node.argument.infer
 		if(node.prefix){
 			return node.operator + ret
@@ -1129,13 +1137,16 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 	//IfStatement:{test:1, consequent:1, alternate:1},
 	IfStatement(node){
-		var ret = 'if(' + this.walk(node.test) + ') ' 
+		var test = node.test
+		var ret = 'if(' + this[test.type](test) + ') ' 
 
-		ret += this.walk(node.consequent, node)
+		var cons = node.consequent
+		ret += this[cons.type](cons)//.walk(node.consequent)
 
-		if(node.alternate){
-			if(node.consequent.type !== 'BlockStatement') ret += ';'
-			ret+= '\n'+this.indent+'else '+this.walk(node.alternate, node)
+		var alt = node.alternate
+		if(alt){
+			if(cons.type !== 'BlockStatement') ret += ';'
+			ret+= '\n'+this.indent+'else '+this[alt.type](alt)//(node.alternate)
 		} 
 		return ret
 	}
@@ -1144,10 +1155,13 @@ module.exports = class ShaderInfer extends require('base/class'){
 	ForStatement(node){
 		var oldscope = this.curFunction.scope 
 		this.curFunction.scope = Object.create(oldscope)
-		var ret = 'for(' + this.walk(node.init, node) + ';' 
-		ret += this.walk(node.test, node)+';'
-		ret += this.walk(node.update, node)+') '
-		ret += this.walk(node.body, node)
+		var ret = 'for(' + this.walk(node.init) + ';' 
+		var test = node.test
+		ret += this[test.type](test)+';'
+		var update = node.update
+		ret += this[update.type](update)+') '
+		var body = node.body
+		ret += this[body.type](body)
 		this.curFunction.scope = oldscope
 		return ret
 	}

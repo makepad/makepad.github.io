@@ -1,16 +1,56 @@
-module.exports = require('tools/text').extend(function(proto, base){
+var types = require('base/types')
+var painter = require('services/painter')
+var fontloader = require('parsers/font')
 
-	var types = require('base/types')
-	var painter = require('services/painter')
-	var fontloader = require('parsers/font')
+module.exports = class ArcText extends require('tools/text'){
 
-	proto.props = {
-		fontTexGeom:{kind:'uniform', type:types.vec2},
-		fontItemGeom:{kind:'uniform', type:types.vec2},
-		fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
+	prototype(){
+		this.props = {
+			fontTexGeom:{kind:'uniform', type:types.vec2},
+			fontItemGeom:{kind:'uniform', type:types.vec2},
+			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
+		}
+		// glyphy shader library
+		this.defines = {
+			INFINITY: '1e9',
+			EPSILON: '1e-5',
+			MAX_NUM_ENDPOINTS: '32'
+		}
+
+		this.structs = {
+			arc_t:types.Struct({
+				p0:types.vec2,
+				p1:types.vec2,
+				d:types.float
+			}),
+			arc_endpoint_t:types.Struct({
+				/* Second arc endpoint */
+				p:types.vec2,
+				/* Infinity if this endpoint does not form an arc with the previous
+				 * endpoint.  Ie. a "move_to".  Test with isinf().
+				 * Arc depth otherwise.  */
+				d:types.float
+			}),
+			arc_list_t:types.Struct({
+				/* Number of endpoints in the list.
+				 * Will be zero if we're far away inside or outside, in which case side is set.
+				 * Will be -1 if this arc-list encodes a single line, in which case line_* are set. */
+				num_endpoints:types.int,
+
+				/* If num_endpoints is zero, this specifies whether we are inside(-1)
+				 * or outside(+1).  Otherwise we're unsure(0). */
+				side:types.int,
+				/* Offset to the arc-endpoints from the beginning of the glyph blob */
+				offset:types.int,
+
+				/* A single line is all we care about.  It's right here. */
+				line_angle:types.float,
+				line_distance:types.float /* From nominal glyph center */
+			})
+		}
 	}
 
-	proto.pixel = function(){$
+	pixel(){$
 
 		var nominalSize = ivec2(this.tx1, this.ty1)
 		var atlasPos = ivec2(this.tx2, this.ty2)
@@ -30,85 +70,46 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return this.drawField(field)
 	}
 
-	// glyphy shader library
-	proto.defines = {
-		INFINITY: '1e9',
-		EPSILON: '1e-5',
-		MAX_NUM_ENDPOINTS: '32'
-	}
-
-	proto.structs = {
-		arc_t:types.Struct({
-			p0:types.vec2,
-			p1:types.vec2,
-			d:types.float
-		}),
-		arc_endpoint_t:types.Struct({
-			/* Second arc endpoint */
-			p:types.vec2,
-			/* Infinity if this endpoint does not form an arc with the previous
-			 * endpoint.  Ie. a "move_to".  Test with isinf().
-			 * Arc depth otherwise.  */
-			d:types.float
-		}),
-		arc_list_t:types.Struct({
-			/* Number of endpoints in the list.
-			 * Will be zero if we're far away inside or outside, in which case side is set.
-			 * Will be -1 if this arc-list encodes a single line, in which case line_* are set. */
-			num_endpoints:types.int,
-
-			/* If num_endpoints is zero, this specifies whether we are inside(-1)
-			 * or outside(+1).  Otherwise we're unsure(0). */
-			side:types.int,
-			/* Offset to the arc-endpoints from the beginning of the glyph blob */
-			offset:types.int,
-
-			/* A single line is all we care about.  It's right here. */
-			line_angle:types.float,
-			line_distance:types.float /* From nominal glyph center */
-		})
-	}
-
-	proto.isInf = function(v){$
+	isInf (v){$
 		return abs(v) >= INFINITY * .5
 	}
 
-	proto.isZero = function(v){$
+	isZero(v){$
 		return abs(v) <= EPSILON * 2.
 	}
 
-	proto.ortho = function(v){$
+	ortho(v){$
 		return vec2(-v.y, v.x)
 	}
 
-	proto.floatToByte = function(v){$
+	floatToByte(v){$
 		return int(v *(256. - EPSILON))
 	}
 
-	proto.vec4ToBytes = function(v){$
+	vec4ToBytes(v){$
 		return ivec4(v *(256. - EPSILON))
 	}
 
-	proto.floatToTwoNimbles = function(v){$
+	floatToTwoNimbles(v){$
 		var f = this.floatToByte(v)
 		return ivec2(f / 16, int(mod(float(f), 16.)))
 	}
 
 	/* returns tan(2 * atan(d)) */
-	proto.tan2Atan = function( d){$
+	tan2Atan( d){$
 		var a = (2. * d)
 		var b = (1. - d * d)
 		return a/b
 	}
 
-	proto.atlasLookup = function(offset, _atlas_pos){$
+	atlasLookup(offset, _atlas_pos){$
 		var itemgeom = vec2(_atlas_pos.xy) * this.fontItemGeom 
 		var offmap = vec2(mod(float(offset), this.fontItemGeom.x), offset / int(this.fontItemGeom.x))
 		var pos = (itemgeom + offmap + vec2(.5)) / this.fontTexGeom
 		return texture2D(this.fontSampler, pos)
 	}
 
-	proto.arcEndpointDecode = function(v, nominal_size){$
+	arcEndpointDecode(v, nominal_size){$
 		var p =(vec2(this.floatToTwoNimbles(v.a)) + v.gb) / 16.
 		var d = v.r
 		if(d == 0.) d = INFINITY
@@ -117,18 +118,18 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return arc_endpoint_t(p * vec2(nominal_size), d)
 	}
 
-	proto.arcCenter = function(a){$
+	arcCenter(a){$
 		return mix(a.p0, a.p1, .5) +
 		 this.ortho(a.p1 - a.p0) /(2. * this.tan2Atan(a.d))
 	}
 
-	proto.arcWedgeContains = function(a, p){$
+	arcWedgeContains(a, p){$
 		var d2 = this.tan2Atan(a.d)
 		return dot(p - a.p0,(a.p1 - a.p0) * mat2(1,  d2, -d2, 1)) >= 0. &&
 		 dot(p - a.p1,(a.p1 - a.p0) * mat2(1, -d2,  d2, 1)) <= 0.
 	}
 
-	proto.arcWedgeSignedDistShallow = function(a, p){$
+	arcWedgeSignedDistShallow(a, p){$
 		var v = normalize(a.p1 - a.p0)
 
 		var line_d = dot(p - a.p0, this.ortho(v))// * .1abs on sin(time.sec+p.x)
@@ -156,13 +157,13 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return line_d + r
 	}
 
-	proto.arcWedgeSignedDist = function(a, p){$
+	arcWedgeSignedDist(a, p){$
 		if(abs(a.d) <= .03) return this.arcWedgeSignedDistShallow(a, p)
 		var c = this.arcCenter(a)
 		return sign(a.d) * (distance(a.p0, c) - distance(p, c))
 	}
 
-	proto.arcExtendedDist = function(a, p){$
+	arcExtendedDist(a, p){$
 		/* Note: this doesn't handle points inside the wedge. */
 		var m = mix(a.p0, a.p1, .5)
 		var d2 = this.tan2Atan(a.d)
@@ -174,12 +175,12 @@ module.exports = require('tools/text').extend(function(proto, base){
 		}
 	}
 
-	proto.arcListOffset = function(p, nominalSize){$
+	arcListOffset(p, nominalSize){$
 		var cell = ivec2(clamp(floor(p), vec2(0.,0.), vec2(nominalSize - 1)))
 		return cell.y * nominalSize.x + cell.x
 	}
 
-	proto.arcListDecode = function(v, nominalSize){$
+	arcListDecode(v, nominalSize){$
 
 		var l = arc_list_t()
 		var iv = this.vec4ToBytes(v)
@@ -207,13 +208,13 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return l
 	}
 
-	proto.arcList = function(p, nominalSize, _atlas_pos){$
+	arcList(p, nominalSize, _atlas_pos){$
 		var cell_offset = this.arcListOffset(p, nominalSize)
 		var arc_list_data = this.atlasLookup(cell_offset, _atlas_pos)
 		return this.arcListDecode(arc_list_data, nominalSize)
 	}
 
-	proto.arcSdf = function(p, nominalSize, _atlas_pos){$
+	arcSdf(p, nominalSize, _atlas_pos){$
 
 		var arc_list = this.arcList(p, nominalSize, _atlas_pos)
 
@@ -296,7 +297,7 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return min_dist * side
 	}
 
-	proto.pointDist = function(p, nominalSize, _atlas_pos){$
+	pointDist(p, nominalSize, _atlas_pos){$
 		var arc_list = arc_list(p, nominalSize, _atlas_pos)
 
 		var side = float(arc_list.side)
@@ -318,7 +319,8 @@ module.exports = require('tools/text').extend(function(proto, base){
 		return min_dist
 	}
 
-	proto.onextendclass = function(){
+	onCompileVerbs(){
+		super.onCompileVerbs()
 		if(this.font && !this.font.fontmap){
 			var map = this.font.fontmap = fontloader(this.font)
 			// make the texture.
@@ -326,6 +328,5 @@ module.exports = require('tools/text').extend(function(proto, base){
 			this.fontItemGeom = [map.itemw, map.itemh]
 			this.fontSampler = new painter.Texture(painter.RGBA, map.texw, map.texh, map.textureArray)
 		}
-		Object.getPrototypeOf(base).onextendclass.apply(this, arguments)
 	}
-})
+}

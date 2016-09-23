@@ -133,7 +133,7 @@ module.exports = class View extends require('base/class'){
 					this.drawScrollBar(this)
 				}
 
-				proto.toolMacros = {
+				proto.verbs = {
 					draw:function(overload){
 						this.$STYLESTAMP(overload)
 						this.$DRAWSTAMP()
@@ -169,7 +169,7 @@ module.exports = class View extends require('base/class'){
 					}
 				}
 
-				proto.toolMacros = {
+				proto.verbs = {
 					draw:function(overload){
 						this.$STYLEPROPS(overload)
 						this.$ALLOCDRAW()

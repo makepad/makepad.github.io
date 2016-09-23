@@ -14,92 +14,106 @@ module.exports = class Compiler extends require('base/class'){
 		this.$uniformHeader = ""
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
+
+		this.inheritable('props', function(){
+			var props = this.props
+			for(let key in props){
+				if(!this.$defineProp)debugger
+				this.$defineProp(key, props[key])
+			}
+		})
+
+		this.inheritable('defines', function(){
+			var defines = this.defines
+			if(!this.hasOwnProperty('_defines')){
+				this._defines = this._defines? Object.create(this._defines): {}
+			}
+			for(let key in defines){
+				this._defines[key] = defines[key]
+			}
+		})
+
+		this.inheritable('requires', function(){
+			var requires = this.requires
+			if(!this.hasOwnProperty('_requires')){
+				this._requires = this._requires? Object.create(this._requires): {}
+			}
+			for(let key in requires){
+				this._requires[key] = requires[key]
+			}
+		})
+
+		this.inheritable('structs', function(){
+			var structs = this.structs
+			if(!this.hasOwnProperty('_structs')){
+				this._structs = this._structs?Object.create(this._structs):{}
+			}
+			for(let key in structs){
+				var struct = structs[key]
+				// auto name the struct based on the key
+				if(!struct.name){
+					var newstruct = Object.create(struct)
+					newstruct.constructor = struct.constructor
+					newstruct.name = key
+					struct = newstruct
+				}
+				this._structs[key] = struct
+			}
+		})
+
+		this.inheritable('verbs', function(){
+			var verbs = this.verbs
+			if(!this.hasOwnProperty('_verbs')) this._verbs = this._verbs?Object.create(this._verbs):{}
+			for(let key in verbs) this._verbs[key] = verbs[key]
+		})
 	}
 
-	get props(){
-		throw new Error('props is a configurator, please only assign objects: this.props = {...}')
-	}
-	
-	set props(props){
+	$defineProp(key, value){
 		if(!this.hasOwnProperty('_props')){
 			this._props = this._props?Object.create(this._props):{}
 		}
-		for(let key in props){
-			var config = props[key]
-			if(typeof config !== 'object' || Object.getPrototypeOf(config) !== Object.prototype){
-				config = {value:config}
+
+		var config = value
+		if(typeof config !== 'object' || config.constructor !== Object){
+			config = {value:config}
+		}
+
+		var old = this._props[key]
+		if(old){
+			for(let key in old) if(!(key in config)){
+				config[key] = old[key]
 			}
-			var old = this._props[key]
-			if(old && !('value' in config)){
-				for(let key in old) if(!(key in config)){
-					config[key] = old[key]
+		}
+
+		this._props[key] = config
+		if(config.value !== undefined) this[key] = config.value
+		if(!config.type) config.type = types.typeFromValue(config.value)
+		if(!config.kind) config.kind = 'instance'		
+	}
+
+	onCompileVerbs(){
+		this.__initproto__()
+		if(!this.$methodDeps){
+			this.$compileShader()
+		}
+		else{
+			// figure out if we need to compile
+			var recompile = false
+			if(this.hasOwnProperty('$methodDeps')){
+				return // shaders are class things
+			}
+			var deps = this.$methodDeps
+			for(let key in deps){
+				if(this[key] !== deps[key]){
+					this.$compileShader()
+					return
 				}
 			}
-			this._props[key] = config
-			if(config.value !== undefined) this[key] = config.value
-			if(!config.type) config.type = types.typeFromValue(config.value)
-			if(!config.kind) config.kind = 'instance'
 		}
-	}
-
-	get defines(){
-		throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-	}
-
-	set defines(defines){
-		if(!this.hasOwnProperty('_defines')){
-			this._defines = this._defines? Object.create(this._defines): {}
-		}
-		for(let key in defines){
-			this._defines[key] = defines[key]
-		}
-	}
-
-	get requires(){
-		throw new Error('defines is a configurator, please only assign objects: this.'+name+' = {...}')
-	}
-
-	set requires(requires){
-		if(!this.hasOwnProperty('_requires')){
-			this._requires = this._requires? Object.create(this._requires): {}
-		}
-		for(let key in requires){
-			this._requires[key] = requires[key]
-		}
-	}
-
-
-	get structs(){
-		throw new Error('structs is a configurator, please only assign objects: this.props = {...}')
-	}
-	
-	set structs(structs){
-		if(!this.hasOwnProperty('_structs')){
-			this._structs = this._structs?Object.create(this._structs):{}
-		}
-		for(let key in structs){
-			var struct = structs[key]
-			// auto name the struct based on the key
-			if(!struct.name){
-				var newstruct = Object.create(struct)
-				newstruct.constructor = struct.constructor
-				newstruct.name = key
-				struct = newstruct
-			}
-			this._structs[key] = struct
-		}
-	}
-
-	get toolMacros(){
-		return this._toolMacros
-	}
-
-	set toolMacros(macros){
-		if(!this.hasOwnProperty('_toolMacros')) this._toolMacros = this._toolMacros?Object.create(this._toolMacros):{}
-		for(let key in macros) this._toolMacros[key] = macros[key]
 	}
 
 	$compileShader(){
+		this.$methodDeps = {}
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions)
 
@@ -505,7 +519,7 @@ module.exports = class Compiler extends require('base/class'){
 			return
 		}
 
-		this.$compileInfo = {
+		var info = this.$compileInfo = {
 			name:this.name || this.constructor.name,
 			trace:this.drawTrace,
 			instanceProps:instanceProps,
@@ -520,8 +534,20 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		this.$toolCacheKey = pixel+vertex
-
 		if(this.dump) console.log(vertex,pixel)
+
+		// push our compilation up the protochain as far as we can
+		var proto = Object.getPrototypeOf(this)
+		var deps = this.$methodDeps
+		while(proto){
+			for(let key in deps){
+				if(deps[key] !== proto[key]) return
+			}
+			// write it
+			proto.$compileInfo = info
+			proto.$methodDeps = deps
+			proto = Object.getPrototypeOf(proto)
+		}
 	}
 
 
@@ -1073,21 +1099,6 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		return code
-	}
-
-	$monitorMethod(name){
-		var _name = '_' + name
-		var value = this[name]
-		this[_name] = value
-		Object.defineProperty(this, name, {
-			get:function(){
-				return this[_name]
-			},
-			set:function(v){
-				this.$shaderClean = false
-				this[_name] = v
-			}
-		})
 	}
 
 }

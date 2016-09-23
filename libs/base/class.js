@@ -1,12 +1,3 @@
-var staticSkip = {
-	length:1,
-	arguments:1,
-	caller:1,
-	name:1,
-	prototype:1,
-	__body__:1
-}
-
 function extend(body){
 
 	class ExtendClass extends this{
@@ -15,10 +6,9 @@ function extend(body){
 	var Constructor = ExtendClass
 	var proto = ExtendClass.prototype
 	
-	// make sure we initialize our prototype
 	var parentProto = this.prototype
 	if(!protoReady.get(parentProto)) parentProto.__initproto__()
-
+	
 	Object.defineProperty(Constructor, 'extend', {writable:true,value:extend})
 
 	// apply all args
@@ -39,12 +29,9 @@ function extend(body){
 		}
 	}
 
-	//!TODO remove this, we dont support extend classes that replace the constructor
-	
 	if(proto.constructor !== Constructor){
 		throw new Error("Please use ES6 constructor syntax")
 	}
-	if(this.prototype.onExtendClass) this.prototype.onExtendClass.call(proto)
 
 	return Constructor
 }
@@ -96,36 +83,34 @@ Object.defineProperty(module.exports.prototype, 'mixin',{
 		}
 	}
 })
+var protoReady = new WeakMap()
+var inheritReady = new WeakMap()
 
 Object.defineProperty(module.exports.prototype, 'inheritable',{
 	enumerable:false,
 	configurable:true,
 	writable:true,
 	value:function(name, callback){
-		if(!this.hasOwnProperty('__inheritable__')) this.__inheritable__ = this.__inheritable__?Array.prototype.slice.apply(this.__inheritable__):[]
+		if(!this.hasOwnProperty('__inheritable__')){
+			Object.defineProperty(this, '__inheritable__',{
+				enumerable:false,
+				configurable:true,
+				writable:true,
+				value:this.__inheritable__?Array.prototype.slice.apply(this.__inheritable__):[]
+			})
+		}
 		this.__inheritable__.push({name:name, cb:callback})
 	}
 })
 
-Object.defineProperty(module.exports.prototype, '__inheritable__',{
+
+Object.defineProperty(module.exports.prototype, '__initproto__',{
 	enumerable:false,
 	configurable:true,
 	writable:true,
-	value:null
-})
-
-
-var protoReady = new WeakMap()
-var inheritReady = new WeakMap()
-
-function scanInheritable(proto, key){
-
-}
-
-Object.defineProperty(module.exports.prototype, '__initproto__',{
-	value: function(){
+	value:function(){
 		if(protoReady.get(proto)) return
-	
+
 		var stack = []	
 
 		// run prototype functions
@@ -142,8 +127,9 @@ Object.defineProperty(module.exports.prototype, '__initproto__',{
 			proto.prototype()
 		}
 
-		// run inheritable callbacks
 		if(!this.__inheritable__) return
+
+		// run inheritable callbacks			
 		for(let j = 0; j< this.__inheritable__.length; j++){
 			var inherit = this.__inheritable__[j]
 			var key = inherit.name
