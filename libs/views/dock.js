@@ -84,7 +84,9 @@ module.exports=class Dock extends require('base/view'){
 			)
 		}
 		else{ // other type
-			var pane = new this.classes[node.type](
+			var cls = this.classes[node.type]
+			if(!cls) throw new Error("Dock can't find "+node.type)
+			var pane = new cls(
 				node,{
 					dock:this
 				}

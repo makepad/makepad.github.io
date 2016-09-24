@@ -107,16 +107,16 @@ module.exports = class keyboard1 extends require('/platform/service'){
 		}"
 		document.body.appendChild(style)
 
-		if(!this.root.isTouchDevice){
+		//if(!this.root.isTouchDevice){
 			ta.style.position = 'absolute'
 			ta.style.left = -100
 			ta.style.top = -100
 			ta.style.opacity = 0.
-		}
-		else{
-			ta.style.position = 'relative'
-			ta.style.top = 0
-		}
+		//}
+		//else{
+		//	ta.style.position = 'relative'
+		//ta.style.top = 0
+		///}
 
 		if(this.root.isIOSDevice){
 			ta.style.textAlign = 'center'
@@ -312,17 +312,17 @@ module.exports = class keyboard1 extends require('/platform/service'){
 	//
 
 	showTextArea(){
-		if(this.root.isTouchDevice){
-			this.textArea.style.top = -15
-		}
+		//if(this.root.isTouchDevice){
+		//	this.textArea.style.top = -15
+		//}
 		this.textArea.focus()
 		this.hasTextInputFocus = true
 	}
 
 	hideTextArea(){
-		if(this.root.isTouchDevice){
-			this.textArea.style.top = 0
-		}
+		//if(this.root.isTouchDevice){
+		//	this.textArea.style.top = 0
+		//}
 		this.textArea.blur()
 		this.hasTextInputFocus = false
 	}
@@ -338,8 +338,8 @@ module.exports = class keyboard1 extends require('/platform/service'){
 	}
 
 	textAreaTouchMode(){
-		this.textArea.style.position = 'relative'
-		this.textArea.style.top = 0
+		//this.textArea.style.position = 'relative'
+		//this.textArea.style.top = 0
 	}
 
 	finalizeSelection(){

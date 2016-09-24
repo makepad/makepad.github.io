@@ -687,12 +687,12 @@ module.exports = class Compiler extends require('base/class'){
 			var thisname = key.slice(9)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
-			// if(uniform.config.animate){
-			// 	code += indent+'    var $animate = '+source+'\n'
-			// /	code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
-			// 	code += indent+'	$todo.'+typename+'Uniform('+painter.nameId(key)+',$animate)\n'
-			// }
-			code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
+			if(uniform.config.animate){
+			 	code += indent+'    var $animate = '+source+'\n'
+				code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
+			 	code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+',$animate)\n'
+			}
+			else code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 		}
 
 		// do the samplers

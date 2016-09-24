@@ -40,7 +40,11 @@ module.exports = class Probes extends require('base/view'){
 				color:'#0000',
 				wrap:1,
 			}),
-			Button:require('tools/button'),
+			Button:require('tools/button').extend({
+				Bg:{
+					padding:[6,10,6,10]
+				}
+			}),
 			Item:require('tools/button').extend({
 				w:'100%',
 				Bg:{
@@ -70,6 +74,16 @@ module.exports = class Probes extends require('base/view'){
 		}
 	}
 
+	onPlay(){
+		// ask which code file has focus
+		var code = this.parent
+		this.app.addProcessTab(code.trace, code.fileName)
+	}
+
+	onStop(){
+
+	}
+
 	onBeginFormatAST(){
 		this.code.trace = $P.toString()+';\n'
 		this.probes = []
@@ -83,16 +97,11 @@ module.exports = class Probes extends require('base/view'){
 			if(lhs.type === 'MemberExpression') name = lhs.property.name
 		}
 		//if(lhs.type === )
+		this.redraw()
 		return this.probes.push({
 			node:node,
 			name:name
 		}) - 1
-	}
-
-	onAfterCompose(){
-		this.code = this.parent
-		this.code.onBeginFormatAST = this.onBeginFormatAST.bind(this)
-		this.code.onProbe = this.onProbe.bind(this)
 	}
 
 	onDraw(){
@@ -103,20 +112,10 @@ module.exports = class Probes extends require('base/view'){
 		var probes = this.probes
 		if(probes) for(let i = 0; i < probes.length; i++){
 			var probe = probes[i]
+			console.log(probe)
 			this.drawItem({
 				text:probe.name
 			})
-			/*
-			this.drawText({
-			})
-			var node = probe.node
-			// lets make a number slider
-			if(node.type === 'Literal' && node.kind === 'num'){
-				this.drawSlider({
-					vertical:false,
-					w:'100%'
-				})
-			}*/
 		}
 		this.endBackground()
 	}

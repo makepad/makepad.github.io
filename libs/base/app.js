@@ -219,7 +219,6 @@ module.exports = class App extends require('base/view'){
 		app.app = app
 		// we are the default focus
 		app.focusView = app
-
 		// compose the tree
 		app.$composeTree(app)
 
@@ -269,9 +268,9 @@ module.exports = class App extends require('base/view'){
 	$composeTree(node, oldChildren){
 		// it calls compose recursively
 		if(node.onCompose){
-			node.onflag = 1
+			node.onFlag = 16
 			node.children = node.onCompose()
-			node.onflag = 0
+			node.onFlag = 0
 		}
 
 		if(!Array.isArray(node.children)){
@@ -279,11 +278,28 @@ module.exports = class App extends require('base/view'){
 		}
 
 		var children = node.children
-
+		
 		if(!node.initialized){
 			node.initialized = true
 			if(node._onInit) node._onInit()
 			if(node.onInit) node.onInit()
+		}	
+
+		var $inwards = node.$inwards
+		for(let inw in $inwards){
+			var config = $inwards[inw]
+			var child = node.find(config.inward)
+			if(!child){
+				console.error('Cannot find inward target '+config.inward )
+				continue
+			}
+			if(!child.$outwards) child.$outwards = {}
+			child.$outwards[config.prop] = {
+				obj:node,
+				key:inw
+			} 
+			child['_on'+config.prop] |= 2
+			child['_'+config.prop] = node['_'+inw]
 		}
 
 		for(let i = 0; i < children.length; i++){
@@ -372,7 +388,7 @@ module.exports = class App extends require('base/view'){
 			)?-1:0)
 
 			layout.$writeList.push(iter, level)
-			iter.onFlag = 4
+			iter.onFlag = 8
 			layout.beginTurtle(iter)
 			turtle = layout.turtle
 			// define width/height for any expressions depending on it

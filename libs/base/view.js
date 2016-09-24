@@ -180,16 +180,15 @@ module.exports = class View extends require('base/class'){
 		}
 
 		this.viewId = 0
-		this._onVisible = 2
+		this._onVisible = 8
 
 		this.$scrollBarSize = 8
 		this.$scrollBarRadius = 2
 		this.$scrollPickIds = 65000
 	
-		this.onFlag1 = this.recompose
-		this.onFlag2 = this.redraw
-		this.onFlag4 = this.relayout
-
+		this.onFlag4 = this.redraw
+		this.onFlag8 = this.relayout
+		this.onFlag16 = this.recompose
 	}
 
 	constructor(...args){
@@ -227,6 +226,17 @@ module.exports = class View extends require('base/class'){
 		this.todo.name = this.name || this.constructor.name
 	}
 
+	bindProp(propname, subname, subprop){
+		Object.defineProperty(this, propname, {
+			get:function(){
+
+			},
+			set:function(){
+
+			}
+		})
+	}
+
 	$createTodo(){
 		var todo = new painter.Todo()
 		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
@@ -236,13 +246,20 @@ module.exports = class View extends require('base/class'){
 
 	// breadth first find child by name
 	find(name){
-		if(this.name === name || this.constructor.name === name) return this
 		var children = this.children
 		if(children){
 			var childlen = children.length
-			for(let i = 0; i < childlen; i++){
-				var child = children[i]
-				if(child.name === name || child.constructor.name === name) return child
+			if(name.constructor === RegExp){
+				for(let i = 0; i < childlen; i++){
+					var child = children[i]
+					if(child.name && child.name.match(name) || child.constructor.name.match(name)) return child
+				}
+			}
+			else{
+				for(let i = 0; i < childlen; i++){
+					var child = children[i]
+					if(child.name === name || child.constructor.name === name) return child
+				}
 			}
 			for(let i = 0; i< childlen; i++){
 				var child = children[i]
@@ -250,6 +267,26 @@ module.exports = class View extends require('base/class'){
 				if(res) return res
 			}
 		}
+	}
+
+	// depth first find all
+	findAll(name, set){
+		if(!set) set = []
+		if(name.constructor === RegExp){
+			if(this.name && this.name.match(name) || this.constructor.name.match(name)) set.push(this)
+		}
+		else{
+			if(this.name === name || this.constructor.name === name) set.push(this)
+		}
+		var children = this.children
+		if(children){
+			var childlen = children.length
+			for(let i = 0; i< childlen; i++){
+				var child = children[i]
+				child.findAll(name, set)
+			}
+		}
+		return set
 	}
 
 	_onInit(){
@@ -371,13 +408,15 @@ module.exports = class View extends require('base/class'){
 	}
 
 	deleteChild(index){
-		this.children.splice(index, 1)
+		var del = this.children.splice(index, 1)[0]
 		this.relayout()
+		return del
 	}
 
 	removeChild(index){
-		this.children.splice(index, 1)
+		var del = this.children.splice(index, 1)[0]
 		this.relayout()
+		return del
 	}
 
 	
@@ -512,7 +551,7 @@ module.exports = class View extends require('base/class'){
 		this.beginTurtle()
 
 		if(this.onDraw){
-			this.onFlag = 2
+			this.onFlag = 4
 			this.onDraw()
 			this.onFlag = 0
 		}
@@ -614,7 +653,7 @@ module.exports = class View extends require('base/class'){
 			this.beginTurtle()
 			this.turtle._x = 0
 			this.turtle._y = 0		
-			this.onFlag = 2
+			this.onFlag = 4
 			this.onOverlay()
 			this.onFlag = 0
 			this.endTurtle()

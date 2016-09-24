@@ -142,7 +142,7 @@ module.exports=class Tabs extends require('base/view'){
 		var set = this.children
 
 		// remove old one
-		item = set.splice(tabStamp.index, 1)[0]
+		var item = set.splice(tabStamp.index, 1)[0]
 		
 		// find insertion point
 		
@@ -176,11 +176,12 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	closeTab(index){
-		if(this.onCloseTab(index)){
-			return
-		}
-		this.removeChild(index)
-	
+		var child = this.removeChild(index)
+
+		this.onCloseTab(index)
+
+		if(child.onCloseTab) child.onCloseTab()
+		
 		if(this.selectedIndex === index){
 			var next = clamp(index, 0, this.children.length -1)
 			this.selectedIndex = -1

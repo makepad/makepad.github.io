@@ -136,6 +136,7 @@ root.onInitApps = function(apps){
 		var app = apps[i]
 		app.singleLoad = {}
 		app.resources = {}
+		app.main = buildPath('/',app.main)
 		allApps.push(
 			root.downloadWithDeps(app.main, '', app.singleLoad, app.resources, app)
 		)
@@ -254,6 +255,7 @@ function workerBoot(){
 			}
 			try{
 				modules[path] = {
+					deps:{},
 					path:path,
 					worker:worker,
 					source:source,
@@ -304,6 +306,7 @@ function workerRequire(absParent, worker, modules, args){
 			var service = worker.services[name]
 			if(service) return service
 			return worker.services[name] =  {
+				buildPath:buildPath,
 				args:args,
 				batchMessage: function(msg, transfers){
 					if(this.debug) console.error('batchMessage '+name, msg)
@@ -324,6 +327,9 @@ function workerRequire(absParent, worker, modules, args){
 		}
 		var absPath = buildPath(absParent, path)
 		var module = modules[absPath]
+	
+		var parentModule = modules[absParent]
+		parentModule.deps[absPath] = module
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
 		if(!module.exports){
@@ -432,18 +438,18 @@ function createOnMessage(worker){
 //
 
 function buildPath(parent, path){
-	
 	var s = path.lastIndexOf('/')
 	var d = path.lastIndexOf('.')
 	if(d === -1 || d < s) path = path + '.js'
 	var a = path.charAt(0)
 	var b = path.charAt(1)
-	if(a === '/') return path.slice(1)
+	if(a === '/') return path//path.slice(1)
 	if(a === '.'){
 		if(b === '.') throw new Error("IMPLEMENT RELATIVE PATHS")
-		return parent.slice(0,parent.lastIndexOf('/')) + path.slice(1)
+		var out = parent.slice(0,parent.lastIndexOf('/')) + path.slice(1)
+		return out
 	}
-	return 'libs/' + path
+	return '/libs/' + path
 }
 
 

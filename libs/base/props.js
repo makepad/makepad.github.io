@@ -1,9 +1,33 @@
+var eventBlock = new WeakMap()
+
 module.exports = class Props extends require('base/class'){
 	// special names for property with name: key
 	// this.key  <- getter setter for the key
 	// this._key  <- the storage for a key
 	// this.onkey  <- the listener chain for a key value change if(this.onkey) this.onkey({...})
 	// this._onkey <- the listener flagset for flagged value change monitoring
+
+	// inwards
+	onFlag1(e){
+		if(eventBlock.get(this)) return
+		var config = this._props[e.key]
+		var obj = this.find(config.inward)
+		if(!obj) return
+		eventBlock.set(obj, true)
+		obj[config.prop] = e.value
+		eventBlock.set(obj, false)
+	}
+
+	// outwards
+	onFlag2(e){
+		if(eventBlock.get(this)) return
+		var out = this.$outwards[e.key]
+		var obj = out.obj
+		eventBlock.set(obj, true)
+		obj[out.key] = e.value
+		eventBlock.set(obj, false)
+	}
+
 	set props(props){
 		for(let key in props){
 			defineProp.call(this, key, props[key])
@@ -35,6 +59,12 @@ function defineProp(key, value){
 	var onkey = 'on' + key.charAt(0).toUpperCase() + key.slice(1)
 	var _onkey = '_on' + key.charAt(0).toUpperCase() + key.slice(1)
 
+	if(config.inward){
+		if(!this.hasOwnProperty('$inwards')) this.$inwards = this.$inwards?Object.create(this.$inwards):{}
+		this.$inwards[key] = config
+		this[_onkey] |= 1
+	}
+
 	this[_key] = initvalue
 	var onthis = config.this
 	Object.defineProperty(this, key, {
@@ -48,7 +78,7 @@ function defineProp(key, value){
 			this[_key] = value
 			var flags = this[_onkey] || this.onFlag0
 
-			if(!config.onChange || old !== value){
+			if(!config.change || old !== value){
 				if(flags){
 					var id = 1
 					while(flags){

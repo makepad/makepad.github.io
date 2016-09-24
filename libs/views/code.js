@@ -11,8 +11,11 @@ module.exports = class Code extends require('views/edit'){
 		this.overflow = 'scroll'
 		this.padding = [0, 0, 0, 4]
 		this.$fastTextFontSize = 12
-		this._onText = 8
-
+		this._onText = 4
+		//this._onText = 32
+		//this.onFlag32 = function(){
+		//	console.error("HI")
+		//}
 		this.tools = {
 
 			Text:require('tools/codetext').extend({
@@ -185,6 +188,7 @@ module.exports = class Code extends require('views/edit'){
 			Comment:{
 				$boldness:0.1,
 				$color:'#0083f8',
+				$isComment:1,
 				side:{
 					$head:0.5
 				},
@@ -399,6 +403,11 @@ module.exports = class Code extends require('views/edit'){
 				$tail:0.5,
 				$color:'#ff9f00'
 			},
+			BinaryExpressionNL:{
+				$head:0.,
+				$tail:0.,
+				$color:'#ff9f00'
+			},
 			AssignmentExpression:{
 				$boldness:0.1,
 				$head:0.5,
@@ -583,7 +592,11 @@ module.exports = class Code extends require('views/edit'){
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3
 	}
 
-	onFlag8(){
+	//onText(){
+	//	console.error("SETTING")
+	//}
+
+	onFlag4(){
 		this.textClean = false
 		this.redraw()
 	}
@@ -659,7 +672,11 @@ module.exports = class Code extends require('views/edit'){
 				this.oldText = oldtext
 				// first we format the code
 				if(this.onBeginFormatAST) this.onBeginFormatAST()
+
 				this.formatJS(this.indentSize, this.ast)
+				//for(let ann = this.ann, i = 0, len = ann.length, step = ann.step; i < len; i+=step){
+				//	console.log("STARTX", ann[i+5], ann[i])
+				//}
 
 				// make undo operation for reformat
 				var newtext = this._text
@@ -710,7 +727,7 @@ module.exports = class Code extends require('views/edit'){
 						this.$setTweenStartMarker(i, 0)
 					}
 				}
-				if(this.onText) setImmediate(this.onText.bind(this))
+				//if(this.onText) setImmediate(this.onText.bind(this))
 				if(this.onParsed) setImmediate(this.onParsed.bind(this))
 			}
 			else{
@@ -729,7 +746,8 @@ module.exports = class Code extends require('views/edit'){
 				this.orderSelection()
 				this.orderErrorMarker()
 
-				this.$fastTextWrite = false
+				this.$fastTextAnnotate = false
+
 				if(!ann.length && this._text){
 					var txt = this._text
 					this._text = ''
@@ -738,9 +756,15 @@ module.exports = class Code extends require('views/edit'){
 				else{
 					this._text = ''
 					for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
-						this.turtle.sx = ann[i+5]
 						this.$fastTextFontSize = ann[i+4]
-						this.fastText(ann[i], ann[i+1], ann[i+2], ann[i+3])
+						var dx = ann[i+5]
+						this.turtle.sx = abs(dx)
+						var text = ann[i]
+						this.fastText(text, ann[i+1], ann[i+2], ann[i+3])
+						var last = text.charCodeAt(text.length-1)
+						if(dx < 0 && (last === 10||last===13)){
+							this.turtle.wx = this.turtle.sx = abs(ann[i+11])
+						}
 					}
 					// lets do a paren match analysis
 					if(this.error.msg === 'Unexpected token'){
@@ -987,7 +1011,7 @@ module.exports = class Code extends require('views/edit'){
 			var txt = ann[i]
 			var style = ann[i+1]
 			//var fs = ann[i+4]
-			var sx = ann[i+5]
+			var sx = abs(ann[i+5])
 			if(txt.indexOf('\n') !== -1){
 				var indent = Array(1+Math.ceil((sx - padLeft) / (this.indentSize*fs))).join('\t')
 				var out = txt.split('\n')

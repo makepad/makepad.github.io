@@ -124,7 +124,6 @@ function requestHandler(req, res){
 					tags[filefull] = JSON.stringify(stat)
 				})
 
-				console.log("Saved ", filefull)
 				res.writeHead(200)
 				res.end()
 			})

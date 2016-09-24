@@ -1,7 +1,7 @@
 (function(){
 	// the loader provides the platform interfaces for web.
 	var root = {}
-	root.platformPath = 'platform/'
+	root.platformPath = '/platform/'
 	root.platform = 'web'
 	root.isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
 	root.isIPad = navigator.userAgent.match(/iPad/)
@@ -167,7 +167,7 @@
 				root.resourceCache[localFile] = req.response
 				resolve(req.response)
 			})
-			req.open("GET", location.origin+'/'+localFile)
+			req.open("GET", location.origin+localFile)
 			req.send()
 		})
 	}

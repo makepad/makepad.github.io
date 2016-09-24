@@ -41,7 +41,7 @@ module.exports = class storage1 extends require('/platform/service'){
 			}, transfers)
 		}.bind(this))
 		//!TODO add domain checks to url
-		req.open("GET", location.origin+'/'+msg.path)
+		req.open("GET", location.origin+msg.path)
 		req.send()
 	}
 
@@ -70,7 +70,7 @@ module.exports = class storage1 extends require('/platform/service'){
 			})
 		}.bind(this))
 		//!TODO add domain checks to url
-		req.open("POST", location.origin+'/'+msg.path, true)
+		req.open("POST", location.origin+msg.path, true)
 		req.send(msg.data)
 	}
 }

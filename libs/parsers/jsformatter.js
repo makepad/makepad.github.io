@@ -18,7 +18,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		//this.trace = ''
 		//this.traceMap = []//[]
 		this.ann.length = 0
-		this.$fastTextWrite = true
+		this.$fastTextAnnotate = true
 		this.scope = Object.create(this.defaultScope)
 
 		// run the AST formatter
@@ -47,7 +47,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
+			//this.ann[this.ann.length - 1] = 
+			this.turtle.wx = this.turtle.sx
 		}
 	}
 
@@ -66,7 +67,11 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 1] = this.turtle.wx = this.turtle.sx
+		//	var al = 
+			//if(!this.ann[al - 5].isComment){
+			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
+			this.turtle.wx = this.turtle.sx
+			//}
 		}
 	}
 
@@ -799,18 +804,27 @@ module.exports = class JSFormatter extends require('base/class'){
 		var ys = turtle.wy
 		if(this.traceMap) this.trace += '$T('+this.traceMap.push(node)+','
 		this[left.type](left, level+1)
-
-		if(node.around1) this.fastText(node.around1, this._styles.Comment.around)
-		this.indentIn()
+		// ok so. if around1 exists, i dont want to indent. otherwise i do
+		var op = node.operator
+		var doIndent = !node.around1 || op !== '/'
+		if(node.around1){
+			this.fastText(node.around1, this._styles.Comment.around)
+		}
+		if(doIndent) this.indentIn()
 
 		var x2 = turtle.wx 
-		this.trace += node.operator
+		this.trace += op
 		if(this.allowOperatorSpaces){
 			for(let ls = '', i = node.leftSpace||0; i > 0; --i) ls += ' '
 			for(let rs = '', i = node.rightSpace||0; i > 0; --i) rs += ' '
-			this.fastText(ls+node.operator+rs, this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression, 0, 0)
+			this.fastText(ls+op+rs, this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression, 0, 0)
 		}
-		else this.fastText(node.operator, this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression)
+		else {
+			var style
+			if(doIndent) style = this._styles.BinaryExpression[node.operator] || this._styles.BinaryExpression
+			else style = this._styles.BinaryExpressionNL[node.operator] || this._styles.BinaryExpressionNL
+			this.fastText(op, style)
+		}
 		var x3 = turtle.wx 
 
 		if(node.around2) this.fastText(node.around2, this._styles.Comment.around)
@@ -818,8 +832,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[right.type](right, level+1)
 	
 		if(this.traceMap) this.trace + ')'
-		this.indentOut()
 
+		if(doIndent) this.indentOut()
 		//if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
 		//else this.stopMarker(m, 0,0,0,0,0)
 	}

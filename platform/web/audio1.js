@@ -32,7 +32,7 @@ module.exports = class audio1 extends require('/platform/service'){
 	onTouchEnd(){
 		if(this.initialized) return
  		var o = this.context.createOscillator()
- 		o.frequency = 500
+ 		o.frequency.value = 500
  		o.connect(this.context.destination)
  		o.start(0)
  		o.stop(0)

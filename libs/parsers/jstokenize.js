@@ -110,7 +110,7 @@ pp.skipBlockComment = function() {
 	if (end === -1) this.raise(this.pos - 2, "Unterminated comment")
 	this.pos = end + 2
 	if(this.storeComments){
-		var cmt = this.input.slice(start, end+2)
+		var cmt = this.input.slice(start, end+2).replace(/\t/g,'')
 		this.storeComments.push(cmt)
 	}
 	//if (this.options.onComment)

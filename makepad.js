@@ -1,344 +1,197 @@
 const storage = require('services/storage')
 const Worker = require('services/worker')
+
 const Dock = require('views/dock')
+const Source = require('./makepad/source')
+const FileTree = require('./makepad/filetree')
+const HomeScreen = require('./makepad/homescreen')
+const Probes = require('./makepad/probes')
+const Settings = require('./makepad/settings')
+const UserProcess = require('./makepad/userprocess')
+
 const projectFile = "./makepad.json"
 const currentFile = "./examples/windtree.js"
-
-var styles = {
-	Code:{},
-	HomeScreen:{
-		padding:[4,4,4,4],
-		Bg:{
-			color:'#0c2141'
-		},
-		Text:{
-			font:require('fonts/ubuntu_monospace_256.font'),
-			color:'#f',
-		}
-	},
-	FileTree:{
-		Background:{
-			color:'#4'
-		},						
-	}
-}
-
-class HomeScreen extends require('views/draw'){
-	prototype(){
-		this.mixin(styles.HomeScreen,{
-			name:'HomeScreen',
-			overflow:'scroll'
-		})
-	}
-
-	onDraw(){
-		this.beginBg(this.viewGeom)
-		this.drawText({
-			text:this.name==='CodeHome'?
-			'Welcome to MakePad! Makepad is a live code editor.\n'+
-			'The Goal of makepad is make programming enjoyable and learn through play.\n\n'+
-			'Try opening an example on the left and clicking Play. Updates to these files will be Live'
-			:''
-		})
-		this.endBg(true)
-	}
-
-	onCompose(){
-		return new Code({
-			x:'0',y:'0',h:0,w:0
-		})
-	}
-}
-
-class UserProcess extends require('views/draw'){
-
-	prototype(){
-		this.mixin(styles.UserProcess,{
-			name:'Probes',
-			surface:true
-		})
-	}
-
-	onRemove(){
-		// we have to free all associated resources.
-	}
-
-	onDraw(){
-		this.drawBg(this.viewGeom)
-	}
-}
-
-
-class Probes extends require('views/probes'){
-
-	prototype(){
-		this.mixin(styles.Probes,{
-			name:'Probes'
-		})
-	}
-
-	onPlay(){
-		// ask which code file has focus
-		var code = this.parent
-		this.app.addProcessTab(code.trace, code.fileName)
-	}
-
-	onStop(){
-
-	}
-}
-
-class Code extends require('views/code'){
-	prototype(){
-		this.name = 'Code'
-		this.mixin(styles.Code,{
-			name:'Code',
-			drawPadding:[0,0,0,36],
-			wrap:true,
-			padding:[0,0,0,0]
-		})
-	}
-
-	onKeyS(e){
-		if(!e.meta && !e.ctrl) return true
-		storage.save(this.fileName, this.serializeWithFormatting())
-	}
-
-	onParsed(){
-		// store it in the filetree
-		if(this.fileNode) this.fileNode.data = this.text
-		// check if our file is an app, ifso lets run it.
-		var body = this.ast.body[0]
-		var proc = this.app.find('Process'+this.fileName)
-		if(proc){
-			var res = projectToResources(this.app.projectData, proc.resources)
-			res[this.fileName] = this.trace
-			console.log("---- restarting user process ----")
-			//return
-			proc.worker.init(
-				this.fileName,
-				res
-			)
-		}
-	}
-
-	onCompose(){
-		return this.probes = new Probes({
-			w:31,
-			h:'100%'
-		})
-	}
-}
-
-
-class Settings extends require('views/draw'){
-	prototype(){
-		this.mixin(styles.Settings,{
-			name:'Settings',
-			Bg:{
-				color:'#3'
-			}
-		})
-	}
-	
-	onDraw(){
-		this.beginBg(this.viewGeom)
-		this.drawText({
-			text:'...'
-		})
-		this.draw
-		this.endBg()
-	}
-
-	onTabShow(){
-		var dock = this.app.find('Dock')
-		dock.toggleSplitterSettings(true)
-		dock.toggleTabSettings(true)
-	}
-
-	onTabHide(){
-		var dock = this.app.find('Dock')
-		dock.toggleSplitterSettings(false)
-		dock.toggleTabSettings(false)
-	}
-}
-
-class FileTree extends require('views/tree'){
-	prototype(){
-		this.mixin(styles.FileTree,{
-			name:'FileTree'
-		})
-	}
-
-	onNodeSelect(node, path){
-		// compute path for node
-		if(path[0].name === 'libs'){
-			var p = ''
-			for(let i = 1; i < path.length;i++){
-				if(i>1) p+= '/'
-				p += path[i].name
-			}
-		}
-		else{
-			var p = './'
-			for(let i = 0; i < path.length;i++){
-				if(i>0) p+= '/'
-				p += path[i].name
-			}
-		}
-		this.app.addCodeTab(node, p)
-	}
-}
-
-function loadProjectTree(projectFile){
-	return new Promise(function(resolve, reject){
-		storage.load(projectFile).then(function(text){
-			var projectTree = JSON.parse(text)
-			var allProj = []
-			var allNodes = []
-
-			function walk(folder, base){
-				for(let i = 0; i < folder.length; i++){
-					var child = folder[i]
-					if(child.folder){
-						walk(child.folder, base + child.name + '/')
-						continue
-					}
-					var isBinary = child.name.indexOf('.js') !== child.name.length - 3
-					var path = '/' + base + child.name
-					allNodes.push(child)
-					allProj.push(storage.load(path, isBinary))
-				}
-			}
-			walk(projectTree.folder, '')
-
-			Promise.all(allProj).then(function(results){
-				// store all the data in the tree
-				for(let i = 0; i < results.length; i++){
-					allNodes[i].data = results[i]
-				}
-				resolve(projectTree)
-			})
-		})
-	})
-}
-
-function projectToResources(projectTree, oldResourcesOrNode){
-	var resources = {}
-	function walk(folder, base){
-		for(let i = 0; i < folder.length; i++){
-			var child = folder[i]
-			if(child.folder){
-				if(base === './libs/') walk(child.folder, 'libs/'+child.name + '/')
-				else walk(child.folder, base + child.name + '/')
-				continue
-			}
-			var store = base+child.name
-			if(typeof oldResourcesOrNode === 'object'){
-				if(oldResourcesOrNode[store] !== child.data){
-					oldResourcesOrNode[store] = child.data
-					resources[store] = child.data
-				}
-			}
-			else{
-				resources[store] = oldResourcesOrNode?child:child.data
-			}
-		}
-	}
-	walk(projectTree.folder, './')
-	return resources
-}
+const project = require('./makepad/project')
 
 module.exports = class Makepad extends require('base/app'){
 
 	onAfterCompose(){
-		// we need to load all other files in the project
-		loadProjectTree(projectFile).then(function(project){
-			this.projectData = project
-			this.find('FileTree').data = project
-			var map = projectToResources(project, true)
-			if(project.open){
-				for(let i = 0; i < project.open.length; i++){
-					var open = project.open[i]
-					this.addCodeTab(map[open], open)
-				}
-			}
-			if(project.run){
-				for(let i = 0; i < project.run.length; i++){
-					var run = project.run[i]
-					this.addProcessTab(map[run].data, run)
-				}
-			}
+		storage.load(projectFile).then(text=>{
+			var proj = JSON.parse(text)
 
-		}.bind(this))
+			this.find('FileTree').data = {folder:[{name:'loading'}]}
+			// we need to load all other files in the project
+			project.loadProjectTree(proj).then(resources=>{
+				// ok! so now. we have the data
+				// now what we have to do is
+				// load up the example
+				this.resources = resources
+				this.find('FileTree').data = this.project = proj
+				if(proj.open){
+					for(let i = 0; i < proj.open.length; i++){
+						var open = proj.open[i]
+						var resource = resources[storage.buildPath('/',open)]
+						this.addSourceTab(resource, open)
+					}
+				}
+				if(proj.run){
+					for(let i = 0; i < proj.run.length; i++){
+						var run = proj.run[i]
+						var resource = resources[storage.buildPath('/',run)]
+						this.addProcessTab(resource, run)
+					}
+				}
+			})
+		})
 	}
 
 	onAfterDraw(){
 		this.onAfterDraw = undefined
 	}
 
-	addCodeTab(node, fileName){
-		var old = this.find('Code'+fileName)
-		if(old){
-			var tabs = old.parent
-			tabs.selectTab(tabs.children.indexOf(old))
-			return
-		}
-		var tabs = this.find('CodeHome').parent
-		var code = new Code({
-			name:'Code'+fileName,
-			tabText:fileName,
-			fileName:fileName,
-			fileNode:node,
-			text:node.data
+	findResourceDeps(resource, deps){
+		deps[resource.path] = resource.data
+		var data = resource.trace || resource.data
+		if(typeof data !== 'string') return
+		var code = data.replace(/\/\*[\S\s]*?\*\//g,'').replace(/\/\/[^\n]*/g,'')
+		code.replace(/require\s*\(\s*['"](.*?)["']/g, (m, path)=>{
+			if(path.charAt(0)==='$') return
+			var mypath = storage.buildPath(resource.path, path)
+			var dep = this.resources[mypath]
+			if(!deps[dep.path]){
+				this.findResourceDeps(dep, deps)
+			}
 		})
-		var idx = tabs.addNewChild(code)
-		tabs.selectTab(idx)
-		code.setFocus()
-	}
-	
-	updateProcess(fileNode, fileName){
-		if(!this.userProcess) return this.addProcessTab(fileName)
 	}
 
-	addProcessTab(source, fileName){
-		var old = this.find('Process'+fileName)
+	// create uniquely identifyable tab titles
+	processTabTitles(){
+		var allTabs = this.findAll(/^Source|^Process/)
+		var collide = {}
+		for(let i = 0; i < allTabs.length;i++){
+			var tab = allTabs[i]
+			if(!tab.resource) continue
+			var path = tab.resource.path
+			var name = path.slice(path.lastIndexOf('/')+1)
+			if(!collide[name]) collide[name] = {}
+			if(!collide[name][path]) collide[name][path] = []
+			collide[name][path].push(tab)
+		}
+		for(var name in collide){
+			var mergePaths = collide[name]
+			var mergeKeys = Object.keys(mergePaths)
+			if(mergeKeys.length > 1){
+				for(let i = 0; i < mergeKeys.length; i++){
+					var tabs = mergePaths[mergeKeys[i]]
+					for(let j = 0; j < tabs.length; j++){
+						var tab = tabs[j]
+						var path = tab.resource.path
+						var rest = path.slice(1,path.lastIndexOf('/'))
+						var text = name + ':' + rest
+						if(tab.tabText !== text){
+							tab.tabText = text
+							tab.parent.redraw()
+						}
+					}
+				}
+			}
+			else{
+				var tabs = mergePaths[mergeKeys[0]]
+				for(let i = 0; i < tabs.length; i++){
+					var tab = tabs[i]
+					if(tab.tabText !== name){
+						tab.tabText = name
+						tab.parent.redraw()
+					}
+				}
+			}
+		}
+	}
+
+	codeChange(resource){
+		// find all processes
+		var procs = this.app.findAll(/^Process/)
+		for(var i = 0; i < procs.length; i++){
+			var proc = procs[i]
+			// update resource
+			if(resource.path in proc.deps){
+				var newDeps = {}
+				var oldDeps = proc.deps
+				var deltaDeps = {}
+				this.findResourceDeps(proc.main, newDeps)
+				// delta the deps
+				for(var key in newDeps){
+					if(oldDeps[key] !== newDeps[key]){
+						oldDeps[key] = deltaDeps[key] = newDeps[key]
+					}
+				}
+				// send new init message to worker
+				proc.worker.init(
+					proc.main.path,
+					deltaDeps
+				)
+			}
+		}
+	}
+
+	addSourceTab(resource){
+		var old = this.find('Source' + resource.path)
 		if(old){
 			var tabs = old.parent
 			tabs.selectTab(tabs.children.indexOf(old))
 			return
 		}
-		var tabs = this.find('UserProcessHome').parent
+		var tabs = this.find('HomeSource').parent
+		var source = new Source({
+			name:'Source'+resource.path,
+			tabText:resource.path,
+			resource:resource,
+			text:resource.data,
+			onCloseTab:function(){
+				this.app.processTabTitles()
+			}
+		})
+		var idx = tabs.addNewChild(source)
+		tabs.selectTab(idx)
+		source.setFocus()
+		this.processTabTitles()
+	}
+	
+	addProcessTab(resource){
+		var old = this.find('Process'+resource.path)
+		if(old){
+			var tabs = old.parent
+			tabs.selectTab(tabs.children.indexOf(old))
+			return
+		}
+		var tabs = this.find('HomeProcess').parent
 		var idx = tabs.addNewChild(new UserProcess({
-			name:'Process'+fileName,
-			tabText:fileName,
-			//fileNode:fileNode,
-			text:source,
+			name:'Process'+resource.path,
+			tabText:resource.path,
+			resource:resource,
+			onCloseTab:function(){
+				this.app.processTabTitles()
+			},
 			onAfterDraw:function(){
 				this.onAfterDraw = undefined
 
 				this.worker = new Worker(null, {
-					fileName:fileName,
+					resource:resource,
 					parentFbId: this.$renderPasses.surface.framebuffer.fbId
-				})	
+				})
 
-				this.resources = projectToResources(this.app.projectData)
-				this.resources[fileName] = source
-
+				// OK so lets compose all deps
+				this.deps = {}
+				this.main = resource
+				this.app.findResourceDeps(resource, this.deps)
 				this.worker.init(
-					fileName,
-					this.resources
+					this.main.path,
+					this.deps
 				)
-				
-				this.worker.onPingTimeout = function(){
-					// do other stuff
-					//this.worker.terminate()
-				}.bind(this)
-
-				this.worker.ping(4000)
 			}
 		}))
 		tabs.selectTab(idx)
+		this.processTabTitles()
 	}
 
 	onCompose(){
@@ -347,16 +200,16 @@ module.exports = class Makepad extends require('base/app'){
 			new Dock({
 				classes:{
 					HomeScreen:HomeScreen,
-					Code:Code,
+					Source:Source,
 					FileTree:FileTree,
 					Settings:Settings
 				},
 				data:{
 					mode:1,
 					locked:false,
-					pos:100,
+					pos:85,
 					left:{
-						bottom:true,
+						bottom:false,
 						tabs:[
 							{type:'FileTree', tabText:'Files', open:true, noCloseTab:true},
 							{type:'Settings', tabText:'', tabIcon:'gear',noCloseTab:true}
@@ -367,15 +220,15 @@ module.exports = class Makepad extends require('base/app'){
 						locked:false,
 						pos:0.5,
 						left:{
-							bottom:true,
+							bottom:false,
 							tabs:[
-								{type:'HomeScreen', name:'CodeHome', tabIcon:'home', open:true, noCloseTab:true}
+								{type:'HomeScreen', name:'HomeSource', tabIcon:'home', open:true, noCloseTab:true}
 							]
 						},
 						right:{
-							bottom:true,
+							bottom:false,
 							tabs:[
-								{type:'HomeScreen', name:'UserProcessHome', tabIcon:'home', open:true, noCloseTab:true}
+								{type:'HomeScreen', name:'HomeProcess', tabIcon:'home', open:true, noCloseTab:true}
 							]
 						}
 					}

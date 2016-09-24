@@ -1,11 +1,11 @@
 {
 	"project":"Makepad",
-	"open":["./examples/audio.js"],
-	"run":["./examples/audio.js"],
+	"open":["/examples/tiny.js","tools/grid.js"],
+	"run":["/examples/tiny.js"],
 	"name":"",
 	"folder":[
-		{"name":"libs","closed":true,"folder":[
-			{"name":"base","closed":true,"folder":[
+		{"name":"libs","folder":[
+			{"name":"base","folder":[
 				{"name":"app.js"},
 				{"name":"class.js"},
 				{"name":"view.js"},
@@ -30,7 +30,7 @@
 				{"name":"sha256.js"},
 				{"name":"types.js"}
 			]},
-			{"name":"tools","closed":true,"folder":[
+			{"name":"tools","folder":[
 				{"name":"arctext.js"},
 				{"name":"bg.js"},
 				{"name":"button.js"},
@@ -50,7 +50,7 @@
 				{"name":"tab.js"},
 				{"name":"text.js"}
 			]},
-			{"name":"views","closed":true,"folder":[
+			{"name":"views","folder":[
 				{"name":"button.js"},
 				{"name":"code.js"},
 				{"name":"dock.js"},
@@ -59,10 +59,9 @@
 				{"name":"fill.js"},
 				{"name":"splitter.js"},
 				{"name":"tabs.js"},
-				{"name":"tree.js"},
-				{"name":"probes.js"}
+				{"name":"tree.js"}
 			]},
-			{"name":"services","closed":true,"folder":[
+			{"name":"services","folder":[
 				{"name":"painter.js"},
 				{"name":"fingers.js"},
 				{"name":"keyboard.js"},
@@ -73,12 +72,12 @@
 				{"name":"midi.js"},
 				{"name":"debug.js"}
 			]},
-			{"name":"fonts","closed":true,"folder":[
+			{"name":"fonts","folder":[
 				{"name":"fontawesome_low.font"},
 				{"name":"ubuntu_medium_256.font"},
 				{"name":"ubuntu_monospace_256.font"}
 			]},
-			{"name":"parsers","closed":true,"folder":[
+			{"name":"parsers","folder":[
 				{"name":"font.js"},
 				{"name":"js.js"},
 				{"name":"jsformatter.js"},
@@ -102,7 +101,7 @@
 				{"name":"wav.js"}
 			]}
 		]},
-		{"name":"examples", "closed":false, "folder":[
+		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
 			{"name":"audio.wav"},
 			{"name":"windtree.js"},
@@ -110,6 +109,16 @@
 			{"name":"buttons.js"},
 			{"name":"shiny.js"},
 			{"name":"tiny.js"}
+		]},
+		{"name":"makepad","folder":[
+			{"name":"source.js"},
+			{"name":"filetree.js"},
+			{"name":"homescreen.js"},
+			{"name":"probes.js"},
+			{"name":"settings.js"},
+			{"name":"project.js"},
+			{"name":"styles.js"},
+			{"name":"userprocess.js"}
 		]},
 		{"name":"makepad.js"}
 	]

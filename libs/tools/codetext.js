@@ -62,8 +62,8 @@ module.exports = class CodeText extends require('tools/text'){
 				var base = out._text.length 
 				out._text += txt
 				var sx = turtle.sx
-
-				if(this.$fastNAMEWrite){
+				
+				if(this.$fastNAMEAnnotate){
 					out.ann.push(txt, style, ihead, itail, fontSize, sx)
 				}
 

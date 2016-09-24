@@ -159,7 +159,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 		// background field
 		var lineRadius = 1.
 		
-		var topDist = this.boxDistance(
+		var topLine = this.boxDistance(
 			p, 
 			5., 
 			13.5, 
@@ -168,7 +168,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 			lineRadius
 		)
 
-		var sideDist = this.boxDistance(
+		var topBlob = this.boxDistance(
 			p,
 			this.topSize.x - 18.,
 			0.,
@@ -177,16 +177,16 @@ module.exports = class CodeBlock extends require('base/shader'){
 			this.borderRadius
 		)
 
-		var botDist = this.boxDistance(
+		var leftLine = this.boxDistance(
 			p,
-			12,
-			this.h - 1.,
-			this.bottomSize.x - 16.,
+			10,
+			this.h - 2.,
+			2.,
 			this.bottomSize.y - 10.,
 			lineRadius
 		)
 	
-		var grabDist = this.boxDistance(
+		var bottomBlob = this.boxDistance(
 			p,
 			0.,
 			this.h2 - 2.,
@@ -198,14 +198,13 @@ module.exports = class CodeBlock extends require('base/shader'){
 		var gloop = 4.
 	
 		var df = 1. - this.open * this.errorTime
-		sideDist += df * 14.
-		grabDist += df * 14.
-		topDist += pow(df, 4.) * abs(p.x)// - this.topSize.x)
-		botDist += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
+		topBlob += df * 14.
+		bottomBlob += df * 14.
+		topLine += pow(df, 4.) * abs(p.x)// - this.topSize.x)
+		leftLine += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
 
 		// blend the fields
-		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topDist,botDist, .5), sideDist, gloop), grabDist, gloop)
-
+		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topLine,leftLine, .5), topBlob, gloop), bottomBlob, gloop)
 		// compute color
 		return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
 	}

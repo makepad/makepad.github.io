@@ -40,8 +40,8 @@ module.exports = class Quad extends require('base/shader'){
 				this.$ALLOCDRAW()
 				this.beginTurtle()
 			},
-			end:function(){
-				var ot = this.endTurtle()
+			end:function(doBounds){
+				var ot = this.endTurtle(doBounds)
 				this.turtle.walk(ot)
 				this.$WRITEPROPS()
 			}
