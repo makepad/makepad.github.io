@@ -30,30 +30,22 @@ module.exports = class Source extends require('base/view'){
 
 	onSave(text){
 		storage.save(this.resource.path, text)
+		this.dirty = false
+		this.app.processTabTitles()
 	}
 
 	onParsed(text, trace){
 		var resource = this.resource
 		if(!resource) return
 		// update our resource
+		if(this.typeChanged){
+			this.dirty = true
+			this.app.processTabTitles()
+		}
+		this.typeChanged = true
 		resource.data = text
 		resource.trace = trace
 		this.app.codeChange(resource)
-
-		/*
-		var proc = this.app.find('Process'+this.resource.path)
-		if(proc){
-			// alright so 
-
-			var res = projectToResources(this.app.projectData, proc.resources)
-			res[this.fileName] = this.trace
-			console.log("---- restarting user process ----")
-			//return
-			proc.worker.init(
-				this.fileName,
-				res
-			)
-		}*/
 	}
 
 	onCompose(){

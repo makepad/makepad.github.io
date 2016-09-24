@@ -47,7 +47,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-			//this.ann[this.ann.length - 1] = 
+			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
 			this.turtle.wx = this.turtle.sx
 		}
 	}
@@ -67,11 +67,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
-		//	var al = 
-			//if(!this.ann[al - 5].isComment){
 			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
 			this.turtle.wx = this.turtle.sx
-			//}
 		}
 	}
 

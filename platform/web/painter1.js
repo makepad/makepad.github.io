@@ -122,7 +122,7 @@ module.exports = class painter1 extends require('/platform/service'){
 	runBootCache(){
 		// bootcache errors on windows.
 		if(!this.root.isWindows){
-		//	this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
+			this.bootCacheTimeout = setTimeout(this.bootCache.bind(this), 0)
 		}
 	}
 

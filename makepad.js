@@ -88,7 +88,7 @@ module.exports = class Makepad extends require('base/app'){
 						var tab = tabs[j]
 						var path = tab.resource.path
 						var rest = path.slice(1,path.lastIndexOf('/'))
-						var text = name + ':' + rest
+						var text =  name + (tab.dirty?"*":"") +':' + rest
 						if(tab.tabText !== text){
 							tab.tabText = text
 							tab.parent.redraw()
@@ -100,8 +100,9 @@ module.exports = class Makepad extends require('base/app'){
 				var tabs = mergePaths[mergeKeys[0]]
 				for(let i = 0; i < tabs.length; i++){
 					var tab = tabs[i]
-					if(tab.tabText !== name){
-						tab.tabText = name
+					var text = name+(tab.dirty?"*":"") 
+					if(tab.tabText !== text){
+						tab.tabText = text
 						tab.parent.redraw()
 					}
 				}
@@ -208,7 +209,7 @@ module.exports = class Makepad extends require('base/app'){
 				data:{
 					mode:1,
 					locked:false,
-					pos:85,
+					pos:95,
 					left:{
 						bottom:false,
 						tabs:[

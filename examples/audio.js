@@ -26,8 +26,8 @@ module.exports=class extends require('base/drawapp'){
 			}
 		}
 	
-	constructor(...args){
-		super(...args)
+	constructor(){
+		super()
 		audio.reset()
 		this.recording=[]
 		this.samples=0
