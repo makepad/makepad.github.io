@@ -1179,7 +1179,39 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//ArrowFunctionExpression:{params:2, expression:0, body:1},
 	ArrowFunctionExpression(node){
-		logNonexisting(node)
+		this.trace += '('
+		if(!node.noParens){
+			this.fastText('(', this.styles.Paren.ArrowFunctionExpression.left)
+		}
+		var params = node.params
+		var paramslen = params.length - 1
+		for(var i = 0; i <= paramslen; i++){
+			var param = params[i]
+			if(param.type === 'Identifier'){
+				var name = param.name
+				this.scope[name] = 2
+				this.trace += name
+				this.fastText(name, this.styles.Identifier.localArg)
+			}
+			else {
+                if(param.type === 'RestElement'){
+                    this.scope[param.argument.name] = 2
+                }
+				this[param.type](param)
+			}
+			if(i < paramslen){
+				this.trace += ','
+				this.fastText(',', this.styles.Comma.ArrowFunctionExpression)
+			}
+		}
+		this.trace += ')'
+		if(!node.noParens){
+			this.fastText(')', this.styles.Paren.ArrowFunctionExpression.right)	
+		}
+		this.trace += '=>'
+		this.fastText('=>', this.styles.ArrowFunctionExpression)
+		var body = node.body
+		this[body.type](body)
 	}
 
 	//SwitchStatement:{discriminant:1, cases:2},

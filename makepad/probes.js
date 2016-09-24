@@ -76,8 +76,7 @@ module.exports = class Probes extends require('base/view'){
 
 	onPlay(){
 		// ask which code file has focus
-		var code = this.parent
-		this.app.addProcessTab(code.trace, code.fileName)
+		this.app.addProcessTab(this.parent.resource)
 	}
 
 	onStop(){

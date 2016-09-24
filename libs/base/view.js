@@ -226,29 +226,42 @@ module.exports = class View extends require('base/class'){
 		}
 		this.todo.name = this.name || this.constructor.name
 	}
-
+	
 	destroy(){
 		if(this.destroyed) return
 		this.destroyed = true
+
 		if(this.onDestroy) this.onDestroy()
 		var children = this.children
 		if(children) for(var i = 0; i < children.length; i++){
 			children[i].destroy()
 		}
 		// clean out resources
-		if(this.todo){
-			this.app.$viewTodoMap[this.todo.todoId] = undefined
-			this.todo.destroyTodo()
+		var todo = this.todo
+		if(todo){
+			this.todo = undefined
+			this.app.$viewTodoMap[todo.todoId] = undefined
+			todo.destroyTodo()
+		}
+		this.$recurDestroyShaders(this.$shaders)
+		// destroy framebuffers
+		for(var name in this.$renderpasses){
+			var pass = this.$renderpasses[name]
+			this.$renderpasses[name] = undefined
+			if(pass.color0) pass.color0.destroyTexture()
+			if(pass.pick) pass.pick.destroyTexture()
+			if(pass.depth) pass.depth.destroyTexture()
+			pass.framebuffer.destroyFramebuffer()
 		}
 	}
 
 	bindProp(propname, subname, subprop){
 		Object.defineProperty(this, propname, {
 			get:function(){
-
+				
 			},
 			set:function(){
-
+				
 			}
 		})
 	}

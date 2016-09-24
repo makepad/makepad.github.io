@@ -151,7 +151,7 @@ painter.Todo = class Todo extends require('base/class'){
 
 		this.todoId = todoIds.alloc(this)
 
-		service.postMessage({
+		service.batchMessage({
 			fn:'newTodo',
 			todoId:this.todoId
 		})
@@ -174,7 +174,7 @@ painter.Todo = class Todo extends require('base/class'){
 
 	destroyTodo(){
 		todoIds.free(this.todoId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyTodo',
 			todoId:this.todoId
 		})
@@ -481,7 +481,7 @@ painter.Shader = class Shader extends require('base/class'){
 		parseShaderUniforms(code.pixel, refs)
 		for(let name in refs) if(!nameIds[name]) painter.nameId(name)
 
-		service.postMessage({
+		service.batchMessage({
 			fn:'newShader',
 			code:{
 				vertex:code.vertex,
@@ -497,11 +497,11 @@ painter.Shader = class Shader extends require('base/class'){
 
 	destroyShader(){
 		shaderIds.free(this.shaderId)
-		this.shaderId = undefined
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyShader',
 			shaderId:this.shaderId
 		})
+		this.shaderId = undefined
 	}
 }
 
@@ -552,7 +552,7 @@ painter.Mesh = class Mesh extends require('base/class'){
 		if(!initalloc) initalloc = 1
 		this.meshId = meshIds.alloc(this)
 
-		service.postMessage({
+		service.batchMessage({
 			fn:'newMesh',
 			meshId:this.meshId
 		})
@@ -573,7 +573,7 @@ painter.Mesh = class Mesh extends require('base/class'){
 
 	destroyMesh(){
 		meshIds.free(this.meshId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyMesh',
 			meshId:this.meshId
 		})
@@ -726,7 +726,7 @@ painter.Texture = class Texture extends require('base/class'){
 
 	destroyTexture(){
 		textureIds.free(this.textureId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyTexture',
 			textureId:textureId
 		})
@@ -772,9 +772,9 @@ painter.Vao = class Vao extends require('base/class'){
 
 	destroyVao(){
 		vaoIds.free(this.vaoId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyVao',
-			vaoId:vaoId
+			vaoId:this.vaoId
 		})
 		this.vaoId = undefined
 	}
@@ -908,9 +908,9 @@ painter.Ubo = class Ubo extends require('base/class'){
 
 	destroyUbo(){
 		uboIds.free(this.uboId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyUbo',
-			uboId:uboId
+			uboId:this.uboId
 		})
 		this.uboId = undefined
 	}
@@ -1022,7 +1022,7 @@ painter.Framebuffer = class Framebuffer extends require('base/class'){
 
 	destroyFramebuffer(){
 		framebufferIds.free(this.fbId)
-		service.postMessage({
+		service.batchMessage({
 			fn:'destroyFramebuffer',
 			fbId:fbId
 		})

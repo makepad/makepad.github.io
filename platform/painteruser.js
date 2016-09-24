@@ -166,6 +166,10 @@ module.exports = function painterUser(proto){
 		}
 	}
 
+	proto.user_destroyFramebuffer = function(msg){
+		
+	}
+
 	proto.user_assignTodoAndUboToFramebuffer = function(msg){
 		// we are attaching a todo to a framebuffer.
 		var framebuffer = this.framebufferIds[msg.fbId]
@@ -226,7 +230,7 @@ module.exports = function painterUser(proto){
 
 		// lets just store the todo message as is
 		var todo = this.todoIds[msg.todoId]
-
+		if(!todo) return
 		// redefine deps
 		todo.deps = msg.deps
 		todo.children = msg.children
@@ -296,7 +300,7 @@ module.exports = function painterUser(proto){
 		var mesh = this.meshIds[msg.meshId]
 		if(!mesh) return console.log("Destroy mesh already deleted ")
 		this.meshIds[msg.meshId] = undefined
-		gl.deleteBuffer(mesh)
+		this.gl.deleteBuffer(mesh)
 	}
 
 	proto.user_updateMesh = function(msg){
@@ -488,6 +492,7 @@ module.exports = function painterUser(proto){
 		var vao = this.vaoIds[msg.vaoId]
 		if(!vao) return console.log("Destroy ubo already deleted ")
 		this.vaoIds[msg.msg] = undefined
+		var gl = this.gl
 		if(gl.OES_vertex_array_object){
 			gl.OES_vertex_array_object.deleteVertexArrayOES(vao)
 		}

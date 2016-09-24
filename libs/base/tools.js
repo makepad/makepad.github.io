@@ -131,6 +131,22 @@ module.exports = class Tools extends require('base/class'){
 		return this.turtle._pickId = ++this.$pickId
 	}
 
+	// destroy framebuffers
+	$recurDestroyShaders(node){
+		for(var key in node){
+			var shader = node[key]
+			node[key] = undefined
+			if(shader.constructor === Object){
+				this.$recurDestroyShaders(shader)
+				continue
+			}
+			shader.$drawUbo.destroyUbo()
+			shader.$vao.destroyVao()
+			shader.$props.destroyMesh()
+			shader.destroyShader()
+		}
+	}
+
 	// internal API used by canvas macros
 	$allocShader(classname){
 		var shaders = this.$shaders

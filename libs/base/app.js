@@ -15,10 +15,8 @@ module.exports = class App extends require('base/view'){
 		this.cursor = 'default'
 	}
 
-	constructor(previous){
+	constructor(){
 		super()
-		if(previous) previous.destroy()
-
 		// create app
 		var app = this
 		

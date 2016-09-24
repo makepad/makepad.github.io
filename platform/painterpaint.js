@@ -118,6 +118,7 @@ module.exports = function painterPaint(proto){
 	]
 
 	proto.findDeps = function(todo, deps){
+		if(!todo) return
 		if(todo.deps && todo.deps.length){
 			deps.push.apply(deps, todo.deps)
 		}
@@ -130,7 +131,7 @@ module.exports = function painterPaint(proto){
 	proto.renderColor = function(framebuffer, todoId){
 		var gl = this.gl
 		var todo = this.todoIds[framebuffer.todoId]
-
+		if(!todo) return
 		var repaint = false
 
 		// we have to find all our deps

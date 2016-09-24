@@ -11,7 +11,7 @@ module.exports = class Code extends require('views/edit'){
 		this.overflow = 'scroll'
 		this.padding = [0, 0, 0, 4]
 		this.$fastTextFontSize = 12
-		this._onText = 4
+		this._onText |= 32
 		//this._onText = 32
 		//this.onFlag32 = function(){
 		//	console.error("HI")
@@ -232,8 +232,11 @@ module.exports = class Code extends require('views/edit'){
 				WhileStatement:{
 					left:{},
 					right:{}
+				},
+				ArrowFunctionExpression:{
+					left:{},
+					right:{}
 				}
-
 			},
 			Comma:{
 				$color:'#777',
@@ -252,7 +255,8 @@ module.exports = class Code extends require('views/edit'){
 				},
 				VariableDeclaration:{},
 				SequenceExpression:{$tail:0.5},
-				NewExpression:{$tail:0.5}
+				NewExpression:{$tail:0.5},
+				ArrowFunctionExpression:{$tail:0.5}
 			},
 			Curly:{
 				BlockStatement:{},
@@ -596,7 +600,7 @@ module.exports = class Code extends require('views/edit'){
 	//	console.error("SETTING")
 	//}
 
-	onFlag4(){
+	onFlag32(){
 		this.textClean = false
 		this.redraw()
 	}
@@ -973,7 +977,7 @@ module.exports = class Code extends require('views/edit'){
 			pos += txt.length
 			if(offset<=pos){
 				var idx = offset - (pos - txt.length)
-				if(ann[i+1] === this._styles.Identifier.unknown){
+				if(ann[i+1] === this.styles.Identifier.unknown){
 					ann[i] = txt.slice(0, idx) + text + txt.slice(idx)
 				}
 				else{
@@ -981,7 +985,7 @@ module.exports = class Code extends require('views/edit'){
 					// lets choose a style
 					ann.splice(i+step,0,
 						text,
-						this._styles.Identifier.unknown,
+						this.styles.Identifier.unknown,
 						ann[i+2],
 						ann[i+3],
 						ann[i+4],

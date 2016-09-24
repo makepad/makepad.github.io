@@ -24,7 +24,7 @@ root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources, appPr
 	var prom = singleLoad[absUrl] = root.downloadResource(absUrl, isBinary, appProgress)
 
 	return prom.then(function(result){
-		resources[absUrl] =result
+		resources[absUrl] = result
 		if(typeof result !== 'string') return Promise.resolve(result)
 		// load dependencies
 		var code = result.replace(/\/\*[\S\s]*?\*\//g,'').replace(/\/\/[^\n]*/g,'')
@@ -229,6 +229,15 @@ function workerBoot(){
 
 	createOnMessage(worker)
 	
+	function invalidateModuleDeps(module){
+		if(!module || !module.exports) return
+		for(var key in module.deps){
+			var oldModule = module.deps[key]
+			modules[key].exports = undefined
+			invalidateModuleDeps(oldModule)
+		}
+	}
+
 	worker.services.ping.onMessage = function(msg){
 		worker.postMessage({$:'pong'})
 	}
@@ -243,9 +252,14 @@ function workerBoot(){
 		var serviceArgs = msg.args
 		for(let path in resources){
 			var source = resources[path]
+
+			// invalidate dependencies
+			invalidateModuleDeps(modules[path])
+
 			if(typeof source !== 'string'){
 				modules[path] = {
 					path:path,
+					deps:{},
 					source:source,
 					worker:worker,
 					exports:source
@@ -279,7 +293,8 @@ function workerBoot(){
 		if(ret !== undefined) module.exports = ret
 
 		if(typeof module.exports === 'function'){
-			worker.appMain = new module.exports(worker.appMain)
+			if(worker.appMain && worker.appMain.destroy) worker.appMain.destroy()
+			worker.appMain = new module.exports()
 		}
 	}
 
@@ -328,8 +343,7 @@ function workerRequire(absParent, worker, modules, args){
 		var absPath = buildPath(absParent, path)
 		var module = modules[absPath]
 	
-		var parentModule = modules[absParent]
-		parentModule.deps[absPath] = module
+		module.deps[absParent] = modules[absParent]
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
 		if(!module.exports){

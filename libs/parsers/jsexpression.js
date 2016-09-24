@@ -323,8 +323,11 @@ pp.parseExprAtom = function(refDestructuringErrors) {
 	case tt.name:
 		var startPos = this.start
 		var id = this.parseIdent(this.type !== tt.name)
-		if (canBeArrow && !this.canInsertSemicolon() && this.eat(tt.arrow))
-			return this.parseArrowExpression(this.startNodeAt(startPos), [id])
+		if (canBeArrow && !this.canInsertSemicolon() && this.eat(tt.arrow)){
+			var node = this.parseArrowExpression(this.startNodeAt(startPos), [id])
+			node.noParens = 1
+			return node
+		}
 		return id
 
 	case tt.regexp:

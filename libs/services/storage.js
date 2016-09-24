@@ -5,14 +5,17 @@ var promises = {}
 
 service.onMessage = function(msg){
 	var prom = promises[msg.path]
+	if(!prom) return
 	promises[msg.path] = undefined
 	prom.resolve(msg.response)
 }
 
 function makePromise(final){
 	var prom = Promise.defer()
-	if(promises[final]) throw new Error('Already loading '+final)
-	promises[final] = prom
+	if(promises[final]){ // chain it
+		promises[final].then(prom.resolve, prom.reject)
+	}
+	else promises[final] = prom
 	return prom
 }
 

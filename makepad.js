@@ -17,6 +17,7 @@ module.exports = class Makepad extends require('base/app'){
 
 	onAfterCompose(){
 		storage.load(projectFile).then(text=>{
+			if(this.destroyed) return
 			var proj = JSON.parse(text)
 
 			this.find('FileTree').data = {folder:[{name:'loading'}]}
@@ -34,7 +35,7 @@ module.exports = class Makepad extends require('base/app'){
 						this.addSourceTab(resource, open)
 					}
 				}
-				if(proj.run){
+				if(!module.worker.hasParent && proj.run){
 					for(let i = 0; i < proj.run.length; i++){
 						var run = proj.run[i]
 						var resource = resources[storage.buildPath('/',run)]
