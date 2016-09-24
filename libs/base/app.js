@@ -17,6 +17,8 @@ module.exports = class App extends require('base/view'){
 
 	constructor(previous){
 		super()
+		if(previous) previous.destroy()
+
 		// create app
 		var app = this
 		
@@ -261,10 +263,6 @@ module.exports = class App extends require('base/view'){
 		keyboard.setTextInputFocus(focus)
 	}
 
-	_onDestroy(){
-		base._onDestroy.call(this)
-	}
-
 	$composeTree(node, oldChildren){
 		// it calls compose recursively
 		if(node.onCompose){
@@ -312,9 +310,7 @@ module.exports = class App extends require('base/view'){
 
 		if(oldChildren) for(;i < oldChildren.length; i++){
 			var oldchild = oldChildren[i]
-			oldchild.destroyed = true
-			if(oldchild.onDestroy) oldchild.onDestroy()
-			if(oldchild._onDestroy) oldchild._onDestroy()
+			if(oldchild.onComposeDestroy) oldchild.onComposeDestroy()
 		}
 		if(node.onAfterCompose) node.onAfterCompose()
 	}

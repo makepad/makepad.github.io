@@ -1,5 +1,6 @@
 var service = require('$painter1')
 var types = require('base/types')
+var IdAlloc = require('base/idalloc')
 
 class Painter extends require('base/class'){
 	prototype(){
@@ -56,7 +57,7 @@ painter.sync = function(){
 	})
 }
 
-var nameIds = {}
+var nameIds = new IdAlloc()
 var nameIdsAlloc = 1
 
 painter.nameId = function(name){
@@ -70,9 +71,6 @@ painter.nameId = function(name){
 	})
 	return nameId
 }
-
-var todoIdsAlloc = 1
-var todoIds = {}
 
 painter.onScrollTodo = function(msg){
 	var todo = todoIds[msg.todoId]
@@ -142,6 +140,8 @@ painter.FUNC_ADD = 2
 painter.MIN = 3
 painter.MAX = 4
 
+var todoIds = new IdAlloc()
+
 painter.Todo = class Todo extends require('base/class'){
 
 	constructor(initalloc){
@@ -149,21 +149,19 @@ painter.Todo = class Todo extends require('base/class'){
 
 		this.initalloc = 256
 
-		var todoId = todoIdsAlloc++
+		this.todoId = todoIds.alloc(this)
 
 		service.postMessage({
 			fn:'newTodo',
-			todoId:todoId
+			todoId:this.todoId
 		})
 
 		this.length = 0
-		this.todoId = todoId
-		this.rootId = todoId
+		this.rootId = this.todoId
 		this.deps = {}
 
 		this.last = -1
 		this.allocated = initalloc || this.initalloc
-		this.todoId = todoId
 		this.root = this
 		// the two datamappings
 		this.f32 = new Float32Array(this.allocated)
@@ -172,8 +170,15 @@ painter.Todo = class Todo extends require('base/class'){
 		this.xScroll = 0
 		this.yScroll = 0
 		this.timeMax = 0
-		// store the todo
-		todoIds[todoId] = this
+	}
+
+	destroyTodo(){
+		todoIds.free(this.todoId)
+		service.postMessage({
+			fn:'destroyTodo',
+			todoId:this.todoId
+		})
+		this.todoId = undefined
 	}
 
 	updateTodoTime(){
@@ -461,14 +466,13 @@ painter.Todo = class Todo extends require('base/class'){
 	}*/
 }
 
-var shaderIds = {}
-var shaderIdsAlloc = 1
+var shaderIds = new IdAlloc()
 
 painter.Shader = class Shader extends require('base/class'){
 
 	constructor(code){
 		super()
-		var shaderId = shaderIdsAlloc++
+		this.shaderId = shaderIds.alloc(this)
 
 		var refs = {}
 
@@ -485,20 +489,23 @@ painter.Shader = class Shader extends require('base/class'){
 			},
 			trace:code.trace,
 			name:code.name,
-			shaderId:shaderId
+			shaderId:this.shaderId
 		})
 
-		this.shaderId = shaderId
 		this.code = code
+	}
 
-		shaderIds[shaderId] = this
+	destroyShader(){
+		shaderIds.free(this.shaderId)
+		this.shaderId = undefined
+		service.postMessage({
+			fn:'destroyShader',
+			shaderId:this.shaderId
+		})
 	}
 }
 
-var meshIdsAlloc = 1
-var meshIds = {}
-
-//painter.ids = nameIds
+var meshIds = new IdAlloc()
 
 painter.Mesh = class Mesh extends require('base/class'){
 
@@ -525,11 +532,6 @@ painter.Mesh = class Mesh extends require('base/class'){
 			meshId:this.meshId,
 			length:this.length,
 			array:sendarray.buffer
-			//drawDiscard: this.drawDiscard,
-			//xOffset:this.xOffset,
-			//yOffset:this.yOffset,
-			//wOffset:this.wOffset,
-			//hOffset:this.hOffset
 		}, [sendarray.buffer]]
 	}
 
@@ -548,12 +550,11 @@ painter.Mesh = class Mesh extends require('base/class'){
 		if(!type) debugger
 
 		if(!initalloc) initalloc = 1
-
-		var meshId = meshIdsAlloc++
+		this.meshId = meshIds.alloc(this)
 
 		service.postMessage({
 			fn:'newMesh',
-			meshId:meshId
+			meshId:this.meshId
 		})
 
 		this.type = type
@@ -561,7 +562,6 @@ painter.Mesh = class Mesh extends require('base/class'){
 		this.slots = slots || type.slots
 
 		this.allocated = 0
-		this.meshId = meshId
 		this.array = undefined
 		this.length = 0
 		this.dirty = true
@@ -569,6 +569,15 @@ painter.Mesh = class Mesh extends require('base/class'){
 			this.allocated = initalloc
 			this.array = new this.arraytype(initalloc * this.slots)
 		}
+	}
+
+	destroyMesh(){
+		meshIds.free(this.meshId)
+		service.postMessage({
+			fn:'destroyMesh',
+			meshId:this.meshId
+		})
+		this.meshId = undefined
 	}
 
 	alloc(newlength){
@@ -643,8 +652,7 @@ painter.Mesh = class Mesh extends require('base/class'){
 	}
 }
 
-var textureIdsAlloc = 1
-var textureIds = {}
+var textureIds = new IdAlloc()
 
 // texture buffer type flags
 painter.RGBA = 0
@@ -704,8 +712,6 @@ painter.Texture = class Texture extends require('base/class'){
 
 	constructor(bufType, dataType, flags, w, h, array){
 		super()
-		var texId = textureIdsAlloc++
-		textureIds[texId] = this
 
 		this.bufType = bufType
 		this.dataType = dataType
@@ -713,9 +719,18 @@ painter.Texture = class Texture extends require('base/class'){
 		this.w = w
 		this.h = h
 		this.array = array
-		this.texId = texId
+		this.texId = textureIds.alloc(this)
 
 		service.batchMessage(this)
+	}
+
+	destroyTexture(){
+		textureIds.free(this.textureId)
+		service.postMessage({
+			fn:'destroyTexture',
+			textureId:textureId
+		})
+		this.textureId = undefined
 	}
 
 	resize(w, h){
@@ -728,8 +743,7 @@ painter.Texture = class Texture extends require('base/class'){
 	}
 }
 
-var vaoIdsAlloc = 1
-var vaoIds = {}
+var vaoIds = new IdAlloc()
 
 // Vertex attribute object
 painter.Vao = class Vao extends require('base/class'){
@@ -745,17 +759,24 @@ painter.Vao = class Vao extends require('base/class'){
 
 	constructor(shader){
 		super()
-		var vaoId = vaoIdsAlloc++
-		vaoIds[vaoId] = this
 		service.batchMessage(this)
 		this.last = -1
 		this.length = 0
 		this.allocated = 20
-		this.vaoId = vaoId
+		this.vaoId = vaoIds.alloc(this)
 		this.shaderId = shader.shaderId
 		// the two datamappings
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
+	}
+
+	destroyVao(){
+		vaoIds.free(this.vaoId)
+		service.postMessage({
+			fn:'destroyVao',
+			vaoId:vaoId
+		})
+		this.vaoId = undefined
 	}
 
 	resize(){
@@ -826,8 +847,7 @@ painter.Vao = class Vao extends require('base/class'){
 	}
 }
 
-var uboIdsAlloc = 1
-var uboIds = {}
+var uboIds = new IdAlloc()
 
 // uniform buffer object
 painter.Ubo = class Ubo extends require('base/class'){
@@ -857,8 +877,6 @@ painter.Ubo = class Ubo extends require('base/class'){
 
 	constructor(layoutDef){
 		super()
-		var uboId = uboIdsAlloc++
-		uboIds[uboId] = this
 		var offsets = this.offsets = {}
 		var order = this.order = []
 		var size = 0
@@ -872,17 +890,29 @@ painter.Ubo = class Ubo extends require('base/class'){
 			})
 			size += slots
 		}
-		this.uboId = uboId
+
+		this.uboId = uboIds.alloc(this)
+
 		service.batchMessage({
 			fn:'newUbo',
 			uboId: this.uboId,
 			order: order
 		})
+
 		this.size = size
 		this.f32 = new Float32Array(size)
 		this.i32 = new Int32Array(this.f32.buffer)
 		this.f32last = new Float32Array(size)
 		this.i32last = new Int32Array(this.f32last.buffer)
+	}
+
+	destroyUbo(){
+		uboIds.free(this.uboId)
+		service.postMessage({
+			fn:'destroyUbo',
+			uboId:uboId
+		})
+		this.uboId = undefined
 	}
 
 	int(nameId, x){
@@ -958,16 +988,13 @@ painter.Ubo = class Ubo extends require('base/class'){
 	}
 }
 
-var framebufferIdsAlloc = 1
-var framebufferIds = {}
+var framebufferIds = new IdAlloc()
 
 painter.Framebuffer = class Framebuffer extends require('base/class'){
 
 	constructor(w, h, attachments, xStart, yStart){
 		super()
-		var fbId = framebufferIdsAlloc ++
-		framebufferIds[fbId] = this
-
+		var fbId = framebufferIds.alloc(this)
 		var attach
 
 		for(let key in attachments){
@@ -991,6 +1018,15 @@ painter.Framebuffer = class Framebuffer extends require('base/class'){
 			xStart:xStart,
 			yStart:yStart,
 		})
+	}
+
+	destroyFramebuffer(){
+		framebufferIds.free(this.fbId)
+		service.postMessage({
+			fn:'destroyFramebuffer',
+			fbId:fbId
+		})
+		this.fbId = undefined
 	}
 
 	resize(w, h, xStart, yStart){

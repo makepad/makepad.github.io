@@ -609,7 +609,6 @@ module.exports = class Code extends require('views/edit'){
 			})
 		}
 		catch(e){
-			console.log(e, e.stack)
 			//console.log(e, e.stack)
 			this.error = e
 		}

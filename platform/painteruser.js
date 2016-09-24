@@ -51,6 +51,13 @@ module.exports = function painterUser(proto){
 		//this.localShaderCache[cacheid] = shader
 	}
 
+	proto.user_destroyShader = function(msg){
+		var shader = this.shaderIds[msg.shaderId]
+		if(!shader) return console.log("Destroy shader already deleted ")
+		// drop it
+		this.shaderIds[msg.shaderId] = undefined
+	}
+
 	proto.user_newFramebuffer = function(msg){
 		var gl = this.gl
 		var prev = this.framebufferIds[msg.fbId]
@@ -184,6 +191,20 @@ module.exports = function painterUser(proto){
 		tex.updateId = this.frameId
 	}
 	
+	proto.user_destroyTexture = function(msg){
+		// drop it
+		var tex = this.textureIds[msg.texId]
+		if(!tex) return console.log("Destroy texture already deleted ")
+		this.textureIds[msg.texId] = undefined
+		if(tex.array){
+			for(var key in tex.samplers){
+				var sam = tex.samplers[key]
+				gl.deleteTexture(sam.gltex)
+				sam.gltex = undefined
+			}
+		}
+	}
+
 	proto.user_newTodo = function(msg){
 		this.todoIds[msg.todoId] = {
 			todoId:msg.todoId,
@@ -192,6 +213,12 @@ module.exports = function painterUser(proto){
 			xScrollFlick:0,
 			yScrollFlick:0
 		}
+	}
+
+	proto.user_destroyTodo = function(msg){
+		var todo = this.todoIds[msg.todoId]
+		if(!todo) return console.log("Destroy todo already deleted ")
+		this.todoIds[msg.todoId] = undefined
 	}
 
 	proto.user_updateTodo = function(msg){
@@ -265,6 +292,13 @@ module.exports = function painterUser(proto){
 		this.meshIds[msg.meshId] = glbuffer
 	}
 
+	proto.user_destroyMesh = function(msg){
+		var mesh = this.meshIds[msg.meshId]
+		if(!mesh) return console.log("Destroy mesh already deleted ")
+		this.meshIds[msg.meshId] = undefined
+		gl.deleteBuffer(mesh)
+	}
+
 	proto.user_updateMesh = function(msg){
 		var gl = this.gl
 		var glbuffer = this.meshIds[msg.meshId]
@@ -324,6 +358,13 @@ module.exports = function painterUser(proto){
 			i32: new Int32Array(f32.buffer)
 		}
 	}
+
+	proto.user_destroyUbo = function(msg){
+		var ubo = this.uboIds[msg.uboId]
+		if(!ubo) return console.log("Destroy ubo already deleted ")
+		this.uboIds[msg.uboId] = undefined
+	}
+
 	
 	proto.user_updateUbo = function(msg){
 		var ubo = this.uboIds[msg.uboId]
@@ -440,6 +481,15 @@ module.exports = function painterUser(proto){
 		if(gl.OES_vertex_array_object){
 			this.execVao(vao)
 			gl.OES_vertex_array_object.bindVertexArrayOES(null)
+		}
+	}
+
+	proto.user_destroyVao = function(msg){
+		var vao = this.vaoIds[msg.vaoId]
+		if(!vao) return console.log("Destroy ubo already deleted ")
+		this.vaoIds[msg.msg] = undefined
+		if(gl.OES_vertex_array_object){
+			gl.OES_vertex_array_object.deleteVertexArrayOES(vao)
 		}
 	}
 

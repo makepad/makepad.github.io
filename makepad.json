@@ -28,7 +28,8 @@
 				{"name":"quat.js"},
 				{"name":"glmatrix.js"},
 				{"name":"sha256.js"},
-				{"name":"types.js"}
+				{"name":"types.js"},
+				{"name":"idalloc.js"}
 			]},
 			{"name":"tools","folder":[
 				{"name":"arctext.js"},

@@ -194,6 +194,7 @@ module.exports = class View extends require('base/class'){
 	constructor(...args){
 		super(...args)
 		this.todo = this.$createTodo()
+
 		this.turtle = new this.Turtle(this)
 		this.$turtleStack = [this.turtle]
 		this.$writeList = []
@@ -224,6 +225,21 @@ module.exports = class View extends require('base/class'){
 			}
 		}
 		this.todo.name = this.name || this.constructor.name
+	}
+
+	destroy(){
+		if(this.destroyed) return
+		this.destroyed = true
+		if(this.onDestroy) this.onDestroy()
+		var children = this.children
+		if(children) for(var i = 0; i < children.length; i++){
+			children[i].destroy()
+		}
+		// clean out resources
+		if(this.todo){
+			this.app.$viewTodoMap[this.todo.todoId] = undefined
+			this.todo.destroyTodo()
+		}
 	}
 
 	bindProp(propname, subname, subprop){
@@ -294,10 +310,9 @@ module.exports = class View extends require('base/class'){
 		this.app.$viewTodoMap[this.todo.todoId] = this
 	}
 
-	_onDestroy(){
-		// destroy the todo
-		this.todo.destroyTodo()
-		this.todo = undefined
+	onComposeDestroy(){
+		// remove entry
+		this.destroy()
 	}
 
 	onDrawChildren(){
