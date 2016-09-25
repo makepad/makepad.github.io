@@ -52,14 +52,14 @@ module.exports=class Source extends require('base/view'){
 		return [
 		new this.Code({
 			y:'28',
-				w:'100%'
-				//h:'100%-40'
+			w:'100%',
+			h:'100%-28'
 				}),
 			new this.Probes({
 			x:'0',
 				w:'100%',
 				///y:'100%-this.h',
-				//h:'40',
+				h:'28',
 				onAfterCompose:function(){
 					this.code=this.parent.find('Edit')
 					this.code.onBeginFormatAST=this.onBeginFormatAST.bind(this)
