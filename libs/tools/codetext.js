@@ -41,7 +41,7 @@ module.exports = class CodeText extends require('tools/text'){
 		this.verbs = {
 			$setTweenStart:function(o, v){
 				this.$PROPVARDEF()
-				this.$PROP(o, 'tweenStart') = v
+				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(txt, style, ihead, itail){
 				var out = this.$fastNAMEOutput			

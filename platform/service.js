@@ -10,7 +10,7 @@ module.exports = class Service{
 	batchMessage(msg, transfers){
 		if(this.debug) console.log("batch ",msg)
 		this.worker.batchMessages.push({
-			$:this.constructor.name,
+			$:this.name,
 			msg:msg
 		})
 		if(transfers){
@@ -21,7 +21,7 @@ module.exports = class Service{
 	postMessage(msg, transfers){
 		if(this.debug) console.log("post ",msg)
 		this.worker.postMessage({
-			$:this.constructor.name,
+			$:this.name,
 			msg:msg
 		}, transfers)
 	}

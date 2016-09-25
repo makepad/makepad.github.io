@@ -250,15 +250,17 @@ module.exports = class Tools extends require('base/class'){
 			code = code.replace(macroRx, function(m, indent, fnname, args){
 				// if args are not a {
 				var macroArgs
-				if(typeof args === 'string' && args.indexOf('{') !== -1){
-					// lets parse args
-					var res, argobj = {}
-					while((res = argRx.exec(args)) !== null) {
-						argobj[res[1]] = res[2]
+				if(typeof args === 'string'){ 
+					if(args.indexOf('{') !== -1){
+						// lets parse args
+						var res, argobj = {}
+						while((res = argRx.exec(args)) !== null) {
+							argobj[res[1]] = res[2]
+						}
+						macroArgs = [argobj]
 					}
-					macroArgs = [argobj]
+					else macroArgs = args.split(/\s*,\s*/)
 				}
-				else macroArgs = args.split(/\s*,\s*/)
 				var fn = sourceProto[fnname]
 				if(!fn) throw new Error('CanvasMacro: '+fnname+ ' does not exist')
 				return sourceProto[fnname](target, className, macroArgs, mainargs, indent)
@@ -378,7 +380,7 @@ var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
 var comment2Rx = new RegExp(/\/\/[^\n]*/g)
 var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*)/)
-var macroRx = new RegExp(/([\t]*)this\.([\$][A-Z][A-Z0-9\_]*)\s*\(([^\)]*)\)/g)
+var macroRx = new RegExp(/([\t]*)this\.([\$][A-Z][A-Z0-9\_]*)(?:\s*[\(\[]([^\)\]]*)[\)\]])?/g)
 var argSplitRx = new RegExp(/[^,\s]+/g)
 var nameRx = new RegExp(/NAME/g)
 var fnnameRx = new RegExp(/^function\s*\(/)

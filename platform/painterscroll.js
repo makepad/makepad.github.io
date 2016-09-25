@@ -149,7 +149,7 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.onFingerUp = function(f){
-		//if(f.workerId && f.workerId !== service.workerId) return subWorkers[f.workerId].onFingerUp(f)
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerUp(f)
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		this.requestRepaint()

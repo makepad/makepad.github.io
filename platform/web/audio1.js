@@ -1,9 +1,10 @@
-module.exports = class audio1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 	
 	constructor(...args){
 		super(...args)
+		this.name = 'audio1'
 		// lets create an audio context
-		this.parentAudio = this.parent && this.parent.services[this.constructor.name]
+		this.parentAudio = this.parent && this.parent.services[this.name]
 		this.context = this.parentAudio && this.parentAudio.addChild(this) || new (window.AudioContext || window.webkitAudioContext)()
 		this.ids = {}
 		this.queue = []

@@ -224,7 +224,7 @@ module.exports = class View extends require('base/class'){
 				children.push(value)
 			}
 		}
-		this.todo.name = this.name || this.constructor.name
+		this.todo.name = this.name
 	}
 	
 	destroy(){
@@ -273,6 +273,20 @@ module.exports = class View extends require('base/class'){
 		return todo
 	}
 
+	findInstances(cons, set){
+		if(!set) set = []
+		if(this instanceof cons) set.push(this)
+		var children = this.children
+		if(children){
+			var childlen = children.length
+			for(let i = 0; i< childlen; i++){
+				var child = children[i]
+				child.findInstances(cons, set)
+			}
+		}
+		return set
+	}
+
 	// breadth first find child by name
 	find(name){
 		var children = this.children
@@ -281,13 +295,13 @@ module.exports = class View extends require('base/class'){
 			if(name.constructor === RegExp){
 				for(let i = 0; i < childlen; i++){
 					var child = children[i]
-					if(child.name && child.name.match(name) || child.constructor.name.match(name)) return child
+					if(child.name && child.name.match(name)) return child
 				}
 			}
 			else{
 				for(let i = 0; i < childlen; i++){
 					var child = children[i]
-					if(child.name === name || child.constructor.name === name) return child
+					if(child.name === name) return child
 				}
 			}
 			for(let i = 0; i< childlen; i++){
@@ -302,10 +316,10 @@ module.exports = class View extends require('base/class'){
 	findAll(name, set){
 		if(!set) set = []
 		if(name.constructor === RegExp){
-			if(this.name && this.name.match(name) || this.constructor.name.match(name)) set.push(this)
+			if(this.name && this.name.match(name)) set.push(this)
 		}
 		else{
-			if(this.name === name || this.constructor.name === name) set.push(this)
+			if(this.name === name) set.push(this)
 		}
 		var children = this.children
 		if(children){

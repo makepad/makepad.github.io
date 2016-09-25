@@ -17,6 +17,9 @@ service.onMessage = function(msg){
 	else if(msg.fn === 'pong'){
 		localIds[msg.localId].onPong()
 	}
+	else if(msg.fn == 'onError'){
+		localIds[msg.localId].onError(msg.error)
+	}
 }
 
 exports.onRequire = function(args, absParent, buildPath){
@@ -71,6 +74,9 @@ exports.onRequire = function(args, absParent, buildPath){
 			}
 
 			this.onPingTimeout = function(){
+			}
+
+			this.onError = function(){
 			}
 
 			// default pong handler

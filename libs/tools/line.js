@@ -80,8 +80,8 @@ module.exports = class Line extends require('base/shader'){
 					else{
 						var offset = this.$PROPLEN()
 						this.$PROPVARDEF()
-						this.$PROP(offset - 1, 'dx') = p.cx
-						this.$PROP(offset - 1, 'dy') = p.cy
+						this.$PROP[offset - 1, 'dx'] = p.cx
+						this.$PROP[offset - 1, 'dy'] = p.cy
 					}
 				}
 				else{

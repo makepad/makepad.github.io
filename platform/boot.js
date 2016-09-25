@@ -226,9 +226,100 @@ function workerBoot(){
 	worker.services = {init:{}, ping:{}}
 	worker.modules = modules
 	worker.appMain = undefined
-
+	worker.buildPath = buildPath
 	createOnMessage(worker)
-	
+
+	// parse and normalize exception x-browser
+	worker.decodeException = function(e){
+		if(e.number !== undefined){ // ms edge
+			//edge: e.message, e.description, e.number, e.stack
+			var lines = e.stack.split(/[\r\n]+/)
+			var stack = []
+			for(var i = 1; i < lines.length; i++){
+				var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
+				if(line){
+					stack.push({
+						method:line[1],
+						line:parseInt(line[3]),
+						file:line[2],
+						col:parseInt(line[4])
+					})
+				}
+			}
+			return {
+				message:e.message,
+				line:stack[0].line,
+				col:stack[0].col,
+				stack:stack
+			}
+		}
+		else if(e.fileName !== undefined){ // firefox
+			//firefox: e.message, e.fileName, e.lineNumber, e.columnNumber
+			return {
+				message:e.message,
+				line:e.lineNumber,
+				file:e.fileName,
+				col:e.columnNumber
+			}
+		}
+		else if(e.line !== undefined){ // safari
+			var lines = e.stack.split(/\n/)
+			var stack = []
+			stack.push({
+				file:null,
+				line:parseInt(e.line),
+				col:parseInt(e.column)
+			})
+			for(var i = 1; i < lines.length; i++){
+				var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
+				if(line){
+					stack.push({
+						method:line[1],
+						file:line[2],
+						line:parseInt(line[3]),
+						col:parseInt(line[4])
+					})
+				}
+			}
+			return {
+				message:e.message,
+				line:stack[0].line,
+				file:stack[0].file,
+				col:stack[0].col,
+				stack:stack
+			}
+
+		} 
+		else if(e.stack !== undefined){ // probably chrome
+			//chrome: e.message, e.stack (parse it)
+			var lines = e.stack.split(/\n/)
+			var stack = []
+			for(var i = 1; i < lines.length; i++){
+				var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
+				if(line){
+					stack.push({
+						method:line[1],
+						line:parseInt(line[3]) - 2,
+						file:line[2],
+						col:parseInt(line[4])
+					})
+				}
+			}
+			return {
+				message:lines[0],
+				line:stack[0].line,
+				file:stack[0].file,
+				col:stack[0].col,
+				stack:stack
+			}
+		}
+		else{ // amazing.
+			return {
+				message:JSON.stringify(e)
+			}
+		}
+	}
+
 	function invalidateModuleDeps(module){
 		if(!module || !module.exports) return
 		for(var key in module.deps){
@@ -248,7 +339,26 @@ function workerBoot(){
 		worker.args = msg.args
 		worker.init = msg.init
 		worker.hasParent = msg.hasParent
-
+		
+		if(worker.hasParent && !worker.onError){ // onError handling
+			worker.onError = function(e){
+				worker.postMessage({
+					$:'worker1',
+					msg:{
+						fn:'onError',
+						error:e
+					}
+				})
+			}
+			try{
+				return this.onMessage(msg)
+			}
+			catch(e){
+				worker.onError(worker.decodeException(e))
+			}
+			return
+		}
+	
 		var serviceArgs = msg.args
 		for(let path in resources){
 			var source = resources[path]
@@ -277,6 +387,7 @@ function workerBoot(){
 				}
 			}
 			catch(e){
+				if(worker.onError) worker.onError(worker.decodeException(e))
 			//	console.log("POSTING",e.message)
 				worker.postMessage({
 					$:'exception',
@@ -291,7 +402,6 @@ function workerBoot(){
 		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
-
 		if(typeof module.exports === 'function'){
 			if(worker.appMain && worker.appMain.destroy) worker.appMain.destroy()
 			worker.appMain = new module.exports()
@@ -321,7 +431,6 @@ function workerRequire(absParent, worker, modules, args){
 			var service = worker.services[name]
 			if(service) return service
 			return worker.services[name] =  {
-				buildPath:buildPath,
 				args:args,
 				batchMessage: function(msg, transfers){
 					if(this.debug) console.error('batchMessage '+name, msg)
@@ -342,7 +451,7 @@ function workerRequire(absParent, worker, modules, args){
 		}
 		var absPath = buildPath(absParent, path)
 		var module = modules[absPath]
-	
+		if(!module)console.log(module, absPath)
 		module.deps[absParent] = modules[absParent]
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
@@ -381,8 +490,18 @@ function createOnMessage(worker){
 				var body = msg.msg
 	
 				if(typeof body !== 'object' || body.constructor === Object) continue
-				var ret = body.toMessage()
-	
+				if(worker.onError){
+					try{
+						var ret = body.toMessage()
+					}
+					catch(e){
+						worker.onError(worker.decodeException(e))
+					}
+				}
+				else{
+					var ret = body.toMessage()
+				}
+
 				msg.msg = undefined
 				if(!ret) continue
 
@@ -413,7 +532,17 @@ function createOnMessage(worker){
 			var afterEntryCallbacks = worker.afterEntryCallbacks
 			worker.afterEntryCallbacks = []
 			for(let i = 0; i < afterEntryCallbacks.length; i++){
-				afterEntryCallbacks[i]()
+				if(worker.onError){
+					try{
+						afterEntryCallbacks[i]()
+					}
+					catch(e){
+						worker.onError(worker.decodeException(e))
+					}
+				}
+				else{
+					afterEntryCallbacks[i]()
+				}
 			}
 		}
 		if(!level) level = 0
@@ -429,12 +558,34 @@ function createOnMessage(worker){
 
 				var service = this.services[msg.$]
 				var bmsg = msg.msg
-				if(service && service.onMessage && bmsg !== undefined) service.onMessage(bmsg)
+				if(service && service.onMessage && bmsg !== undefined){
+					if(worker.onError){
+						try{
+							service.onMessage(bmsg)
+						}
+						catch(e){
+							worker.onError(worker.decodeException(e))
+						}
+					}
+					else{
+						service.onMessage(bmsg)
+					}
+				}
 			}
 		}
 		else{
 			var service = this.services[msg.$]
-			if(service && service.onMessage) service.onMessage(msg.msg)
+			if(worker.onError){
+				try{
+					if(service && service.onMessage) service.onMessage(msg.msg)
+				}
+				catch(e){
+					worker.onError(worker.decodeException(e))
+				}
+			}
+			else{
+				if(service && service.onMessage) service.onMessage(msg.msg)
+			}
 		}
 		this.onAfterEntry()
 		//}catch($$){
@@ -528,7 +679,17 @@ function timerLib(g){
 		var id = _setTimeout(function(){
 			var i = allTimeouts.indexOf(id)
 			if(i !== -1) allTimeouts.splice(id, 1)
-			fn()
+			if(worker.onError){
+				try{
+					fn()
+				}
+				catch(e){
+					worker.onError(worker.decodeException(e))
+				}
+			}
+			else{
+				fn()
+			}
 			worker.onAfterEntry()
 		}, time)
 		allTimeouts.push(id)
@@ -537,7 +698,17 @@ function timerLib(g){
 
 	g.setInterval = function(fn, time){
 		var id = localSetInterval(function(){
-			fn()
+			if(worker.onError){
+				try{
+					fn()
+				}
+				catch(e){
+					worker.onError(worker.decodeException(e))
+				}
+			}
+			else{
+				fn()
+			}
 			worker.onAfterEntry()
 		}, time)
 		allIntervals.push(id)

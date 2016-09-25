@@ -10,13 +10,14 @@ var fireFoxKeyRemap = {
 	173:189, // minus
 	59:186 // semicolon
 }
-module.exports = class keyboard1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	constructor(...args){
 		super(...args)
+		this.name = 'keyboard1'
 
 		if(this.parent){
-			this.parentKeyboard = this.parent.services[this.constructor.name]
+			this.parentKeyboard = this.parent.services[this.name]
 			return this.parentKeyboard.addChild(this)
 		}
 

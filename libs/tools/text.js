@@ -66,14 +66,14 @@ module.exports = class Text extends require('base/shader'){
 
 		this.verbs = {
 			$length:function(){
-				return this.$PROPLEN()
+				return this.$PROPLEN
 			},
 			$readOffset:function(o){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
 				if(!this.$shaders.NAME) return {}
 				this.$PROPVARDEF()
-				var len = this.$PROPLEN()
+				var len = this.$PROPLEN
 				if(o < 0 || o >= len) return
 				var read = {
 					x:this.$PROP(o, 'x'),
@@ -93,7 +93,7 @@ module.exports = class Text extends require('base/shader'){
 			$seekPos:function(x, y){
 				// lets find where we are inbetween
 				if(!this.$shaders.NAME) return {}
-				var len = this.$PROPLEN()
+				var len = this.$PROPLEN
 				var lineSpacing = this.NAME.prototype.lineSpacing
 				this.$PROPVARDEF()
 				if(len === 0){
@@ -153,7 +153,7 @@ module.exports = class Text extends require('base/shader'){
 				return boxes
 			},
 			$resetBuffer:function(){
-				this.$PROPLEN() = 0
+				this.$PROPLEN = 0
 			},
 			draw:function(overload){
 				var turtle = this.turtle

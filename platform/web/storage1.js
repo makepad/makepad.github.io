@@ -1,7 +1,8 @@
-module.exports = class storage1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	constructor(...args){
 		super(...args)
+		this.name = 'storage1'
 		this.args.locationSearch = this.root.locationSearch
 	}
 

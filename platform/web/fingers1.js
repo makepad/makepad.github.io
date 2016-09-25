@@ -1,15 +1,16 @@
 
 
-module.exports = class fingers1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 	constructor(...args){
 		super(...args)
+		this.name = 'fingers1'
 		
 		this.TAP_TIME = 350
 		this.TAP_DIST_TOUCH = 50
 		this.TAP_DIST_MOUSE = 5
 
 		if(this.parent){
-			this.parentFingers = this.parent.services[this.constructor.name]
+			this.parentFingers = this.parent.services[this.name]
 			return this.parentFingers.addChild(this)
 		}
 		this.children = {}

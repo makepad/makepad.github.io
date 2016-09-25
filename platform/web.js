@@ -232,8 +232,10 @@
 		req.responseType = 'text'
 		req.addEventListener("load", function(){
 			if(req.response === '{continue:true}') return watchFileChange()
+			if(req.status === 200){
 			// do something with data, or not
-			location.href = location.href
+				location.href = location.href
+			}
 		})
 		req.open("GET", "/$watch?"+(''+Math.random()).slice(2))
 		req.send()

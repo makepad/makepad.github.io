@@ -190,6 +190,16 @@ module.exports = class Makepad extends require('base/app'){
 					this.main.path, 
 					this.deps 
 				) 
+
+				this.worker.onError = e => {
+					console.log("worker had error", e)
+				}
+
+				this.worker.ping(2000)
+				this.worker.onPingTimeout = ()=>{
+					// we crashed. do something.
+					console.log("CRASH")
+				}
 			} 
 		})) 
 		tabs.selectTab(idx) 

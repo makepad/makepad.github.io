@@ -1,8 +1,21 @@
-module.exports = class worker1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	constructor(...args){
 		super(...args)
+		this.name = 'worker1'
 		this.workers = []
+	}
+
+	user_onError(msg){
+		msg.localId = this.worker.localId
+		this.parent.batchMessages.push({
+			$:'worker1',
+			msg:msg
+		})
+		var after = this.parent.onAfterEntry
+		if(this.worker.afterEntryCallbacks.indexOf(after) === -1){
+			this.worker.afterEntryCallbacks.push(after)
+		}
 	}
 
 	user_toParent(msg){

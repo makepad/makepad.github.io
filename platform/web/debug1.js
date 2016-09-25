@@ -1,7 +1,8 @@
-module.exports = class debug1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	constructor(...args){
 		super(...args)
+		this.name = 'debug1'
 		this.args.test = '1'
 	}
 

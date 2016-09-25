@@ -1,9 +1,11 @@
-module.exports = class painter1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	//proto.debug = 1
 
 	constructor(...args){
 		super(...args)
+		this.name = 'painter1'
+
 		if(!this.parent){
 
 			this.args.timeBoot = Date.now()
@@ -19,7 +21,7 @@ module.exports = class painter1 extends require('/platform/service'){
 		else{
 			// ok we have a parent.
 			// lets connect to it
-			this.parentPainter = this.parent.services[this.constructor.name]
+			this.parentPainter = this.parent.services[this.name]
 			this.parentPainter.addChild(this, this.platform.parentFbId)
 		}
 

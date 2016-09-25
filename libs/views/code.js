@@ -12,36 +12,14 @@ module.exports = class Code extends require('views/edit'){
 		this.padding = [0, 0, 0, 4] 
 		this.$fastTextFontSize = 12 
 		this._onText |= 32 
-		//this._onText = 32
-		//this.onFlag32 = function(){
-		//	console.error("HI")
-		//}
+
 		this.tools = { 
 			
 			Text: require('tools/codetext').extend({ 
 				font: require('fonts/ubuntu_monospace_256.font'), 
 				tween: 2., 
 				ease: [0, 10, 1.0, 1.0], 
-				duration: 0., 
-				displace: { 
-					0: {x: 0, y: 0.08}, 
-					42: {x: 0, y: -0.08} // * 
-				}, 
-				vertexStyle: function() {$ 
-					// get distance to mouse
-				/*
-				if(this.fontSize < 6.){
-				var pos = vec2()
-				if(this.isFingerOver(pos)>0){
-				var fontSize = this.fontSize
-				this.fontSize = max(1.,14.-0.3*abs(this.y-pos.y))
-				if(this.fontSize>1.){
-				this.y += (this.y - pos.y)*4.
-				this.x += this.x*(this.fontSize / fontSize)
-				}
-				}
-				}*/
-				} 
+				duration: 0.
 			}), 
 			Block: require('tools/codeblock').extend({ 
 				borderRadius: 2.5, 
@@ -614,7 +592,7 @@ module.exports = class Code extends require('views/edit'){
 			}) 
 		} 
 		catch(e) { 
-			//console.log(e, e.stack)
+			console.log(e, e.stack)
 			this.error = e 
 		} 
 	} 

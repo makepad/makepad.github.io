@@ -22,7 +22,7 @@ pp.commentBegin = function(start){
 
 pp.commentEnd = function(node, above, tail, ignore){
 	// add the prefix
-	if(above.length) node.above = above
+	if(above && above.length) node.above = above
 
 	var comments = this.storeComments
 	for(var i = 0, l = comments.length; i < l; i++){

@@ -1,7 +1,9 @@
-module.exports = class dropfiles1 extends require('/platform/service'){
+module.exports = class extends require('/platform/service'){
 
 	constructor(...args){
 		super(...args)
+		this.name = 'dropfiles1'
+
 		function dragenter(e) {
 			e.stopPropagation()
 			e.preventDefault()
