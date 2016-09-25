@@ -111,6 +111,7 @@ function requestHandler(req, res){
 		})
 		req.on('end', function(){
 			// lets write it
+			tags[filefull]=undefined
 			Fs.writeFile(filefull, Buffer(buf), function(err){
 				if(err){
 					console.log("Error saving ", filefull)
@@ -118,11 +119,7 @@ function requestHandler(req, res){
 					res.end("")
 					return
 				}
-
-				Fs.stat(filefull, function(err, stat){
-					stat.atime = null
-					tags[filefull] = JSON.stringify(stat)
-				})
+				tags[filefull]=undefined
 
 				res.writeHead(200)
 				res.end()

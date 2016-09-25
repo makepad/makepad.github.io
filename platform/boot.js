@@ -608,7 +608,7 @@ function mathLib(g){
 
 //
 //
-// Promise library that can support post entry
+// Promise library that can support post entry and has 'immediate' support
 //
 //
 
@@ -621,10 +621,10 @@ function promiseLib(g){
 		this._value = null
 		this._deferreds = []
 		this._immediate = immediate
-		doResolve(fn, resolve.bind(this), reject.bind(this))
+		doResolve(fn, resolve.bind(this), reject.bind(this), immediate)
 	}
 
-	function handle(deferred) {
+	function handle(deferred, immediate) {
 		var me = this
 		if (this._state === null) {
 			this._deferreds.push(deferred)
@@ -646,10 +646,11 @@ function promiseLib(g){
 			//}
 			deferred.resolve(ret)
 		}
-		if(this._immediate){
+		if(this._immediate || immediate){
 			handle()
 		}
 		else{
+			if(g.setImmediate.debug) debugger
 			g.setImmediate(handle)
 		}
 	}
@@ -660,7 +661,7 @@ function promiseLib(g){
 			if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
 				var then = newValue.then
 				if (typeof then === 'function') {
-					doResolve(then.bind(newValue), resolve.bind(this), reject.bind(this))
+					doResolve(then.bind(newValue), resolve.bind(this), reject.bind(this), this._immediate)
 					return;
 				}
 			}
@@ -690,7 +691,7 @@ function promiseLib(g){
 		this.reject = reject
 	}
 
-	function doResolve(fn, onFulfilled, onRejected) {
+	function doResolve(fn, onFulfilled, onRejected, immediate) {
 		var done = false;
 		//try {
 			fn(function (value) {
@@ -701,7 +702,7 @@ function promiseLib(g){
 				if (done) return
 				done = true
 				onRejected(reason)
-			})
+			}, immediate)
 		//} catch (ex) {
 		//	if (done) return
 		//	done = true
@@ -713,15 +714,23 @@ function promiseLib(g){
 		return this.then(null, onRejected)
 	}
 
-	Promise.prototype.then = function(onFulfilled, onRejected) {
+	Promise.prototype.then = function(onFulfilled, onRejected, immediate) {
 		var me = this;
-		return new Promise(function(resolve, reject) {
-			handle.call(me, new Handler(onFulfilled, onRejected, resolve, reject))
-		})
+		return new Promise(function(resolve, reject, immediate) {
+			handle.call(me, new Handler(onFulfilled, onRejected, resolve, reject), immediate)
+		}, immediate)
 	}
 
 	Promise.all = function () {
-		var args = Array.prototype.slice.call(arguments.length === 1 && Array.isArray(arguments[0]) ? arguments[0] : arguments)
+		var args
+		var immediate
+		if(Array.isArray(arguments[0])){
+			args = arguments[0]
+			immediate = arguments[1]
+		}
+		else{
+			args = arguments
+		}
 
 		return new Promise(function (resolve, reject) {
 			if (args.length === 0) return resolve([])
@@ -746,41 +755,41 @@ function promiseLib(g){
 			for (var i = 0; i < args.length; i++) {
 				res(i, args[i])
 			}
-		})
+		}, immediate)
 	}
 
-	Promise.resolve = function (value) {
+	Promise.resolve = function (value, immediate) {
 		if (value && typeof value === 'object' && value.constructor === Promise) {
 			return value
 		}
 
 		return new Promise(function (resolve) {
 			resolve(value)
-		})
+		}, immediate)
 	}
 
-	Promise.reject = function (value) {
+	Promise.reject = function (value, immediate) {
 		return new Promise(function (resolve, reject) {
 			reject(value)
-		})
+		}, immediate)
 	}
 
-	Promise.defer = function(){
+	Promise.defer = function(immediate){
 		var res, rej
 		var prom = new Promise(function(resolve, reject){
 			res = resolve, rej = reject
-		})
+		}, immediate)
 		prom.resolve = res
 		prom.reject = rej
 		return prom
 	}
 
-	Promise.race = function (values) {
+	Promise.race = function (values, immediate) {
 		return new Promise(function (resolve, reject) {
 			for(let i = 0, len = values.length; i < len; i++) {
-				values[i].then(resolve, reject)
+				values[i].then(resolve, reject, immediate)
 			}
-		})
+		}, immediate)
 	}
 
 	g.Promise = Promise

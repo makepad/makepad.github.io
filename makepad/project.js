@@ -25,7 +25,7 @@ exports.loadProjectTree = function loadProjectTree(projectTree){
 		}
 		walk(projectTree, '')
 
-		Promise.all(allProj).then(function(results){
+		Promise.all(allProj, true).then(function(results){
 			// store all the data in the tree
 			for(let i = 0; i < results.length; i++){
 				resources[pathNames[i]] = {
@@ -36,7 +36,7 @@ exports.loadProjectTree = function loadProjectTree(projectTree){
 			}
 			resolve(resources)
 		})
-	})
+	}, true)
 }
 
 exports.projectToResources = function projectToResources(projectTree){

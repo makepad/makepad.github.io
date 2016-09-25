@@ -214,6 +214,71 @@ class Cursor extends require('base/class'){
 		if(this.start !== this.end) return
 		if(pos < this.end){
 
+			// attempt #5001
+			var p1 = oldText.charCodeAt(this.end)
+			var p2 = oldText.charCodeAt(this.end+1)
+			for(var i = pos+1; i > 0; i--){
+				if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
+					break
+				}
+			}
+			for(var j = pos-1; j < newText.length; j++){
+				if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
+					break
+				}
+			}
+			if(Math.abs(pos-i) < Math.abs(pos-j)){
+				this.start = this.end = i
+			}
+			else this.start = this.end =j
+			/*
+			var d = 0
+			var oc1
+			if(this.editor.wasNewlineChange){
+				oc1 = oldText.charCodeAt(this.end)
+				d = 2
+			}
+			else{
+				oc1 = oldText.charCodeAt(this.end)
+				// find something better than a newline to hold on to
+				if(!this.editor.wasNoopChange){
+					var ocm1 = oldText.charCodeAt(this.end-1)
+					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
+					// cant reverse these, find another way
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+				}
+			}
+
+			for(var i = pos+1; i > 0; i--){
+				if(newText.charCodeAt(i) === oc1){
+					i+=d
+					break
+				}
+			}
+			for(var j = pos-1; j < newText.length; j++){
+				if(newText.charCodeAt(j) === oc1){
+					j+=d
+					break
+				}
+			}
+			var arr = oldText.split('')
+			var s= ''
+			for(let k =0; k < arr.length;k++){
+				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
+			}
+
+			if(Math.abs(pos-i) < Math.abs(pos-j)){
+				this.start = this.end = i
+			}
+			else this.start = this.end =j*/
+		}
+	}
+	/*
+	scanChange(pos, oldText, newText){
+		if(this.start !== this.end) return
+		if(pos < this.end){
+
 			// scan for the closest position for the cursor
 			
 			var d = 0
@@ -251,12 +316,13 @@ class Cursor extends require('base/class'){
 			for(let k =0; k < arr.length;k++){
 				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
 			}
+
 			if(Math.abs(pos-i) < Math.abs(pos-j)){
 				this.start = this.end = i
 			}
 			else this.start = this.end =j
 		}
-	}
+	}*/
 
 	invalidateMax(){
 		this.max = -1

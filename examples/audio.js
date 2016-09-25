@@ -52,9 +52,9 @@ module.exports=class extends require('base/drawapp'){
 				device:'Microphone'
 				}
 			})
-		//var out=wav.parse(require('./audio.wav'),true)
-		//this.recording.push(out.data)
-		//this.samples=out.data[0].length
+		var out=wav.parse(require('./audio.wav'),true)
+		this.recording.push(out.data)
+		this.samples=out.data[0].length
 		
 		this.playFlow=new audio.Flow({
 		buffer1:{
@@ -149,15 +149,22 @@ module.exports=class extends require('base/drawapp'){
 			h:36
 			})
 		
+		this.beginGrid({
+		x:0,
+			y:60,
+			w:'100%',
+			h:200
+			})
+		
 		this.drawRect({
 		x:(this.selStart-this.todo.xScroll)/this.zoom,
-			y:300,
 			w:(this.selEnd-this.selStart)/this.zoom,
 			h:100
 			})
+		
 		// lets draw the recording
 		if(this.recording){
-			
+			var height=this.turtle.height
 			var scale=this.zoom
 			var smod=floor(scale)
 			var t=0
@@ -180,9 +187,9 @@ module.exports=class extends require('base/drawapp'){
 						this.drawQuad({
 						color:t>this.selStart&&t<this.selEnd?'red':'green',
 							x:t/scale,
-							y:minv*100+300,
+							y:minv*height*.5+this.turtle.sy+0.5*height,
 							w:1,///painter.pixelRatio,//t / scale,
-							h:(maxv-minv)*100+1.//+300
+							h:(maxv-minv)*height*.5+1.//+300
 							})
 						minv=0
 						maxv=0
@@ -192,6 +199,7 @@ module.exports=class extends require('base/drawapp'){
 				}
 			this.scrollSize(this.samples/scale,0)
 			}
+		this.endGrid()
 		// lets draw the scope 
 		if(this.scopeData){
 			var left=this.scopeData[0]

@@ -808,7 +808,6 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.fastText(node.around1, this.styles.Comment.around)
 		}
 		if(doIndent) this.indentIn()
-
 		var x2 = turtle.wx 
 		this.trace += op
 		if(this.allowOperatorSpaces){
@@ -820,6 +819,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			var style
 			if(doIndent) style = this.styles.BinaryExpression[node.operator] || this.styles.BinaryExpression
 			else style = this.styles.BinaryExpressionNL[node.operator] || this.styles.BinaryExpressionNL
+			if(op === 'in') op = ' ' + op + ' '
 			this.fastText(op, style)
 		}
 		var x3 = turtle.wx 

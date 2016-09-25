@@ -405,7 +405,8 @@ module.exports = class Code extends require('views/edit'){
 			BinaryExpression:{
 				$head:0.5,
 				$tail:0.5,
-				$color:'#ff9f00'
+				$color:'#ff9f00',
+				in:{$head:0., $tail:0.}
 			},
 			BinaryExpressionNL:{
 				$head:0.,
@@ -1010,12 +1011,18 @@ module.exports = class Code extends require('views/edit'){
 		var s =''
 		var fs = this.$fastTextFontSize
 		var padLeft = this.drawPadding && this.drawPadding[3] || this.padding[3]
+		var sx = 0
 		for(let i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 			var txt = ann[i]
 			var style = ann[i+1]
-			//var fs = ann[i+4]
-			var sx = abs(ann[i+5])
+			var dx = ann[i+5]
+			var sx = abs(dx)
+			if(style.head>0.) s+= ' '
 			if(txt.indexOf('\n') !== -1){
+				var last = txt.charCodeAt(txt.length - 1)
+				if(dx < 0 && (last === 10||last===13)){
+					sx = abs(ann[i+11])
+				}
 				var indent = Array(1+Math.ceil((sx - padLeft) / (this.indentSize*fs))).join('\t')
 				var out = txt.split('\n')
 				for(var j = 0; j < out.length - 1;j++){
@@ -1024,6 +1031,7 @@ module.exports = class Code extends require('views/edit'){
 				s += out[j]
 			}
 			else s += txt
+			if(style.tail>0.) s+= ' '
 		}
 		return s
 	}

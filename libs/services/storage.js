@@ -1,33 +1,43 @@
 var service = require('$storage1')
 
 var requires = {}
-var promises = {}
+var loadPromises = {}
+var savePromises = {}
 
 service.onMessage = function(msg){
-	var prom = promises[msg.path]
-	if(!prom) return
-	promises[msg.path] = undefined
-	prom.resolve(msg.response)
-}
-
-function makePromise(final){
-	var prom = Promise.defer()
-	if(promises[final]){ // chain it
-		promises[final].then(prom.resolve, prom.reject)
+	var prom
+	if(msg.fn === 'onLoad'){
+		prom = loadPromises[msg.path]
+		//loadPromises[msg.path] = undefined
 	}
-	else promises[final] = prom
-	return prom
+	else if(msg.fn === 'onSave'){
+		prom = savePromises[msg.path]
+		savePromises[msg.path] = undefined
+	}
+	if(!prom) return
+	prom.resolve(msg.response)
 }
 
 exports.onRequire = function(args, absParent){
 
 	if(requires[absParent]) return requires[absParent]
 
-	var storage = {
+	var storage = { 
 		buildPath:service.buildPath,
 		load:function(path, binary){
 			var final = service.buildPath(absParent, path)
-			var prom = makePromise(final)
+
+			var prom 
+			if(loadPromises[final]){ // chain it
+				
+				prom = Promise.defer(true)
+				loadPromises[final].then(prom.resolve, prom.reject, true)
+				return prom
+			}
+			else{
+				prom = Promise.defer(false)
+				loadPromises[final] = prom
+			}		
 			service.postMessage({
 				fn:'load',
 				binary:binary,
@@ -35,9 +45,16 @@ exports.onRequire = function(args, absParent){
 			})
 			return prom
 		},
-		save:function(path, data){
+		save:function(path, data, override){
 			var final = service.buildPath(absParent, path)
-			var prom = makePromise(final)
+
+			var prom = Promise.defer()
+			if(!override && savePromises[final]){ // its still saving
+				prom.reject("Still saving")
+				return prom
+			}
+			else savePromises[final] = prom
+
 			service.postMessage({
 				fn:'save',
 				path:final,
