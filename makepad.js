@@ -229,7 +229,7 @@ module.exports = class Makepad extends require('base/app'){
 						}, 
 						right: { 
 							bottom: false, 
-							folded:true,
+							folded:false,
 							tabs: [ 
 								{type: 'HomeScreen', name: 'HomeProcess', tabIcon: 'home', open: true, noCloseTab: true} 
 							] 

@@ -47,7 +47,7 @@ module.exports = class keyboard1 extends require('/platform/service'){
 		this.keyboardAnimPlaying = false
 		this.lastIdlePoll = Date.now()
 
-		setInterval(this.idlePoll, 125)
+		setInterval(this.idlePoll, 500)
 
 		this.defaultHeight = window.innerHeight
 
@@ -159,7 +159,7 @@ module.exports = class keyboard1 extends require('/platform/service'){
 
 	idlePoll(){
 		var now = Date.now()	
-		if(now - this.lastIdlePoll > 500 ){
+		if(now - this.lastIdlePoll > 800 ){
 			this.postAllEvent({
 				fn:'onIdleResume'
 			})
