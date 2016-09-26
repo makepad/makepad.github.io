@@ -356,6 +356,7 @@ function workerBoot(){
 		
 		if(worker.hasParent && !worker.onError){ // onError handling
 			worker.onError = function(e){
+				console.log(e)
 				worker.postMessage({
 					$:'worker1',
 					msg:{
