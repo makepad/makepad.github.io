@@ -21,6 +21,9 @@ module.exports = class extends require('base/drawapp'){
 				Bg: {moveScroll: 0}, 
 				Text: {moveScroll: 0} 
 			}), 
+			Rect: { 
+				color: '#07c7' 
+			}, 
 			Quad: {color: 'red'}, 
 			Grid: require('tools/grid') 
 		} 
@@ -53,9 +56,9 @@ module.exports = class extends require('base/drawapp'){
 				device: 'Microphone' 
 			} 
 		}) 
-		//var out=wav.parse(require('./audio.wav'),true)
-		//this.recording.push(out.data)
-		//this.samples=out.data[0].length
+		var out = wav.parse(require('./audio.wav'), true) 
+		this.recording.push(out.data) 
+		this.samples = out.data[0].length 
 		
 		this.playFlow = new audio.Flow({ 
 			buffer1: { 
@@ -161,7 +164,7 @@ module.exports = class extends require('base/drawapp'){
 		this.drawRect({ 
 			x: (this.selStart - this.todo.xScroll) / this.zoom, 
 			w: (this.selEnd - this.selStart) / this.zoom, 
-			h: 100 
+			h: '100%' 
 		}) 
 		
 		// lets draw the recording
@@ -191,7 +194,7 @@ module.exports = class extends require('base/drawapp'){
 					if(v > maxv) maxv = v 
 					if(!(t++ % smod) && t / scale > xmin) { 
 						this.drawQuad({ 
-							color: t > this.selStart && t < this.selEnd? 'red': 'green', 
+							color: t > this.selStart && t < this.selEnd? '#7cff': '#26cf', 
 							x: t / scale, 
 							y: minv * height * .5 + this.turtle.sy + 0.5 * height, 
 							w: 1, ///painter.pixelRatio,//t / scale,
