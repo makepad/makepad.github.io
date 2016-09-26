@@ -472,6 +472,8 @@ function workerRequire(absParent, worker, modules, args){
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
 		if(!module.exports){
 			module.exports = {}
+			if(!module.factory) throw new Error("Cannot require, no factory "+absPath+" from "+absParent)
+
 			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
 			if(ret !== undefined) module.exports = ret
 		}
