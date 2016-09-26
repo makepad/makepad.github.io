@@ -92,11 +92,13 @@ module.exports = class extends require('base/drawapp'){
 	} 
 	
 	onFingerDown(e) { 
+		if(e.pickId) return 
 		this.selEnd = 
 		this.selStart = this.xToTime(e.x) 
 	} 
 	
 	onFingerMove(e) { 
+		if(e.pickId) return 
 		var end = this.selEnd = this.xToTime(e.x) 
 		if(end < this.selStart) this.selEnd = this.selStart, this.selStart = end 
 	} 
