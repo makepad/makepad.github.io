@@ -56,9 +56,9 @@ module.exports = class extends require('base/drawapp'){
 				device: 'Microphone' 
 			} 
 		}) 
-		var out = wav.parse(require('./audio.wav'), true) 
-		this.recording.push(out.data) 
-		this.samples = out.data[0].length 
+		//var out=wav.parse(require('./audio.wav'),true)
+		//this.recording.push(out.data)
+		//this.samples=out.data[0].length
 		
 		this.playFlow = new audio.Flow({ 
 			buffer1: { 
@@ -152,7 +152,28 @@ module.exports = class extends require('base/drawapp'){
 			w: 100, 
 			h: 36 
 		}) 
-		
+		// lets draw the scope 
+		if(this.scopeData) { 
+			this.beginGrid({ 
+				moveScroll: 0, 
+				zoom: this.zoom, 
+				w: 100, 
+				h: 40 
+			}) 
+			var x = this.turtle.sx 
+			var y = this.turtle.sy 
+			var h = this.turtle.height 
+			var w = this.turtle.width 
+			var left = this.scopeData[0] 
+			this.drawLine({sx: 0, sy: 100}) 
+			for(var i = 0; i < left.length; i++) { 
+				this.drawLine({ 
+					x: x + (i / left.length) * w, 
+					y: y + left[i] * .5 * h + .5 * h 
+				}) 
+			} 
+			this.endGrid() 
+		} 
 		this.beginGrid({ 
 			x: 0, 
 			y: 60, 
@@ -209,16 +230,6 @@ module.exports = class extends require('base/drawapp'){
 			this.scrollSize(this.samples / scale, 0) 
 		} 
 		this.endGrid() 
-		// lets draw the scope 
-		if(this.scopeData) { 
-			var left = this.scopeData[0] 
-			this.drawLine({sx: 0, sy: 100}) 
-			for(var i = 0; i < left.length; i++) { 
-				this.drawLine({ 
-					x: i, 
-					y: left[i] * 100 + 100 
-				}) 
-			} 
-		} 
+		
 	} 
 }
