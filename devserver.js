@@ -22,8 +22,10 @@ var tags = {}
 function pollWatchlist(){
 	var promises = []
 	for(let filename in watchfiles){
+
 		promises.push(new Promise(function(resolve, reject){
 			Fs.stat(filename, function(filename, err, stat){
+				//console.log(filename)
 				resolve({
 					filename: filename, 
 					stat: stat
@@ -38,10 +40,10 @@ function pollWatchlist(){
 			result.stat.atime = null
 			var newtag = JSON.stringify(result.stat)
 			var oldtag = tags[result.filename]
-
+			if(oldtag === -1) continue
 			if(!oldtag) oldtag = tags[result.filename] = newtag
 
-			else if(oldtag !== newtag){
+			if(oldtag !== newtag){
 				tags[result.filename] = newtag
 				filechanges.push(result.filename.slice(httproot.length))
 			}
@@ -91,7 +93,7 @@ function requestHandler(req, res){
 		res.end()
 		return 
 	}
-
+	if(filename.indexOf('//')!==-1)console.log(filename, "HUH!")
 	// lookup filename
 	var filefull = httproot + filename
 
@@ -111,7 +113,7 @@ function requestHandler(req, res){
 		})
 		req.on('end', function(){
 			// lets write it
-			tags[filefull]=undefined
+			tags[filefull]=-1
 			Fs.writeFile(filefull, Buffer(buf), function(err){
 				if(err){
 					console.log("Error saving ", filefull)
@@ -119,6 +121,7 @@ function requestHandler(req, res){
 					res.end("")
 					return
 				}
+				console.log("saved "+filefull)
 				tags[filefull]=undefined
 
 				res.writeHead(200)

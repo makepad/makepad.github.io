@@ -413,6 +413,7 @@ module.exports = class View extends require('base/class'){
 		if(index === undefined) index = this.children.length
 		this.children.splice(index, 0, child)
 		child.app = this.app
+		child.store = this.store
 		child.parent = this
 		this.app.$composeTree(child)
 		if(this.onAfterCompose) this.onAfterCompose()
@@ -425,6 +426,7 @@ module.exports = class View extends require('base/class'){
 		var oldChild = this.children[index]
 		this.children[index] = child
 		child.app = this.app
+		child.store = this.store
 		child.parent = this
 		this.app.$composeTree(child)
 		this.relayout()
@@ -436,6 +438,7 @@ module.exports = class View extends require('base/class'){
 		var oldChild = this.children[index] 
 		this.children[index] = child
 		child.app = this.app
+		child.store = this.store
 		child.parent = this
 		this.relayout()
 		if(this.onAfterCompose) this.onAfterCompose()
@@ -528,9 +531,6 @@ module.exports = class View extends require('base/class'){
 		// alright so now we decide wether this todo needs updating
 		if(this.$drawClean) return
 		
-		//ok we want to regen the matrix but only call draw if the geom has changed
-		this.$drawClean = true
-
 		todo.clearTodo()
 		// if we are not visible...
 		if(!this.visible) return
@@ -708,6 +708,9 @@ module.exports = class View extends require('base/class'){
 		if(this.onAfterDraw){
 			this.onAfterDraw()
 		}
+
+		// mark draw clean
+		this.$drawClean = true
 	}
 
 	scrollAtDraw(dx, dy, delta){
@@ -732,6 +735,12 @@ module.exports = class View extends require('base/class'){
 	}
 
 	recompose(){
+		if(this.app){
+			if(this.app.$recomposeList.indexOf(this) === -1){
+				this.app.$recomposeList.push(this)
+			}
+			this.relayout()
+		}
 	}
 
 	$drawCleanFalse(){

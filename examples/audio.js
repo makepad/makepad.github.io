@@ -1,7 +1,7 @@
 var audio = require('services/audio') 
 var wav = require('parsers/wav') 
 var painter = require('services/painter') 
-bla() 
+
 module.exports = class extends require('base/drawapp'){ 
 	
 	prototype() { 
@@ -28,6 +28,7 @@ module.exports = class extends require('base/drawapp'){
 	
 	constructor() { 
 		super() 
+		
 		audio.reset() 
 		this.recording = [] 
 		this.samples = 0 
@@ -52,9 +53,9 @@ module.exports = class extends require('base/drawapp'){
 				device: 'Microphone' 
 			} 
 		}) 
-		var out = wav.parse(require('./audio.wav'), true) 
-		this.recording.push(out.data) 
-		this.samples = out.data[0].length 
+		//var out=wav.parse(require('./audio.wav'),true)
+		//this.recording.push(out.data)
+		//this.samples=out.data[0].length
 		
 		this.playFlow = new audio.Flow({ 
 			buffer1: { 
@@ -116,7 +117,7 @@ module.exports = class extends require('base/drawapp'){
 				if(this.playFlow.running) { 
 					this.playFlow.stop() 
 					this.redraw() 
-					return 
+					return  
 				} 
 				// lets combine all the recording buffers
 				var out = new Float32Array(this.samples) 
@@ -152,10 +153,11 @@ module.exports = class extends require('base/drawapp'){
 		this.beginGrid({ 
 			x: 0, 
 			y: 60, 
-			w: '100%', 
+			zoom: this.zoom, 
+			w: this.samples / this.zoom, 
 			h: 200 
 		}) 
-		
+		//console.log(10000/this.zoom)
 		this.drawRect({ 
 			x: (this.selStart - this.todo.xScroll) / this.zoom, 
 			w: (this.selEnd - this.selStart) / this.zoom, 
@@ -164,6 +166,10 @@ module.exports = class extends require('base/drawapp'){
 		
 		// lets draw the recording
 		if(this.recording) { 
+			
+			// lets draw time stamps.
+			// 
+			
 			var height = this.turtle.height 
 			var scale = this.zoom 
 			var smod = floor(scale) 

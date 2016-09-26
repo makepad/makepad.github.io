@@ -254,12 +254,26 @@ function workerBoot(){
 			}
 		}
 		else if(e.fileName !== undefined){ // firefox
+			var lines = e.stack.split(/[\r\n]+/)
+			var stack = []
+			for(var i = 0; i < lines.length; i++){
+				var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
+				if(line){
+					stack.push({
+						method:line[1],
+						line:parseInt(line[3]),
+						file:line[2],
+						col:parseInt(line[4])
+					})
+				}
+			}
 			//firefox: e.message, e.fileName, e.lineNumber, e.columnNumber
 			return {
 				message:e.message,
 				line:e.lineNumber,
 				file:e.fileName,
-				col:e.columnNumber
+				col:e.columnNumber,
+				stack:stack
 			}
 		}
 		else if(e.line !== undefined){ // safari
@@ -827,7 +841,7 @@ function promiseLib(g){
 	}
 
 	function resolve(newValue) {
-		try { //Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+		//try { //Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
 			if (newValue === this) throw new TypeError('A promise cannot be resolved with itself.')
 			if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
 				var then = newValue.then
@@ -839,7 +853,7 @@ function promiseLib(g){
 			this._state = true
 			this._value = newValue
 			finale.call(this)
-		} catch (e) { reject.call(this, e); }
+		//} catch (e) { reject.call(this, e); }
 	}
 
 	function reject(newValue) {
@@ -907,7 +921,7 @@ function promiseLib(g){
 			if (args.length === 0) return resolve([])
 			var remaining = args.length
 			function res(i, val) {
-				try {
+				//try {
 					if (val && (typeof val === 'object' || typeof val === 'function')) {
 						var then = val.then
 						if (typeof then === 'function') {
@@ -919,9 +933,9 @@ function promiseLib(g){
 					if (--remaining === 0) {
 						resolve(args)
 					}
-				} catch (ex) {
-					reject(ex)
-				}
+				//} catch (ex) {
+				//	reject(ex)
+				//}
 			}
 			for (var i = 0; i < args.length; i++) {
 				res(i, args[i])

@@ -1,29 +1,27 @@
 function $P(id, arg){
-	
-	/*if(typeof arg === 'number'){
-		var sh = arg
-		var str = ''
-		while(sh){
-			var code = sh&0xff
-			if(code<31 || code >127){str = '';break}
-			str += String.fromCharCode(code)
-			sh = sh >> 8
+	if(!$P.onMessage){
+		function onMessage(){
+			$P.onMessage = false
+			return [{
+				fn:'onProbe',
+				msg:block
+			},[block]]
 		}
-		//console.log(arg,arg.toString(16), str)
-	}*/
-	//else 
+		module.worker.batchMessage({
+			$:'worker1',
+			msg:{onMessage:onMessage}
+		})
+		$P.onMessage = true
+	}
+	// lets serialize arg into our typed array
+
 	console.log(arg)
-	// we can interact with the editor in the other thread.
-	// console.log(arg)
-	// how do we re-render?... what does it mean to update a value?
-	// if its in shader we can just redraw
-	// if its in a class we have to reinitialize the class
-	// so it depends
 	return arg
 }
 
 module.exports = class Probes extends require('base/view'){
 	prototype(){
+		this.cursor ='pointer'
 		this.name = 'Probes'
 		this.props = {
 		}
@@ -31,22 +29,23 @@ module.exports = class Probes extends require('base/view'){
 		this.tools = {
 			Text:require('tools/text').extend({
 				font:require('fonts/ubuntu_monospace_256.font'),
-				margin:[5,0,0,0],
-				fontSize:10,
-				wrapping:'char',
+				margin:[5,0,0,5],
+				fontSize:14,
+				wrapping:'line',
 				color:'#f'
 			}),
 			Background:require('tools/quad').extend({
-				color:'#0000',
+				color:'#000f',
 				wrap:1,
 			}),
 			Button:require('tools/button').extend({
+				cursor:'default',
 				Bg:{
 					padding:[6,10,6,10]
 				}
 			}),
 			Item:require('tools/button').extend({
-				w:'100%',
+				h:'100%',
 				Bg:{
 					padding:4,
 					wrap:true
@@ -65,9 +64,9 @@ module.exports = class Probes extends require('base/view'){
 					this.view.onPlay()
 				}
 			},
-			stopButton:{
+			stopButton:{ 
 				icon:'stop',
-				onClick:function(){
+				onClick:function(){ 
 					this.view.onStop()
 				}
 			}
@@ -84,7 +83,7 @@ module.exports = class Probes extends require('base/view'){
 	}
 
 	onBeginFormatAST(){
-		this.code.trace = $P.toString()+';\n'
+		this.code.trace = ''
 		this.probes = []
 	}
 
@@ -103,18 +102,37 @@ module.exports = class Probes extends require('base/view'){
 		}) - 1
 	}
 
+	onEndFormatAST(){
+		this.code.trace += '\n'+$P.toString()
+	}
+
+	onFingerDown(e){
+		if(this.code.error && this.code.error.file){
+			var res = this.app.resources[this.code.error.file]
+			if(res) this.app.addSourceTab(res)
+		}
+	}
+
 	onDraw(){
 		//alright so how are we going to select things
 		this.beginBackground(this.viewGeom)
+
 		this.drawButton(this.styles.playButton)
-		// lets add a slider widget
-		var probes = this.probes
-		if(probes) for(let i = 0; i < probes.length; i++){
-			var probe = probes[i]
-			console.log(probe)
-			this.drawItem({
-				text:probe.name
+
+		if(this.code.error){
+			this.drawText({
+				text:this.code.error.message
 			})
+		}
+		else{
+			// lets add a slider widget
+			var probes = this.probes
+			if(probes) for(let i = 0; i < probes.length; i++){
+				var probe = probes[i]
+				this.drawItem({
+					text:probe.name
+				})
+			}
 		}
 		this.endBackground()
 	}

@@ -574,41 +574,19 @@ module.exports = class Code extends require('views/edit'){
 		this.textClean = false 
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3 
 	} 
-	
-	//onText(){
-	//	console.error("SETTING")
-	//}
-	
-	onFlag32() { 
-		this.textClean = false 
-		this.redraw() 
-	} 
-	
-	parseText() { 
-		this.ast = undefined 
-		try{ 
-			this.ast = parser.parse(this._text, { 
-				storeComments: [] 
-			}) 
-		} 
-		catch(e) { 
-			console.log(e, e.stack)
-			this.error = e 
-		} 
-	} 
+
 	
 	onDraw() { 
-		
+		this.probes.redraw()
 		this.beginBg(this.viewGeom) 
 		// ok lets parse the code
 		if(this.textClean) { 
 			this.reuseDrawSize() 
 			this.reuseBlock() 
 			this.reuseMarker() 
-			this.reuseErrorMarker() 
+			this.orderErrorMarker() 
 			this.orderSelection() 
 			this.reuseText() 
-			if(this.error) this.reuseErrorText() 
 		}
 		else { 
 			//require.perf()
@@ -655,9 +633,11 @@ module.exports = class Code extends require('views/edit'){
 				var oldtext = this._text 
 				this.oldText = oldtext 
 				// first we format the code
-				if(this.onBeginFormatAST) this.onBeginFormatAST() 
+				if(this.probes) this.probes.onBeginFormatAST() 
 				
 				this.formatJS(this.indentSize, this.ast) 
+
+				if(this.probes) this.probes.onEndFormatAST() 
 				//for(let ann = this.ann, i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 				//	console.log("STARTX", ann[i+5], ann[i])
 				//}
@@ -751,7 +731,7 @@ module.exports = class Code extends require('views/edit'){
 							this.turtle.wx = this.turtle.sx = abs(ann[i + 11]) 
 						} 
 					} 
-					// lets do a paren match analysis
+					// lets do a paren match analysis and make a nicer error
 					if(this.error.msg === 'Unexpected token') { 
 						var pos = this.indentFindParenError() 
 						if(pos >= 0) { 
@@ -759,37 +739,37 @@ module.exports = class Code extends require('views/edit'){
 							this.error.pos = pos 
 						} 
 					} 
-					
-					var epos = clamp(this.error.pos, 0, this.$lengthText() - 1) 
-					
-					
-					var rd = this.$readOffsetText(epos) 
-					
-					if(rd) { 
-						this.drawErrorMarker({ 
-							x1: 0, 
-							x2: rd.x, 
-							x3: rd.x + rd.w, 
-							x4: 100000, 
-							y: rd.y, 
-							h: rd.fontSize * rd.lineSpacing, 
-							closed: 0 
-						}) 
-					} 
-				} 
-				
+				}
 				// lets draw the error
-				this.drawErrorText({ 
-					errorAnim: this.errorAnim, 
-					text: this.error.msg 
-				}) 
+				//this.drawErrorText({ 
+				//	errorAnim: this.errorAnim, 
+				//	text: this.error.msg 
+				//}) 
 			} 
 			//require.perf()
 			this.$fastTextDelta = 0 
 		} 
-		
-		if(this.hasFocus) { 
-			
+
+		if(this.error){
+			var epos = clamp(this.error.pos, 0, this.$lengthText() - 1) 
+			var rd = this.$readOffsetText(epos) 			
+			if(rd) { 
+				//console.log(out)
+				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
+				this.drawErrorMarker({ 
+					x1: 0, 
+					x2: rd.x, 
+					x3: rd.x + rd.w, 
+					x4: 100000, 
+					y: rd.y, 
+					h: rd.fontSize * rd.lineSpacing, 
+					closed: 0 
+				}) 
+			}
+		}
+
+		if(this.hasFocus) { 			
+
 			var cursors = this.cs.cursors 
 			for(var i = 0; i < cursors.length; i++) { 
 				var cursor = cursors[i] 
@@ -826,6 +806,24 @@ module.exports = class Code extends require('views/edit'){
 		this.endBg(true) 
 	} 
 	
+	onFlag32() { 
+		this.textClean = false 
+		this.redraw() 
+	} 
+	
+	parseText() { 
+		this.ast = undefined 
+		try{ 
+			this.ast = parser.parse(this._text, { 
+				storeComments: [] 
+			}) 
+		} 
+		catch(e) { 
+			console.log(e, e.stack)
+			this.error = e 
+		} 
+	} 
+
 	indentFindParenError() { 
 		var ann = this.ann 
 		var stack = [] 

@@ -17,6 +17,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this._text = ''
 		//this.trace = ''
 		//this.traceMap = []//[]
+		this.traceLines = []
 		this.ann.length = 0
 		this.$fastTextAnnotate = true
 		this.scope = Object.create(this.defaultScope)
@@ -33,6 +34,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
+			this.traceLines.push(statement)
 			this.trace += '\n'
 		}
 
@@ -135,6 +137,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[statement.type](statement)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
+			this.traceLines.push(statement)
 			this.trace += '\n'
 			// support $
 			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
@@ -209,7 +212,8 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(node.trail || i < elemslen){
 				this.fastText(',', commaStyle)
-				this.trace += ','
+				this.traceLines.push(elem)
+				this.trace += ',\n'
 			}
 			if(elem && top){
 				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
@@ -319,7 +323,8 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 
 			if(node.trail || i < propslen){
-				this.trace += ','
+				this.traceLines.push(prop)
+				this.trace += ',\n'
 				this.fastText(',', commaStyle)
 				//if(prop.inserted){
 				//	console.log("INSERTEZ")
@@ -376,6 +381,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var startx = turtle.sx, starty = turtle.wy
 
 		this.fastText('{', this.styles.Curly.ObjectExpression)
+		this.traceLines.push(node)
 		this.trace += '{\n'
 		
 		var endx = turtle.wx, lineh = turtle.mh
@@ -391,6 +397,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[method.type](method)
 			if(method.side) this.fastText(method.side, this.styles.Comment.side)
 			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
+			this.traceLines.push(method)
 			this.trace += '\n'
 		}
         if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
@@ -756,7 +763,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 			if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
 			if(node.probe){
-				var id = this.onProbe(init, id)
+				var id = this.probes.onProbe(init, id)
 				this.trace += '$P('+id+','
 				this[init.type](init, id)
 				this.trace += ')'
@@ -908,7 +915,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.prefix){
 			var op = node.operator
 			if(node.operator === '@'){
-				var id = this.onProbe(node, lhs)
+				var id = this.probes.onProbe(node, lhs)
 				this.trace += '$P('+id+','
 				this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
 				var arg = node.argument

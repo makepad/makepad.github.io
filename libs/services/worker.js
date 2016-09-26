@@ -20,6 +20,9 @@ service.onMessage = function(msg){
 	else if(msg.fn == 'onError'){
 		localIds[msg.localId].onError(msg.error)
 	}
+	else if(msg.fn == 'onProbe'){
+		localIds[msg.localId].onProbe(msg)
+	}
 }
 
 exports.onRequire = function(args, absParent, buildPath){

@@ -6,6 +6,18 @@ module.exports = class extends require('/platform/service'){
 		this.workers = []
 	}
 
+	user_onProbe(msg){
+		msg.localId = this.worker.localId
+		this.parent.batchMessages.push({
+			$:'worker1',
+			msg:msg
+		})
+		var after = this.parent.onAfterEntry
+		if(this.worker.afterEntryCallbacks.indexOf(after) === -1){
+			this.worker.afterEntryCallbacks.push(after)
+		}
+	}
+
 	user_onError(msg){
 		msg.localId = this.worker.localId
 		this.parent.batchMessages.push({

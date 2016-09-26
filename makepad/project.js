@@ -1,66 +1,62 @@
 const storage = require('services/storage')
 
-exports.loadProjectTree = function loadProjectTree(projectTree){
-	return new Promise(function(resolve, reject){
-		var allProj = []
-		var allNodes = []
-		var pathNames = []
-		var resources = {}
-		function walk(node, base){
-			var folder = node.folder
-			node.index = {}
-			for(let i = 0; i < folder.length; i++){
-				var child = folder[i]
-				node.index[child.name] = child
-				if(child.folder){
-					walk(child, base + child.name + '/')
-					continue
-				}
-				var isBinary = child.name.indexOf('.js') !== child.name.length - 3
-				var path = '/' + base + child.name
-				allNodes.push(child)
-				pathNames.push(path)
-				allProj.push(storage.load(path, isBinary))
-			}
-		}
-		walk(projectTree, '')
+module.exports = class Project extends require('base/store'){
 
-		Promise.all(allProj, true).then(function(results){
-			// store all the data in the tree
-			for(let i = 0; i < results.length; i++){
-				resources[pathNames[i]] = {
-					node:allNodes[i],
-					path:pathNames[i],
-					data:results[i]
-				}
-			}
-			resolve(resources)
+	constructor(config){
+		super()
+		for(let key in config) this[key] = config[key]
+		this.act("init", store=>{
+			store.projectTree = {folder: [{name: 'loading'}]} 
+			store.resourceList = {}
 		})
-	}, true)
-}
+		Object.seal(this)
+	}
 
-exports.projectToResources = function projectToResources(projectTree){
-	var resources = {}
-	function walk(folder, base){
-		for(let i = 0; i < folder.length; i++){
-			var child = folder[i]
-			if(child.folder){
-				if(base === './libs/') walk(child.folder, 'libs/'+child.name + '/')
-				else walk(child.folder, base + child.name + '/')
-				continue
-			}
-			var store = base+child.name
-			if(typeof oldResourcesOrNode === 'object'){
-				if(oldResourcesOrNode[store] !== child.data){
-					oldResourcesOrNode[store] = child.data
-					resources[store] = child.data
+	loadProject(fileName){
+		return storage.load(fileName).then(result=>{
+			// add the project
+			var projectTree = JSON.parse(result)
+
+			var allProj = []
+			var allNodes = []
+			var pathNames = []
+			var resourceList = {}
+			function walk(node, base){
+				var folder = node.folder
+				if(!node.open) node.open = false
+				node.index = {}
+				for(let i = 0; i < folder.length; i++){
+					var child = folder[i]
+					node.index[child.name] = child
+					if(child.folder){
+						walk(child, base + child.name + '/')
+						continue
+					}
+					var isBinary = child.name.indexOf('.js') !== child.name.length - 3
+					var path = '/' + base + child.name
+					allNodes.push(child)
+					pathNames.push(path)
+					allProj.push(storage.load(path, isBinary))
 				}
 			}
-			else{
-				resources[store] = oldResourcesOrNode?child:child.data
-			}
-		}
+			walk(projectTree, '')
+
+			return Promise.all(allProj, true).then(results => {
+				// store all the data in the tree
+				for(let i = 0; i < results.length; i++){
+					resourceList[pathNames[i]] = {
+						node:allNodes[i],
+						path:pathNames[i],
+						data:results[i],
+						trace:''
+					}
+				}
+				// lets store it
+				this.act("loadProject",store=>{
+					store.projectTree = projectTree
+					store.resourceList = resourceList
+				})
+			}, fail=>{} ,true)
+		}, fail=>{}, true)
 	}
-	walk(projectTree.folder, './')
-	return resources
 }

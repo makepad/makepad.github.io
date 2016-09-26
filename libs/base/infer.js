@@ -77,19 +77,17 @@ module.exports = class ShaderInfer extends require('base/class'){
 		if(!state) throw error
 		var curfn = state.curFunction
 	
-		var exc = 0
 		try{
 			curfn.callee()
 		}
 		catch(e){
-			exc = e
-		}
-		if(exc){
 			// ok lets parse out the line offset of this thing
-			var stack = exc.stack.toString()
-			var fileerr = exc.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
-			var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
-			var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
+			//var stack = exc.stack.toString()
+			//var fileerr = exc.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
+			//var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
+			//var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
+			var dec = module.worker.decodeException(e)
+
 			// alright we have a lineoff, now we need to take the node
 			var lines = curfn.source.split('\n')
 			// lets count the linenumbers
@@ -102,28 +100,32 @@ module.exports = class ShaderInfer extends require('base/class'){
 				}
 				off += lines[line].length + 1
 			}
-			var realline = line + lineoff - 1
+			var realline = line + dec.line - 1
 			if(curfn.source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
 
 			this.exception = {
-				filename:filename,
+				message:error.message,
+				file:dec.file,
 				line:realline,
 				col:realcol,
-				type:error.type,
-				message:error.message
+				type:error.type
 			}
-
-			console.error(
-				filename+':'+realline+':'+realcol, error.type + ': '+ error.message
+			if(module.worker.onError){
+				module.worker.onError(this.exception)
+			}
+			else console.error(
+				dec.file+':'+realline+':'+realcol, error.type + ': '+ error.message
 			)
 		}
-		else{
+		if(!this.exception){
 			this.exception = {
-				type:error.type,
-				message:error.message
+				message:error.message,
+				type:error.type
 			}
-
-			console.error(
+			if(module.worker.onError){
+				module.worker.onError(this.exception)
+			}
+			else console.error(
 				'Please add $ after {', error.type + ': '+ error.message
 			)
 		}
@@ -1155,7 +1157,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 	ForStatement(node){
 		var oldscope = this.curFunction.scope 
 		this.curFunction.scope = Object.create(oldscope)
-		var ret = 'for(' + this.walk(node.init) + ';' 
+		var init = node.init
+		var ret = 'for(' + this[init.type](init) + ';' 
 		var test = node.test
 		ret += this[test.type](test)+';'
 		var update = node.update

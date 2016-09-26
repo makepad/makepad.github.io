@@ -131,7 +131,9 @@ module.exports = class Tree extends require('base/view'){
 		this.setFocus()
 		var node=this.pickMap[e.pickId]
 		if(node&&node.folder){
-			node.open=!node.open
+			this.store.act('treeToggle',store=>{
+				node.open=!node.open
+			})
 			this.redraw()
 		}
 	
@@ -178,7 +180,6 @@ module.exports = class Tree extends require('base/view'){
 
 	onDraw(){
 		//alright so how are we going to select things
-		
 		this.beginBackground(this.viewGeom)
 		this.pickMap={}
 		this.pickId=1

@@ -152,7 +152,7 @@
 				}, 2000)
 			}
 			req.addEventListener("error", function(){
-				console.error('Error loading '+resourceurl+' from '+parenturl)
+				console.error('Error loading '+localFile)
 				reject(resource)
 			})
 			req.responseType = isBinary?'arraybuffer':'text'
@@ -264,16 +264,20 @@
 		var mask = Object.getOwnPropertyNames(self)
 		var forceMask = []
 		var LocalFunction = self.Function
-		self.Function = function(){
-			
-			var args = []
+
+		self.Function = function WrapFunction(){
+			var fnargs = []
+			var args = arguments
 			var len = arguments.length
-			for(let i = 0; i < len - 1; i++) args.push(arguments[i])
-			args.push.apply(args, forceMask)
-			
-			var code = arguments[len -1]
-			args.push(code)
-			return LocalFunction.apply(null, args)
+			var code = '"use strict"\nreturn function('
+			for(var i = 0; i < len - 1; i++){
+				if(i) code += ','
+				code += args[i]
+			}
+			code += '){'+args[i]+'}'
+			fnargs.push.apply(fnargs, forceMask)
+			fnargs.push(code)
+			return LocalFunction.apply(null, fnargs)()
 		}
 
 		for(let i = 0; i < mask.length; i++){

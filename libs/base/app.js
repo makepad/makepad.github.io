@@ -219,13 +219,15 @@ module.exports = class App extends require('base/view'){
 		app.app = app
 		// we are the default focus
 		app.focusView = app
-		// compose the tree
-		app.$composeTree(app)
-
+		app.$recomposeList = []
 		// lets attach our todo and ubo to the main framebuffer
 		painter.mainFramebuffer.assignTodoAndUbo(app.todo, app.painterUbo)
+
+		// compose the tree
+		app.recompose()
+		//app.$composeTree(app)
 		// first draw
-		app.redraw()
+		//app.redraw()
 		//app.$redrawViews()
 	}
 
@@ -302,6 +304,7 @@ module.exports = class App extends require('base/view'){
 			var child = children[i]
 			child.parent = node
 			child.app = node.app
+			child.store = node.store
 			var oldchild = oldChildren && oldChildren[i]
 			this.$composeTree(child, oldchild && oldchild.children)
 		}
@@ -464,6 +467,13 @@ module.exports = class App extends require('base/view'){
 		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
 
 		var todo = this.todo
+
+		var recList = this.$recomposeList
+		for(var i = 0; i < recList.length; i++){
+			var node = recList[i]
+			this.$composeTree(node)//, node.children)
+		}
+		recList.length = 0
 
 		if(!this.$layoutClean){
 			this.$layoutClean = true

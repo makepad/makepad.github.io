@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/makepad.js"],
-	"run":["/makepad.js"],
+	"open":["/examples/audio.js"],
+	"run":["/examples/audio.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -16,6 +16,7 @@
 				{"name":"props.js"},
 				{"name":"tools.js"},
 				{"name":"turtle.js"},
+				{"name":"perf.js"},
 				{"name":"infer.js"},
 				{"name":"drawapp.js"},
 				{"name":"mat2.js"},

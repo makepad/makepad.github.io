@@ -73,11 +73,14 @@ function defineProp(key, value){
 			if(this.onFlag) this[_onkey] |= this.onFlag
 			return this[_key]
 		},
-		set:function(value){
+		set:function(value, nolisten){
 			var old = this[_key]
 			this[_key] = value
 			var flags = this[_onkey] || this.onFlag0
-
+			if(!nolisten && value && value.__listen__){
+				// set a listener on an object
+				value.__listen__(this, key)
+			}
 			if(!config.change || old !== value){
 				if(flags){
 					var id = 1

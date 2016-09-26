@@ -968,6 +968,7 @@ module.exports = class Edit extends require('base/view'){
 	onKeyDown(k){
 		// lets trigger an event
 		var name = k.name
+		if(!name) return console.error("Strange", k)
 		var prefix = ''
 		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
 		if(this[evname]){
