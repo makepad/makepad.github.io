@@ -183,7 +183,7 @@ module.exports = class extends require('base/drawapp'){
 		}) 
 		//console.log(10000/this.zoom)
 		this.drawRect({ 
-			x: (this.selStart - this.todo.xScroll) / this.zoom, 
+			x: (this.selStart) / this.zoom, 
 			w: (this.selEnd - this.selStart) / this.zoom, 
 			h: '100%' 
 		}) 
@@ -229,7 +229,7 @@ module.exports = class extends require('base/drawapp'){
 			} 
 			this.scrollSize(this.samples / scale, 0) 
 		} 
-		this.endGrid() 
+		this.endGrid(true) 
 		
 	} 
 }
