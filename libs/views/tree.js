@@ -170,10 +170,18 @@ module.exports = class Tree extends require('base/view'){
 			this.selected=list[idx]||list[0]
 		}
 		else if(e.name==='rightArrow'){
-			if(sel&&sel.folder)sel.open=true
+			if(sel&&sel.folder){
+				this.store.act('treeToggle',store=>{
+					sel.open=true
+				})
+			}
 		}
 		else if(e.name==='leftArrow'){
-			if(sel&&sel.folder)sel.open=false
+			if(sel&&sel.folder){
+				this.store.act('treeToggle',store=>{
+					sel.open=false
+				})
+			}
 		}
 		this.redraw()
 	}

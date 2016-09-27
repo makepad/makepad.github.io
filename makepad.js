@@ -17,7 +17,12 @@ module.exports = class Makepad extends require('base/app'){
 	
 	constructor(){
 		super()
-		this.store = new ProjectStore({debug:false})
+		this.store = new ProjectStore()
+
+		this.store.observe(this.store, e=>{
+			console.log("Observe:", e)
+		})
+
 	}
 	
 	onAfterCompose() { 

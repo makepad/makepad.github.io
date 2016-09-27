@@ -2,9 +2,9 @@ const storage = require('services/storage')
 
 module.exports = class Project extends require('base/store'){
 
-	constructor(config){
+	constructor(){
 		super()
-		for(let key in config) this[key] = config[key]
+
 		this.act("init", store=>{
 			store.projectTree = {folder: [{name: 'loading'}]} 
 			store.resourceList = {}
@@ -29,10 +29,10 @@ module.exports = class Project extends require('base/store'){
 				})
 				var folder = node.folder
 				if(!node.open) node.open = false
-				node.index = {}
+				//node.index = {}
 				for(let i = 0; i < folder.length; i++){
 					var child = folder[i]
-					node.index[child.name] = child
+					//node.index[child.name] = child
 					if(child.folder){
 						walk(child, base + child.name + '/')
 						continue

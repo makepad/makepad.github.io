@@ -73,13 +73,28 @@ function defineProp(key, value){
 			if(this.onFlag) this[_onkey] |= this.onFlag
 			return this[_key]
 		},
-		set:function(value, nolisten){
+		set:function set(value){
 			var old = this[_key]
 			this[_key] = value
 			var flags = this[_onkey] || this.onFlag0
-			if(!nolisten && value && value.__listen__){
+			if(value && value.__observers__){
 				// set a listener on an object
-				value.__listen__(this, key)
+				// but make sure we add only one
+				var observers = value.__observers__
+				var i = observers.length
+				if(i) for(--i; i >=0 ; i--){
+					let observer = observers[i]
+					if(observer.key === key && observer.pthis === this)break
+				}
+				if(i>=0){
+					var observe = (e)=>{
+						if(e.level<=0) set.call(this, e.changes[0].value)
+					}
+					observe.key = key
+					observe.pthis = this
+					observers.push(observe)
+				}
+				//console.log(value.__listeners__.length)
 			}
 			if(!config.change || old !== value){
 				if(flags){
