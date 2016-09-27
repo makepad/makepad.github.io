@@ -56,9 +56,9 @@ module.exports = class extends require('base/drawapp'){
 				device: 'Microphone' 
 			} 
 		}) 
-		var out = wav.parse(require('./audio.wav'), true) 
-		this.recording.push(out.data) 
-		this.samples = out.data[0].length 
+		//var out=wav.parse(require('./audio.wav'),true)
+		//this.recording.push(out.data)
+		//this.samples=out.data[0].length
 		
 		this.playFlow = new audio.Flow({ 
 			buffer1: { 
@@ -92,13 +92,13 @@ module.exports = class extends require('base/drawapp'){
 	} 
 	
 	onFingerDown(e) { 
-		if(e.pickId) return 
+		if(e.pickId) return  
 		this.selEnd = 
 		this.selStart = clamp(this.xToTime(e.x), 0, this.samples) 
 	} 
 	
 	onFingerMove(e) { 
-		if(e.pickId) return 
+		if(e.pickId) return  
 		var end = this.selEnd = clamp(this.xToTime(e.x), 0, this.samples) 
 		if(end < this.selStart) this.selEnd = this.selStart, this.selStart = end 
 	} 

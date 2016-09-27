@@ -29,6 +29,7 @@
 				{"name":"quat.js"},
 				{"name":"glmatrix.js"},
 				{"name":"sha256.js"},
+				{"name":"store.js"},
 				{"name":"types.js"},
 				{"name":"idalloc.js"}
 			]},

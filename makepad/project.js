@@ -22,6 +22,11 @@ module.exports = class Project extends require('base/store'){
 			var pathNames = []
 			var resourceList = {}
 			function walk(node, base){
+				node.folder = node.folder.sort((a,b)=>{
+					if(a.name < b.name) return -1
+				    if(a.name > b.name) return 1
+				    return 0
+				})
 				var folder = node.folder
 				if(!node.open) node.open = false
 				node.index = {}
