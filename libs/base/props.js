@@ -77,10 +77,11 @@ function defineProp(key, value){
 			var old = this[_key]
 			this[_key] = value
 			var flags = this[_onkey] || this.onFlag0
-			if(value && value.__observers__){
+			var meta = value && value.__proxymeta__
+			if(meta){
 				// set a listener on an object
 				// but make sure we add only one
-				var observers = value.__observers__
+				var observers = meta.observers
 				var i = observers.length
 				if(i) for(--i; i >=0 ; i--){
 					let observer = observers[i]

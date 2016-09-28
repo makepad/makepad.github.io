@@ -11,29 +11,89 @@ var UserProcess = require('./makepad/userprocess')
 
 var projectFile = "/makepad.json" 
 var currentFile = "./examples/windtree.js" 
-var ProjectStore = require('./makepad/project') 
+var ProjectStore = require('base/store') 
 
 module.exports = class Makepad extends require('base/app'){ 
 	
 	constructor(){
 		super()
-		this.store = new ProjectStore()
-
 		this.store.observe(this.store, e=>{
-			console.log("Observe:", e)//this.store.path(e.changes[0].object).join('.'))
+			console.log("observe", e)
 		})
+		this.store.act("init",store=>{
+			store.projectTree = {}
+			store.resourceList = {}
+			store.processList = []
+		})
+	}
+
+	loadProject(fileName){
+		return storage.load(fileName).then(result=>{
+			// add the project
+			var projectTree = JSON.parse(result)
+
+			var allProj = []
+			var allNodes = []
+			var pathNames = []
+			var resourceList = {}
+			function walk(node, base){
+				node.folder = node.folder.sort((a,b)=>{
+					if(a.name < b.name) return -1
+				    if(a.name > b.name) return 1
+				    return 0
+				})
+				var folder = node.folder
+				if(!node.open) node.open = false
+				//node.index = {}
+				for(let i = 0; i < folder.length; i++){
+					var child = folder[i]
+					//node.index[child.name] = child
+					if(child.folder){
+						walk(child, base + child.name + '/')
+						continue
+					}
+					var isBinary = child.name.indexOf('.js') !== child.name.length - 3
+					var path = '/' + base + child.name
+					allNodes.push(child)
+					pathNames.push(path)
+					allProj.push(storage.load(path, isBinary))
+				}
+			}
+			walk(projectTree, '')
+
+			return Promise.all(allProj, true).then(results => {
+				// store all the data in the resource list
+				for(let i = 0; i < results.length; i++){
+					resourceList[pathNames[i]] = {
+						node:allNodes[i],
+						path:pathNames[i],
+						data:results[i],
+						trace:'',
+						processes:[]
+					}
+				}
+				// lets store it
+				this.store.act("loadProject",store=>{
+					store.projectTree = projectTree
+					store.resourceList = resourceList
+					store.processList = []
+				})
+
+			}, fail=>{} ,true)
+		}, fail=>{}, true)
 	}
 	
 	onAfterCompose() { 
 		// the setter of data makes it autobind to the store
   		this.find('FileTree').data = this.store.projectTree
 
-		this.store.loadProject(projectFile).then(store => {
+		this.loadProject(projectFile).then(store => {
 
 			if(this.destroyed) return  // technically possible
 
 			var resources = this.resources = this.store.resourceList
 			var proj = this.store.projectTree
+			console.log(this.store)
 			//this.find('FileTree').data = this.project = proj 
 			//console.log(this.store.projectTree)
 			if(proj.open) {
@@ -184,7 +244,6 @@ module.exports = class Makepad extends require('base/app'){
 			startWorker:function(){
 
 				this.worker = new Worker(null, { 
-					resource: resource, 
 					parentFbId: this.$renderPasses.surface.framebuffer.fbId 
 				}) 
 				

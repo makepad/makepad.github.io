@@ -245,7 +245,7 @@
 		return [
 			'console', 'eval', 'Infinity','NaN','undefined','null','isFinite','isNaN','parseFloat','parseInt',
 			'Symbol','Error','EvalError','InternalError','RangeError','ReferenceError','TypeError','URIError',
-			'Map','Set','WeakMap','WeakSet','SIMD','JSON','Generator','GeneratorFunction','Intl','SyntaxError', 
+			'Proxy','Map','Set','WeakMap','WeakSet','SIMD','JSON','Generator','GeneratorFunction','Intl','SyntaxError', 
 			'Function', 'RegExp', 'Math', 'Object', 'String', 'Number','Boolean','Date', 'Array',
 			'Int8Array','Uint8Array','Uint8ClampedArray','Int16Array','Uint16Array','Int32Array','Uint32Array',
 			'Float32Array','Float64Array','DataView','ArrayBuffer','setTimeout','clearTimeout','setInterval','clearInterval'

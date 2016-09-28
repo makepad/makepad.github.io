@@ -3,6 +3,7 @@
 var painter = require('services/painter')
 var fingers = require('services/fingers')
 var keyboard = require('services/keyboard')
+var Store = require('base/store')
 
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
@@ -18,6 +19,8 @@ module.exports = class App extends require('base/view'){
 	constructor(){
 		super()
 		// create app
+		this.store = Store.create()
+
 		var app = this
 		
 		var viewTodoMap = app.$viewTodoMap = []

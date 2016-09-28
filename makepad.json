@@ -119,7 +119,6 @@
 			{"name":"homescreen.js"},
 			{"name":"probes.js"},
 			{"name":"settings.js"},
-			{"name":"project.js"},
 			{"name":"styles.js"},
 			{"name":"userprocess.js"}
 		]},

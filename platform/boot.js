@@ -536,11 +536,15 @@ function createOnMessage(worker){
 					transfers.push.apply(transfers, tr)
 				}
 			}
-			worker.postMessage({
-				$:'batch',
-				msgs:batchMessages
-			}, transfers)
-
+			try{
+				worker.postMessage({
+					$:'batch',
+					msgs:batchMessages
+				}, transfers)
+			}
+			catch(e){
+				console.error('cloneError', batchMessages)
+			}
 			worker.batchMessages = []
 			worker.batchTransfers = []
 		}
