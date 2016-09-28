@@ -20,9 +20,8 @@ module.exports = class Makepad extends require('base/app'){
 		this.store = new ProjectStore()
 
 		this.store.observe(this.store, e=>{
-			console.log("Observe:", e)
+			console.log("Observe:", e)//this.store.path(e.changes[0].object).join('.'))
 		})
-
 	}
 	
 	onAfterCompose() { 

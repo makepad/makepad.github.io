@@ -11,8 +11,8 @@ function defObservableProp(obj, key, value, init){
 	function set(v, init){
 		var store = this.__store__
 		if(store.__locked__){
-			let base = store.path(this)
-			throw new Error("Cannot modify "+base+""+key+" unless executed in store.act")
+			let path = store.path(this)
+			throw new Error("Cannot modify "+path.join('.')+""+key+" unless executed in store.act")
 		}
 
 		if(Array.isArray(v)){
@@ -76,7 +76,6 @@ module.exports = class Store extends require('base/class'){
 
 		this.constructor.ObservableObject = class ObservableObject{
 			constructor(obj, key, store){
-				Object.defineProperty(this, '__key__',{value:key})
 				Object.defineProperty(this, '__parents__',{value:[]})
 				Object.defineProperty(this, '__store__',{value:store})
 				Object.defineProperty(this, '__observers__',{value:[]})
@@ -104,7 +103,6 @@ module.exports = class Store extends require('base/class'){
 		this.constructor.ObservableArray = class ObservableArray{
 			constructor(array, key, store){
 				this.length = 0
-				Object.defineProperty(this, '__key__',{value:key})
 				Object.defineProperty(this, '__parents__',{value:[]})
 				Object.defineProperty(this, '__store__',{value:store})
 				Object.defineProperty(this, '__observers__',{value:[]})
@@ -201,23 +199,23 @@ module.exports = class Store extends require('base/class'){
 	}
 
 	path(node){
-		var base = ''
+		var path = []
 		var loop = 1
 		while(node){
-			base = node.__key__+'.' + base
 			let parents = node.__parents__
-			if(!parents)break
+			if(!parents || !parents.length)break
 			if(parents.length>1){
-				base = '<multiple>' + '.'+base
+				path.unshift('<multiple>')
 				break
 			}
+			path.unshift(parents[0].key)
 			node = parents[0].object
 			if(loop++>100){
 				break
-				base = '<cyclical>'
+				path = ['<cyclical>']
 			}
 		}
-		return base
+		return path
 	}
 
 	observe(object, cb){
@@ -300,6 +298,16 @@ module.exports = class Store extends require('base/class'){
 				observer(event)
 			})
 		}
+	}
+
+	// serialize the entire store to typed array
+	serialize(){
+		
+	}
+
+	// deserialize the entire store from typed array
+	deserialize(){
+		
 	}
 }
 

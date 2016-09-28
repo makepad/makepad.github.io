@@ -53,7 +53,8 @@ module.exports = class Project extends require('base/store'){
 						node:allNodes[i],
 						path:pathNames[i],
 						data:results[i],
-						trace:''
+						trace:'',
+						processes:[]
 					}
 				}
 				// lets store it
@@ -61,6 +62,7 @@ module.exports = class Project extends require('base/store'){
 					store.projectTree = projectTree
 					store.resourceList = resourceList
 				})
+
 			}, fail=>{} ,true)
 		}, fail=>{}, true)
 	}
