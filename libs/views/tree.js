@@ -13,7 +13,7 @@ module.exports = class Tree extends require('base/view'){
 		this.padding = [2,0,0,2]
 		this.fontSize = 11
 		this.tools = {
-			Background:require('tools/quad').extend({
+			Bg:require('tools/bg').extend({
 				color:'#6',
 				wrap:false,
 			}),
@@ -186,9 +186,9 @@ module.exports = class Tree extends require('base/view'){
 		this.redraw()
 	}
 
-	onDraw(){
+	onDraw(debug){
 		//alright so how are we going to select things
-		this.beginBackground(this.viewGeom)
+		this.beginBg(this.viewGeom)
 		this.pickMap={}
 		this.pickId=1
 		var p=this
@@ -232,10 +232,10 @@ module.exports = class Tree extends require('base/view'){
 				}
 			}
 
-			if(node.folder){
+			if(node.folder || node.icon){
 				this.drawIcon({
 					fontSize:closed?0:this.fontSize+1,
-					text:node.folder?
+					text:node.icon?this.lookupIcon[node.icon]:node.folder?
 						this.lookupIcon.folder:
 						this.lookupIcon.fileO
 				})
@@ -254,6 +254,6 @@ module.exports = class Tree extends require('base/view'){
 			}
 		}
 		if(this.data&&this.data.folder)iterFolder(this.data,[0],false)
-		this.endBackground(true)
+		this.endBg(true)
 	}
 }

@@ -1,5 +1,5 @@
 
-var ProxyFallback = false
+var ProxyFallback = true
 
 var MakeProxy = function(value, handler) {
 	return new Proxy(value, handler)
@@ -9,6 +9,11 @@ if(ProxyFallback){
 	// dont use proxies
 	class ProxyObject{
 		constructor(object, handler){
+			// helper property to quickly access underlying object
+			Object.defineProperty(this, '0__unwrap__', {
+				configurable:true,
+				value:object
+			})
 			Object.defineProperty(this, '__proxymeta__', {
 				get:function(){
 					return proxyMeta.get(object)
@@ -64,6 +69,10 @@ if(ProxyFallback){
 					return proxyMeta.get(array)
 				}
 			})
+			Object.defineProperty(this, '0__unwrap__', {
+				configurable:true,
+				value:array
+			})
 		}
 
 		push(...args){
@@ -83,23 +92,31 @@ if(ProxyFallback){
 			return ret
 		}
 
+		forEach(...args){
+			return this._array.forEach(...args)
+		}
+
+		map(...args){
+			return this._array.map(...args)
+		}
+
 		indexOf(thing){
 			return this._array.indexOf(thing)
 		}
 
 		get length(){
-			return this._array.length
+			return this._handler.get(this._array, 'length')
 		}
 
 		set length(value){
 			var oldLen = this._array.length
 			// if shorten
-			for(var i = oldLen - 1; i >= v; i--){
+			for(var i = oldLen - 1; i >= value; i--){
 				this[i] = undefined
 			}
 			// assure length
-			this._defineProxyProps(v)
-			this._array.length = value
+			this._defineProxyProps(value)
+			this._handler.set(this._array, 'length', value)
 		}
 
 		_defineProxyProps(len){
@@ -154,6 +171,7 @@ function storeProxyMeta(value, store){
 		store:store,
 		parents:{},
 		observers:[]
+		//parenting:[]
 	}
 	proxyMeta.set(value, meta)
 	return meta
@@ -168,7 +186,7 @@ var proxyHandler = {
 
 		var oldValue = target[key]
 		var oldReal = oldValue
-		if(!data.allowNewKeys && !(key in target) && !baseMeta.isRoot){
+		if(!data.allowNewKeys && !Array.isArray(target) && !(key in target) && !baseMeta.isRoot){
 			throw new Error('Adding new keys to an object is turned off, please specify it fully when adding it to the store')
 		}
 
@@ -185,6 +203,9 @@ var proxyHandler = {
 				if(idx === -1) throw new Error('inconsistency, no key'+key)
 				if(p.length === 1) delete oldMeta.parents[key]
 				else p.splice(idx, 1)
+				//for(let i = 0, l = oldMeta.parenting.length; i < l; i++){
+				//	oldMeta.parenting[i]({type:'remove',$meta:oldMeta})
+				//}
 				oldValue = oldMeta.proxy
 			}
 		}
@@ -193,7 +214,6 @@ var proxyHandler = {
 		var newReal = value
 		if(typeof newValue === 'object' && newValue){
 			var newMeta = newValue.__proxymeta__ // the value added was a proxy
-			//var newMeta = proxyMeta.get(newTarget)
 			// otherwise 
 			if(!newMeta && (Array.isArray(newValue)||newValue.constructor === Object)){
 				// wire up parents
@@ -208,6 +228,10 @@ var proxyHandler = {
 				if(oldObservers && oldObservers.length){
 					newMeta.observers.push.apply(newMeta.observers, oldObservers)
 				}
+				//for(let i = 0, l = newMeta.parenting.length; i < l; i++){
+				//	oldMeta.parenting[i]({type:'add',$meta:oldMeta})
+				//}
+
 				// replace return value with proxy
 				newValue = newMeta.proxy
 				newReal = newMeta.object
@@ -215,15 +239,14 @@ var proxyHandler = {
 		}
 
 		data.changes.push({
-			object:baseMeta.proxy, $meta:baseMeta, key:key, old:oldValue, $old:oldReal, value:newValue, $value:newReal, $object:target
+			object:baseMeta.proxy,value:newValue, key:key,  $value:newReal, $object:target, $meta:baseMeta, old:oldValue, $old:oldReal
 		})
 
-		target[key] = value
+		target[key] = newReal
 		return true
 	},
 	get(target, key){
-		// ugly because ms edge doesnt support weakmaps on proxies
-		// we have to pollute the keyspace with this key
+
 		var baseMeta = proxyMeta.get(target)
 		if(key === '__proxymeta__'){
 			return baseMeta
@@ -262,13 +285,29 @@ class Store extends require('base/class'){
 		return proxy
 	}
 	
-	observe(proxy, cb){
-		var meta = proxy.__proxymeta__
-		if(!meta) throw new Error("Cannot observe non proxy object")
-		meta.observers.push(cb)
+	wrap(object){
+		var base = this.__proxymeta__
+		var meta = object.__proxymeta__
+		if(meta) return meta.proxy//throw new Error("Object is already wrapped") 
+		meta = storeProxyMeta(object, base.store)
+		return meta.proxy
 	}
 
-	act(name, actor){
+	unwrap(object){
+		if(!object) return
+		var meta = object.__proxymeta__
+		if(!meta) return object//throw new Error("Object is not wrapped")
+		return meta.object
+	}
+
+	observe(object, observer/*, parenting*/){
+		var meta = object.__proxymeta__
+		if(!meta) throw new Error("Object is not observable. use store.wrap() or add it to the store and reference it from the store")
+		meta.observers.push(observer)
+		return meta.proxy
+	}
+
+	act(name, actor, maxLevel){
 		var meta = this.__proxymeta__
 		var store = storeData.get(meta.object)
 		if(!store.locked){
@@ -284,14 +323,79 @@ class Store extends require('base/class'){
 			// process changes to this if we are running proxyFallback
 			if(this.__proxyfallback__) this.__proxyfallback__()
 			store.locked = true
-			processChanges(name, changes, store)
+			processChanges(name, changes, store, maxLevel!==undefined?maxLevel:Infinity)
 		}
 	}
 }
 
+
+class Observation{
+	constructor(name, level, changes){
+		this.name = name
+		this.level = level
+		this.changes = changes
+	}
+	
+	anyChanges(level, ...query){
+		if(level !== this.level) return
+		let ret = []
+		let changes = this.changes
+		let key = query[query.length - 1]
+		for(let i = changes.length-1; i >=0 ; --i){
+			var change = changes[i]
+			if(change.key !== key) continue
+			// lets walk up the parent chain whilst matching query
+			var parents = change.$meta.parents
+			for(var j = query.length - 2; j>=0 ;--j){
+				let q = query[j]
+				let nextParents = null
+				for(let pkey in parents){
+					if(q === null || q.constructor === RegExp && pkey.match(q) || q === pkey){
+						nextParents = parents[pkey].parents
+						break
+					}
+				}
+				if(!nextParents) break
+				parents = nextParents
+			}
+			if(j>=0){//matched
+				return change
+			}
+		}
+	}
+
+	allChanges(level, ...query){
+		if(level !== this.level) return
+		let ret = []
+		let changes = this.changes
+		let key = query[query.length - 1]
+		for(let i = 0; i < changes.length; ++i){
+			let change = changes[i]
+			if(change.key !== key) continue
+			// lets walk up the parent chain whilst matching query
+			let parents = change.$meta.parents
+			for(var j = query.length - 2; j>=0 ;j--){
+				let q = query[j]
+				let nextParents = null
+				for(let pkey in parents){
+					if(q === null || q.constructor === RegExp && pkey.match(q) || q === pkey){
+						nextParents = parents[pkey].parents
+						break
+					}
+				}
+				if(!nextParents) break
+				parents = nextParents
+			}
+			if(j>=0){//matched
+				ret.push(change)
+			}
+		}
+		return ret
+	}
+}
 // process all changes
 
-function processChanges(name, changes, store){
+function processChanges(name, changes, store, maxLevel){
 	var eventMap = store.eventMap
 	eventMap.clear()
 	// process all changes and fire listening properties
@@ -300,16 +404,16 @@ function processChanges(name, changes, store){
 		
 		let meta = proxyMeta.get(change.$value)
 		var observers = meta && meta.observers
-		if(observers && observers.length){
+		if(maxLevel > -1 && observers && observers.length){
 			pathBreak.set(change.$value, change)
 			for(let j = observers.length - 1; j>=0; j--){
 				var observer = observers[j]
 				var event = eventMap.get(observer)
 				if(event) event.changes.push(change)
-				else eventMap.set(observer, {name:name, level:-1, changes:[change]})
+				else eventMap.set(observer, new Observation(name, -1, [change]))
 			}
 		}
-		scanParents(name, change.$object, change, 0, eventMap)
+		scanParents(name, change.$object, change, 0, eventMap, maxLevel)
 	}
 	eventMap.forEach((event, observer)=>{
 		observer(event)
@@ -317,8 +421,8 @@ function processChanges(name, changes, store){
 }
 
 var pathBreak = new WeakMap()
-function scanParents(name, node, change, level, eventMap){
-	if(pathBreak.get(node) === change) return
+function scanParents(name, node, change, level, eventMap, maxLevel){
+	if(level >= maxLevel || pathBreak.get(node) === change) return
 	pathBreak.set(node, change)
 		
 	var meta = proxyMeta.get(node)
@@ -327,7 +431,7 @@ function scanParents(name, node, change, level, eventMap){
 		var observer = observers[j]
 		var event = eventMap.get(observer)
 		if(event) event.changes.push(change)
-		else eventMap.set(observer,{name:name, level:level, changes:[change]})
+		else eventMap.set(observer,new Observation(name, level, [change]))
 	}
 
 	var parents = meta.parents

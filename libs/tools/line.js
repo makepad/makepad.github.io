@@ -7,6 +7,8 @@ module.exports = class Line extends require('base/shader'){
 		this.props = {
 			visible: {noTween:true, value:1.0},
 
+			space:{styleLevel:1, value:0},
+
 			// start x
 			sx: {styleLevel:1, value:NaN},
 			sy: {styleLevel:1, value:NaN},
@@ -57,8 +59,17 @@ module.exports = class Line extends require('base/shader'){
 				var t = this.turtle
 				// lets make a little capture object
 				var p = t._NAMEPoints || (t._NAMEPoints = {})
+				space = t._space
 				// we dont have startx /starty
 				if(isNaN(t._sx) || isNaN(t._sy)){
+					if(space===1){
+						t._x = t._x*t.width+t.sx
+						t._y = t._y*t.height+t.sy
+					}
+					else if(space ===2){
+						t._x = (.5+.5*t._x)*t.width+t.sx
+						t._y = (.5+.5*t._y)*t.height+t.sy
+					}
 					// if our frameId doesnt line up
 					if(t._first || p.frameId !== this.view._frameId){
 						p.frameId = this.view._frameId
@@ -85,6 +96,18 @@ module.exports = class Line extends require('base/shader'){
 					}
 				}
 				else{
+					if(space===1){
+						t._x = t._x*t.width+t.sx
+						t._y = t._y*t.height+t.sy
+						t._sx = t._sx*t.width+t.sx
+						t._sy = t._sy*t.height+t.sy
+					}
+					else if(space===2){
+						t._x = (.5+.5*t._x)*t.width+t.sx
+						t._y = (.5+.5*t._y)*t.height+t.sy
+						t._sx = (.5+.5*t._sx)*t.width+t.sx
+						t._sy = (.5+.5*t._sy)*t.height+t.sy
+					}
 					p.points = 4
 					p.bx = t._sx, p.by = t._sy
 					p.cx = t._x, p.cy = t._y

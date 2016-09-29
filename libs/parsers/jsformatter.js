@@ -720,9 +720,9 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//VariableDeclaration:{declarations:2, kind:0},
 	VariableDeclaration(node, level){
-		if(node.space !== undefined) this.fastText('var'+node.space, this.styles.VariableDeclaration)
-		else this.fastText('var ', this.styles.VariableDeclaration)
-		this.trace += 'var '
+		if(node.space !== undefined) this.fastText(node.kind+node.space, this.styles.VariableDeclaration)
+		else this.fastText(node.kind+' ', this.styles.VariableDeclaration)
+		this.trace += node.kind+' '
 
 		if(node.mid){
 			this.fastText(node.mid, this.styles.Comment.above)
@@ -763,7 +763,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 			if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
 			if(node.probe){
-				var id = this.probes.onProbe(init, id)
+				var id = this.onProbe(init, id)
 				this.trace += '$P('+id+','
 				this[init.type](init, id)
 				this.trace += ')'
@@ -915,7 +915,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.prefix){
 			var op = node.operator
 			if(node.operator === '@'){
-				var id = this.probes.onProbe(node, lhs)
+				var id = this.onProbe(node, lhs)
 				this.trace += '$P('+id+','
 				this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
 				var arg = node.argument

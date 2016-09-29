@@ -3,6 +3,9 @@ const Worker = require('services/worker')
 module.exports = class UserProcess extends require('views/draw'){
 
 	prototype(){
+		this.props = {
+			resource:null
+		}
 		this.mixin(require('./styles').UserProcess,{
 			name:'Probes',
 			surface:true
@@ -15,5 +18,81 @@ module.exports = class UserProcess extends require('views/draw'){
 
 	onDraw(){
 		this.drawBg(this.viewGeom)
+	}
+
+	onResource(e){	
+		// it changes! lets reload?..
+
+	}
+
+	onAfterDraw() { 
+		this.onAfterDraw = undefined 
+		this.startWorker()
+	} 
+
+	reloadWorker(){
+		var newDeps = {} 
+		var oldDeps = this.deps 
+		var deltaDeps = {} 
+		this.app.findResourceDeps(this.resource, newDeps) 
+		// delta the deps
+		for(var key in newDeps) { 
+			if(oldDeps[key] !== newDeps[key]) { 
+				oldDeps[key] = deltaDeps[key] = newDeps[key] 
+			} 
+		} 
+		// send new init message to worker
+		this.store.act("clearRuntimeError",store=>{
+			this.process.runtimeErrors.length = 0
+		})
+
+		this.worker.init(
+			this.process.path,
+			deltaDeps
+		) 
+	}
+
+	startWorker(){
+		this.worker = new Worker(null, {
+			parentFbId: this.$renderPasses.surface.framebuffer.fbId 
+		})
+		
+		// OK so lets compose all deps
+		this.deps = {} 
+		//this.main = this.resource 
+		this.app.findResourceDeps(this.resource, this.deps)
+		
+		// lets add our process to all the deps
+		this.store.act("addProcessToResources", store=>{
+			var resmap = store.resourceMap
+			var process = this.process
+			for(var key in this.deps){
+				var res = resmap[key]
+				res.processes.push(process)
+			}
+		})
+
+		this.worker.init( 
+			this.resource.path, 
+			this.deps
+		)
+
+		this.worker.onError = e => {
+			// we haz error, update the process
+			this.store.act("addRuntimeError",store=>{
+				this.process.runtimeErrors.push(e)
+			})
+		}
+
+		this.worker.ping(2000)
+		this.worker.onPingTimeout = ()=>{
+			this.worker.terminate()
+			this.app.findAll(/^Source/).forEach(s=>{
+				s.onRuntimeError({
+					message:"Infinite loop detected, restarting"
+				})
+			})
+			this.startWorker()
+		}
 	}
 }

@@ -30,7 +30,10 @@ module.exports = class extends require('base/drawapp'){
 	} 
 	
 	constructor() { 
+		test() 
 		super() 
+		
+		//runtime()
 		
 		audio.reset() 
 		this.recording = [] 
@@ -44,12 +47,13 @@ module.exports = class extends require('base/drawapp'){
 			recorder1: { 
 				to: 'gain1', 
 				chunk: 2048, 
-				onData: function(data) { 
+				onData: data=>{ 
+					
 					this.redraw() 
 					this.recording.push(data) 
 					this.samples += data[0].length 
 					this.scopeData = data 
-				}.bind(this) 
+				} 
 			}, 
 			input1: { 
 				to: 'recorder1', 
@@ -106,7 +110,7 @@ module.exports = class extends require('base/drawapp'){
 	onDraw() { 
 		this.drawButton({ 
 			text: this.recFlow.running? "Stop": "Rec", 
-			onClick: function() { 
+			onClick: e=>{ 
 				if(this.recFlow.running) this.recFlow.stop()
 				else { 
 					this.recording.length = 0 
@@ -118,8 +122,9 @@ module.exports = class extends require('base/drawapp'){
 		}) 
 		this.drawButton({ 
 			text: this.playFlow.running? "Stop": "Play", 
-			onClick: function() { 
+			onClick: e=>{ 
 				if(this.playFlow.running) { 
+					console.log("STOP?") 
 					this.playFlow.stop() 
 					this.redraw() 
 					return  
@@ -138,11 +143,46 @@ module.exports = class extends require('base/drawapp'){
 					} 
 				}) 
 				this.redraw() 
-			}.bind(this) 
+			} 
 		}) 
-		
+		this.drawButton({ 
+			text: "Cut", 
+			onClick: e=>{ 
+				// lets combine all the recording buffers
+				var out = new Float32Array(this.samples - (this.selEnd - this.selStart)) 
+				for(let c = 0, o = 0, w = 0; c < this.recording.length; c++) { 
+					var left = this.recording[c][0] 
+					for(var i = 0; i < left.length; i++, o++) { 
+						if(o < this.selStart || o > this.selEnd) { 
+							out[w++] = left[i] 
+						} 
+					} 
+				} 
+				this.samples = out.length 
+				this.recording = [[out]] 
+				this.selStart = this.selEnd = 0 
+				this.redraw() 
+			} 
+		}) 
+		this.drawButton({ 
+			text: "Fade", 
+			onClick: e=>{ 
+				// lets combine all the recording buffers
+				var range = (this.selEnd - this.selStart) 
+				var out = new Float32Array(this.samples - range) 
+				for(let c = 0, o = 0, w = 0; c < this.recording.length; c++) { 
+					var left = this.recording[c][0] 
+					for(let i = 0; i < left.length; i++, o++) { 
+						if(o > this.selStart && o < this.selEnd) { 
+							left[i] = left[i] * pow(1 - (w++ / range), 3) 
+						} 
+					} 
+				} 
+				this.redraw() 
+			} 
+		}) 
 		this.drawSlider({ 
-			onValue: function(e) { 
+			onValue: e=>{ 
 				this.setZoom(e.value, this.todo.xScroll) 
 				this.redraw() 
 			}, 
@@ -162,16 +202,13 @@ module.exports = class extends require('base/drawapp'){
 				w: 100, 
 				h: 40 
 			}) 
-			var x = this.turtle.sx 
-			var y = this.turtle.sy 
-			var h = this.turtle.height 
-			var w = this.turtle.width 
 			var left = this.scopeData[0] 
 			this.drawLine({sx: 0, sy: 100}) 
-			for(var i = 0; i < left.length; i++) { 
+			for(let i = 0; i < left.length; i++) { 
 				this.drawLine({ 
-					x: x + (i / left.length) * w, 
-					y: y + left[i] * .5 * h + .5 * h 
+					space: 0, 
+					x: (i / left.length) * 2 - 1, 
+					y: left[i] 
 				}) 
 			} 
 			this.endGrid() 
@@ -200,18 +237,18 @@ module.exports = class extends require('base/drawapp'){
 			var scale = this.zoom 
 			var smod = floor(scale) 
 			var t = 0 
-			var minv = 0,maxv = 0. 
+			var minv = 0, maxv = 0. 
 			// we should draw it near the scroll position
 			var xmin = this.todo.xScroll - this.$w 
 			var xmax = xmin + this.$w * 3 
 			outer:
-			for(var c = 0; c < this.recording.length; c++) { 
+			for(let c = 0; c < this.recording.length; c++) { 
 				var left = this.recording[c][0] 
 				if((t + left.length) / scale < xmin) { 
 					t += left.length 
 					continue 
 				} 
-				for(var i = 0; i < left.length; i++) { 
+				for(let i = 0; i < left.length; i++) { 
 					var v = left[i] 
 					if(v < minv) minv = v 
 					if(v > maxv) maxv = v 

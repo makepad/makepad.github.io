@@ -1,5 +1,4 @@
 var eventBlock = new WeakMap()
-
 module.exports = class Props extends require('base/class'){
 	// special names for property with name: key
 	// this.key  <- getter setter for the key
@@ -42,7 +41,7 @@ module.exports = class Props extends require('base/class'){
 // define props
 function defineProp(key, value){
 	// default
-	if(typeof value !== 'object' || value.constructor !== Object){
+	if(typeof value !== 'object' || value === null || value.constructor !== Object){
 		value = {value:value}
 	}
 	var initvalue = value.value
@@ -53,6 +52,7 @@ function defineProp(key, value){
 
 	var config = this._props[key] = this._props[key]?Object.create(this._props[key]):{}
 	for(let cpy in value) config[cpy] = value[cpy]
+	if(config.mask === undefined) config.mask = ~16
 
 	// lets define a property
 	var _key = '_' + key
@@ -67,49 +67,67 @@ function defineProp(key, value){
 
 	this[_key] = initvalue
 	var onthis = config.this
+
+	function callListeners(value){
+				
+	}
+
 	Object.defineProperty(this, key, {
 		configurable:true,
 		get:function(){
 			if(this.onFlag) this[_onkey] |= this.onFlag
 			return this[_key]
 		},
-		set:function set(value){
+		set:function set(value, event){
 			var old = this[_key]
 			this[_key] = value
-			var flags = this[_onkey] || this.onFlag0
 			var meta = value && value.__proxymeta__
-			if(meta){
+			//if(noconseq) return
+			if(!event && meta){
 				// set a listener on an object
 				// but make sure we add only one
 				var observers = meta.observers
-				var i = observers.length
-				if(i) for(--i; i >=0 ; i--){
+				var i = observers.length - 1
+				if(i>=0) for(; i >=0 ; i--){
 					let observer = observers[i]
-					if(observer.key === key && observer.pthis === this)break
+					if(observer.key === key && observer.pthis === this){
+						break
+					}
 				}
-				if(i>=0){
+				if(i<0){
 					var observe = (e)=>{
-						if(e.level<=0) set.call(this, e.changes[0].value)
+						var value 
+						if(e.level === -1) value = e.changes[0].value // only change value when the self of the observe changes
+						else value = this[_key]
+						set.call(this, value, e)
 					}
 					observe.key = key
 					observe.pthis = this
 					observers.push(observe)
+					if(!this.$observers) this.$observers = []
+					this.$observers.push({list:observers, item:observe})
 				}
 				//console.log(value.__listeners__.length)
 			}
 			if(!config.change || old !== value){
-				if(flags){
+				var fn = this[onkey]
+				var flags = (this[_onkey] || this.onFlag0)&(config.mask||~0)
+				if(flags || fn){
+					if(!event) event = {}
+					event.key = key
+					event.old = old
+					event.value = value
 					var id = 1
-					while(flags){
+					var ret 
+					if(fn){
+						ret = fn.call(onthis?this[onthis]:this, event)
+					}
+					if(!ret) while(flags){
 						if(flags&1){
-							this['onFlag'+id]({key:key, old:old, value:value})
+							this['onFlag'+id](event)
 						}
 						id = id<<1, flags = flags>>1
 					}
-				}
-				var fn = this[onkey]
-				if(fn){
-					fn.call(onthis?this[onthis]:this, {setter:true, old:old, value:value})
 				}
 			}
 		}

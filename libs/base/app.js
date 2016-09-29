@@ -8,6 +8,19 @@ var Store = require('base/store')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 
+module.worker.define$({
+	get:function(){
+		throw new Error()
+	},
+	set:console.dir.bind(console)
+	/*function(v){
+		if(!v) return console.log(v)
+		var meta = v.__proxymeta__
+		if(meta) return console.log(meta.object)
+		console.log(v)
+	}*/
+})
+
 module.exports = class App extends require('base/view'){
 	
 	// lets define some props
@@ -422,10 +435,10 @@ module.exports = class App extends require('base/view'){
 				}
 
 				// we need an extra layout cycle after redraw
-				if(isNaN(view.$w) || isNaN(view.$h)){
-					iter.$drawDependentLayout = true
-					this.$drawDependentLayout = true
-				}
+				//if(isNaN(view.$w) || isNaN(view.$h)){
+				//	iter.$drawDependentLayout = true
+				//	this.$drawDependentLayout = true
+				//}
 				//console.log(view.name, view.$w)
 				// treewalk
 				var index = iter.$childIndex + 1 // make next index

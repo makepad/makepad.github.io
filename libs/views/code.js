@@ -13,6 +13,10 @@ module.exports = class Code extends require('views/edit'){
 		this.$fastTextFontSize = 12 
 		this._onText |= 32 
 
+		this.props = {
+			parseErrors:null
+		}
+
 		this.tools = { 
 			
 			Text: require('tools/codetext').extend({ 
@@ -69,8 +73,8 @@ module.exports = class Code extends require('views/edit'){
 				ease: [0, 10, 0, 0], 
 				closed: 0, 
 				vertexStyle: function() {$ 
-					this.errorTime = max(0., .1 - this.errorTime) 
-					if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
+					//this.errorTime = max(0., .1 - this.errorTime) 
+					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
 					this.x2 -= 2. 
 					this.x3 += 2. 
 					this.opColor = this.bgColor * 2.3 
@@ -231,7 +235,9 @@ module.exports = class Code extends require('views/edit'){
 					open: {$tail: 0.}, 
 					close: {$tail: 0.5}, 
 				}, 
-				VariableDeclaration: {}, 
+				VariableDeclaration: {
+					$tail:.5
+				}, 
 				SequenceExpression: {$tail: 0.5}, 
 				NewExpression: {$tail: 0.5}, 
 				ArrowFunctionExpression: {$tail: 0.5} 
@@ -571,16 +577,33 @@ module.exports = class Code extends require('views/edit'){
 		this.ann = [] 
 		this.ann.step = 6 
 		this.oldText = '' 
-		this.textClean = false 
+		this.$textClean = false 
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3 
 	} 
-
 	
+	parseText() { 
+		this.ast = undefined 
+		this.parseError = undefined 
+		try{ 
+			this.ast = parser.parse(this._text, { 
+				storeComments: [] 
+			}) 
+		} 
+		catch(e) { 
+			this.parseError = e
+			/*
+			this.store.act("addParseError",store=>{
+				this.parseErrors.length = 0
+				this.parseErrors.push(e)
+			})*/
+		} 
+	} 
+
 	onDraw() { 
-		this.probes.redraw()
+		if(!this._text)this._text = ''
 		this.beginBg(this.viewGeom) 
 		// ok lets parse the code
-		if(this.textClean) { 
+		if(this.$textClean) { 
 			this.reuseDrawSize() 
 			this.reuseBlock() 
 			this.reuseMarker() 
@@ -590,22 +613,21 @@ module.exports = class Code extends require('views/edit'){
 		}
 		else { 
 			//require.perf()
-			this.error = undefined 
 			this.$fastTextDelay = 0 
-			
 			if(this.debugShow) { 
 				this.debugShow = false 
-				this.error = {} 
+				//this.error = {} 
 			}
-			else if(this.textClean === false) { 
+			else if(this.$textClean === false) { 
 				this.parseText() 
 			} 
 			
 			this.pickIdCounter = 1 
 			this.pickIds = [0] 
-			this.textClean = true 
+			this.$textClean = true 
 			
 			if(this.ast) { 
+				/*
 				if(!this.errorAnim || this.errorAnim[1] === .5) { 
 					if(!this.errorAnim || this._time - this.errorAnim[0] < .5) { 
 						this.errorAnim = [ 
@@ -623,7 +645,7 @@ module.exports = class Code extends require('views/edit'){
 							1. 
 						] 
 					} 
-				} 
+				} */
 				this.orderBlock() 
 				this.orderMarker() 
 				this.reuseErrorMarker() 
@@ -633,17 +655,17 @@ module.exports = class Code extends require('views/edit'){
 				var oldtext = this._text 
 				this.oldText = oldtext 
 				// first we format the code
-				if(this.probes) this.probes.onBeginFormatAST() 
+				if(this.onBeginFormatAST) this.onBeginFormatAST() 
 				
 				this.formatJS(this.indentSize, this.ast) 
 
-				if(this.probes) this.probes.onEndFormatAST() 
+				if(this.onEndFormatAST) this.onEndFormatAST() 
 				//for(let ann = this.ann, i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 				//	console.log("STARTX", ann[i+5], ann[i])
 				//}
 				
 				// make undo operation for reformat
-				var newtext = this._text 
+				var newtext = this._text
 				var oldlen = oldtext.length 
 				var newlen = newtext.length 
 				for(var start = 0; start < oldlen && start < newlen; start++) { 
@@ -696,7 +718,7 @@ module.exports = class Code extends require('views/edit'){
 			}
 			else { 
 				var ann = this.ann 
-				
+				/*
 				if(!this.errorAnim || this.errorAnim[3] === 1) { 
 					this.errorAnim = [ 
 						this._time + .7, 
@@ -704,7 +726,7 @@ module.exports = class Code extends require('views/edit'){
 						1., 
 						0. 
 					] 
-				} 
+				} */
 				
 				this.reuseBlock() 
 				this.reuseMarker() 
@@ -731,14 +753,23 @@ module.exports = class Code extends require('views/edit'){
 							this.turtle.wx = this.turtle.sx = abs(ann[i + 11]) 
 						} 
 					} 
-					// lets do a paren match analysis and make a nicer error
-					if(this.error.msg === 'Unexpected token') { 
-						var pos = this.indentFindParenError() 
+					// lets do a paren match analysis using indent and make a nicer error
+					if(this.parseError.message === 'Unexpected token') { 
+						var pos = this.indentFindParenErrorPos() 
 						if(pos >= 0) { 
-							this.error.msg = 'Matching ({[ error' 
-							this.error.pos = pos 
+							this.parseError.message = 'Matching ({[ error' 
+							var lines = this._text.slice(0,pos).split('\n')
+							var line = 0, column = 0
+							if(lines.length){
+								line = lines.length - 1
+								column = lines[lines.length - 1].length -1
+							}
+							this._text.split('\n')
+							this.parseError.line = line
+							this.parseError.column = column 
 						} 
-					} 
+					}
+					if(this.onParseError) this.onParseError(this.parseError) 
 				}
 				// lets draw the error
 				//this.drawErrorText({ 
@@ -750,6 +781,7 @@ module.exports = class Code extends require('views/edit'){
 			this.$fastTextDelta = 0 
 		} 
 
+		/*
 		if(this.error){
 			var epos = clamp(this.error.pos, 0, this.$lengthText() - 1) 
 			var rd = this.$readOffsetText(epos) 			
@@ -766,7 +798,7 @@ module.exports = class Code extends require('views/edit'){
 					closed: 0 
 				}) 
 			}
-		}
+		}*/
 
 		if(this.hasFocus) { 			
 
@@ -807,24 +839,12 @@ module.exports = class Code extends require('views/edit'){
 	} 
 	
 	onFlag32() { 
-		this.textClean = false 
+		this.$textClean = false 
 		this.redraw() 
 	} 
 	
-	parseText() { 
-		this.ast = undefined 
-		try{ 
-			this.ast = parser.parse(this._text, { 
-				storeComments: [] 
-			}) 
-		} 
-		catch(e) { 
-			console.log(e, e.stack)
-			this.error = e 
-		} 
-	} 
 
-	indentFindParenError() { 
+	indentFindParenErrorPos() { 
 		var ann = this.ann 
 		var stack = [] 
 		var close = {'{': '}', '(': ')', '[': ']'} 
@@ -862,11 +882,11 @@ module.exports = class Code extends require('views/edit'){
 	onKeySemiColon(k) { 
 		if(!k.meta) return true 
 		storage.load("/debug.json").then(result=>{ 
-			this.error = {} 
+			this.parseError = {} 
 			var res = JSON.parse(result) 
 			this.ann = res.ann 
 			this.ann.step = res.step 
-			this.textClean = false 
+			this.$textClean = false 
 			this.ast = undefined 
 			this.debugShow = true 
 			this.redraw() 
@@ -903,7 +923,7 @@ module.exports = class Code extends require('views/edit'){
 				this.$fastTextStart = 
 				this.$fastTextOffset = 0 
 				// we need to toggle folding but not make it slow.
-				this.textClean = null 
+				this.$textClean = null 
 				this.redraw() 
 				return 
 			} 
@@ -924,12 +944,12 @@ module.exports = class Code extends require('views/edit'){
 			if(text === ']' && char === ']') return 0 
 			if(text === ')' && char === ')') return 0 
 			if(text === '\n' && prev === '{' && char === '}') text = '\n\n' 
-			if(text === '{' && (!this.error || this.error.msg !== 'Matching ({[ error') && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char !== '}')) text = '{}' 
-			if(text === '[' && (!this.error || this.error.msg !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ']') text = '[]' 
-			if(text === '(' && (!this.error || this.error.msg !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ')') text = '()' 
+			if(text === '{' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char !== '}')) text = '{}' 
+			if(text === '[' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ']') text = '[]' 
+			if(text === '(' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ')') text = '()' 
 			
-			if(text === '"' && (!this.error || this.error.msg !== 'Unterminated string constant') && char !== '"' && prev !== '"') text = '""' 
-			if(text === "'" && (!this.error || this.error.msg !== 'Unterminated string constant') && char !== "'" && prev !== "'") text = "''" 
+			if(text === '"' && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== '"' && prev !== '"') text = '""' 
+			if(text === "'" && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== "'" && prev !== "'") text = "''" 
 		} 
 		
 		this.$fastTextDelta += text.length 
@@ -944,8 +964,8 @@ module.exports = class Code extends require('views/edit'){
 		}
 		else this.wasFirstNewlineChange = 0 
 		
-		this.textClean = false 
-		
+		this.$textClean = false 
+		this.inputDirty = true
 		this._text = this._text.slice(0, offset) + text + this._text.slice(offset) 
 		
 		// alright lets find the insertion spot in ann
@@ -1003,7 +1023,8 @@ module.exports = class Code extends require('views/edit'){
 	} 
 	
 	removeText(start, end, isUndo) { 
-		this.textClean = false 
+		this.inputDirty = true
+		this.$textClean = false 
 		var delta = 0 
 		this.wasNewlineChange = 0 
 		var text = this._text 

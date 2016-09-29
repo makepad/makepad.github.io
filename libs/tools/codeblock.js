@@ -27,7 +27,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 			turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
 			moveScroll:{kind:'uniform', noTween:1, value:1.},
 
-			errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
+			//errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
 
 			tween: {kind:'uniform', value:0.},
 			ease: {kind:'uniform', value:[0,10,1.0,1.0]},
@@ -129,7 +129,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 			this.pickId = 0.
 		}
 
-		this.errorTime = this.animateUniform(this.errorAnim)
+		//this.errorTime = this.animateUniform(this.errorAnim)
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
@@ -148,7 +148,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 
 		// mini view
 		if(this.fontSize < 6.){
-			if(this.errorTime<0.5) return vec4(0.)
+			//if(this.errorTime<0.5) return vec4(0.)
 			if(this.open < 0.5) return vec4(0.)
 			if(this.mesh.z > .5){
 				return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.x)
@@ -197,12 +197,11 @@ module.exports = class CodeBlock extends require('base/shader'){
 
 		var gloop = 4.
 	
-		var df = 1. - this.open * this.errorTime
+		var df = 1. - this.open 
 		topBlob += df * 14.
 		bottomBlob += df * 14.
 		topLine += pow(df, 4.) * abs(p.x)// - this.topSize.x)
 		leftLine += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
-
 		// blend the fields
 		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topLine,leftLine, .5), topBlob, gloop), bottomBlob, gloop)
 		// compute color

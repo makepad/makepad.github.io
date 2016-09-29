@@ -12,10 +12,16 @@ var pp = Parser.prototype
 
 pp.raise = function(pos, message) {
 	var loc = getLineInfo(this.input, pos)
-	var outmsg = message + " (" + loc.line + ":" + loc.column + ")"
-	var err = new SyntaxError(outmsg)
-	err.msg = message
-	err.pos = pos; err.loc = loc; err.raisedAt = this.pos
+	///var outmsg = message + " (" + loc.line + ":" + loc.column + ")"
+	//var err = new SyntaxError(message)
+	var err = module.worker.decodeException(new Error())
+	err.file = null
+	err.message = message
+	err.line = loc.line
+	err.column = loc.column
+	//err.pos = pos; 
+	//err.loc = loc; 
+	//err.raisedAt = this.pos
 	throw err
 }
 

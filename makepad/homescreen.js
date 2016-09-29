@@ -1,4 +1,4 @@
-var Source = require('./source')
+
 module.exports = class HomeScreen extends require('views/draw'){
 	prototype(){
 		this.mixin(require('./styles').HomeScreen,{
@@ -20,8 +20,6 @@ module.exports = class HomeScreen extends require('views/draw'){
 	}
 
 	onCompose(){
-		return new Source({
-			x:'0',y:'0',h:0,w:0
-		})
+		
 	}
 }

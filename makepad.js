@@ -5,7 +5,6 @@ var Dock = require('views/dock')
 var Source = require('./makepad/source') 
 var FileTree = require('./makepad/filetree') 
 var HomeScreen = require('./makepad/homescreen') 
-var Probes = require('./makepad/probes') 
 var Settings = require('./makepad/settings') 
 var UserProcess = require('./makepad/userprocess') 
 
@@ -17,13 +16,33 @@ module.exports = class Makepad extends require('base/app'){
 	
 	constructor(){
 		super()
-		this.store.observe(this.store, e=>{
-			console.log("observe", e)
-		})
+	
 		this.store.act("init",store=>{
 			store.projectTree = {}
-			store.resourceList = {}
+			store.resourceMap = {}
 			store.processList = []
+		})
+
+		this.store.observe(this.store.resourceMap, e=>{
+			// we wanna know if dirty on a resource is flipped
+			if(e.anyChanges(1, null, 'dirty')){
+				this.processTabTitles()
+			}
+			// data or trace modified
+			var source = e.anyChanges(1, null, 'data') || e.anyChanges(1, null, 'trace')
+			if(source){
+				var resource = source.object
+				// find all processes
+				var procs = this.app.findAll(/^Process/) 
+				for(var i = 0; i < procs.length; i++) { 
+					var proc = procs[i] 
+					// update resource
+					if(resource.path in proc.deps) { 
+						proc.reloadWorker()	
+					}
+				} 				
+			}
+
 		})
 	}
 
@@ -35,7 +54,7 @@ module.exports = class Makepad extends require('base/app'){
 			var allProj = []
 			var allNodes = []
 			var pathNames = []
-			var resourceList = {}
+			var resourceMap = {}
 			function walk(node, base){
 				node.folder = node.folder.sort((a,b)=>{
 					if(a.name < b.name) return -1
@@ -64,18 +83,20 @@ module.exports = class Makepad extends require('base/app'){
 			return Promise.all(allProj, true).then(results => {
 				// store all the data in the resource list
 				for(let i = 0; i < results.length; i++){
-					resourceList[pathNames[i]] = {
+					resourceMap[pathNames[i]] = {
 						node:allNodes[i],
 						path:pathNames[i],
 						data:results[i],
 						trace:'',
-						processes:[]
+						dirty:false,
+						processes:[],
+						parseErrors:[]
 					}
 				}
 				// lets store it
 				this.store.act("loadProject",store=>{
 					store.projectTree = projectTree
-					store.resourceList = resourceList
+					store.resourceMap = resourceMap
 					store.processList = []
 				})
 
@@ -91,11 +112,9 @@ module.exports = class Makepad extends require('base/app'){
 
 			if(this.destroyed) return  // technically possible
 
-			var resources = this.resources = this.store.resourceList
+			var resources = this.resources = this.store.resourceMap
 			var proj = this.store.projectTree
-			console.log(this.store)
-			//this.find('FileTree').data = this.project = proj 
-			//console.log(this.store.projectTree)
+
 			if(proj.open) {
 				for(var i = 0; i < proj.open.length; i++) { 
 					var open = proj.open[i] 
@@ -155,7 +174,7 @@ module.exports = class Makepad extends require('base/app'){
 						var tab = tabs[j] 
 						var path = tab.resource.path 
 						var rest = path.slice(1, path.lastIndexOf('/')) 
-						var text = name + (tab.dirty? "*": "") + ':' + rest 
+						var text = name + (tab.resource.dirty? "*": "") + ':' + rest 
 						if(tab.tabText !== text) { 
 							tab.tabText = text 
 							tab.parent.redraw() 
@@ -167,7 +186,7 @@ module.exports = class Makepad extends require('base/app'){
 				var tabs = mergePaths[mergeKeys[0]] 
 				for(var i = 0; i < tabs.length; i++) { 
 					var tab = tabs[i] 
-					var text = name + (tab.dirty? "*": "") 
+					var text = name + (tab.resource.dirty? "*": "") 
 					if(tab.tabText !== text) { 
 						tab.tabText = text 
 						tab.parent.redraw() 
@@ -177,32 +196,6 @@ module.exports = class Makepad extends require('base/app'){
 		} 
 	} 
 	
-	codeChange(resource) { 
-		// find all processes
-		var procs = this.app.findAll(/^Process/) 
-		for(var i = 0; i < procs.length; i++) { 
-			var proc = procs[i] 
-			// update resource
-			if(resource.path in proc.deps) { 
-				var newDeps = {} 
-				var oldDeps = proc.deps 
-				var deltaDeps = {} 
-				this.findResourceDeps(proc.main, newDeps) 
-				// delta the deps
-				for(var key in newDeps) { 
-					if(oldDeps[key] !== newDeps[key]) { 
-						oldDeps[key] = deltaDeps[key] = newDeps[key] 
-					} 
-				} 
-				// send new init message to worker
-				proc.worker.init(
-					proc.main.path,
-					deltaDeps
-				) 
-			} 
-		} 
-	} 
-
 	addSourceTab(resource) { 
 		var old = this.find('Source' + resource.path) 
 		if(old) { 
@@ -215,7 +208,7 @@ module.exports = class Makepad extends require('base/app'){
 			name: 'Source' + resource.path, 
 			tabText: resource.path, 
 			resource: resource, 
-			text: resource.data, 
+			//text: resource.data, 
 			onCloseTab: function() {
 				this.app.processTabTitles()
 			} 
@@ -233,50 +226,25 @@ module.exports = class Makepad extends require('base/app'){
 			tabs.selectTab(tabs.children.indexOf(old)) 
 			return  
 		} 
+
+		var process = this.store.wrap({
+			path:resource.path,
+			runtimeErrors:[]
+		})
+
+		this.store.act("addProcess",store=>{
+			store.processList.push(process)
+		})
+
 		var tabs = this.find('HomeProcess').parent 
 		var idx = tabs.addNewChild(new UserProcess({ 
 			name: 'Process' + resource.path, 
 			tabText: resource.path, 
 			resource: resource, 
+			process: process,
 			onCloseTab: function() { 
 				this.app.processTabTitles() 
-			}, 
-			startWorker:function(){
-
-				this.worker = new Worker(null, { 
-					parentFbId: this.$renderPasses.surface.framebuffer.fbId 
-				}) 
-				
-				// OK so lets compose all deps
-				this.deps = {} 
-				this.main = resource 
-				this.app.findResourceDeps(resource, this.deps) 
-				this.worker.init( 
-					this.main.path, 
-					this.deps 
-				) 
-
-				this.worker.onError = e => {
-					this.app.findAll(/^Source/).forEach(s=>{
-						s.onRuntimeError(e)
-					})
-				}
-
-				this.worker.ping(2000)
-				this.worker.onPingTimeout = ()=>{
-					this.worker.terminate()
-					this.app.findAll(/^Source/).forEach(s=>{
-						s.onRuntimeError({
-							message:"Infinite loop detected, restarting"
-						})
-					})
-					this.startWorker()
-				}
-			},
-			onAfterDraw: function() { 
-				this.onAfterDraw = undefined 
-				this.startWorker()
-			} 
+			}
 		})) 
 		tabs.selectTab(idx) 
 		this.processTabTitles() 

@@ -117,7 +117,6 @@
 			{"name":"source.js"},
 			{"name":"filetree.js"},
 			{"name":"homescreen.js"},
-			{"name":"probes.js"},
 			{"name":"settings.js"},
 			{"name":"styles.js"},
 			{"name":"userprocess.js"}

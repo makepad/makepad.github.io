@@ -229,6 +229,14 @@ function workerBoot(){
 	worker.buildPath = buildPath
 	createOnMessage(worker)
 
+	worker.define$ = function(getset){
+		Object.defineProperty(global,'$',{
+			configurable:true,
+			get:getset.get,
+			set:getset.set
+		})
+	}
+
 	// parse and normalize exception x-browser
 	worker.decodeException = function(e){
 		if(e.number !== undefined){ // ms edge
@@ -242,14 +250,14 @@ function workerBoot(){
 						method:line[1],
 						line:parseInt(line[3]),
 						file:line[2],
-						col:parseInt(line[4])
+						column:parseInt(line[4])
 					})
 				}
 			}
 			return {
 				message:e.message,
 				line:stack[0].line,
-				col:stack[0].col,
+				column:stack[0].column,
 				stack:stack
 			}
 		}
@@ -263,7 +271,7 @@ function workerBoot(){
 						method:line[1],
 						line:parseInt(line[3]),
 						file:line[2],
-						col:parseInt(line[4])
+						column:parseInt(line[4])
 					})
 				}
 			}
@@ -272,7 +280,7 @@ function workerBoot(){
 				message:e.message,
 				line:e.lineNumber,
 				file:e.fileName,
-				col:e.columnNumber,
+				column:e.columnNumber,
 				stack:stack
 			}
 		}
@@ -282,7 +290,7 @@ function workerBoot(){
 			stack.push({
 				file:null,
 				line:parseInt(e.line),
-				col:parseInt(e.column)
+				column:parseInt(e.column)
 			})
 			for(var i = 1; i < lines.length; i++){
 				var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
@@ -291,7 +299,7 @@ function workerBoot(){
 						method:line[1],
 						file:line[2],
 						line:parseInt(line[3]),
-						col:parseInt(line[4])
+						column:parseInt(line[4])
 					})
 				}
 			}
@@ -299,7 +307,7 @@ function workerBoot(){
 				message:e.message,
 				line:stack[0].line,
 				file:stack[0].file,
-				col:stack[0].col,
+				column:stack[0].column,
 				stack:stack
 			}
 
@@ -315,7 +323,7 @@ function workerBoot(){
 						method:line[1],
 						line:parseInt(line[3]) - 2,
 						file:line[2],
-						col:parseInt(line[4])
+						column:parseInt(line[4])
 					})
 				}
 			}
@@ -323,7 +331,7 @@ function workerBoot(){
 				message:lines[0],
 				line:stack[0].line,
 				file:stack[0].file,
-				col:stack[0].col,
+				column:stack[0].column,
 				stack:stack
 			}
 		}
@@ -355,8 +363,8 @@ function workerBoot(){
 		worker.hasParent = msg.hasParent
 		
 		if(worker.hasParent && !worker.onError){ // onError handling
+
 			worker.onError = function(e){
-				console.log(e)
 				worker.postMessage({
 					$:'worker1',
 					msg:{

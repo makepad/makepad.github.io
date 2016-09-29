@@ -119,7 +119,7 @@
 	root.showParseError = function(path){
 		var script = document.createElement('script')
 		script.type = 'text/javascript'
-		script.src = location.origin+'/'+path
+		script.src = location.origin+path
 		document.getElementsByTagName('head')[0].appendChild(script)
 	}
 

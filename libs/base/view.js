@@ -26,7 +26,8 @@ module.exports = class View extends require('base/class'){
 			z:NaN,
 			w:'100%',
 			h:'100%',
-			overflow:'scroll',
+			xOverflow:'scroll',
+			yOverflow:'scroll',
 			d:NaN,
 			clip:true,
 			xCenter:0.5,
@@ -611,22 +612,38 @@ module.exports = class View extends require('base/class'){
 		var th = this.$hDraw = turtle._h
 		var tx2 = this.turtle.x2
 		var ty2 = this.turtle.y2
+		
 		this.$x2Old = tx2
 		this.$y2Old = ty2
-	
+		var addHor, addVer
 		// lets compute if we need scrollbars
-		if(this.overflow === 'scroll'){
+		if(this.xOverflow === 'scroll' || this.yOverflow === 'scroll'){
 			if(ty2 > th){
-				tw -= this.$scrollBarSize
-				if(tx2 > tw) th -= this.$scrollBarSize // add vert scrollbar
+				tw -= this.$scrollBarSize, addVer = true
+				if(tx2 > tw) th -= this.$scrollBarSize, addHor=true // add vert scrollbar
 			}
 			else if(tx2 > tw){
-				th -= this.$scrollBarSize
-				if(ty2 > th) tw -= this.$scrollBarSize
+				th -= this.$scrollBarSize, addHor = true
+				if(ty2 > th) tw -= this.$scrollBarSize, addVer = true
 			}
 		}
 
-		// store the total and view heights for scrolling on the todo
+		// content sized views
+		if(typeof this.w === "number" && isNaN(this.w)){
+			this.app.$drawDependentLayout = true
+			this.$drawDependentLayout = true
+			this.$wDraw = tx2 === -Infinity?0:tx2
+			if(addVer) this.$wDraw += this.$scrollBarSize
+		}
+
+		if(typeof this.h === "number" && isNaN(this.h) ){
+			this.app.$drawDependentLayout = true
+			this.$drawDependentLayout = true
+			this.$hDraw = ty2 === -Infinity?0:ty2
+			if(addHor) this.$hDraw += this.$scrollBarSize
+		}
+
+		// view heights for scrolling on the todo
 		this.todo.scrollMask = 0
 		this.todo.xTotal = tx2
 		this.todo.xView = tw
@@ -643,8 +660,8 @@ module.exports = class View extends require('base/class'){
 		}
 
 		this.$pickId = this.$scrollPickIds
-		if(this.overflow === 'scroll'){
-			if(th < this.$hDraw){
+		if(this.xOverflow === 'scroll'){
+			if(addHor){//th < this.$hDraw){
 				this.$xScroll = this.drawScrollBar({
 					moveScroll:0,
 					vertical:false,
@@ -657,8 +674,12 @@ module.exports = class View extends require('base/class'){
 				this.todo.xScrollId = this.$xScroll.$stampId
 				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
 			}
-
-			if(tw < this.$wDraw){ // we need a vertical scrollbar
+			else if(todo.xScroll > 0){
+				todo.scrollTo(0,undefined)
+			}
+		}
+		if(this.yOverflow === 'scroll'){
+			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
 
 				this.$yScroll = this.drawScrollBar({
 					moveScroll:0,
@@ -671,6 +692,9 @@ module.exports = class View extends require('base/class'){
 				})
 				this.todo.yScrollId = this.$yScroll.$stampId
 				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
+			}
+			else if(todo.yScroll > 0){
+				todo.scrollTo(undefined,0)
 			}
 		}
 
@@ -704,6 +728,8 @@ module.exports = class View extends require('base/class'){
 				this.$stamps[i] = null
 			}
 		}
+
+
 
 		if(this.onAfterDraw){
 			this.onAfterDraw()
