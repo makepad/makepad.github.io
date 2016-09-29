@@ -59,7 +59,7 @@ module.exports = class Line extends require('base/shader'){
 				var t = this.turtle
 				// lets make a little capture object
 				var p = t._NAMEPoints || (t._NAMEPoints = {})
-				space = t._space
+				var space = t._space
 				// we dont have startx /starty
 				if(isNaN(t._sx) || isNaN(t._sy)){
 					if(space===1){

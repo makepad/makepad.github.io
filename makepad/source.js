@@ -83,10 +83,18 @@ class Errors extends require('views/tree'){
 				borderRadius:8,
 			},
 			Cursor:{
+				duration:0.,
 				selectedColor:'#955',
 				hoverColor:'#733'
 			},
+			Text:{
+				duration:0.
+			},
+			TreeLine:{
+				duration:0.
+			},
 			Icon:{
+				duration:0.,
 				color:'#ff0'
 			}
 		}
@@ -119,7 +127,7 @@ class Errors extends require('views/tree'){
 				tree.folder.push(error)
 				e.stack.forEach(m=>{
 					error.folder.push({
-						name:m.file+":"+m.line+" - "+m.method+'()'
+						name:m.method+'()'+' - '+m.file+':'+m.line
 					})
 				})
 			})

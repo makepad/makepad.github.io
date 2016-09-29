@@ -30,7 +30,6 @@ module.exports = class extends require('base/drawapp'){
 	} 
 	
 	constructor() { 
-		test() 
 		super() 
 		
 		//runtime()
