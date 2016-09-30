@@ -28,7 +28,7 @@ class Code extends require('views/code'){
 			res.dirty = this.inputDirty
 			res.data = this.text 
 			res.trace = this.trace 
-			res.traceLines = this.traceLines
+			res.traceLines = this.$fastTextLines
 			res.parseErrors.length = 0
 		})
 	}
@@ -106,7 +106,15 @@ class Errors extends require('views/tree'){
 	}
 
 	onNodeSelect(node, path, e){
-		this.parent.onSelectError(node.error)
+		
+		// ok lets do something here.
+		var path = node.path
+		if(path && path !== this.resource.path){
+			// lets open another source file if we can
+			var other = this.store.resourceMap.get(path)
+			if(other) this.app.addSourceTab(other)
+		}
+		//this.parent.onSelectError(node.error)
 	}
 
 	onDraw(){
@@ -138,21 +146,33 @@ class Errors extends require('views/tree'){
 		else{
 			var runtimeErrors = []
 			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
+			var resPath = this.resource.path
 			runtimeErrors.forEach((e,i)=>{
 				var oldf = old.folder && old.folder[i]
 				// push a marker
-				if(e.file || e.file === this.resource.path){
+				if(!e.path || e.path === resPath){
+
 					if(this.resource.trace){ // we need to use the traceMap
 						var pos = this.resource.traceLines[e.line-1]
 						errors.push(pos - 1)
 					}
+					else{ // else we need to use .. what exactly
+
+					}
 				}
 
-				var error = {name:e.message + (e.count>1?':x'+e.count:''), error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
+				var error = {name:e.message + (e.count>1?':x'+e.count:''), path:e.path, error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 				tree.folder.push(error)
 				e.stack.forEach(m=>{
+					if(m.path === resPath){
+						if(this.resource.trace){ // we need to use the traceMap
+							var pos = this.resource.traceLines[m.line-1]
+							errors.push(pos - 1)
+						}
+					}
 					error.folder.push({
-						name:m.method+'()'+' - '+m.file+':'+m.line
+						path:m.path,
+						name:m.method+'()'+' - '+m.path+':'+m.line
 					})
 				})
 			})

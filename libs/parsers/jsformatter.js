@@ -17,9 +17,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		this._text = ''
 		//this.trace = ''
 		//this.traceMap = []//[]
-		this.traceLines = [0]
 		this.ann.length = 0
 		this.$fastTextWritten = 0
+		this.$fastTextLines = [0]
 		this.$fastTextAnnotate = true
 		this.scope = Object.create(this.defaultScope)
 
@@ -32,14 +32,14 @@ module.exports = class JSFormatter extends require('base/class'){
 		var body = node.body
 		for(let i = 0; i < body.length; i++){
 			var statement = body[i]
-			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
+			let above = statement.above
+			if(above) this.fastText(above, this.styles.Comment.above), this.trace += above
 			this[statement.type](statement, node)
-			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
-			this.traceLines.push(this.$fastTextWritten)
-			this.trace += '\n'
+			let side = statement.side
+			if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 		}
-
-		if(node.bottom) this.fastText(node.bottom, this.styles.Comment)
+		let bottom = node.bottom
+		if(bottom) this.fastText(node.bottom, this.styles.Comment), this.trace += bottom
 	}
 
 	//BlockStatement:{body:2},
@@ -77,12 +77,12 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	BlockStatement(node, colorScheme, parent){
 		// store the startx/y position
-		var turtle = this.turtle
+		let turtle = this.turtle
 
-		var startx = turtle.sx, starty = turtle.wy
+		let startx = turtle.sx, starty = turtle.wy
 		
 		this.trace += '{'
-		var traceHandler = false
+		let traceHandler = false
 		if(parent && this.traceMap && (parent.type === 'FunctionDeclaration' || parent.type === 'FunctionExpression')){
 			traceHandler = this.traceMap.push(parent)
 			this.trace += '$T('+traceHandler+',this);'
@@ -99,25 +99,26 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this.fastText('{', this.styles.Curly.BlockStatement)
 
-		var endx = turtle.wx, lineh = turtle.mh
+		let endx = turtle.wx, lineh = turtle.mh
 		// lets indent
 		this.indentIn()
 		//this.newLine()
-		var top = node.top
+		let top = node.top
 
-		var body = node.body
-		var bodylen = body.length - 1
+		let body = node.body
+		let bodylen = body.length - 1
 
 		if(top){
-			this.fastText(node.top, this.styles.Comment.top)
+			this.trace += top
+			this.fastText(top, this.styles.Comment.top)
 
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
 		}
 
-		var foldAfterFirst = false
+		let foldAfterFirst = false
 		for(let i = 0; i <= bodylen; i++){
-			var statement = body[i]
+			let statement = body[i]
 			// Support the $ right after function { to mark shaders
 			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$'){
 				this.scope.$ = 1
@@ -131,25 +132,25 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		for(let i = 0; i <= bodylen; i++){
-			var statement = body[i]
+			let statement = body[i]
 			// the above
-
-			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
+			let above = statement.above
+			if(above) this.fastText(statement.above, this.styles.Comment.above), this.trace += above
 			this[statement.type](statement)
-			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
-			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
-			this.traceLines.push(this.$fastTextWritten)
-			this.trace += '\n'
+			let side = statement.side
+			if(side) this.fastText(statement.side, this.styles.Comment.side), this.trace += side
+			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side), this.trace += '\n'
 			// support $
 			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
 		}
-		if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
+		let bottom = node.bottom
+		if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
 
 		if(isFolded) this.$fastTextFontSize = isFolded
 
 		this.indentOut()
 		// store endx endy
-		var blockh = turtle.wy
+		let blockh = turtle.wy
 		
 		if(traceHandler){
 			this.trace += '}catch($e){$T(-'+traceHandler+',$e);throw $e}finally{$T(-'+traceHandler+',this)}'
@@ -157,7 +158,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		else this.trace += '}'
 		this.fastText('}', this.styles.Curly.BlockStatement)
 	
-		var pickId = this.pickIdCounter++
+		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
 		this.fastBlock(
 			startx,
@@ -176,36 +177,37 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//ArrayExpression:{elements:2},
 	ArrayExpression(node){
-		var turtle = this.turtle
+		let turtle = this.turtle
 
-		var startx = turtle.sx, starty = turtle.wy
+		let startx = turtle.sx, starty = turtle.wy
 		this.fastText('[', this.styles.Bracket.ArrayExpression)
 		this.trace += '['
-		var elems = node.elements
-		var elemslen = elems.length - 1
+		let elems = node.elements
+		let elemslen = elems.length - 1
 
 		//var dy = 0
 		if(this.$lengthText() === this.$fastTextOffset && this.wasNewlineChange){
 		//	dy = this.$fastTextDelta
 			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
 		}
-		var insCommas = node.insCommas
+		let insCommas = node.insCommas
 		if(insCommas) this.$fastTextDelta += insCommas
 
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
-		var top = node.top
+		let top = node.top
 		if(top){
+			this.trace += top
 			this.fastText(top, this.styles.Comment.top)
 			this.indentIn()
 
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
 		}
-		var commaStyle = top?this.styles.Comma.ArrayExpression.open:this.styles.Comma.ArrayExpression.close
+		let commaStyle = top?this.styles.Comma.ArrayExpression.open:this.styles.Comma.ArrayExpression.close
 
 		for(let i = 0; i <= elemslen; i++){
-			var elem = elems[i]
+			let elem = elems[i]
 
 			if(elem){
 				if(top && elem.above) this.fastText(elem.above, this.styles.Comment.above)
@@ -213,33 +215,35 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(node.trail || i < elemslen){
 				this.fastText(',', commaStyle)
-				this.traceLines.push(this.$fastTextWritten)
-				this.trace += ',\n'
+				this.trace += ','
 			}
 			if(elem && top){
-				if(elem.side) this.fastText(elem.side, this.styles.Comment.side)
-				else if(i !== elemslen)this.fastText('\n', this.styles.Comment.side)
+				var side = elem.side
+				if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
+				else if(i !== elemslen)this.fastText('\n', this.styles.Comment.side), this.trace += '\n'
 			}
 		}
 
 		if(top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
+			var bottom = node.bottom
+			if(bottom)this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
+			else{
+				if(!this.lastIsNewline()){//this.text.charCodeAt(this.text.length -1) !== 10){
 					this.fastText('\n', this.styles.Comment.bottom)
+					this.trace += '\n'
 				}
 			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
 			if(isFolded) this.$fastTextFontSize = isFolded
 			this.indentOut()
 		}
 
-		var blockh = turtle.wy
+		let blockh = turtle.wy
 
 		//this.$fastTextDelta += dy
 		this.trace += ']'
 		this.fastText(']', this.styles.Bracket.ArrayExpression)
 
-		var pickId = this.pickIdCounter++
+		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
 		// lets draw a block with this information
 		this.fastBlock(
@@ -259,33 +263,32 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//ObjectExpression:{properties:3},
 	ObjectExpression(node){
-		var turtle = this.turtle
-		var keyStyle = this.styles.ObjectExpression.key
+		let turtle = this.turtle
+		let keyStyle = this.styles.ObjectExpression.key
 
-		var startx = turtle.sx, starty = turtle.wy
+		let startx = turtle.sx, starty = turtle.wy
 		
 		this.fastText('{', this.styles.Curly.ObjectExpression)
 		this.trace += '{'
-		var endx = turtle.wx, lineh = turtle.mh
+		let endx = turtle.wx, lineh = turtle.mh
 
 		// lets indent
-		var turtle = this.turtle
-		var props = node.properties
-		var propslen = props.length - 1
+		let props = node.properties
+		let propslen = props.length - 1
 
 		// make space for our expanded or collapsed view
 		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
 			this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
 		}
 		// make room for inserted commas
-		var insCommas = node.insCommas
+		let insCommas = node.insCommas
 		if(insCommas) this.$fastTextDelta += insCommas
-		var top = node.top
+		let top = node.top
 		//this.newLine()
 		if(top){
 			var maxlen = 0
-			this.fastText(node.top, this.styles.Comment.top)
-
+			this.fastText(top, this.styles.Comment.top)
+			this.trace += top
 			this.indentIn()
 
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
@@ -304,11 +307,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		var commaStyle = top?this.styles.Comma.ObjectExpression.open:this.styles.Comma.ObjectExpression.close
 		for(let i = 0; i <= propslen; i++){
 
-			var prop = props[i]
-			if(top && prop.above) this.fastText(prop.above, this.styles.Comment.above)
-			var key = prop.key
+			let prop = props[i]
+			let above = prop.above
+			if(top && above) this.fastText(above, this.styles.Comment.above), this.trace += above
+			let key = prop.key
 
-			var keypos = undefined
+			let keypos = undefined
 			if(key.type === 'Identifier'){
 				if(top) keypos = key.name.length
 				this.trace += key.name
@@ -324,29 +328,27 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 
 			if(node.trail || i < propslen){
-				this.trace += ',\n'
+				this.trace += ','
 				this.fastText(',', commaStyle)
-				this.traceLines.push(this.$fastTextWritten)
-				//if(prop.inserted){
-				//	console.log("INSERTEZ")
-				//	this.$fastTextDelta++
-				//}
 			}
 
 			if(top){
-				if(prop.side) this.fastText(prop.side, this.styles.Comment.side)
+				let side = prop.side
+				if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 				else if(i !== propslen)this.fastText('\n', this.styles.Comment.side)
 			}
 
 		}
 
 		if(top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
+			let bottom = node.bottom
+			if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
+			else{
+				if(!this.lastIsNewline()){
+					this.trace += '\n'
 					this.fastText('\n', this.styles.Comment.bottom)
 				}
 			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
 			if(isFolded) this.$fastTextFontSize = isFolded
 
 			this.indentOut()
@@ -356,9 +358,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += '}'
 		this.fastText('}', this.styles.Curly.ObjectExpression)
 
-		var blockh = turtle.wy
+		let blockh = turtle.wy
 
-		var pickId = this.pickIdCounter++
+		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
 		// lets draw a block with this information
 		this.fastBlock(
@@ -378,30 +380,30 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//ClassBody:{body:2},
 	ClassBody(node){
-		var turtle = this.turtle
-		var startx = turtle.sx, starty = turtle.wy
+		let turtle = this.turtle
+		let startx = turtle.sx, starty = turtle.wy
 
 		this.fastText('{', this.styles.Curly.ObjectExpression)
-		this.traceLines.push(this.$fastTextWritten)
-		this.trace += '{\n'
+		this.trace += '{'
 		
-		var endx = turtle.wx, lineh = turtle.mh
+		let endx = turtle.wx, lineh = turtle.mh
 
 		this.indentIn()
-
-		if(node.top) this.fastText(node.top, this.styles.Comment.top)
+		var top = node.top
+		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
 		var body = node.body
 		var bodylen = body.length - 1
 		for(let i = 0; i <= bodylen; i++){
 			var method = body[i]
-			if(method.above) this.fastText(method.above, this.styles.Comment.above)
+			let above = method.above
+			if(above) this.fastText(above, this.styles.Comment.above), this.trace += above
 			this[method.type](method)
-			if(method.side) this.fastText(method.side, this.styles.Comment.side)
-			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
-			this.traceLines.push(this.$fastTextWritten)
-			this.trace += '\n'
+			let side = method.side
+			if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
+			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side), this.trace += '\n'
 		}
-        if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
+		let bottom = node.bottom
+        if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
 		this.indentOut()
 		this.trace += '}'
 		this.fastText('}', this.styles.Curly.BlockStatement)
@@ -552,8 +554,9 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(prop.type !== 'Identifier') this[prop.type](prop, node)
 			else{
-				this.trace += prop.name
-				this.fastText(prop.name, this.styles.MemberExpression)
+				var name = prop.name
+				this.trace += name
+				this.fastText(name, this.styles.MemberExpression)
 			}
 			this.indentOut()
 		}
@@ -578,33 +581,38 @@ module.exports = class JSFormatter extends require('base/class'){
 			dy = this.$fastTextDelta
 			this.$fastTextDelta += argslen * dy
 		}
-
-		if(node.top){
+		let top = node.top
+		if(top){
 			this.fastText(node.top, this.styles.Comment.top)
+			this.trace += top
 			this.indentIn()
 		}
 		
 		for(let i = 0; i <= argslen;i++){
 			var arg = args[i]
-			if(node.top && arg.above) this.fastText(arg.above, this.styles.Comment.above)
+			let above = arg.above
+			if(top && above) this.fastText(above, this.styles.Comment.above), this.trace += above
 			this[arg.type](arg)
 			if(i < argslen) {
 				this.trace += ','
 				this.fastText(',', node.top?this.styles.Comma.CallExpression.open:this.styles.Comma.CallExpression.close)
 			}
-			if(node.top){
-				if(arg.side) this.fastText(arg.side, this.styles.Comment.side)
-				else if(i < argslen)this.fastText('\n', this.styles.Comment.side)
+			if(top){
+				var side = arg.side
+				if(side) this.fastText(arg.side, this.styles.Comment.side), this.trace += side
+				else if(i < argslen)this.fastText('\n', this.styles.Comment.side), this.trace += '\n'
 			}
 		}
 
-		if(node.top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
-					this.fastText('\n', this.styles.Comment.bottom)
+		if(top){
+			let bottom = node.bottom
+			if(bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
+			else{
+				if(!this.lastIsNewline()){
+					this.fastText('\n', this.styles.Comment.bottom), this.trace += '\n'
 				}
 			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
+			
 			this.indentOut()
 		}
 		this.$fastTextDelta += dy
@@ -625,7 +633,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += 'new '
 		this.fastText('new ', this.styles.NewExpression)
 		// check newline/whitespace
-		if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+		let around2 = node.around2
+		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 		this.CallExpression(node)
 
 	}
@@ -666,7 +675,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += '('
 		this.fastText('(', this.styles.Paren.FunctionDeclaration.left)
 
-		if(node.top) this.fastText(node.top, this.styles.Comment.top)
+		let top = node.top
+		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
 		this.indentIn()
 
 		var oldscope = this.scope
@@ -675,8 +685,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		var paramslen = params.length - 1
 		for(let i = 0; i <= paramslen; i++){
 			var param = params[i]
-
-			if(node.top && param.above) this.fastText(param.above, this.styles.Comment.above)
+			let above = param.above
+			if(top && above) this.fastText(above, this.styles.Comment.above), this.trace += above
 	
 			if(param.type === 'Identifier'){
 				var name = param.name
@@ -694,19 +704,21 @@ module.exports = class JSFormatter extends require('base/class'){
 				this.trace += ','
 				this.fastText(',', this.styles.Comma.FunctionDeclaration)
 			}
-			if(node.top){
-				if(param.side) this.fastText(param.side, this.styles.Comment.side)
-				else if(i !== paramslen)this.fastText('\n', this.styles.Comment.side)
+			if(top){
+				let side = param.side
+				if(side) this.fastText(param.side, this.styles.Comment.side), this.trace += side
+				else if(i !== paramslen)this.fastText('\n', this.styles.Comment.side), this.trace += '\n'
 			}
 		}
 
-		if(node.top){
-			if(!node.bottom){
-				if(this.text.charCodeAt(this.text.length -1) !== 10){
-					this.fastText('\n', this.styles.Comment.bottom)
+		if(top){
+			let bottom = node.bottom
+			if(bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
+			else{
+				if(!this.lastIsNewline()){
+					this.fastText('\n', this.styles.Comment.bottom), this.trace += '\n'
 				}
 			}
-			else this.fastText(node.bottom, this.styles.Comment.bottom)
 		}
 
 		this.indentOut()
@@ -724,9 +736,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.space !== undefined) this.fastText(node.kind+node.space, this.styles.VariableDeclaration)
 		else this.fastText(node.kind+' ', this.styles.VariableDeclaration)
 		this.trace += node.kind+' '
-
-		if(node.mid){
-			this.fastText(node.mid, this.styles.Comment.above)
+		let mid = node.mid
+		if(mid){
+			this.fastText(mid, this.styles.Comment.above), this.trace += mid
 		}
 
 		var decls = node.declarations
@@ -757,12 +769,13 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		var init = node.init
 		if(init){
-			if(node.around1) this.fastText(node.around1, this.styles.Comment.around)
+			let around1 = node.around1
+			if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
 
 			this.trace += '='
 			this.fastText('=', this.styles.AssignmentExpression['='] || this.styles.AssignmentExpression)
-		
-			if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+			let around2 = node.around2
+			if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 			if(node.probe){
 				var id = this.onProbe(init, id)
 				this.trace += '$P('+id+','
@@ -783,13 +796,14 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(this.traceMap) this.trace += '$T('+this.traceMap.push(node)+','
 		this[left.type](left,level + 1)
 
-		if(node.around1) this.fastText(node.around1, this.styles.Comment.around)
+		let around1 = node.around1
+		if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
 		this.indentIn()
 
 		this.trace += node.operator
 		this.fastText(node.operator, this.styles.LogicalExpression[node.operator] || this.styles.LogicalExpression)
-
-		if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+		let around2 = node.around2
+		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 
 		this[right.type](right,level + 1)
 		if(this.traceMap) this.trace += ')'
@@ -812,8 +826,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		// ok so. if around1 exists, i dont want to indent. otherwise i do
 		var op = node.operator
 		var doIndent = !node.around1 || op !== '/'
-		if(node.around1){
-			this.fastText(node.around1, this.styles.Comment.around)
+		let around1 = node.around1
+		if(around1){
+			this.fastText(around1, this.styles.Comment.around), this.trace += around1
 		}
 		if(doIndent) this.indentIn()
 		var x2 = turtle.wx 
@@ -831,8 +846,8 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.fastText(op, style)
 		}
 		var x3 = turtle.wx 
-
-		if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+		let around2 = node.around2
+		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 
 		this[right.type](right, level+1)
 	
@@ -849,11 +864,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		var right = node.right
 		var leftype = left.type
 		this[left.type](left)
-		if(node.around1) this.fastText(node.around1, this.styles.Comment.around)
+		let around1 = node.around1
+		if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
 		this.trace += node.operator
 		this.fastText(node.operator, this.styles.AssignmentExpression[node.operator] || this.styles.AssignmentExpression)
-
-		if(node.around2) this.fastText(node.around2, this.styles.Comment.around)
+		let around2 = node.around2
+		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 
 		this[right.type](right, left)
 	}
@@ -866,13 +882,13 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.fastText('?', this.styles.QuestionMark)
 		this.indentIn()
 		var afterq = node.afterq
-		if(afterq) this.fastText(afterq, this.styles.Comment.above)
+		if(afterq) this.fastText(afterq, this.styles.Comment.above), this.trace += afterq
 		var cq = node.consequent
 		this[cq.type](cq)
 		this.trace += ':'
 		this.fastText(':', this.styles.Colon.ConditionalExpression)
 		var afterc = node.afterc
-		if(afterc) this.fastText(afterc, this.styles.Comment.above)
+		if(afterc) this.fastText(afterc, this.styles.Comment.above), this.trace += afterc
 		var alt = node.alternate
 		this[alt.type](alt)
 		this.indentOut()
@@ -887,23 +903,11 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.fastText(op, this.styles.UpdateExpression[op] || this.styles.UpdateExpression)
 			var arg = node.argument
 			var argtype = arg.type
-			//if(argtype === 'Identifier'){
-			//	var name = arg.name
-			//	this.trace += name
-			//	this.fastText(name, this.styles.Identifier)
-			//}
-			//else 
 			this[argtype](arg)
 		}
 		else{
 			var arg = node.argument
 			var argtype = arg.type
-			//if(argtype === 'Identifier'){
-			//	var name = arg.name
-			//	this.trace += name
-			//	this.fastText(name, this.styles.Identifier)
-			//}
-			//else 
 			this[argtype](arg)
 			var op = node.operator
 			this.trace += op
@@ -955,14 +959,16 @@ module.exports = class JSFormatter extends require('base/class'){
 		else this.trace += ')'
 
 		this.fastText(')', this.styles.Paren.IfStatement.right)
-		if(node.after1) this.fastText(node.after1, this.styles.Comment.above)
+		let after1 = node.after1
+		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 		var cq = node.consequent
 		this[cq.type](cq, this.styles.Block.IfStatement.if)
 		var alt = node.alternate
 		if(alt){
 			this.trace += '\nelse '
 			this.fastText('\nelse ', this.styles.IfStatement.else)
-			if(node.after2) this.fastText(node.after2, this.styles.Comment.above)
+			let after2 = node.after2
+			if(after2) this.fastText(after2, this.styles.Comment.above), this.trace += after2
 			this[alt.type](alt, this.styles.Block.IfStatement.else)
 		}
 	}
@@ -985,7 +991,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += ')'
 		this.fastText(')', this.styles.Paren.ForStatement.right)
 		var body = node.body
-		if(node.after) this.fastText(node.after, this.styles.Comment.above)
+		let after = node.after
+		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
 		this[body.type](body, this.styles.Block.ForStatement)
 	}
 
@@ -1003,6 +1010,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += ')'
 		this.fastText(')', this.styles.Paren.ForStatement.right)
 		var body = node.body
+		let after = node.after
+		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
 		this[body.type](body, this.styles.Block.ForStatement)
 	}
 
@@ -1020,6 +1029,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += ')'
 		this.fastText(')', this.styles.Paren.ForStatement.right)
 		var body = node.body
+		let after = node.after
+		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
 		this[body.type](body, this.styles.Block.ForStatement)
 	}
 
@@ -1032,7 +1043,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[test.type](test)
 		this.fastText(')', this.styles.Paren.WhileStatement.right)
 		this.trace += ')'
-		if(node.after1) this.fastText(node.after1, this.styles.Comment.above)
+		let after1 = node.after1
+		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 		var body = node.body
 		this[body.type](body)
 	}
@@ -1117,14 +1129,14 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += 'handler'
 		var handler = node.handler
 		if(handler){
-			var above = handler.above
-			if(above) this.fastText(above, this.styles.Comment.side)
+			let above = handler.above
+			if(above) this.fastText(above, this.styles.Comment.side), this.trace += above
 			this[handler.type](handler)
 		}
 		var finalizer = node.finalizer
 		if(finalizer){
-			var above = finalizer.above
-			if(above) this.fastText(above, this.styles.Comment.side)
+			let above = finalizer.above
+			if(above) this.fastText(above, this.styles.Comment.side), this.trace += above
 			this.trace += 'finally'
 			this.fastText('finally', this.styles.TryStatement)
 			this[finalizer.type](finalizer)
@@ -1247,26 +1259,26 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//SwitchCase:{test:1, consequent:2},
 	SwitchCase(node){
-		var above = node.above
-		if(above) this.fastText(above, this.styles.Comment.above)
+		let above = node.above
+		if(above) this.fastText(above, this.styles.Comment.above), this.trace += above
 		this.trace += 'case '
 		this.fastText('case ', this.styles.SwitchCase)
 		var test = node.test
 		this[test.type](test)
 		this.trace += ':'
 		this.fastText(':', this.styles.Colon.SwitchCase)
-		var side = node.side
-		if(side) this.fastText(side, this.styles.Comment.side)
+		let side = node.side
+		if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 		this.indentIn()
 		var cqs = node.consequent
 		var cqlen = cqs.length
 		for(let i = 0; i < cqlen; i++){
 			var cq = cqs[i]
-			var above = cq.above
-			if(above) this.fastText(above, this.styles.Comment.above)
+			let above = cq.above
+			if(above) this.fastText(above, this.styles.Comment.above), this.trace += above
 			if(cq) this[cq.type](cq)
-			var side = cq.side
-			if(side) this.fastText(side, this.styles.Comment.side)
+			let side = cq.side
+			if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 			this.trace += '\n'
 		}
 		this.indentOut()
@@ -1391,8 +1403,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += ':'
 		this.fastText(':', this.styles.LabeledStatement)
 		
-		var after1 = node.after1
-		if(after1) this.fastText(after1, this.styles.Comment.above)
+		let after1 = node.after1
+		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 
 		// lets inject a newline
 		var body = node.body

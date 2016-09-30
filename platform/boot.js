@@ -249,7 +249,7 @@ function workerBoot(){
 					stack.push({
 						method:line[1],
 						line:parseInt(line[3]),
-						file:line[2],
+						path:line[2],
 						column:parseInt(line[4])
 					})
 				}
@@ -270,7 +270,7 @@ function workerBoot(){
 					stack.push({
 						method:line[1],
 						line:parseInt(line[3]),
-						file:line[2],
+						path:line[2],
 						column:parseInt(line[4])
 					})
 				}
@@ -279,7 +279,7 @@ function workerBoot(){
 			return {
 				message:e.message,
 				line:e.lineNumber,
-				file:e.fileName,
+				path:e.fileName,
 				column:e.columnNumber,
 				stack:stack
 			}
@@ -288,7 +288,7 @@ function workerBoot(){
 			var lines = e.stack.split(/\n/)
 			var stack = []
 			stack.push({
-				file:null,
+				path:null,
 				line:parseInt(e.line),
 				column:parseInt(e.column)
 			})
@@ -297,7 +297,7 @@ function workerBoot(){
 				if(line){
 					stack.push({
 						method:line[1],
-						file:line[2],
+						path:line[2],
 						line:parseInt(line[3]),
 						column:parseInt(line[4])
 					})
@@ -306,7 +306,7 @@ function workerBoot(){
 			return {
 				message:e.message,
 				line:stack[0].line,
-				file:stack[0].file,
+				path:stack[0].path,
 				column:stack[0].column,
 				stack:stack
 			}
@@ -322,7 +322,7 @@ function workerBoot(){
 					stack.push({
 						method:line[1],
 						line:parseInt(line[3]) - 2,
-						file:line[2],
+						path:line[2],
 						column:parseInt(line[4])
 					})
 				}
@@ -330,7 +330,7 @@ function workerBoot(){
 			return {
 				message:lines[0],
 				line:stack[0].line,
-				file:stack[0].file,
+				path:stack[0].path,
 				column:stack[0].column,
 				stack:stack
 			}

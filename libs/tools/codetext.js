@@ -135,6 +135,7 @@ module.exports = class CodeText extends require('tools/text'){
 					head = 0
 					
 					if(unicode === 10 || unicode ===13){
+						this.$fastNAMELines.push(this.$fastNAMEWritten)
 						turtle.mh = 0
 						if(posx>turtle.x2) turtle.x2 = posx
 						// lets output indenting
