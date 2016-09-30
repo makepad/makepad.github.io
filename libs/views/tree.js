@@ -140,13 +140,14 @@ module.exports = class Tree extends require('base/view'){
 			})
 			this.redraw()
 		}
-	
-		// lets select something
-		if((this.selected!==node || e.tapCount > 0) && node && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node), e)
+		else{
+			// lets select something
+			if((this.selected!==node || e.tapCount > 0) && node && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node), e)
 
-		if(this.selected!==node){
-			this.selected=node
-			this.redraw()
+			if(this.selected!==node){
+				this.selected=node
+				this.redraw()
+			}
 		}
 	}
 

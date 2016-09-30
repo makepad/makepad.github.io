@@ -114,7 +114,7 @@ module.exports = class extends require('/platform/service'){
 			else if(type === 'buffer'){
 				node = {config:nodeConfig, start:nodeConfig.start, type:'buffer', audioNode:this.context.createBufferSource()}
 				var data = nodeConfig.data
-				if(data){
+				if(data && data.length && data[0].length){
 					// lets copy the data into an audiobuffer
 					var buffer = this.context.createBuffer(data.length, data[0].length, nodeConfig.rate)
 					for(let i = 0; i < data.length; i++){

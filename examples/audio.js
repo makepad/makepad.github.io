@@ -123,8 +123,8 @@ module.exports = class extends require('base/drawapp'){
 		this.drawButton({ 
 			text: this.playFlow.running? "Stop": "Play", 
 			onClick: e=>{ 
+				
 				if(this.playFlow.running) { 
-					console.log("STOP?") 
 					this.playFlow.stop() 
 					this.redraw() 
 					return  
