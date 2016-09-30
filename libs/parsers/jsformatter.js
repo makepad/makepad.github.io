@@ -1254,7 +1254,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(bottom) this.fastText(bottom, this.styles.Comment.bottom)
 		
 		this.fastText('}', this.styles.Curly.SwitchStatement)
-		this.trace += '){\n'
+		this.trace += '}'
 	}
 
 	//SwitchCase:{test:1, consequent:2},
