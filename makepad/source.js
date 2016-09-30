@@ -28,9 +28,8 @@ class Code extends require('views/code'){
 	}
 
 	setErrors(errors){
-		// how can we easily 'wait' with showing these errors
+		if(this.errorTimeout) clearTimeout(this.errorTimeout)
 		if(errors.length){
-			if(this.errorTimeout) clearTimeout(this.errorTimeout)
 			this.errorTimeout = setTimeout(e=>{
 				this.errorTimeout = undefined
 				this.errors = errors
