@@ -784,24 +784,26 @@ module.exports = class Code extends require('views/edit'){
 
 		var errors = this.errors
 		if(errors){
-
 			for(let i = errors.length - 1; i >= 0; --i){
 				var error = errors[i]
 				var epos = clamp(error, 0, this.$lengthText() - 1) 
 				var rd = this.$readOffsetText(epos) 			
-				if(rd) { 
-					//console.log(out)
-					//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
-					this.drawErrorMarker({ 
-						x1: 0, 
-						x2: rd.x, 
-						x3: rd.x + rd.w, 
-						x4: 100000, 
-						y: rd.y, 
-						h: rd.fontSize * rd.lineSpacing, 
-						closed: 0 
-					}) 
+				if(!rd) continue
+					
+				//console.log(out)
+				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
+				var marker = { 
+					x1: 0, 
+					x2: rd.x, 
+					x3: rd.x + rd.w, 
+					x4: 100000, 
+					y: rd.y, 
+					h: rd.fontSize * rd.lineSpacing, 
+					closed: 0 
+
 				}
+				this.drawErrorMarker(marker)
+				if(i==0 && !this.hasFocus) this.scrollIntoView(marker.x, marker.y, marker.w, marker.h)
 			}
 		}
 
