@@ -23,17 +23,17 @@ class Code extends require('views/code'){
 	} 
 
 	onClearErrors(){
-		this.errors = null
+		if(this.errorTimeout) clearTimeout(this.errorTimeout)
+		this.errorTimeout = this.errors = null
 	}
 
 	setErrors(errors){
 		// how can we easily 'wait' with showing these errors
 		if(errors.length){
-			this.errors = undefined
 			if(this.errorTimeout) clearTimeout(this.errorTimeout)
 			this.errorTimeout = setTimeout(e=>{
 				this.errorTimeout = undefined
-				if(this.errors !== null) this.errors = errors
+				this.errors = errors
 			},500)
 		}
 		else this.errors = errors
