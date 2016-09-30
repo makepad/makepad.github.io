@@ -11,7 +11,7 @@ class Code extends require('views/code'){
 		} 
 	}
 
-	onKeyS(e) { 
+	onKeyS(e) {
 		this.inputDirty = false
 		if(!e.meta && !e.ctrl) return true 
 		var text = this.serializeWithFormatting()
@@ -22,7 +22,7 @@ class Code extends require('views/code'){
 		})
 	} 
 	
-	onParsed() { 
+	onParsed() {
 		this.store.act('parseCode',store=>{
 			var res = this.resource
 			res.dirty = this.inputDirty
@@ -75,6 +75,7 @@ class Code extends require('views/code'){
 
 class Errors extends require('views/tree'){
 	prototype(){
+		this.openWithText = false
 		this.props = {
 			resource:null
 		}
@@ -102,14 +103,18 @@ class Errors extends require('views/tree'){
 			}
 		}
 	}
-	
+
+	onNodeSelect(node, path, e){
+		console.log(node.error)
+	}
+
 	onDraw(){
 		//console.log(this)
 		super.onDraw(true)
 	}
 
 	onResource(e){
-		if(!this.initialized || !this.resource) return
+		if(!this.initialized) return
 		//this.redraw()
 		if(!this.store.anyChanges(e, 3, 'runtimeErrors', null)) return
 
@@ -120,17 +125,16 @@ class Errors extends require('views/tree'){
 		var parseErrors = this.resource.parseErrors
 		if(parseErrors.length){
 			parseErrors.forEach(e=>{
-				var error = {name:e.message,icon:'exclamation-circle',folder:[]}
+				var error = {name:e.message,error:e,icon:'exclamation-circle',folder:[]}
 				tree.folder.push(error)
 			})
 		}
 		else{
 			var runtimeErrors = []
 			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
-			
 			runtimeErrors.forEach((e,i)=>{
 				var oldf = old.folder && old.folder[i]
-				var error = {name:e.message + (e.count>1?':x'+e.count:''), open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
+				var error = {name:e.message + (e.count>1?':x'+e.count:''), error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 				tree.folder.push(error)
 				e.stack.forEach(m=>{
 					error.folder.push({
@@ -140,8 +144,6 @@ class Errors extends require('views/tree'){
 			})
 		}
 		this.data = tree
-		//if(this.resource.parseErrors.length){
-		//}
 	}
 }
 

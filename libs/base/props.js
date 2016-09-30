@@ -53,7 +53,6 @@ function defineProp(key, value){
 	var config = this._props[key] = this._props[key]?Object.create(this._props[key]):{}
 	for(let cpy in value) config[cpy] = value[cpy]
 	if(config.mask === undefined) config.mask = ~16
-
 	// lets define a property
 	var _key = '_' + key
 	var onkey = 'on' + key.charAt(0).toUpperCase() + key.slice(1)

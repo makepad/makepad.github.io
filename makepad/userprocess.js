@@ -22,7 +22,6 @@ module.exports = class UserProcess extends require('views/draw'){
 
 	onResource(e){	
 		// it changes! lets reload?..
-
 	}
 
 	onAfterDraw() { 
@@ -61,17 +60,19 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.deps = {} 
 		//this.main = this.resource 
 		this.app.findResourceDeps(this.resource, this.deps)
-		
 		// lets add our process to all the deps
+		require('base/perf')
 		this.store.act("addProcessToResources", store=>{
-			var resmap = store.resourceMap
+			//var resmap = store.resourceList
 			var process = this.process
+			var resourceMap = this.store.resourceMap
 			for(var key in this.deps){
-				var res = resmap[key]
+				var res = resourceMap.get(key)
 				res.processes.push(process)
 			}
 		})
-
+		require('base/perf')
+		
 		this.worker.init( 
 			this.resource.path, 
 			this.deps

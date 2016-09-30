@@ -523,10 +523,10 @@ module.exports = class View extends require('base/class'){
 		}
 		// begin a new todo stack
 		var todo = this.todo
+		if(!todo) return // init failed
 
 		// lets set some globals
 		var todoUbo = todo.todoUbo
-		if(!todoUbo) return // init failed
 		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 

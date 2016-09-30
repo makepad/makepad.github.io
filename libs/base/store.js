@@ -1,74 +1,110 @@
 
 var ProxyFallback = true
+var proxyFallbackInit 
 
-var MakeProxy = function(value, handler) {
-	return new Proxy(value, handler)
+var MakeProxy = function(value) {
+	if(value && value.constructor === Map){
+		return new ProxyMap(value)
+	}
+	return new Proxy(value, proxyHandler)
+}
+
+class ProxyMap{
+	constructor(map){
+		this['0__unwrap__'] = map
+	}
+
+	get(key){
+		var map = this['0__unwrap__']
+		return proxyHandlerGet(map, key, map.get(key))
+	}
+
+	set(key, value){
+		var map = this['0__unwrap__']
+		var old = map.get(key)
+		proxyHandlerSet(map, key, value, old)
+		map.set(key, value)
+	}
+
+	// TODO wrap these
+	keys(){
+		throw new Error("keys() not implemented")
+	}
+
+	// TODO wrap these
+	values(){
+		throw new Error("values() not implemented")
+	}
+
+	delete(key){
+		var map = this['0__unwrap__']
+		var old = map.get(index)
+		proxyHandlerSet(map, index, undefined, old)
+		map.delete(key)
+	}
+
+	clear(){
+		var map = this['0__unwrap__']
+		for(let key of map.keys()){
+			proxyHandlerSet(map, key, undefined, map.get(old))
+		}
+		map.clear()
+	}
+
+	get __proxymeta__(){
+		return proxyMeta.get(this['0__unwrap__'])
+	}
 }
 
 if(ProxyFallback){
 	// dont use proxies
+	var protoKeyCount = 0
 	class ProxyObject{
-		constructor(object, handler){
+		constructor(object){
 			// helper property to quickly access underlying object
 			Object.defineProperty(this, '0__unwrap__', {
 				configurable:true,
 				value:object
 			})
-			Object.defineProperty(this, '__proxymeta__', {
-				get:function(){
-					return proxyMeta.get(object)
-				}
-			})
-			Object.defineProperty(this, '__proxyfallback__', {
-				value:function(){
-					var keys = Object.keys(this)
-					for(var i = 0; i < keys.length; i++){
-						let key = keys[i]
-						if(!this.__lookupSetter__(key)){
-							var value = this[key]
-							if(typeof value === 'function') continue
-							// store it on backing object
-							object[key] = value
-							Object.defineProperty(this, key, {
-								get:function(){
-									return handler.get(object, key)
-								},
-								set:function(value){
-									return handler.set(object, key, value)
-								}
-							})
-							// initialize
-							this[key] = object[key]
-						}
-					}
-					return proxyMeta.get(object)
-				}
-			})
+
 			for(let key in object){
 				var value = object[key]
 				if(typeof value === 'function') continue
-				Object.defineProperty(this, key, {
-					get:function(){
-						return handler.get(object, key)
-					},
-					set:function(value){
-						return handler.set(object, key, value)
+				var proto = ProxyObject.prototype
+
+				if(!proto.__lookupSetter__(key)){
+					if(protoKeyCount++ > 10000){
+						console.log("Performance warning, observed data should use non-unique keynames, or turn of ProxyFallback")
 					}
-				})
+					Object.defineProperty(proto, key, {
+						configurable:true,
+						get:function(){
+							var object =  this['0__unwrap__']
+							return proxyHandlerGet(object, key, object[key])
+						},
+						set:function(value){
+							var object =  this['0__unwrap__']
+							var old = object[key]
+							proxyHandlerSet(object, key, value, old)
+							object[key] = value
+						}
+					})
+				}
+				// make it enumerable, seems to not be slow
+				var desc = Object.getOwnPropertyDescriptor(proto, key)
+				desc.enumerable = true
+				Object.defineProperty(this, key, desc)
 			}
+		}
+
+		get __proxymeta__(){
+			return proxyMeta.get(this['0__unwrap__'])
 		}
 	}
 
 	class ProxyArray{
-		constructor(array, handler){
-			this._array = array
-			this._handler = handler
+		constructor(array){
 			this._defineProxyProps(array.length)
-			Object.defineProperty(this, '__proxymeta__', {
-				get:function(){
-					return proxyMeta.get(array)
-				}
-			})
 			Object.defineProperty(this, '0__unwrap__', {
 				configurable:true,
 				value:array
@@ -76,47 +112,69 @@ if(ProxyFallback){
 		}
 
 		push(...args){
-			var total = this._array.length + args.length
+			var array = this['0__unwrap__']
+			var total = array.length + args.length
 			this._defineProxyProps(total)
-			for(let i = this._array.length, j = 0; i < total; i++, j++){
+			for(let i = array.length, j = 0; i < total; i++, j++){
 				this[i] = args[j]
 			}
 		}
 
 		pop(){
-			var len = this._array.length
+			var array = this['0__unwrap__']
+			var len = array.length
 			if(!len) return
 			var ret = this[len - 1]
 			this[len - 1] = undefined
-			this._array.length --
+			array.length --
 			return ret
 		}
 
-		forEach(...args){
-			return this._array.forEach(...args)
+		forEach(cb){
+			var array = this['0__unwrap__']
+			for(let i = 0, l = array.length; i < l; i++){
+				cb(this[i], i, this)
+			}
+		}
+		
+		forEachUnwrap(...args){
+			var array = this['0__unwrap__']
+			return array.forEach(...args)
 		}
 
-		map(...args){
-			return this._array.map(...args)
+		map(...args){ 
+			var array = this['0__unwrap__']
+			var out = []
+			for(let i = 0, l = array.length; i < l; i++){
+				out[i] = this[i]
+			}
+			return out.map(...args)
 		}
 
 		indexOf(thing){
-			return this._array.indexOf(thing)
+			var array = this['0__unwrap__']
+			var proxy = thing && thing.__proxymeta__
+			if(proxy) thing = proxy.object
+			return array.indexOf(thing)
 		}
 
 		get length(){
-			return this._handler.get(this._array, 'length')
+			var array = this['0__unwrap__']
+			return proxyHandlerGet(array, 'length', array.length)
 		}
 
 		set length(value){
-			var oldLen = this._array.length
+			var array = this['0__unwrap__']
+			var oldLen = array.length
 			// if shorten
 			for(var i = oldLen - 1; i >= value; i--){
 				this[i] = undefined
 			}
 			// assure length
 			this._defineProxyProps(value)
-			this._handler.set(this._array, 'length', value)
+			var oldlen = array.length
+			array.length = value
+			proxyHandlerSet(array, 'length', value, oldlen)
 		}
 
 		_defineProxyProps(len){
@@ -125,23 +183,35 @@ if(ProxyFallback){
 				if(proto.__lookupGetter__(i))break
 				Object.defineProperty(proto, i, {
 					get:function(){
-						return this._handler.get(this._array, i)
+						var array = this['0__unwrap__']
+						return proxyHandlerGet(array, i, array[i])
 					},
 					set:function(value){
-						return this._handler.set(this._array, i, value)
+						var array = this['0__unwrap__']
+						var old = array[i]
+						proxyHandlerSet(array, i, value, old)
+						array[i] = value
 					}
 				})
 			}
 		}
+
+		get __proxymeta__(){
+			return proxyMeta.get(this['0__unwrap__'])
+		}
 	}
 
-	MakeProxy = function(object, handler) {
+	MakeProxy = function(object) {
 		var ret
+
 		if(Array.isArray(object)){
-			ret = new ProxyArray(object, handler)
+			ret = new ProxyArray(object)
+		}
+		else if(object.constructor === Map){
+			ret = new ProxyMap(object)
 		}
 		else{
-			ret = new ProxyObject(object, handler)
+			ret = new ProxyObject(object)
 			if(object instanceof Store){
 				var keys = Object.getOwnPropertyNames(Object.getPrototypeOf(object))
 				for(let i = 0; i < keys.length; i++){
@@ -152,6 +222,31 @@ if(ProxyFallback){
 			else Object.seal(ret)
 		}
 		return ret
+	}
+
+	proxyFallbackInit = function(object, input){
+		var keys = Object.keys(input)
+		for(var i = 0; i < keys.length; i++){
+			let key = keys[i]
+			if(!input.__lookupSetter__(key)){
+				var value = input[key]
+				if(typeof value === 'function') continue
+				// store it on backing object
+				object[key] = value
+				Object.defineProperty(input, key, {
+					get:function(){
+						var object = this['0__unwrap__']
+						return proxyHandlerGet(object, key, object[key])
+					},
+					set:function(value){
+						var object = this['0__unwrap__']
+						var old = object[key]
+						proxyHandlerSet(object, key, value, old)
+						object[key] = value
+					}
+				})
+			}
+		}
 	}
 }
 
@@ -169,7 +264,7 @@ function storeProxyMeta(value, store){
 		object:value, 
 		proxy:MakeProxy(value, proxyHandler),
 		store:store,
-		parents:{},
+		parents:[],
 		observers:[]
 		//parenting:[]
 	}
@@ -178,89 +273,115 @@ function storeProxyMeta(value, store){
 }
 
 var proxyHandler = {
-	set(target, key, value){
-
-		var baseMeta = proxyMeta.get(target)
-		var data = storeData.get(baseMeta.store)
-		if(data.locked) throw new Error("Cannot set value on a locked store")
-
-		var oldValue = target[key]
-		var oldReal = oldValue
-		if(!data.allowNewKeys && !Array.isArray(target) && !(key in target) && !baseMeta.isRoot){
-			throw new Error('Adding new keys to an object is turned off, please specify it fully when adding it to the store')
-		}
-
-		// make map on read and write
-		var oldObservers
-		if(typeof oldValue === 'object' && oldValue){
-			var oldMeta = proxyMeta.get(oldValue)
-			if(oldMeta){
-				oldObservers = oldMeta.observers
-				// remove old parent connection
-				var p = oldMeta.parents[key]
-				if(!p) throw new Error('inconsistency, parent array'+key)
-				var idx = p.indexOf(baseMeta)
-				if(idx === -1) throw new Error('inconsistency, no key'+key)
-				if(p.length === 1) delete oldMeta.parents[key]
-				else p.splice(idx, 1)
-				//for(let i = 0, l = oldMeta.parenting.length; i < l; i++){
-				//	oldMeta.parenting[i]({type:'remove',$meta:oldMeta})
-				//}
-				oldValue = oldMeta.proxy
-			}
-		}
-
-		var newValue = value
-		var newReal = value
-		if(typeof newValue === 'object' && newValue){
-			var newMeta = newValue.__proxymeta__ // the value added was a proxy
-			// otherwise 
-			if(!newMeta && (Array.isArray(newValue)||newValue.constructor === Object)){
-				// wire up parents
-				newMeta = proxyMeta.get(newValue) || storeProxyMeta(newValue, baseMeta.store)
-			}
-			if(newMeta){
-				// wire up parent relationship
-				var p = newMeta.parents[key]
-				if(!p) newMeta.parents[key] = [baseMeta]
-				else if(p.indexOf(baseMeta) ===-1) p.push(baseMeta)
-				// copy oldObservers
-				if(oldObservers && oldObservers.length){
-					newMeta.observers.push.apply(newMeta.observers, oldObservers)
-				}
-				//for(let i = 0, l = newMeta.parenting.length; i < l; i++){
-				//	oldMeta.parenting[i]({type:'add',$meta:oldMeta})
-				//}
-
-				// replace return value with proxy
-				newValue = newMeta.proxy
-				newReal = newMeta.object
-			}
-		}
-
-		data.changes.push({
-			object:baseMeta.proxy,value:newValue, key:key,  $value:newReal, $object:target, $meta:baseMeta, old:oldValue, $old:oldReal
-		})
-
-		target[key] = newReal
-		return true
-	},
-	get(target, key){
-
-		var baseMeta = proxyMeta.get(target)
+	get:(target,key)=>{
 		if(key === '__proxymeta__'){
-			return baseMeta
+			return proxyMeta.get(target)
 		}
-		var value = target[key]
-		if(typeof value === 'object' && (Array.isArray(value)||value.constructor === Object)){
-			var valueMeta = proxyMeta.get(value) || storeProxyMeta(value, baseMeta.store)
-			var p = valueMeta.parents[key]
-			if(!p) valueMeta.parents[key] = [baseMeta]
-			else if(p.indexOf(baseMeta) ===-1) p.push(baseMeta)
-			return valueMeta.proxy
-		}
-		return value
+		return proxyHandlerGet(target, key, target[key])
+	},
+	set:(target,key,value)=>{
+		var old = target[key]
+		target[key] = value
+		return proxyHandlerSet(target, key, value, old)
 	}
+}
+
+function parentIndex(key, array){
+	for(let i = array.length -2; i>=0; i-=2){
+		if(array[i] === key) return i
+	}
+	return -1
+}
+
+function proxyHandlerSet(target, key, newValue, oldValue){
+	var baseMeta = proxyMeta.get(target)
+	var data = storeData.get(baseMeta.store)
+	if(data.locked) throw new Error("Cannot set value on a locked store")
+
+	//var oldValue = target[key]
+	var oldReal = oldValue
+	if(!data.allowNewKeys && !Array.isArray(target) && !(key in target) && !baseMeta.isRoot){
+		throw new Error('Adding new keys to an object is turned off, please specify it fully when adding it to the store')
+	}
+
+	// make map on read and write
+	var oldObservers
+	if(typeof oldValue === 'object' && oldValue){
+		var oldMeta = proxyMeta.get(oldValue)
+		if(oldMeta){
+			oldObservers = oldMeta.observers
+			// remove old parent connection
+			var parents = oldMeta.parents
+			var idx = parents.indexOf(key)
+			if(idx === -1) throw new Error('inconsistency, parent array '+key)
+			var p = parents[idx+1]
+			var idx = p.indexOf(baseMeta)
+			if(idx === -1) throw new Error('inconsistency, no key '+key)
+			if(p.length === 1) parents.splice(idx, 2)
+			else p.splice(idx, 1)
+			//for(let i = 0, l = oldMeta.parenting.length; i < l; i++){
+			//	oldMeta.parenting[i]({type:'remove',$meta:oldMeta})
+			//}
+			oldValue = oldMeta.proxy
+		}
+	}
+
+	//var newValue = value
+	var newReal = newValue
+	if(typeof newValue === 'object' && newValue){
+		var newMeta = newValue.__proxymeta__ // the value added was a proxy
+		// otherwise 
+		if(!newMeta && (Array.isArray(newValue)||newValue.constructor === Object||newValue.constructor === Map)){
+			// wire up parents
+			newMeta = proxyMeta.get(newValue) || storeProxyMeta(newValue, baseMeta.store)
+		}
+		if(newMeta){
+			// wire up parent relationship
+			var parents = newMeta.parents
+			var idx = parents.indexOf(key)
+			if(idx===-1) parents.push(key,[baseMeta])
+			else {
+				var p = parents[idx+1]
+				if(p.indexOf(baseMeta) === -1) p.push(baseMeta)
+			}
+			// copy oldObservers
+			if(oldObservers && oldObservers.length){
+				newMeta.observers.push.apply(newMeta.observers, oldObservers)
+			}
+			//for(let i = 0, l = newMeta.parenting.length; i < l; i++){
+			//	oldMeta.parenting[i]({type:'add',$meta:oldMeta})
+			//}
+
+			// replace return value with proxy
+			newValue = newMeta.proxy
+			newReal = newMeta.object
+		}
+	}
+
+	data.changes.push({
+		object:baseMeta.proxy,value:newValue, key:key, $value:newReal, $object:target, $meta:baseMeta, old:oldValue, $old:oldReal
+	})
+
+	return true
+}
+
+function proxyHandlerGet(target, key, value){
+	var baseMeta = proxyMeta.get(target)
+	//var value = target[key]
+	if(typeof value === 'object' && value && (Array.isArray(value)||value.constructor === Object||value.constructor === Map)){
+		var valueMeta = proxyMeta.get(value) || storeProxyMeta(value, baseMeta.store)
+		
+		var parents = valueMeta.parents
+		var idx = parents.indexOf(key)
+		if(idx===-1) parents.push(key,[baseMeta])
+		else {
+			var p = parents[idx+1]
+			if(p.indexOf(baseMeta) === -1) p.push(baseMeta)
+		}
+
+		return valueMeta.proxy
+	}
+	return value
 }
 
 class Store extends require('base/class'){
@@ -284,7 +405,34 @@ class Store extends require('base/class'){
 
 		return proxy
 	}
-	
+	/*
+	indexMap(array, maxLevel, cb){
+		this.observe(array, e=>{
+			if(e.level == -1){ // reinitialize
+				array = e.changes[0].value
+				var index = array.index || (array.index = new Map())
+				for(let i = 0, l = array.length; i < l; i++){
+					cb(index, array[i], i)
+				}
+			}
+			var index = array.index || (array.index = new Map())
+			if(e.level>maxLevel) return // bail
+			if(e.level === 0 && maxLevel === 0){ // only process changes
+				var changes = e.changes
+				for(let i = 0, l = changes.length; i < l; i++){
+					var change = changes[i]
+					cb(index, change.$value, change.key)
+				}
+			}
+			else{ // always reinitialize map
+				index.clear()
+				for(let i = 0, l = array.length; i < l; i++){
+					cb(index, array[i], i)
+				}
+			}
+		})
+	}*/
+
 	wrap(object){
 		var base = this.__proxymeta__
 		var meta = object.__proxymeta__
@@ -316,9 +464,10 @@ class Store extends require('base/class'){
 			for(var j = query.length - 2; j>=0 ;--j){
 				q = query[j]
 				let nextParents = null
-				for(p in parents){
+				for(let k = parents.length -1; k>=0; k-=2){
+					let p = parents[k-1]
 					if(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p){
-						nextParents = parents[p].parents
+						nextParents = parents[k].parents
 						break
 					}
 				}
@@ -347,9 +496,10 @@ class Store extends require('base/class'){
 			for(var j = query.length - 2; j>=0 ;j--){
 				q = query[j]
 				let nextParents = null
-				for(p in parents){
+				for(let k = parents.length -1; k>=0; k-=2){
+					let p = parents[k-1]
 					if(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p){
-						nextParents = parents[p].parents
+						nextParents = parents[k].parents
 						break
 					}
 				}
@@ -384,7 +534,9 @@ class Store extends require('base/class'){
 		}
 		finally{
 			// process changes to this if we are running proxyFallback
-			if(this.__proxyfallback__) this.__proxyfallback__()
+			if(proxyFallbackInit){
+				proxyFallbackInit(meta.object, this)
+			}
 			store.locked = true
 			processChanges(name, changes, store, maxLevel!==undefined?maxLevel:Infinity)
 		}
@@ -395,6 +547,7 @@ class Store extends require('base/class'){
 function processChanges(name, changes, store, maxLevel){
 	var eventMap = store.eventMap
 	eventMap.clear()
+	var dt = performance.now()
 	// process all changes and fire listening properties
 	for(let i = 0, l = changes.length; i < l; i++){
 		let change = changes[i]
@@ -421,7 +574,6 @@ var pathBreak = new WeakMap()
 function scanParents(name, node, change, level, eventMap, maxLevel){
 	if(level >= maxLevel || pathBreak.get(node) === change) return
 	pathBreak.set(node, change)
-		
 	var meta = proxyMeta.get(node)
 	var observers = meta.observers
 	for(let j = observers.length - 1; j>=0; j--){
@@ -430,10 +582,10 @@ function scanParents(name, node, change, level, eventMap, maxLevel){
 		if(event) event.changes.push(change)
 		else eventMap.set(observer,{name:name, level:level, changes:[change]})
 	}
-
+	
 	var parents = meta.parents
-	for(let key in parents){
-		var list = parents[key]
+	for(let j = parents.length - 1; j>=0; j-=2){
+		var list = parents[j]
 		for(let i = list.length-1; i>=0; i--){
 			scanParents(name, list[i].object, change, level +1, eventMap)
 		}

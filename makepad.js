@@ -19,14 +19,14 @@ module.exports = class Makepad extends require('base/app'){
 	
 		this.store.act("init",store=>{
 			store.projectTree = {}
-			store.resourceMap = {}
+			store.resourceMap = new Map()
 			store.processList = []
 		})
 
 		this.store.observe(this.store.resourceMap, e=>{
 			var store = this.store
 			// we wanna know if dirty on a resource is flipped
-			if(this.store.anyChanges(e, 1, null, 'dirty')){
+			if(this.store.anyChanges(e, 3, null, 'dirty')){
 				this.processTabTitles()
 			}
 			// data or trace modified
@@ -42,7 +42,8 @@ module.exports = class Makepad extends require('base/app'){
 						proc.reloadWorker()	
 					}
 				} 				
-			}
+			}	
+			// how about a datastore index? can we provide one?
 
 		})
 	}
@@ -55,7 +56,7 @@ module.exports = class Makepad extends require('base/app'){
 			var allProj = []
 			var allNodes = []
 			var pathNames = []
-			var resourceMap = {}
+			var resourceMap = new Map()
 			function walk(node, base){
 				node.folder = node.folder.sort((a,b)=>{
 					if(a.name < b.name) return -1
@@ -84,7 +85,7 @@ module.exports = class Makepad extends require('base/app'){
 			return Promise.all(allProj, true).then(results => {
 				// store all the data in the resource list
 				for(let i = 0; i < results.length; i++){
-					resourceMap[pathNames[i]] = {
+					resourceMap.set(pathNames[i],{
 						node:allNodes[i],
 						path:pathNames[i],
 						data:results[i],
@@ -92,7 +93,7 @@ module.exports = class Makepad extends require('base/app'){
 						dirty:false,
 						processes:[],
 						parseErrors:[]
-					}
+					})
 				}
 				// lets store it
 				this.store.act("loadProject",store=>{
@@ -100,11 +101,10 @@ module.exports = class Makepad extends require('base/app'){
 					store.resourceMap = resourceMap
 					store.processList = []
 				})
-
 			}, fail=>{} ,true)
 		}, fail=>{}, true)
 	}
-	
+
 	onAfterCompose() { 
 		// the setter of data makes it autobind to the store
   		this.find('FileTree').data = this.store.projectTree
@@ -113,21 +113,21 @@ module.exports = class Makepad extends require('base/app'){
 
 			if(this.destroyed) return  // technically possible
 
-			var resources = this.resources = this.store.resourceMap
+			var resources = this.store.resourceMap
 			var proj = this.store.projectTree
 
 			if(proj.open) {
 				for(var i = 0; i < proj.open.length; i++) { 
 					var open = proj.open[i] 
-					var resource = resources[storage.buildPath('/', open)] 
+					var resource = resources.get(storage.buildPath('/', open))
 					this.addSourceTab(resource, open) 
 				} 
 			}
 			if(!module.worker.hasParent && proj.run) { 
 				for(var i = 0; i < proj.run.length; i++) { 
 					var run = proj.run[i] 
-					var resource = resources[storage.buildPath('/', run)] 
-					this.addProcessTab(resource, run) 
+					var resource = resources.get(storage.buildPath('/', run))
+					this.addProcessTab(resource, run)
 				} 
 			} 
 		}) 
@@ -145,7 +145,7 @@ module.exports = class Makepad extends require('base/app'){
 		code.replace(/require\s*\(\s*['"](.*?)["']/g, (m, path)=>{ 
 			if(path.charAt(0) === '$') return  
 			var mypath = module.worker.buildPath(resource.path, path) 
-			var dep = this.resources[mypath] 
+			var dep = this.store.resourceMap.get(mypath)
 			if(!deps[dep.path]) { 
 				this.findResourceDeps(dep, deps) 
 			} 

@@ -12,6 +12,7 @@ module.exports = class Tree extends require('base/view'){
 		this.overflow = 'scroll'
 		this.padding = [2,0,0,2]
 		this.fontSize = 11
+		this.openWithText = true
 		this.tools = {
 			Bg:require('tools/bg').extend({
 				color:'#6',
@@ -129,8 +130,11 @@ module.exports = class Tree extends require('base/view'){
 
 	onFingerDown(e){
 		this.setFocus()
-		var node=this.pickMap[e.pickId]
-		if(node&&node.folder){
+		var pick=this.pickMap[e.pickId]
+		if(!pick) return
+		var node = pick.node
+
+		if(pick.node.folder && (this.openWithText || pick.type === 'tree' || e.tapCount > 0)){
 			this.store.act('treeToggle',store=>{
 				node.open=!node.open
 			})
@@ -138,7 +142,7 @@ module.exports = class Tree extends require('base/view'){
 		}
 	
 		// lets select something
-		if((this.selected!==node || e.tapCount > 0) && node && !node.folder && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node), e)
+		if((this.selected!==node || e.tapCount > 0) && node && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node), e)
 
 		if(this.selected!==node){
 			this.selected=node
@@ -204,11 +208,15 @@ module.exports = class Tree extends require('base/view'){
 
 		var drawNode = (name, node, i, len, depth, closed) => {
 				//var node=nodes[i]
-			this.pickMap[this.addPickId()]=node
-
+			var treePick = this.addPickId()
+			var textPick = this.addPickId()
+			this.pickMap[treePick]={node:node, type:'tree'}
+			this.pickMap[textPick]={node:node, type:'text'}
+			this.setPickId(textPick)
 			this.beginCursor({
 				selected:this.selected===node
 			})
+			this.setPickId(treePick)
 			for(let j=0,dl=depth.length-1;j<=dl;j++){
 				var isFolder = j==dl&&node.folder&&(Array.isArray(node.folder)?node.folder.length:Object.keys(node.folder).length)?1:0
 
@@ -231,7 +239,6 @@ module.exports = class Tree extends require('base/view'){
 					this.turtle.wx=x
 				}
 			}
-
 			if(node.folder || node.icon){
 				this.drawIcon({
 					fontSize:closed?0:this.fontSize+1,
@@ -241,6 +248,7 @@ module.exports = class Tree extends require('base/view'){
 				})
 			}
 			else this.turtle.wx+=2
+			this.setPickId(textPick)
 			this.drawText({
 				fontSize:closed?0:this.fontSize,
 				text:name
