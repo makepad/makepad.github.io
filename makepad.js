@@ -217,7 +217,7 @@ module.exports = class Makepad extends require('base/app'){
 		}) 
 		var idx = tabs.addNewChild(source)
 		tabs.selectTab(idx)
-		source.setFocus()
+		//source.setFocus()
 		this.processTabTitles()
 	} 
 	

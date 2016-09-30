@@ -1261,10 +1261,16 @@ module.exports = class JSFormatter extends require('base/class'){
 	SwitchCase(node){
 		let above = node.above
 		if(above) this.fastText(above, this.styles.Comment.above), this.trace += above
-		this.trace += 'case '
-		this.fastText('case ', this.styles.SwitchCase)
 		var test = node.test
-		this[test.type](test)
+		if(!test){
+			this.trace += 'default'
+			this.fastText('default', this.styles.SwitchCase)
+		}
+		else{
+			this.trace += 'case '
+			this.fastText('case ', this.styles.SwitchCase)
+			this[test.type](test)
+		}
 		this.trace += ':'
 		this.fastText(':', this.styles.Colon.SwitchCase)
 		let side = node.side

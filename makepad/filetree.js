@@ -13,6 +13,6 @@ module.exports = class FileTree extends require('views/tree'){
 			if(i>0) p+= '/'
 			p += path[i].name
 		}
-		this.app.addSourceTab(this.app.resources[p])
+		this.app.addSourceTab(this.store.resourceMap.get(p))
 	}
 }

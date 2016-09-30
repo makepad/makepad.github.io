@@ -142,7 +142,9 @@ module.exports = class Tree extends require('base/view'){
 		}
 		else{
 			// lets select something
-			if((this.selected!==node || e.tapCount > 0) && node && this.onNodeSelect)this.onNodeSelect(node, this.computePath(node), e)
+			if((this.selected!==node || e.tapCount > 0) && node && this.onNodeSelect){
+				this.onNodeSelect(node, this.computePath(node), e)
+			}
 
 			if(this.selected!==node){
 				this.selected=node
@@ -188,6 +190,9 @@ module.exports = class Tree extends require('base/view'){
 				})
 			}
 		}
+		else if(e.name === 'enter' || e.name === 'space'){
+			this.onNodeSelect(sel, this.computePath(sel), e)
+		}
 		this.redraw()
 	}
 
@@ -219,7 +224,7 @@ module.exports = class Tree extends require('base/view'){
 			})
 			this.setPickId(treePick)
 			for(let j=0,dl=depth.length-1;j<=dl;j++){
-				var isFolder = j==dl&&node.folder&&(Array.isArray(node.folder)?node.folder.length:Object.keys(node.folder).length)?1:0
+				var isFolder = j==dl && node.folder?1:0
 
 				this.drawTreeLine({
 					isFiller:j==dl?0:depth[j+1],
