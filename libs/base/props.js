@@ -67,9 +67,6 @@ function defineProp(key, value){
 	this[_key] = initvalue
 	var onthis = config.this
 
-	function callListeners(value){
-				
-	}
 
 	Object.defineProperty(this, key, {
 		configurable:true,

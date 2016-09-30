@@ -49,6 +49,7 @@ module.exports = class CodeText extends require('tools/text'){
 				var turtle = this.turtle
 
 				this.$ALLOCDRAW(len + 1, true)
+				this.$fastTextWritten += len+1
 
 				var margin = style.margin
 				var lineSpacing = $proto.lineSpacing

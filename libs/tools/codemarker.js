@@ -90,7 +90,7 @@ module.exports = class CodeMarker extends require('tools/quad'){
 			max(this.borderRadius -2.,0.)
 		)
 	
-		var rip = (1.5+.5*sin(p.x*.4)+p.x)*(this.closed+this.errorTime)*10.
+		var rip = (1.5+.5*sin(p.x*.4)+p.x)*(this.closed)*10.
 		bgDist += rip
 		opDist += rip
 

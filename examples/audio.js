@@ -5,7 +5,7 @@ var painter = require('services/painter')
 module.exports = class extends require('base/drawapp'){ 
 	
 	prototype() { 
-		e 
+		
 		this.props = { 
 			zoom: 1000., 
 			selStart: 0, 

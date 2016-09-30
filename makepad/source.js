@@ -28,6 +28,7 @@ class Code extends require('views/code'){
 			res.dirty = this.inputDirty
 			res.data = this.text 
 			res.trace = this.trace 
+			res.traceLines = this.traceLines
 			res.parseErrors.length = 0
 		})
 	}
@@ -105,7 +106,7 @@ class Errors extends require('views/tree'){
 	}
 
 	onNodeSelect(node, path, e){
-		console.log(node.error)
+		this.parent.onSelectError(node.error)
 	}
 
 	onDraw(){
@@ -115,18 +116,23 @@ class Errors extends require('views/tree'){
 
 	onResource(e){
 		if(!this.initialized) return
-		//this.redraw()
-		if(!this.store.anyChanges(e, 3, 'runtimeErrors', null)) return
+
+		if(!this.store.anyChanges(e, 3, 'runtimeErrors', null) && 
+			!this.store.anyChanges(e, 0, 'parseErrors', null)) return
 
 		// update the tree with data
 		// generate the data the tree uses
 		var old = this.data
 		var tree = {folder:[]}
 		var parseErrors = this.resource.parseErrors
+
+		var errors = []
+
 		if(parseErrors.length){
 			parseErrors.forEach(e=>{
 				var error = {name:e.message,error:e,icon:'exclamation-circle',folder:[]}
 				tree.folder.push(error)
+				errors.push(e.pos)
 			})
 		}
 		else{
@@ -134,6 +140,14 @@ class Errors extends require('views/tree'){
 			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
 			runtimeErrors.forEach((e,i)=>{
 				var oldf = old.folder && old.folder[i]
+				// push a marker
+				if(e.file || e.file === this.resource.path){
+					if(this.resource.trace){ // we need to use the traceMap
+						var pos = this.resource.traceLines[e.line-1]
+						errors.push(pos - 1)
+					}
+				}
+
 				var error = {name:e.message + (e.count>1?':x'+e.count:''), error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 				tree.folder.push(error)
 				e.stack.forEach(m=>{
@@ -143,6 +157,10 @@ class Errors extends require('views/tree'){
 				})
 			})
 		}
+
+		this.parent.find('Code').errors = errors
+		// if we didnt have a selection lets select the top error and make sure the editor fires
+
 		this.data = tree
 	}
 }

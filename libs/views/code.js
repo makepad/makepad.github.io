@@ -14,7 +14,7 @@ module.exports = class Code extends require('views/edit'){
 		this._onText |= 32 
 
 		this.props = {
-			parseErrors:null
+			errors:undefined
 		}
 
 		this.tools = { 
@@ -591,11 +591,11 @@ module.exports = class Code extends require('views/edit'){
 		} 
 		catch(e) { 
 			this.parseError = e
-			/*
-			this.store.act("addParseError",store=>{
-				this.parseErrors.length = 0
-				this.parseErrors.push(e)
-			})*/
+			//this.store.act("addParseError",store=>{
+			//	this.resource.parseErrors.length = 0
+			//	this.resource.parseErrors.push(e)
+			//	console.log(this.resource.parseErrors)
+			//})
 		} 
 	} 
 
@@ -781,24 +781,28 @@ module.exports = class Code extends require('views/edit'){
 			this.$fastTextDelta = 0 
 		} 
 
-		/*
-		if(this.error){
-			var epos = clamp(this.error.pos, 0, this.$lengthText() - 1) 
-			var rd = this.$readOffsetText(epos) 			
-			if(rd) { 
-				//console.log(out)
-				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
-				this.drawErrorMarker({ 
-					x1: 0, 
-					x2: rd.x, 
-					x3: rd.x + rd.w, 
-					x4: 100000, 
-					y: rd.y, 
-					h: rd.fontSize * rd.lineSpacing, 
-					closed: 0 
-				}) 
+		var errors = this.errors
+		if(errors !== undefined){
+
+			for(let i = errors.length - 1; i >= 0; --i){
+				var error = errors[i]
+				var epos = clamp(error, 0, this.$lengthText() - 1) 
+				var rd = this.$readOffsetText(epos) 			
+				if(rd) { 
+					//console.log(out)
+					//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
+					this.drawErrorMarker({ 
+						x1: 0, 
+						x2: rd.x, 
+						x3: rd.x + rd.w, 
+						x4: 100000, 
+						y: rd.y, 
+						h: rd.fontSize * rd.lineSpacing, 
+						closed: 0 
+					}) 
+				}
 			}
-		}*/
+		}
 
 		if(this.hasFocus) { 			
 

@@ -63,7 +63,7 @@ exports.Parser = function Parser(options, input, startPos) {
 	this.exprAllowed = true
 
 	// Figure out if it's a module code.
-	this.strict = this.inModule = options.sourceType === "module"
+	this.strict = true//this.inModule = options.sourceType === "module"
 
 	// Used to signify the start of a potential arrow function
 	this.potentialArrowAt = -1

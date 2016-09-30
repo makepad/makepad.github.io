@@ -61,7 +61,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		//this.main = this.resource 
 		this.app.findResourceDeps(this.resource, this.deps)
 		// lets add our process to all the deps
-		require('base/perf')
+
 		this.store.act("addProcessToResources", store=>{
 			//var resmap = store.resourceList
 			var process = this.process
@@ -71,7 +71,6 @@ module.exports = class UserProcess extends require('views/draw'){
 				res.processes.push(process)
 			}
 		})
-		require('base/perf')
 		
 		this.worker.init( 
 			this.resource.path, 
@@ -130,8 +129,10 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.worker.onPingTimeout = ()=>{
 			this.worker.terminate()
 			this.app.findAll(/^Source/).forEach(s=>{
-				s.onRuntimeError({
-					message:"Infinite loop detected, restarting"
+				this.store.act("addRuntimeError",store=>{
+					this.process.runtimeErrors.push({
+						message:"Infinite loop detected, restarting"
+					})
 				})
 			})
 			this.startWorker()

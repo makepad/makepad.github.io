@@ -433,13 +433,14 @@ class Store extends require('base/class'){
 		})
 	}*/
 
+	/*
 	wrap(object){
 		var base = this.__proxymeta__
 		var meta = object.__proxymeta__
 		if(meta) return meta.proxy//throw new Error("Object is already wrapped") 
 		meta = storeProxyMeta(object, base.store)
 		return meta.proxy
-	}
+	}*/
 
 	unwrap(object){
 		if(!object) return
@@ -520,7 +521,7 @@ class Store extends require('base/class'){
 		return meta.proxy
 	}
 
-	act(name, actor, maxLevel){
+	act(name, actor, debug){
 		var meta = this.__proxymeta__
 		var store = storeData.get(meta.object)
 		if(!store.locked){
@@ -538,41 +539,41 @@ class Store extends require('base/class'){
 				proxyFallbackInit(meta.object, this)
 			}
 			store.locked = true
-			processChanges(name, changes, store, maxLevel!==undefined?maxLevel:Infinity)
+			return processChanges(name, changes, store, debug)
 		}
 	}
 }
 // process all changes
 
-function processChanges(name, changes, store, maxLevel){
-	var eventMap = store.eventMap
-	eventMap.clear()
-	var dt = performance.now()
+function processChanges(name, changes, store, debug){
+	var eventMap = new Map()
 	// process all changes and fire listening properties
 	for(let i = 0, l = changes.length; i < l; i++){
 		let change = changes[i]
 		
 		let meta = proxyMeta.get(change.$value)
 		var observers = meta && meta.observers
-		if(maxLevel > -1 && observers && observers.length){
+		if(observers && observers.length){
 			pathBreak.set(change.$value, change)
 			for(let j = observers.length - 1; j>=0; j--){
 				var observer = observers[j]
 				var event = eventMap.get(observer)
 				if(event) event.changes.push(change)
 				else eventMap.set(observer, {name:name, level:-1, changes:[change]})
+				if(event && event.name !== name) console.log("WHATTHEHELL")
 			}
 		}
-		scanParents(name, change.$object, change, 0, eventMap, maxLevel)
+		scanParents(name, change.$object, change, 0, eventMap)
 	}
 	eventMap.forEach((event, observer)=>{
+		if(debug) console.log(event, observer.pthis?[observer.pthis,observer.key]:observer)//dbg.push({event:event, observer:observer.toString()})
 		observer(event)
-	})	
+	})
 }
 
 var pathBreak = new WeakMap()
-function scanParents(name, node, change, level, eventMap, maxLevel){
-	if(level >= maxLevel || pathBreak.get(node) === change) return
+function scanParents(name, node, change, level, eventMap){
+	if(pathBreak.get(node) === change) return
 	pathBreak.set(node, change)
 	var meta = proxyMeta.get(node)
 	var observers = meta.observers

@@ -17,8 +17,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		this._text = ''
 		//this.trace = ''
 		//this.traceMap = []//[]
-		this.traceLines = []
+		this.traceLines = [0]
 		this.ann.length = 0
+		this.$fastTextWritten = 0
 		this.$fastTextAnnotate = true
 		this.scope = Object.create(this.defaultScope)
 
@@ -34,7 +35,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(statement.above) this.fastText(statement.above, this.styles.Comment.above)
 			this[statement.type](statement, node)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
-			this.traceLines.push(statement)
+			this.traceLines.push(this.$fastTextWritten)
 			this.trace += '\n'
 		}
 
@@ -137,7 +138,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[statement.type](statement)
 			if(statement.side) this.fastText(statement.side, this.styles.Comment.side)
 			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
-			this.traceLines.push(statement)
+			this.traceLines.push(this.$fastTextWritten)
 			this.trace += '\n'
 			// support $
 			if(foldAfterFirst) this.$fastTextFontSize = 1, foldAfterFirst = false
@@ -212,7 +213,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(node.trail || i < elemslen){
 				this.fastText(',', commaStyle)
-				this.traceLines.push(elem)
+				this.traceLines.push(this.$fastTextWritten)
 				this.trace += ',\n'
 			}
 			if(elem && top){
@@ -323,9 +324,9 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 
 			if(node.trail || i < propslen){
-				this.traceLines.push(prop)
 				this.trace += ',\n'
 				this.fastText(',', commaStyle)
+				this.traceLines.push(this.$fastTextWritten)
 				//if(prop.inserted){
 				//	console.log("INSERTEZ")
 				//	this.$fastTextDelta++
@@ -381,7 +382,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var startx = turtle.sx, starty = turtle.wy
 
 		this.fastText('{', this.styles.Curly.ObjectExpression)
-		this.traceLines.push(node)
+		this.traceLines.push(this.$fastTextWritten)
 		this.trace += '{\n'
 		
 		var endx = turtle.wx, lineh = turtle.mh
@@ -397,7 +398,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[method.type](method)
 			if(method.side) this.fastText(method.side, this.styles.Comment.side)
 			else if(i < bodylen) this.fastText('\n', this.styles.Comment.side)
-			this.traceLines.push(method)
+			this.traceLines.push(this.$fastTextWritten)
 			this.trace += '\n'
 		}
         if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)

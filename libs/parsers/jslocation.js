@@ -19,6 +19,7 @@ pp.raise = function(pos, message) {
 	err.message = message
 	err.line = loc.line
 	err.column = loc.column
+	err.pos = pos
 	//err.pos = pos; 
 	//err.loc = loc; 
 	//err.raisedAt = this.pos

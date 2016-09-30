@@ -52,7 +52,7 @@ pp.toAssignable = function(node, isBinding) {
 			if (!isBinding) break
 
 		default:
-			//this.raise(node.start, "Assigning to rvalue")
+			this.raise(node.start, "Assigning to rvalue")
 		}
 	}
 	return node

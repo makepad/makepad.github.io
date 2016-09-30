@@ -90,6 +90,7 @@ module.exports = class Makepad extends require('base/app'){
 						path:pathNames[i],
 						data:results[i],
 						trace:'',
+						traceLines:null,
 						dirty:false,
 						processes:[],
 						parseErrors:[]
@@ -228,13 +229,12 @@ module.exports = class Makepad extends require('base/app'){
 			return  
 		} 
 
-		var process = this.store.wrap({
-			path:resource.path,
-			runtimeErrors:[]
-		})
-
+		var processList = this.store.processList
 		this.store.act("addProcess",store=>{
-			store.processList.push(process)
+			processList.push({
+				path:resource.path,
+				runtimeErrors:[]
+			})
 		})
 
 		var tabs = this.find('HomeProcess').parent 
@@ -242,7 +242,7 @@ module.exports = class Makepad extends require('base/app'){
 			name: 'Process' + resource.path, 
 			tabText: resource.path, 
 			resource: resource, 
-			process: process,
+			process: processList[processList.length - 1],
 			onCloseTab: function() { 
 				this.app.processTabTitles() 
 			}
