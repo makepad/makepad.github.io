@@ -526,6 +526,7 @@ module.exports = class View extends require('base/class'){
 
 		// lets set some globals
 		var todoUbo = todo.todoUbo
+		if(!todoUbo) return // init failed
 		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
 		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 

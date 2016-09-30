@@ -5,6 +5,7 @@ var painter = require('services/painter')
 module.exports = class extends require('base/drawapp'){ 
 	
 	prototype() { 
+		
 		this.props = { 
 			zoom: 1000., 
 			selStart: 0, 
@@ -205,7 +206,7 @@ module.exports = class extends require('base/drawapp'){
 			this.drawLine({sx: 0, sy: 100}) 
 			for(let i = 0; i < left.length; i++) { 
 				this.drawLine({ 
-					space: 0, 
+					space: 2, 
 					x: (i / left.length) * 2 - 1, 
 					y: left[i] 
 				}) 

@@ -425,8 +425,11 @@ function workerBoot(){
 		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
+		worker.clearAllTimers()
 		if(typeof module.exports === 'function'){
-			if(worker.appMain && worker.appMain.destroy) worker.appMain.destroy()
+			if(worker.appMain && worker.appMain.destroy){
+				worker.appMain.destroy()
+			}
 			worker.appMain = new module.exports()
 		}
 	}
@@ -726,7 +729,8 @@ function timerLib(g){
 	}
 
 	g.setInterval = function(fn, time){
-		var id = localSetInterval(function(){
+		if(time === undefined)throw new Error("Provide timeout")
+		var id = _setInterval(function(){
 			if(worker.onError){
 				try{
 					fn()

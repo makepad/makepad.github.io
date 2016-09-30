@@ -9,7 +9,7 @@ class Code extends require('views/code'){
 		this.props = { 
 			resource:null,
 		} 
-	} 
+	}
 
 	onKeyS(e) { 
 		this.inputDirty = false
@@ -24,10 +24,11 @@ class Code extends require('views/code'){
 	
 	onParsed() { 
 		this.store.act('parseCode',store=>{
-			this.resource.dirty = this.inputDirty
-			this.resource.data = this.text 
-			this.resource.trace = this.trace 
-			this.resource.parseErrors.length = 0
+			var res = this.resource
+			res.dirty = this.inputDirty
+			res.data = this.text 
+			res.trace = this.trace 
+			res.parseErrors.length = 0
 		})
 	}
 	
@@ -39,9 +40,10 @@ class Code extends require('views/code'){
 
 	onParseError(e){
 		this.store.act('setParseError',store=>{
-			this.resource.dirty = true
-			this.resource.parseErrors.length = 0
-			this.resource.parseErrors.push(e)
+			var res = this.resource
+			res.dirty = true
+			res.parseErrors.length = 0
+			res.parseErrors.push(e)
 		})
 	}
 
@@ -81,6 +83,7 @@ class Errors extends require('views/tree'){
 		this.tools = {
 			Bg:{
 				borderRadius:8,
+				//color:'#777c'
 			},
 			Cursor:{
 				duration:0.,
@@ -106,24 +109,28 @@ class Errors extends require('views/tree'){
 	}
 
 	onResource(e){
-		if(!this.resource) return
+		if(!this.initialized || !this.resource) return
 		//this.redraw()
+		if(!this.store.anyChanges(e, 3, 'runtimeErrors', null)) return
+
 		// update the tree with data
 		// generate the data the tree uses
+		var old = this.data
 		var tree = {folder:[]}
-		var pe = this.resource.parseErrors
-		if(pe.length){
-			pe.forEach(e=>{
+		var parseErrors = this.resource.parseErrors
+		if(parseErrors.length){
+			parseErrors.forEach(e=>{
 				var error = {name:e.message,icon:'exclamation-circle',folder:[]}
 				tree.folder.push(error)
 			})
 		}
 		else{
-			var rt = []
-			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>rt.push(e)))
+			var runtimeErrors = []
+			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
 			
-			rt.forEach(e=>{
-				var error = {name:e.message,icon:'exclamation-triangle', folder:[]}
+			runtimeErrors.forEach((e,i)=>{
+				var oldf = old.folder && old.folder[i]
+				var error = {name:e.message + (e.count>1?':x'+e.count:''), open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 				tree.folder.push(error)
 				e.stack.forEach(m=>{
 					error.folder.push({
@@ -212,8 +219,6 @@ class Probes extends require('base/view'){
 		this.beginBackground(this.viewGeom)
 
 		this.drawButton(this.styles.playButton)
-
-		
 		//else {
 		//	// lets add a slider widget
 		//	var probes = this.probes
@@ -272,7 +277,6 @@ module.exports = class Source extends require('base/view'){
 				h: '28' 
 			}),
 			new this.Errors({
-				
 				name: 'Errors',
 				resource:this.resource,
 				x:'30',

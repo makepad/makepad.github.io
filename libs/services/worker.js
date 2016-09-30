@@ -5,24 +5,48 @@ var localIds = {}
 var requires = {}
 var pingTimeouts
 
-service.onMessage = function(msg){
-	if(msg.fn === 'toWorker'){
-		for(let key in requires){
-			requires[key].onMessage(msg.msg)
+var pileupQueue = []
+var pileupTimer
+
+function flushPileupQueue(){
+	for(let i = 0; i < pileupQueue.length; i++){
+		var msg = pileupQueue[i]
+		if(msg.fn === 'toWorker'){
+			for(let key in requires){
+				requires[key].onMessage(msg.msg)
+			}
+		}
+		else if(msg.fn === 'toParent'){
+			localIds[msg.localId].onMessage(msg.msg)
+		}
+		else if(msg.fn == 'onError'){
+			localIds[msg.localId].onError(msg.error)
+		}
+		else if(msg.fn == 'onProbe'){
+			localIds[msg.localId].onProbe(msg)
 		}
 	}
-	else if(msg.fn === 'toParent'){
-		localIds[msg.localId].onMessage(msg.msg)
-	}
-	else if(msg.fn === 'pong'){
+	pileupQueue.length = 0
+}
+
+
+service.onMessage = function(msg){
+
+	if(msg.fn === 'pong'){
 		localIds[msg.localId].onPong()
+		return
 	}
-	else if(msg.fn == 'onError'){
-		localIds[msg.localId].onError(msg.error)
+	
+	// check the pileupTimer
+	if(Date.now() - msg.pileupTime > 16){
+		if(pileupTimer) clearTimeout(pileupTimer)
+		pileupQueue.push(msg)
+		pileupTimer = setTimeout(flushPileupQueue, 16)
+		return
 	}
-	else if(msg.fn == 'onProbe'){
-		localIds[msg.localId].onProbe(msg)
-	}
+	if(pileupTimer) clearTimeout(pileupTimer), pileupTimer = undefined
+	pileupQueue.push(msg)
+	flushPileupQueue()
 }
 
 exports.onRequire = function(args, absParent, buildPath){

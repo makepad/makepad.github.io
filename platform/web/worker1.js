@@ -8,6 +8,7 @@ module.exports = class extends require('/platform/service'){
 
 	user_onProbe(msg){
 		msg.localId = this.worker.localId
+		msg.pileupTimer = Date.now()
 		this.parent.batchMessages.push({
 			$:'worker1',
 			msg:msg
@@ -20,6 +21,7 @@ module.exports = class extends require('/platform/service'){
 
 	user_onError(msg){
 		msg.localId = this.worker.localId
+		msg.pileupTimer = Date.now()
 		this.parent.batchMessages.push({
 			$:'worker1',
 			msg:msg
@@ -33,6 +35,7 @@ module.exports = class extends require('/platform/service'){
 	user_toParent(msg){
 		// slap on the local ID
 		msg.localId = this.worker.localId
+		msg.pileupTimer = Date.now()
 		this.parent.batchMessages.push({
 			$:'worker1',
 			msg:msg
@@ -48,7 +51,7 @@ module.exports = class extends require('/platform/service'){
 
 	user_toWorker(msg){
 		var worker = this.workers[msg.localId]
-
+		msg.pileupTimer = Date.now()
 		worker.batchMessages.push({
 			$:'worker1',
 			msg:msg

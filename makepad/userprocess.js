@@ -77,9 +77,50 @@ module.exports = class UserProcess extends require('views/draw'){
 			this.deps
 		)
 
+		function equals(a,b){
+			if(a && a.__proxymeta__) a = a.__proxymeta__.object
+			if(b && b.__proxymeta__) b = b.__proxymeta__.object
+			if(Array.isArray(a) && Array.isArray(b)){
+				if(a.length !== b.length) return false
+				for(let i = a.length - 1; i >=0; --i){
+					if(!equals(a[i], b[i])) return false
+				}
+				return true
+			}
+			if(typeof a === 'object' && typeof b === 'object'){
+				var ak = Object.keys(a), bk = Object.keys(b)
+				if(ak.length !== bk.length) return false
+				for(let i = ak.length - 1; i >=0; --i){
+					let k = ak[i]
+					if(k !== bk[i]) return false
+					if(!equals(a[k], b[k])) return false
+				}
+				return true
+			}
+			return a === b
+		}
+
 		this.worker.onError = e => {
 			// we haz error, update the process
 			this.store.act("addRuntimeError",store=>{
+				var rt = this.process.runtimeErrors
+				// lets find a duplicate entry
+				for(let i = rt.length-1; i >=0; i--){
+					var r = rt[i]
+					if(r.file == e.file && r.line == e.line && r.column == e.column && r.message == e.message && equals(r.stack, e.stack)){
+						r.count++
+						return
+					}
+				}
+				if(rt.length>1){
+					if(rt.length<=2){
+						this.process.runtimeErrors.push({
+							message:'Too many errors', stack:[]
+						})
+					}
+					return
+				}
+				e.count = 1
 				this.process.runtimeErrors.push(e)
 			})
 		}

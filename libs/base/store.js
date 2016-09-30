@@ -300,6 +300,69 @@ class Store extends require('base/class'){
 		return meta.object
 	}
 
+	anyChanges(obs, level, ...query){
+		if(level !== obs.level) return
+		let ret = []
+		let changes = obs.changes
+		let q = query[query.length - 1]
+		for(let i = changes.length-1; i >=0 ; --i){
+			var change = changes[i]
+			let p = change.key
+			if(!(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p)){
+				continue
+			}
+			// lets walk up the parent chain whilst matching query
+			var parents = change.$meta.parents
+			for(var j = query.length - 2; j>=0 ;--j){
+				q = query[j]
+				let nextParents = null
+				for(p in parents){
+					if(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p){
+						nextParents = parents[p].parents
+						break
+					}
+				}
+				if(!nextParents) break
+				parents = nextParents
+			}
+			if(j>=0){//matched
+				return change
+			}
+		}
+	}
+
+	allChanges(obs, level, ...query){
+		if(level !== obs.level) return
+		let ret = []
+		let changes = obs.changes
+		let q = query[query.length - 1]
+		for(let i = 0; i < changes.length; ++i){
+			let change = changes[i]
+			let p = change.key
+			if(!(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p)){
+				continue
+			}
+			// lets walk up the parent chain whilst matching query
+			let parents = change.$meta.parents
+			for(var j = query.length - 2; j>=0 ;j--){
+				q = query[j]
+				let nextParents = null
+				for(p in parents){
+					if(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p){
+						nextParents = parents[p].parents
+						break
+					}
+				}
+				if(!nextParents) break
+				parents = nextParents
+			}
+			if(j>=0){//matched
+				ret.push(change)
+			}
+		}
+		return ret
+	}
+
 	observe(object, observer/*, parenting*/){
 		var meta = object.__proxymeta__
 		if(!meta) throw new Error("Object is not observable. use store.wrap() or add it to the store and reference it from the store")
@@ -327,72 +390,6 @@ class Store extends require('base/class'){
 		}
 	}
 }
-
-
-class Observation{
-	constructor(name, level, changes){
-		this.name = name
-		this.level = level
-		this.changes = changes
-	}
-	
-	anyChanges(level, ...query){
-		if(level !== this.level) return
-		let ret = []
-		let changes = this.changes
-		let key = query[query.length - 1]
-		for(let i = changes.length-1; i >=0 ; --i){
-			var change = changes[i]
-			if(change.key !== key) continue
-			// lets walk up the parent chain whilst matching query
-			var parents = change.$meta.parents
-			for(var j = query.length - 2; j>=0 ;--j){
-				let q = query[j]
-				let nextParents = null
-				for(let pkey in parents){
-					if(q === null || q.constructor === RegExp && pkey.match(q) || q === pkey){
-						nextParents = parents[pkey].parents
-						break
-					}
-				}
-				if(!nextParents) break
-				parents = nextParents
-			}
-			if(j>=0){//matched
-				return change
-			}
-		}
-	}
-
-	allChanges(level, ...query){
-		if(level !== this.level) return
-		let ret = []
-		let changes = this.changes
-		let key = query[query.length - 1]
-		for(let i = 0; i < changes.length; ++i){
-			let change = changes[i]
-			if(change.key !== key) continue
-			// lets walk up the parent chain whilst matching query
-			let parents = change.$meta.parents
-			for(var j = query.length - 2; j>=0 ;j--){
-				let q = query[j]
-				let nextParents = null
-				for(let pkey in parents){
-					if(q === null || q.constructor === RegExp && pkey.match(q) || q === pkey){
-						nextParents = parents[pkey].parents
-						break
-					}
-				}
-				if(!nextParents) break
-				parents = nextParents
-			}
-			if(j>=0){//matched
-				ret.push(change)
-			}
-		}
-		return ret
-	}
-}
 // process all changes
 
 function processChanges(name, changes, store, maxLevel){
@@ -410,7 +407,7 @@ function processChanges(name, changes, store, maxLevel){
 				var observer = observers[j]
 				var event = eventMap.get(observer)
 				if(event) event.changes.push(change)
-				else eventMap.set(observer, new Observation(name, -1, [change]))
+				else eventMap.set(observer, {name:name, level:-1, changes:[change]})
 			}
 		}
 		scanParents(name, change.$object, change, 0, eventMap, maxLevel)
@@ -431,7 +428,7 @@ function scanParents(name, node, change, level, eventMap, maxLevel){
 		var observer = observers[j]
 		var event = eventMap.get(observer)
 		if(event) event.changes.push(change)
-		else eventMap.set(observer,new Observation(name, level, [change]))
+		else eventMap.set(observer,{name:name, level:level, changes:[change]})
 	}
 
 	var parents = meta.parents
