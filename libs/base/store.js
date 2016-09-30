@@ -460,6 +460,10 @@ class Store extends require('base/class'){
 			if(!(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p)){
 				continue
 			}
+			if(query.length === 1){
+				return change
+				continue
+			}
 			// lets walk up the parent chain whilst matching query
 			var parents = change.$meta.parents
 			for(var j = query.length - 2; j>=0 ;--j){
@@ -492,9 +496,13 @@ class Store extends require('base/class'){
 			if(!(q === null || typeof q === 'object' && (Array.isArray(q) && q.indexOf(p) !== -1 || q.constructor === RegExp && p.match(q)) || q === p)){
 				continue
 			}
+			if(query.length === 1){
+				ret.push(change)
+				continue
+			}
 			// lets walk up the parent chain whilst matching query
 			let parents = change.$meta.parents
-			for(var j = query.length - 2; j>=0 ;j--){
+			for(j = query.length - 2; j>=0 ;j--){
 				q = query[j]
 				let nextParents = null
 				for(let k = parents.length -1; k>=0; k-=2){

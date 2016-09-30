@@ -26,11 +26,11 @@ module.exports = class Makepad extends require('base/app'){
 		this.store.observe(this.store.resourceMap, e=>{
 			var store = this.store
 			// we wanna know if dirty on a resource is flipped
-			if(this.store.anyChanges(e, 3, null, 'dirty')){
+			if(this.store.anyChanges(e, 1, 'dirty')){
 				this.processTabTitles()
 			}
 			// data or trace modified
-			var source = this.store.anyChanges(e, 1, null, ['data','trace'])
+			var source = this.store.anyChanges(e, 1, ['data','trace'])
 			if(source){
 				var resource = source.object
 				// find all processes

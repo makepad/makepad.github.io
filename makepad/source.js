@@ -21,7 +21,24 @@ class Code extends require('views/code'){
 			this.resource.dirty = false
 		})
 	} 
-	
+
+	onClearErrors(){
+		this.errors = null
+	}
+
+	setErrors(errors){
+		// how can we easily 'wait' with showing these errors
+		if(errors.length){
+			this.errors = undefined
+			if(this.errorTimeout) clearTimeout(this.errorTimeout)
+			this.errorTimeout = setTimeout(e=>{
+				this.errorTimeout = undefined
+				if(this.errors !== null) this.errors = errors
+			},500)
+		}
+		else this.errors = errors
+	}
+
 	onParsed() {
 		this.store.act('parseCode',store=>{
 			var res = this.resource
@@ -178,8 +195,7 @@ class Errors extends require('views/tree'){
 			})
 		}
 
-		this.parent.find('Code').errors = errors
-		// if we didnt have a selection lets select the top error and make sure the editor fires
+		this.parent.find('Code').setErrors(errors)
 
 		this.data = tree
 	}

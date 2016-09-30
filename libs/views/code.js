@@ -68,7 +68,7 @@ module.exports = class Code extends require('views/edit'){
 			ErrorMarker: require('tools/codemarker').extend({ 
 				bgColor: '#522', 
 				opMargin: 1, 
-				duration: 0.15, 
+				duration: 0., 
 				tween: 2, 
 				ease: [0, 10, 0, 0], 
 				closed: 0, 
@@ -584,6 +584,7 @@ module.exports = class Code extends require('views/edit'){
 	parseText() { 
 		this.ast = undefined 
 		this.parseError = undefined 
+		this.onClearErrors()
 		try{ 
 			this.ast = parser.parse(this._text, { 
 				storeComments: [] 
@@ -782,7 +783,7 @@ module.exports = class Code extends require('views/edit'){
 		} 
 
 		var errors = this.errors
-		if(errors !== undefined){
+		if(errors){
 
 			for(let i = errors.length - 1; i >= 0; --i){
 				var error = errors[i]
