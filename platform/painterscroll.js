@@ -83,34 +83,39 @@ module.exports = function painterScroll(proto){
 		// mousedown on a scrollbar
 		if(f.pickId === todo.yScrollId){
 			// the position of the scrollbar
-			var ysize = todo.yView
-			var delta = ((f.y - todo.ysScroll) / todo.yView) * todo.yTotal - todo.yScroll
-			if(delta < 0){
+			var vy = todo.yView / todo.yTotal
+			var ry = Math.max(todo.scrollMinSize/todo.yView, vy)
+			var pn = (1.-ry) * (todo.yScroll / todo.yTotal) / (1.-vy)
+			var px = pn * todo.yView + todo.ysScroll
+			var wy = ry * todo.yView
+
+			if(f.y < py){
 				todo.yScrollTo = Math.max(0,todo.yScroll - todo.yView)
 				this.isScrollBarMove = 0
 			}
-			else if(delta > ysize){
+			else if(f.y > py+wy){
 				todo.yScrollTo = Math.min(Math.max(0.,todo.yTotal - todo.yView),todo.yScroll + todo.yView)
 				this.isScrollBarMove = 0
 			}
 			else this.isScrollBarMove = 1
-			this.scrollDelta = delta
+			this.scrollDelta = f.y - py
 		}
 		else if(f.pickId === todo.xScrollId){
-			// the position of the scrollbar
-			var ysize = todo.xView
-			var delta = ((f.x - todo.xsScroll) / todo.xView) * todo.xTotal - todo.xScroll
-
-			if(delta < 0){
+			var vx = todo.xView / todo.xTotal
+			var rx = Math.max(todo.scrollMinSize/todo.xView, vx)
+			var pn = (1.-rx) * (todo.xScroll / todo.xTotal) / (1.-vx)
+			var px = pn * todo.xView + todo.xsScroll
+			var wx = rx * todo.xView
+			if(f.x < px){
 				todo.xScrollTo = Math.max(0,todo.xScroll - todo.xView)
 				this.isScrollBarMove = 0
 			}
-			else if(delta > ysize){
+			else if(f.x > px+wx){
 				todo.xScrollTo = Math.min(Math.max(0.,todo.xTotal - todo.xView),todo.xScroll + todo.xView)
 				this.isScrollBarMove = 0
 			}
 			else this.isScrollBarMove = 2
-			this.scrollDelta = delta
+			this.scrollDelta = f.x - px
 		}
 		else this.isScrollBarMove = 0
 
@@ -131,12 +136,20 @@ module.exports = function painterScroll(proto){
 		if(!todo) return
 
 		if(this.isScrollBarMove === 1){
-			var ys = ((f.y - todo.ysScroll) / todo.yView)*todo.yTotal - this.scrollDelta
+			var vy = todo.yView / todo.yTotal
+			var rx = Math.max(todo.scrollMinSize/todo.yView, vy)
+			var ys = ((1-vy) * ((f.y - todo.ysScroll - this.scrollDelta)/todo.yView)/(1-ry))*todo.yTotal
 			this.doScroll(todo, todo.xScroll, ys)
 			return
 		}
 		if(this.isScrollBarMove === 2){
-			var xs =  ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal -this.scrollDelta
+			// ok lets map the mouse cursor position without delta
+			// to the scroll area
+			var vx = todo.xView / todo.xTotal
+			var rx = Math.max(todo.scrollMinSize/todo.xView, vx)
+			var xs = ((1-vx) * ((f.x - todo.xsScroll - this.scrollDelta)/todo.xView)/(1-rx))*todo.xTotal
+			// alright we clicked down somewhere, now we need to 
+			//var xs =  ((f.x - todo.xsScroll) / todo.xView)*todo.xTotal -this.scrollDelta
 			this.doScroll(todo,xs, todo.yScroll)
 			return
 		}

@@ -62,19 +62,24 @@ module.exports = class View extends require('base/class'){
 							vertical:{noTween:1, value:0.},
 							bgColor:'#000',
 							handleColor:'#111',
-							borderRadius:4
+							borderRadius:4,
+							scrollMinSize:{noTween:1, value:30}
 						},
 						vertexStyle:function(){$ // bypass the worker roundtrip :)
 							var pos = vec2()
 							if(this.vertical < .5){
 								this.y += .5///this.pixelRatio
-								this.handleSize = this.viewSpace.x / this.viewSpace.z
-								this.handlePos = this.viewScroll.x / this.viewSpace.z
+								var rx = this.viewSpace.x / this.viewSpace.z
+								var vx = max(this.scrollMinSize/this.viewSpace.x, rx)
+								this.handleSize = vx
+								this.handlePos =  (1.-vx) * (this.viewScroll.x / this.viewSpace.z) / (1.-rx)
 							}
 							else{
 								this.x += .5///this.pixelRatio
-								this.handleSize = this.viewSpace.y / this.viewSpace.w
-								this.handlePos = this.viewScroll.y / this.viewSpace.w
+								var vy = this.viewSpace.y / this.viewSpace.w
+								var ry =  max(this.scrollMinSize/this.viewSpace.y, vy)
+								this.handleSize = vy
+								this.handlePos = (1.-vy) * (this.viewScroll.y / this.viewSpace.w) / (1.-ry)
 							}
 						},
 						pixelStyle:function(){},
@@ -184,6 +189,7 @@ module.exports = class View extends require('base/class'){
 		this._onVisible = 8
 
 		this.$scrollBarSize = 8
+		this.$scrollBarMinSize = 30
 		this.$scrollBarRadius = 2
 		this.$scrollPickIds = 65000
 	
@@ -654,7 +660,7 @@ module.exports = class View extends require('base/class'){
 		this.todo.scrollToSpeed = 0.5
 		this.todo.xsScroll = this.$xAbs + painter.x
 		this.todo.ysScroll = this.$yAbs + painter.y
-
+		this.todo.scrollMinSize = this.$scrollBarMinSize
 		// clear out unused stamps
 		for(let i = this.$pickId+1;this.$stamps[i];i++){
 			this.$stamps[i] = null
@@ -666,6 +672,7 @@ module.exports = class View extends require('base/class'){
 				this.$xScroll = this.drawScrollBar({
 					moveScroll:0,
 					vertical:false,
+					scrollMinSize:this.$scrollBarMinSize,
 					x:0,
 					y:this.$hDraw - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
 					w:tw,
@@ -685,6 +692,7 @@ module.exports = class View extends require('base/class'){
 				this.$yScroll = this.drawScrollBar({
 					moveScroll:0,
 					vertical:true,
+					scrollMinSize:this.$scrollBarMinSize,
 					x:this.$wDraw - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
 					y:0,
 					w:this.$scrollBarSize,// / painter.pixelRatio,

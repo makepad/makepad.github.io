@@ -907,7 +907,7 @@ module.exports = class Code extends require('views/edit'){
 			// toggle all inner nodes
 			var redraw = false 
 			if(f.ctrl || f.alt) { 
-				base.onFingerDown.call(this, f) 
+				super.onFingerDown(f) 
 				if(node.type === 'BlockStatement') { 
 					toggleASTNode(node, 13) 
 					toggleBlockStatement(node) 

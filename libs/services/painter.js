@@ -223,6 +223,7 @@ painter.Todo = class Todo extends require('base/class'){
 			// start coordinates of the scrollbars
 			xsScroll:this.xsScroll,
 			ysScroll:this.ysScroll,
+			scrollMinSize:this.scrollMinSize,
 			// momentum
 			scrollMomentum:this.scrollMomentum,
 			scrollToSpeed:this.scrollToSpeed,
