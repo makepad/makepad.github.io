@@ -86,7 +86,7 @@ module.exports = function painterScroll(proto){
 			var vy = todo.yView / todo.yTotal
 			var ry = Math.max(todo.scrollMinSize/todo.yView, vy)
 			var pn = (1.-ry) * (todo.yScroll / todo.yTotal) / (1.-vy)
-			var px = pn * todo.yView + todo.ysScroll
+			var py = pn * todo.yView + todo.ysScroll
 			var wy = ry * todo.yView
 
 			if(f.y < py){
