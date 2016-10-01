@@ -1,6 +1,6 @@
 {
 	"project":"Makepad",
-	"open":["/examples/sample1.wav"],
+	"open":["/examples/tiny.js","/examples/sample1.wav"],
 	"run":["/examples/tiny.js"],
 	"name":"",
 	"folder":[

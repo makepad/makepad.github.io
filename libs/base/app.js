@@ -81,11 +81,11 @@ module.exports = class App extends require('base/view'){
 
 		app._frameId = 0
 
-		function fingerMessage(event, todoId, pickId, msg, isOut){
+		function fingerMessage(event, todoId, pickId, orig, isOut){
 			var view = viewTodoMap[todoId]
 			if(!view) return
 			var xyLocal = [0,0,0,0]
-
+			let msg = Object.create(orig)
 			msg.x -= painter.x
 			msg.y -= painter.y
 			vec4.transformMat4(xyLocal, [msg.x, msg.y, 0, 1.], view.viewInverse)
@@ -101,13 +101,14 @@ module.exports = class App extends require('base/view'){
 			var stamp = view.$stamps[pickId]
 
 			if(stamp){
-				msg.x = msg.xLocal - stamp.$x
-				msg.y = msg.yLocal - stamp.$y
+				let msg2 = Object.create(msg)
+				msg2.x = msg.xLocal - stamp.$x
+				msg2.y = msg.yLocal - stamp.$y
 				if(stamp.moveScroll){
-					msg.x += view.todo.xScroll || 0
-					msg.y += view.todo.yScroll || 0
+					msg2.x += view.todo.xScroll || 0
+					msg2.y += view.todo.yScroll || 0
 				}
-				if(stamp[event]) stamp[event](msg)
+				if(stamp[event]) stamp[event](msg2)
 			}
 			if(isOut) return
 			// set the mousecursor

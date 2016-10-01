@@ -112,7 +112,7 @@ module.exports = class extends require('/platform/service'){
 	}
 
 	storeNewFinger(f){
-			// find the hole in fingers
+		// find the hole in fingers
 		for(var digit in this.fingerMap){
 			if(!this.fingerMap[digit]) break
 		}
@@ -128,6 +128,19 @@ module.exports = class extends require('/platform/service'){
 	// 
 	// 
 
+	messageFinger(f, fn, pick){
+		let fm = {}
+		for(let key in f) fm[key] = f[key]
+		fm.fn = fn
+		fm.pileupTime = Date.now()
+		if(pick){
+			fm.pickId = pick.pickId
+			fm.todoId = pick.todoId
+			fm.workerId = pick.workerId
+		}
+		return fm
+	}
+
 	onFingerDown(fingers){
 		if(!this.worker.services.painter1) return
 		// pick all fingers in set
@@ -136,25 +149,23 @@ module.exports = class extends require('/platform/service'){
 			var f = fingers[i]
 
 			this.storeNewFinger(f)
-			var dt = Date.now()
 
 			// post it twice, first is the immediate message
-			f.fn = 'onFingerDownNow'
-			this.postMessage(f)
+			let fm = this.messageFinger(f, 'onFingerDownNow')
+			this.postMessage(fm)
 
 			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
 				if(!pick) return
-				// set the ID
-				f.fn = 'onFingerDown'
-				// store startx for delta
+
+				f.dx = 0
+				f.dy = 0
+				f.move = 0
 				f.pickId = pick.pickId
 				f.todoId = pick.todoId
 				f.workerId = pick.workerId
 				f.xDown = f.x
 				f.yDown = f.y
-				f.dx = 0
-				f.dy = 0
-				f.move = 0
+				// compute tapcount
 				var oldf = this.tapMap[f.digit]
 				if(oldf){
 					var dx = f.x - oldf.x, dy = f.y - oldf.y
@@ -164,17 +175,11 @@ module.exports = class extends require('/platform/service'){
 				}
 				else f.tapCount = 0
 
-				this.worker.services.painter1.onFingerDown(f)
-
+				let fm = this.messageFinger(f, 'onFingerDown')
+				this.worker.services.painter1.onFingerDown(fm)
 				// post the message
-				this.postMessage(f)
-				if(f.queue){
-					for(let i = 0; i < f.queue.length; i++){
-						var q = f.queue[i]
-						q.pick = pick
-						this.postMessage(q)
-					}
-				}
+				this.postMessage(fm)
+
 			}.bind(this, f))
 		}
 	}
@@ -190,44 +195,32 @@ module.exports = class extends require('/platform/service'){
 				console.log('Move finger without matching finger', f)
 				continue
 			}
-			f.xDown = oldf.xDown
-			f.yDown = oldf.yDown
+
+			// keep track on stored finger
 			oldf.dx = f.dx = isNaN(oldf.xLast)?0:oldf.xLast - f.x
 			oldf.dy = f.dy = isNaN(oldf.yLast)?0:oldf.yLast - f.y
 			oldf.move++
 			oldf.xLast = f.x
 			oldf.yLast = f.y
-			f.fn = 'onFingerMove'
+
+			// write to f
+			f.xDown = oldf.xDown
+			f.yDown = oldf.yDown
 			f.digit = oldf.digit
-			f.workerId = oldf.workerId
-			f.todoId = oldf.todoId
-			f.pickId = oldf.pickId
 			f.tapCount = oldf.tapCount
 
-			this.worker.services.painter1.onFingerMove(f)
+			var fm = this.messageFinger(f, 'onFingerMove', oldf)
+			this.worker.services.painter1.onFingerMove(fm)
 
-			if(!oldf.todoId){
-				var queue = oldf.queue || (oldf.queue = [])
-				queue.push(f)
+			if(!this.dragMap[f.digit]){
+				this.batchMessage(fm)
 			}
 			else{
-				// lets check if we are dragging this digit
-				if(this.dragMap[f.digit]){
-					this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
-						if(!pick) return
-						this.postMessage(f)
-						f.fn = 'onFingerDrag'
-						f.todoId = pick.todoId,
-						f.pickId = pick.pickId
-						f.workerId = pick.workerId
-						f.pileupTime = Date.now()
-						this.postMessage(f)
-					}.bind(this,f))
-				}
-				else{
-					f.pileupTime = Date.now()
-					this.batchMessage(f)
-				}
+				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
+					if(!pick) return
+					this.postMessage(this.messageFinger(f, 'onFingerMove'))
+					this.postMessage(this.messageFinger(f, 'onFingerDrag', pick))
+				}.bind(this,f))
 			}
 		}
 		this.worker.onAfterEntry()
@@ -243,71 +236,53 @@ module.exports = class extends require('/platform/service'){
 
 			// copy over the startx/y
 			if(!oldf){
-				//console.log('End finger without matching finger', p)
 				continue
 			}
 
 			f.xDown = oldf.xDown
 			f.yDown = oldf.yDown
-			f.fn = 'onFingerUpNow'
 			f.digit = oldf.digit
+			f.dx = oldf.dx
+			f.dy = oldf.dy
 			f.pickId = oldf.pickId
 			f.todoId = oldf.todoId
 			f.workerId = oldf.workerId
+			var dx = f.xDown - f.x
+			var dy = f.yDown - f.y
+			var isTap = f.time - oldf.time < this.TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?this.TAP_DIST_TOUCH:this.TAP_DIST_MOUSE)
+			if(isTap) f.tapCount = oldf.tapCount + 1
+			else f.tapCount = 0
 
-			f.dx = oldf.dx
-			f.dy = oldf.dy
-			if(oldf.move === 1){
+			if(oldf.move === 1){ // fix the flick scroll
 				if(!f.dx) f.dx = (f.xDown - f.x)/3
 				if(!f.dy) f.dy = (f.yDown - f.y)/3
 			}
 
+			var fm = this.messageFinger(f, 'onFingerUpNow', oldf)
+			this.postMessage(fm)
+
+			// remove mappings
 			this.fingerMap[oldf.digit] = undefined
 			this.dragMap[oldf.digit] = undefined
 			// store it for tap counting
 			this.tapMap[oldf.digit] = f
-			var dx = f.xDown - f.x
-			var dy = f.yDown - f.y
-			var isTap = f.time - oldf.time < this.TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?this.TAP_DIST_TOUCH:this.TAP_DIST_MOUSE)
+			
+			this.worker.services.painter1.onFingerUp(fm)
 
-			if(isTap) f.tapCount = oldf.tapCount + 1
-			else f.tapCount = 0
-
-			this.worker.services.painter1.onFingerUp(f)
-
-			if(!oldf.todoId){
-				var queue = oldf.queue || (oldf.queue = [])
-				queue.push(f)
-			}
-			else{
-				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
-					f.fn = 'onFingerUp'
-
-					if(pick && f.workerId === pick.workerId &&
-						f.pickId === pick.pickId &&
-						f.todoId === pick.todoId){
-						f.samePick = true
-					}
-					else f.samePick = false
-					this.postMessage(f)
-				}.bind(this, f))
-			}
-
+			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
+				if(pick && f.workerId === pick.workerId &&
+					f.pickId === pick.pickId &&
+					f.todoId === pick.todoId){
+					f.samePick = true
+				}
+				else f.samePick = false
+				this.postMessage(this.messageFinger(f, 'onFingerUp', pick))
+			}.bind(this, f))
+		
 			return f.tapCount
 		}
 	}
 
-	cloneFinger(f, fn, pick){
-		var o = {}
-		for(let key in f){
-			o[key] = f[key]
-		}
-		o.fn = fn
-		o.pickId = pick.pickId
-		o.todoId = pick.todoId
-		o.workerId = pick.workerId
-		return o
-	}
 
 	onFingerHover(fingers){
 		if(!this.worker.services.painter1) return
@@ -320,20 +295,15 @@ module.exports = class extends require('/platform/service'){
 				var last = this.hoverMap[f.digit]
 				if(!last || last.pickId !== pick.pickId || last.todoId !== pick.todoId || last.workerId !== pick.workerId){
 					if(last){
-						this.batchMessage(this.cloneFinger(f,'onFingerOut',last))
+						this.batchMessage(this.messageFinger(f,'onFingerOut',last))
 					}
-					this.batchMessage(this.cloneFinger(f,'onFingerOver',pick))
+					this.batchMessage(this.messageFinger(f,'onFingerOver',pick))
 				}
 				this.hoverMap[f.digit] = pick
 
-				f.pickId = pick.pickId
-				f.todoId = pick.todoId
-				f.workerId = pick.workerId
-				f.fn = 'onFingerHover'
-				
-				this.worker.services.painter1.onFingerHover(f)
-				
-				this.batchMessage(f)
+				var fm = this.messageFinger(f, 'onFingerHover', pick)
+				this.worker.services.painter1.onFingerHover(fm)
+				this.batchMessage(fm)
 
 				//this.worker.onAfterEntry()
 			}.bind(this, f))
@@ -345,14 +315,8 @@ module.exports = class extends require('/platform/service'){
 		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 			var oldf = this.nearestFinger(f.x, f.y)
-
-			f.fn = 'onFingerForce'
 			f.digit = oldf.digit
-			f.pickId = oldf.pickId
-			f.todoId = oldf.todoId
-			f.workerId = oldf.workerId
-
-			this.postMessage(f)
+			this.postMessage(this.messageFinger(f,'onFingerForce',oldf))
 		}
 	}
 
@@ -362,13 +326,9 @@ module.exports = class extends require('/platform/service'){
 
 			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
 				if(!pick) return
-				f.pickId = pick.pickId
-				f.todoId = pick.todoId
-				f.workerId = pick.workerId
-				f.fn = 'onFingerWheel'
-				f.pileupTime = Date.now()
-				this.worker.services.painter1.onFingerWheel(f)
-				this.postMessage(f)
+				var fm = this.messageFinger(f, 'onFingerWheel', pick)
+				this.worker.services.painter1.onFingerWheel(fm)
+				this.postMessage(fm)
 			}.bind(this, f))
 		}
 	}
