@@ -137,7 +137,7 @@ module.exports = function painterScroll(proto){
 
 		if(this.isScrollBarMove === 1){
 			var vy = todo.yView / todo.yTotal
-			var rx = Math.max(todo.scrollMinSize/todo.yView, vy)
+			var ry = Math.max(todo.scrollMinSize/todo.yView, vy)
 			var ys = ((1-vy) * ((f.y - todo.ysScroll - this.scrollDelta)/todo.yView)/(1-ry))*todo.yTotal
 			this.doScroll(todo, todo.xScroll, ys)
 			return
