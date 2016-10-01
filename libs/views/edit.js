@@ -967,16 +967,9 @@ module.exports = class Edit extends require('base/view'){
 
 	onKeyDown(k){
 		// lets trigger an event
-		var name = k.name
-		if(!name) return console.error("Strange", k)
-		var prefix = ''
-		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
-		if(this[evname]){
-			if(!this[evname](k)){
-				this.$lastKeyPress = undefined				
-			}
+		if(super.onKeyDown(k)){
+			this.$lastKeyPress = undefined
 		}
-
 	}
 
 	// move the cursor into view when the keyboard opens on mobile

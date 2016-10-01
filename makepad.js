@@ -3,6 +3,7 @@ var Worker = require('services/worker')
 
 var Dock = require('views/dock') 
 var Source = require('./makepad/source') 
+var Wave = require('./makepad/wave')
 var FileTree = require('./makepad/filetree') 
 var HomeScreen = require('./makepad/homescreen') 
 var Settings = require('./makepad/settings') 
@@ -198,7 +199,20 @@ module.exports = class Makepad extends require('base/app'){
 		} 
 	} 
 	
-	addSourceTab(resource) { 
+	addSourceTab(resource){
+		var path = resource.path
+		var ext = path.slice(path.lastIndexOf('.')+1)
+		var type
+		var config
+		if(ext === 'js'){
+			type = Source
+			config = {}
+		}
+		if(ext === 'wav'){
+			type = Wave
+			config = {}
+		}
+
 		var old = this.find('Source' + resource.path) 
 		if(old) { 
 			var tabs = old.parent 
@@ -206,21 +220,19 @@ module.exports = class Makepad extends require('base/app'){
 			return  
 		} 
 		var tabs = this.find('HomeSource').parent 
-		var source = new Source({
+		var editor = new type(config,{
 			name: 'Source' + resource.path, 
 			tabText: resource.path, 
 			resource: resource, 
-			//text: resource.data, 
 			onCloseTab: function() {
 				this.app.processTabTitles()
 			} 
 		}) 
-		var idx = tabs.addNewChild(source)
+		var idx = tabs.addNewChild(editor)
 		tabs.selectTab(idx)
-		//source.setFocus()
-		this.processTabTitles()
-	} 
-	
+		this.processTabTitles()		
+	}
+
 	addProcessTab(resource) { 
 		var old = this.find('Process' + resource.path) 
 		if(old) { 

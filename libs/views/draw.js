@@ -4,10 +4,12 @@ module.exports = class Draw extends require('base/view'){
 		this.tools = {
 			Bg:require('tools/bg'),
 			Rect:require('tools/rect'),
+			Quad:require('tools/quad'),
 			Line:require('tools/line'),
 			Text:require('tools/text').extend({
-				wrapping:'word',
 				font:require('fonts/ubuntu_medium_256.font')
+			}),
+			Icon:require('tools/icon').extend({
 			})
 		}
 	}

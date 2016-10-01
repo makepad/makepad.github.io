@@ -748,6 +748,18 @@ module.exports = class View extends require('base/class'){
 		this.redraw()
 	}
 
+	onKeyDown(e){
+		var name = e.name
+		if(!name) return console.error("Strange", e)
+		var prefix = ''
+		var evname = 'onKey' + name.charAt(0).toUpperCase()+name.slice(1)
+		if(this[evname]){
+			if(!this[evname](e)){
+				return true
+			}
+		}
+	}
+
 	scrollSize(x2, y2, x1, y1){
 		var turtle = this.turtle
 		if(x2 > turtle.x2) turtle.x2 = x2
