@@ -57,7 +57,7 @@ var workerSrc =
 	workerBoot.toString() + ';workerBoot();\n' 
 
 
-root.createMainWorker = root.makeWorkerCreator(workerSrc, true)//root.hardwareConcurrency>=4?false:true)
+root.createMainWorker = root.makeWorkerCreator(workerSrc, false)//root.hardwareConcurrency>=4?false:true)
 root.createSubWorker = root.makeWorkerCreator(workerSrc, false)
 
 //

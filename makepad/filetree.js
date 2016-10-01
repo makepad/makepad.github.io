@@ -8,6 +8,7 @@ module.exports = class FileTree extends require('views/tree'){
 	onNodeSelect(node, path, e){
 		if(e.tapCount<1)return
 		// compute path for node
+
 		var p = '/'
 		for(let i = 0; i < path.length;i++){
 			if(i>0) p+= '/'
