@@ -57,7 +57,7 @@ var workerSrc =
 	workerBoot.toString() + ';workerBoot();\n' 
 
 
-root.createMainWorker = root.makeWorkerCreator(workerSrc, false)//root.hardwareConcurrency>=4?false:true)
+root.createMainWorker = root.makeWorkerCreator(workerSrc, true)//root.hardwareConcurrency>=4?false:true)
 root.createSubWorker = root.makeWorkerCreator(workerSrc, false)
 
 //
@@ -492,8 +492,7 @@ function workerRequire(absParent, worker, modules, args){
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent)
 		}
-		if(module.exports)
-
+		//if(module.exports)
 		return module.exports
 	}
 }
@@ -635,6 +634,7 @@ function createOnMessage(worker){
 //
 
 function buildPath(parent, path){
+	//if(!path || !path.lastIndexOf) return console.log(new Error("").stack)
 	var s = path.lastIndexOf('/')
 	var d = path.lastIndexOf('.')
 	if(d === -1 || d < s) path = path + '.js'

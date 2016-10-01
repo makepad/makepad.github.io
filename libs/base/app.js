@@ -12,7 +12,7 @@ module.worker.define$({
 	get:function(){
 		throw new Error()
 	},
-	set:console.dir.bind(console)
+	set:console.log.bind(console)
 	/*function(v){
 		if(!v) return console.log(v)
 		var meta = v.__proxymeta__

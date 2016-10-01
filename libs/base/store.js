@@ -56,9 +56,42 @@ class ProxyMap{
 	}
 }
 
+function defineObjectProperty(proto, key){
+	Object.defineProperty(proto, key, {
+		configurable:true,
+		get:function(){
+			var object =  this['0__unwrap__']
+			return proxyHandlerGet(object, key, object[key])
+		},
+		set:function(value){
+			var object =  this['0__unwrap__']
+			var old = object[key]
+			proxyHandlerSet(object, key, value, old)
+			object[key] = value
+		}
+	})
+}
+
+function defineArrayProperty(proto, i){
+	Object.defineProperty(proto, i, {
+		get:function(){
+			var array = this['0__unwrap__']
+			return proxyHandlerGet(array, i, array[i])
+		},
+		set:function(value){
+			var array = this['0__unwrap__']
+			var old = array[i]
+			proxyHandlerSet(array, i, value, old)
+			array[i] = value
+		}
+	})
+}
+
 if(ProxyFallback){
 	// dont use proxies
 	var protoKeyCount = 0
+
+
 	class ProxyObject{
 		constructor(object){
 			// helper property to quickly access underlying object
@@ -76,19 +109,7 @@ if(ProxyFallback){
 					if(protoKeyCount++ > 10000){
 						console.log("Performance warning, observed data should use non-unique keynames, or turn of ProxyFallback")
 					}
-					Object.defineProperty(proto, key, {
-						configurable:true,
-						get:function(){
-							var object =  this['0__unwrap__']
-							return proxyHandlerGet(object, key, object[key])
-						},
-						set:function(value){
-							var object =  this['0__unwrap__']
-							var old = object[key]
-							proxyHandlerSet(object, key, value, old)
-							object[key] = value
-						}
-					})
+					defineObjectProperty(proto, key)
 				}
 				// make it enumerable, seems to not be slow
 				var desc = Object.getOwnPropertyDescriptor(proto, key)
@@ -181,18 +202,7 @@ if(ProxyFallback){
 			var proto = ProxyArray.prototype
 			for(let i = len -1; i >=0 ; i--){
 				if(proto.__lookupGetter__(i))break
-				Object.defineProperty(proto, i, {
-					get:function(){
-						var array = this['0__unwrap__']
-						return proxyHandlerGet(array, i, array[i])
-					},
-					set:function(value){
-						var array = this['0__unwrap__']
-						var old = array[i]
-						proxyHandlerSet(array, i, value, old)
-						array[i] = value
-					}
-				})
+				defineArrayProperty(proto, i)
 			}
 		}
 
@@ -568,7 +578,7 @@ function processChanges(name, changes, store, debug){
 				var event = eventMap.get(observer)
 				if(event) event.changes.push(change)
 				else eventMap.set(observer, {name:name, level:-1, changes:[change]})
-				if(event && event.name !== name) console.log("WHATTHEHELL")
+				//if(event && event.name !== name) console.log("WHATTHEHELL")
 			}
 		}
 		scanParents(name, change.$object, change, 0, eventMap)

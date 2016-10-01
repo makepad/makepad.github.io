@@ -117,10 +117,11 @@ module.exports = class Makepad extends require('base/app'){
 
 			var resources = this.store.resourceMap
 			var proj = this.store.projectTree
+			var x = this.store.projectTree.open
 
 			if(proj.open) {
 				for(var i = 0; i < proj.open.length; i++) { 
-					var open = proj.open[i] 
+					var open = proj.open[i]
 					var resource = resources.get(storage.buildPath('/', open))
 					this.addSourceTab(resource, open) 
 				} 
