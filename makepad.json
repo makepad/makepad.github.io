@@ -1,6 +1,6 @@
 {
 	"project":"Makepad",
-	"open":["/examples/audio.js"],
+	"open":["/examples/sample1.wav"],
 	"run":["/examples/audio.js"],
 	"name":"",
 	"folder":[
@@ -106,7 +106,7 @@
 		]},
 		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
-			{"name":"audio.wav"},
+			{"name":"sample1.wav"},
 			{"name":"windtree.js"},
 			{"name":"lines.js"},
 			{"name":"buttons.js"},

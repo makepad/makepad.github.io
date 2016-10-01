@@ -12,7 +12,7 @@ module.exports = class Code extends require('views/edit'){
 		this.padding = [0, 0, 0, 4] 
 		this.$fastTextFontSize = 12 
 		this._onText |= 32 
-
+		this.serializeIndent = '\t'
 		this.props = {
 			errors:undefined
 		}
@@ -1010,21 +1010,25 @@ module.exports = class Code extends require('views/edit'){
 			var style = ann[i + 1] 
 			var dx = ann[i + 5] 
 			var sx = abs(dx) 
-			if(style.head > 0.) s += ' ' 
 			if(txt.indexOf('\n') !== -1) { 
+				var first = txt.charCodeAt(0)
+				if(first !== 10 && first !== 13 && style.head > 0.) s += ' '
 				var last = txt.charCodeAt(txt.length - 1) 
 				if(dx < 0 && (last === 10 || last === 13)) { 
 					sx = abs(ann[i + 11]) 
 				} 
-				var indent = Array(1 + Math.ceil((sx - padLeft) / (this.indentSize * fs))).join('\t') 
+				var indent = Array(1 + Math.ceil((sx - padLeft) / (this.indentSize * fs))).join(this.serializeIndent) 
 				var out = txt.split('\n') 
 				for(var j = 0; j < out.length - 1; j++) { 
 					s += out[j] + '\n' + indent 
 				} 
 				s += out[j] 
 			}
-			else s += txt 
-			if(style.tail > 0.) s += ' ' 
+			else{
+				if(style.head > 0.) s += ' ' 
+				s += txt 
+				if(style.tail > 0.) s += ' ' 
+			}
 		} 
 		return s 
 	} 
