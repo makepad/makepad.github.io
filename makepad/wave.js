@@ -121,27 +121,49 @@ module.exports = class Wave extends require('views/draw'){
 		if(!e.ctrl && !e.meta && !e.alt) return
 		// save it
 		this.save()
+		return true
 	}
 
 	onKeyZ(e){ // undo
 		if(!e.ctrl && !e.meta && !e.alt) return
 		this.undo()
+		return true
 	}
 
 	onKeyY(e){ // redo
 		if(!e.ctrl && !e.meta && !e.alt) return
 		this.redo()
+		return true
 	}
 
-	save(){
+	onKeyA(e){
+		if(!e.ctrl && !e.meta && !e.alt) return
+		this.selStart = 0
+		this.selEnd = this.samples
+		this.redraw()
+		return true
+	}
+
+	onKeyX(e){
+		if(!e.ctrl && !e.meta && !e.alt) return
+		this.cut()
+		return true
+	}
+
+	save(toStorage){
 		// flatten
 		if(this.recording.length>1){
 			editWave(this.samples, sam=>sam, true)
 		}
 		//write it
 		var wavout = wav.serialize16(this.recording[0])
+
+		this.store.act('changeWave', store=>{
+			this.resource.data = wavout
+		})
+
 		// save it
-		storage.save(this.resource.path, wavout)
+		if(toStorage) storage.save(this.resource.path, wavout)
 	}
 
 	undo(){
@@ -159,6 +181,7 @@ module.exports = class Wave extends require('views/draw'){
 				this.resource.dirty = false
 			})
 		}
+		this.onWaveChange()
 	}
 
 	redo(){
@@ -171,6 +194,7 @@ module.exports = class Wave extends require('views/draw'){
 		this.samples = sam.samples
 		this.recording = sam.recording
 		this.redraw()
+		this.onWaveChange()
 	}
 
 	cut(){
@@ -180,6 +204,8 @@ module.exports = class Wave extends require('views/draw'){
 				return sample
 			}
 		})
+		this.onWaveChange()
+
 	}
 
 	fade(){
@@ -191,6 +217,8 @@ module.exports = class Wave extends require('views/draw'){
 			} 
 			return sample
 		})
+		this.onWaveChange()
+
 	}
 
 	rec(){
@@ -219,6 +247,10 @@ module.exports = class Wave extends require('views/draw'){
 		}) 
 		this.redraw() 
 	}	
+
+	onWaveChange(){
+		this.save()
+	}
 
 	editWave(newSize, cb, noUndo){
 		this.store.act('editWave',store=>{

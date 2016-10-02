@@ -484,10 +484,11 @@ function workerRequire(absParent, worker, modules, args){
 		}
 		var absPath = buildPath(absParent, path)
 		var module = modules[absPath]
-		if(!module)console.log(module, absPath)
-		module.deps[absParent] = modules[absParent]
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
+
+		module.deps[absParent] = modules[absParent]
+
 		if(!module.exports){
 			module.exports = {}
 			if(!module.factory) throw new Error("Cannot require, no factory "+absPath+" from "+absParent)

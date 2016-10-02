@@ -83,6 +83,13 @@ module.exports=class Tabs extends require('base/view'){
 		}
 	}
 
+	onKeyDown(e){
+		if(!e.meta || e.name.indexOf('num') !== 0) return
+		var tabidx = parseInt(e.name.slice(3)) - 1
+		this.selectTab(tabidx)
+		return true
+	}
+
 	onIsFolded(){
 		this.onIsBottom()
 	}

@@ -187,34 +187,36 @@ module.exports = class App extends require('base/view'){
 			fingerMessage('onFingerWheel', msg.todoId, msg.pickId, msg)
 		}
 
+		function keyboardMessage(name, msg){
+			var iter = app.focusView
+			while(iter){
+				if(iter[name] && iter[name](msg)) break
+				iter = iter.parent
+			}
+		}
+
 		keyboard.onKeyDown = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyDown) focus.onKeyDown(msg)
+			keyboardMessage('onKeyDown', msg)
 		}
 
 		keyboard.onKeyUp = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyUp) focus.onKeyUp(msg)
+			keyboardMessage('onKeyUp', msg)
 		}
 
 		keyboard.onKeyPress = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyPress) focus.onKeyPress(msg)
+			keyboardMessage('onKeyPress', msg)
 		}
 
 		keyboard.onKeyPaste = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyPaste) focus.onKeyPaste(msg)
+			keyboardMessage('onKeyPaste', msg)
 		}
 
 		keyboard.onKeyboardOpen = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyboardOpen) focus.onKeyboardOpen(msg)
+			keyboardMessage('onKeyboardOpen', msg)
 		}
 
 		keyboard.onKeyboardClose = function(msg){
-			var focus = app.focusView
-			if(focus && focus.onKeyboardClose) focus.onKeyboardClose(msg)
+			keyboardMessage('onKeyboardClose', msg)
 		}
 
 		var appBlur

@@ -32,7 +32,7 @@ module.exports = class extends require('base/drawapp'){
 		this.playFlow = new audio.Flow({
 			gain1: {
 				to: 'output',
-				gain: 0.1
+				gain: 0.6
 			},
 			buffer1: {
 				to: 'gain1',

@@ -968,6 +968,7 @@ module.exports = class Edit extends require('base/view'){
 	onKeyDown(k){
 		// lets trigger an event
 		if(super.onKeyDown(k)){
+			return true
 			this.$lastKeyPress = undefined
 		}
 	}
@@ -988,6 +989,7 @@ module.exports = class Edit extends require('base/view'){
 		this.cs.insertText(k.text)
 		this.cs.moveDelta(k.text.length)
 		this.cs.invalidateMax()
+		return true
 	}
 	
 	onKeyPress(k){
@@ -1009,6 +1011,7 @@ module.exports = class Edit extends require('base/view'){
 		this.cs.insertText(out)
 		this.cs.moveDelta(1)
 		this.cs.invalidateMax()
+		return true
 	}
 
 	//
