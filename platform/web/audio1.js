@@ -69,13 +69,13 @@ module.exports = class extends require('/platform/service'){
 		var nodes = flow.nodes = {}
 		var flowConfig = flow.config
 		for(let name in flowConfig){
-			var nodeConfig = flowConfig[name]
+			var conf = flowConfig[name]
 			// overlay config vars
 			var nodeOverlay = overlay[name]
 			if(nodeOverlay){
-				nodeConfig = Object.create(nodeConfig)
+				conf = Object.create(conf)
 				for(let key in nodeOverlay){
-					nodeConfig[key] = nodeOverlay[key]
+					conf[key] = nodeOverlay[key]
 				}
 			}
 			// rip off the number of a node name
@@ -88,18 +88,18 @@ module.exports = class extends require('/platform/service'){
 			var node
 
 			if(type === 'gain'){
-				node = {config:nodeConfig, type:'gain', audioNode:this.context.createGain()}
+				node = {config:conf, type:'gain', audioNode:this.context.createGain()}
 			}
 			else if(type === 'recorder'){
-				node = {config:nodeConfig, type:'recorder', audioNode:this.context.createScriptProcessor(
-					nodeConfig.chunk || 2048,
-					nodeConfig.channels || 2,
-					nodeConfig.channels || 2
+				node = {config:conf, type:'recorder', audioNode:this.context.createScriptProcessor(
+					conf.chunk || 2048,
+					conf.channels || 2,
+					conf.channels || 2
 				)}
 				node.audioNode.onaudioprocess = recorderOnAudioProcess.bind(this, flow, name)
 			}
 			else if(type === 'input'){
-				node = {config:nodeConfig, type:'input'}
+				node = {config:conf, type:'input'}
 				getUserMedia.call(navigator, {audio:true}, function(flow, node, stream){
 					node.audioNode = this.context.createMediaStreamSource(stream)
 					// connect it lazily
@@ -112,19 +112,26 @@ module.exports = class extends require('/platform/service'){
 				}.bind(this))
 			}
 			else if(type === 'buffer'){
-				node = {config:nodeConfig, start:nodeConfig.start, type:'buffer', audioNode:this.context.createBufferSource()}
-				var data = nodeConfig.data
+				var bufsrc = this.context.createBufferSource()
+				node = {
+					config:conf, 
+					start:conf.start, 
+					type:'buffer', 
+					audioNode:bufsrc
+				}
+				var data = conf.data
 				if(data && data.length && data[0].length){
 					// lets copy the data into an audiobuffer
-					var buffer = this.context.createBuffer(data.length, data[0].length, Math.max(Math.min(nodeConfig.rate,192000),3000))
+					var buffer = this.context.createBuffer(data.length, data[0].length, Math.max(Math.min(conf.rate,192000),3000))
 					for(let i = 0; i < data.length; i++){
 						buffer.copyToChannel(data[i], i)
 					}
-					node.audioNode.buffer = buffer
+					bufsrc.buffer = buffer
 				}
-				if(nodeConfig.loop !== undefined) node.audioNode.loop = nodeConfig.loop
-				if(nodeConfig.loopStart !== undefined) node.audioNode.loopStart = nodeConfig.loopStart
-				if(nodeConfig.loopEnd !== undefined) node.audioNode.loopEnd = nodeConfig.loopEnd
+				if(conf.loop !== undefined) bufsrc.loop = conf.loop
+				if(conf.loopStart !== undefined) bufsrc.loopStart = conf.loopStart
+				if(conf.loopEnd !== undefined) bufsrc.loopEnd = conf.loopEnd
+				if(conf.speed !== undefined) bufsrc.playbackRate.value = conf.speed 
 			}
 			else if(type === 'biquad'){
 
