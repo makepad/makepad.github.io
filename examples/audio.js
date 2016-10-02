@@ -38,7 +38,7 @@ module.exports = class extends require('base/drawapp'){
 				to: 'gain1',
 				rate: 44100,
 				speed: 1,
-				loop: false,
+				loop: true,
 				start: 0,
 				data: sample1.data
 			}
