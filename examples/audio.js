@@ -59,7 +59,7 @@ module.exports = class extends require('base/drawapp'){
 			console.log(this.text)
 		}
 		this.turtle.wx += 15
-		this.drawButton({text: 'C#', state: 'clickedOver', index: 2})
+		this.drawButton({text: 'C#', index: 2})
 		this.drawButton({text: 'D#', index: 4})
 		this.turtle.wx += 32
 		this.drawButton({text: 'F#', index: 7})
@@ -74,6 +74,5 @@ module.exports = class extends require('base/drawapp'){
 		this.drawButton({text: 'A1', index: 10})
 		this.drawButton({text: 'B1', index: 12})
 		this.turtle.lineBreak()
-		
 	}
 }
