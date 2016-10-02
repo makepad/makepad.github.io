@@ -26,22 +26,32 @@ module.exports = class extends require('base/drawapp'){
 		super()
 		
 		audio.reset()
-		this.recording = []
-		this.samples = 0
 		
-		var out = wav.parse(require('./sample1.wav'), true)
-		this.recording.push(out.data)
-		this.samples = out.data[0].length
+		var sample1 = wav.parse(require('./sample1.wav'), true)
 		
 		this.playFlow = new audio.Flow({
-			buffer1: {
+			gain1: {
 				to: 'output',
+				gain: 0.1
+			},
+			buffer1: {
+				to: 'gain1',
 				rate: 44100,
 				loop: true,
 				start: 0
 			}
 		})
 		
+		this.playFlow.start({
+			buffer1: {
+				data: sample1.data
+			}
+		})
+		
+	// alright. so.
+	// the sequencer API!
+	// what is it going to be like.
+	
 	}
 	
 	onDraw() {

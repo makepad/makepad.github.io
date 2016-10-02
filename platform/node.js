@@ -1,8 +1,9 @@
 var http = require('http')
+var https = require('https')
 var fs = require('fs')
 var child_process = require('child_process')
 var root = {}
-root.platformPath = 'platform/'
+root.platformPath = '/platform/'
 root.platform = 'node'
 
 function workerPre(){
@@ -346,11 +347,11 @@ root.downloadResource = function(localFile, isBinary){
 			if(!err){
 				headers['if-none-match'] =  stat.mtime.getTime() + '_' + stat.size
 			}
-
+			process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 			http.get({
 				host: httpHost,
 				port: httpPort,
-				path: '/'+localFile,
+				path: localFile,
 				headers:headers
 			},
 			function(res){
@@ -395,6 +396,6 @@ root.downloadResource(root.platformPath+'boot.js').then(function(result){
 	}
 
 	root.onInitApps([{
-		path:process.argv[2]
+		main:process.argv[2]
 	}])
 })
