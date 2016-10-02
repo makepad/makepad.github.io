@@ -237,6 +237,13 @@ function workerBoot(){
 		})
 	}
 
+	worker.define_ = function(getset){
+		Object.defineProperty(global,'_',{
+			configurable:true,
+			get:getset.get,
+			set:getset.set
+		})
+	}
 	// parse and normalize exception x-browser
 	worker.decodeException = function(e){
 		if(e.number !== undefined){ // ms edge

@@ -81,13 +81,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 			curfn.callee()
 		}
 		catch(e){
-			// ok lets parse out the line offset of this thing
-			//var stack = exc.stack.toString()
-			//var fileerr = exc.stack.slice(stack.indexOf('(')+1, stack.indexOf(')'))
-			//var filename = fileerr.slice(0, fileerr.indexOf('.js:')+3)
-			//var lineoff = parseInt(fileerr.slice(fileerr.indexOf('.js:')+4, fileerr.lastIndexOf(':')))
 			var dec = module.worker.decodeException(e)
-
+			
 			// alright we have a lineoff, now we need to take the node
 			var lines = curfn.source.split('\n')
 			// lets count the linenumbers
@@ -105,11 +100,13 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 			this.exception = {
 				message:error.message,
-				file:dec.file,
+				path:dec.path,
 				line:realline,
-				col:realcol,
+				column:realcol,
 				type:error.type
 			}
+			console.log(this.exception)
+
 			if(module.worker.onError){
 				module.worker.onError(this.exception)
 			}
@@ -711,7 +708,9 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 				var gentype
 				var params = glslfn.params
-
+				if(params.length < args.length){
+					throw this.InferErr(node,"GLSL Builtin wrong arg count "+fnname+" expected "+params.length+" got "+args.length)
+				}
 				for(let i = 0; i < args.length; i++){
 					var arg = args[i]
 					var param = params[i]

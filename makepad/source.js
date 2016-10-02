@@ -179,7 +179,7 @@ class Errors extends require('views/tree'){
 
 				var error = {name:e.message + (e.count>1?':x'+e.count:''), path:e.path, error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 				tree.folder.push(error)
-				e.stack.forEach(m=>{
+				if(e.stack) e.stack.forEach(m=>{
 					if(m.path === resPath){
 						if(this.resource.trace){ // we need to use the traceMap
 							var pos = this.resource.traceLines[m.line-1]

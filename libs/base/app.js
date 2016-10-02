@@ -8,7 +8,7 @@ var Store = require('base/store')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 
-module.worker.define$({
+module.worker.define_({
 	get:function(){
 		throw new Error()
 	},
