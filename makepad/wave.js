@@ -399,7 +399,7 @@ module.exports = class Wave extends require('views/draw'){
 		}) 
 		this.drawButton({ 
 			text: "Redo", 
-			onClick: this.undo
+			onClick: this.redo
 		}) 
 		this.drawButton({ 
 			text: "Fade", 
