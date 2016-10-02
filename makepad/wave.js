@@ -153,7 +153,7 @@ module.exports = class Wave extends require('views/draw'){
 	save(toStorage){
 		// flatten
 		if(this.recording.length>1){
-			editWave(this.samples, sam=>sam, true)
+			this.editWave(this.samples, sam=>sam, true)
 		}
 		//write it
 		var wavout = wav.serialize16(this.recording[0])
@@ -221,7 +221,10 @@ module.exports = class Wave extends require('views/draw'){
 	}
 
 	rec(){
-		if(this.recFlow.running) this.recFlow.stop()
+		if(this.recFlow.running){
+			this.recFlow.stop()
+			this.onWaveChange()
+		}
 		else { 
 			this.recording.length = 0 
 			this.samples = 0 
