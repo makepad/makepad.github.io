@@ -82,7 +82,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 		}
 		catch(e){
 			var dec = module.worker.decodeException(e)
-			
+
 			// alright we have a lineoff, now we need to take the node
 			var lines = curfn.source.split('\n')
 			// lets count the linenumbers
@@ -105,7 +105,6 @@ module.exports = class ShaderInfer extends require('base/class'){
 				column:realcol,
 				type:error.type
 			}
-			console.log(this.exception)
 
 			if(module.worker.onError){
 				module.worker.onError(this.exception)
