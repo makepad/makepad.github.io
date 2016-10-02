@@ -58,31 +58,56 @@ module.exports = class extends require('base/drawapp'){
 			return base / 440 * pow(2, n / 12)
 		}
 		var factor = {
-			'a': freq(1),
-			'w': freq(2),
-			's': freq(3),
-			'e': freq(4),
-			'd': freq(5),
-			'f': freq(6),
-			't': freq(7),
-			'g': freq(8),
-			'y': freq(9),
-			'h': freq(10),
-			'u': freq(11),
-			'j': freq(12),
-			'k': freq(13),
-			'o': freq(14),
-			'l': freq(15),
-			'p': freq(16),
-			'semiColon': freq(17),
-			'accent': freq(18),
+			'a': freq(0), //b0 alias
+			'z': freq(1), //c1
+			's': freq(2), //c#1
+			'x': freq(3), //d1
+			'd': freq(4), //d#1
+			'c': freq(5), //e1
+			'f': freq(5), //e1 alias
+			'v': freq(6), //f1
+			'g': freq(7), //f#1
+			'b': freq(8), //g1
+			'h': freq(9), //g#1
+			'n': freq(10), //a1
+			'j': freq(11), //a#1
+			'm': freq(12), //b
+			'k': freq(12), //b alias
+			'comma': freq(13), //c2
+			'l': freq(14), //c#2
+			'period': freq(15), //d2
+			'semiColon': freq(16), //d#2
+			'slash': freq(17), //e2
+			'singleQuote': freq(18), //f2
+			'num1': freq(12), //b2 alias,
+			'q': freq(13), //c2
+			'num2': freq(14), //c#2
+			'w': freq(15), //d2
+			'num3': freq(16), //d#2
+			'e': freq(17), //e2
+			'num4': freq(17), //e2
+			'r': freq(18), //f2
+			'num5': freq(19), //f#2
+			't': freq(20), //g2
+			'num6': freq(21), //g#2
+			'y': freq(22), //a2
+			'num7': freq(23), //a#2
+			'u': freq(24), //b2
+			'num8': freq(24), //b2
+			'i': freq(25), //c3
+			'num9': freq(26), //c#3
+			'o': freq(27), //d3
+			'num0': freq(28), //d#3
+			'p': freq(29), //e3
 		}
+		var fac = factor[e.name]
+		if(!fac) return
 		this.playFlow.play({
 			buffer1: {
-				speed: factor[e.name]
+				speed: fac
 			}
 		})
-		console.log(e)
+		
 	}
 	
 	onDraw() {
