@@ -38,7 +38,7 @@ module.exports = class extends require('base/drawapp'){
 				to: 'gain1',
 				rate: 44100,
 				speed: 1,
-				loop: true,
+				loop: false,
 				start: 0,
 				data: sample1.data
 			}
@@ -77,7 +77,7 @@ module.exports = class extends require('base/drawapp'){
 			'semiColon': freq(17),
 			'accent': freq(18),
 		}
-		this.playFlow.start({
+		this.playFlow.play({
 			buffer1: {
 				speed: factor[e.name]
 			}

@@ -78,8 +78,13 @@ exports.Flow = class Flow extends require('base/class'){
 		return this
 	}
 
-	play(){
+	play(overlay){
 		// todo
+		service.batchMessage({
+			fn:'trigger',
+			id:this.id,
+			overlay:deepCopy(overlay)
+		})
 		return this
 	}
 }

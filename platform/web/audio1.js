@@ -193,6 +193,11 @@ module.exports = class extends require('/platform/service'){
 		if(!flow.started) return
 		stopFlow(flow)
 	}
+
+	user_trigger(msg){
+		var flow = this.ids[msg.id]
+		this.spawnFlow(flow, msg.overlay)
+	}
 }
 
 var getUserMedia = (navigator.getUserMedia ||
