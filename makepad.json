@@ -119,7 +119,8 @@
 			{"name":"homescreen.js"},
 			{"name":"settings.js"},
 			{"name":"styles.js"},
-			{"name":"userprocess.js"}
+			{"name":"userprocess.js"},
+			{"name":"wave.js"}
 		]},
 		{"name":"makepad.js"}
 	]

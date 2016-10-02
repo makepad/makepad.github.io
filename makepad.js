@@ -149,7 +149,8 @@ module.exports = class Makepad extends require('base/app'){
 			if(path.charAt(0) === '$') return  
 			var mypath = module.worker.buildPath(resource.path, path) 
 			var dep = this.store.resourceMap.get(mypath)
-			if(!deps[dep.path]) { 
+			if(!dep) console.log("Cant find", mypath)
+			else if(!deps[dep.path]) { 
 				this.findResourceDeps(dep, deps) 
 			} 
 		}) 
