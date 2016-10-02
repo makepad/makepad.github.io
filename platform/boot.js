@@ -229,14 +229,6 @@ function workerBoot(){
 	worker.buildPath = buildPath
 	createOnMessage(worker)
 
-	worker.define$ = function(getset){
-		Object.defineProperty(global,'$',{
-			configurable:true,
-			get:getset.get,
-			set:getset.set
-		})
-	}
-
 	worker.define_ = function(getset){
 		Object.defineProperty(global,'_',{
 			configurable:true,
@@ -368,7 +360,7 @@ function workerBoot(){
 		worker.args = msg.args
 		worker.init = msg.init
 		worker.hasParent = msg.hasParent
-		
+
 		if(worker.hasParent && !worker.onError){ // onError handling
 
 			worker.onError = function(e){
@@ -458,6 +450,14 @@ function workerBoot(){
 
 function workerRequire(absParent, worker, modules, args){
 	return function require(path){
+		if(path && path.constructor === RegExp){
+			var ret = {}
+			for(var key in modules){
+				if(key.match(path)) ret[key] = require(key)
+			}
+			return ret
+		}
+
 		if(path.charCodeAt(0) === 36){
 			var name = path.slice(1)
 			// we have to return a service interface
@@ -482,6 +482,7 @@ function workerRequire(absParent, worker, modules, args){
 				}
 			}
 		}
+	
 		var absPath = buildPath(absParent, path)
 		var module = modules[absPath]
 

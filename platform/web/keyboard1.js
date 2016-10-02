@@ -18,7 +18,8 @@ module.exports = class extends require('/platform/service'){
 
 		if(this.parent){
 			this.parentKeyboard = this.parent.services[this.name]
-			return this.parentKeyboard.addChild(this)
+			return
+			//return this.parentKeyboard.addChild(this)
 		}
 
 		this.children = []
@@ -144,12 +145,12 @@ module.exports = class extends require('/platform/service'){
 		document.body.appendChild(ta)
 
 		window.addEventListener("focus", function(){
-			this.postAllEvent({fn:'onAppFocus'})	
+			this.postKeyEvent({fn:'onAppFocus'})	
 			if(!this.root.isIOSDevice)ta.focus()
 		}.bind(this))
 
 		window.addEventListener("blur", function(){
-			this.postAllEvent({fn:'onAppBlur'})
+			this.postKeyEvent({fn:'onAppBlur'})
 		}.bind(this))
 	}
 	//
@@ -161,14 +162,14 @@ module.exports = class extends require('/platform/service'){
 	idlePoll(){
 		var now = Date.now()	
 		if(now - this.lastIdlePoll > 800 ){
-			this.postAllEvent({
+			this.postKeyEvent({
 				fn:'onIdleResume'
 			})
 			// fix ios bug
 			if(this.hasTextInputFocus || this.root.isIOSDevice) this.worker.services.painter1.onScreenResize()
 			if(this.hasTextInputFocus){
 				this.hasTextInputFocus = false
-				this.postAllEvent({
+				this.postKeyEvent({
 					fn:'onKeyboardClose'
 				})
 			}
@@ -223,29 +224,37 @@ module.exports = class extends require('/platform/service'){
 	//
 	//
 
-	addChild(child){
-		if(this.parentKeyboard){
-			return this.parentKeyboard.addChild(this)
-		}
-		this.children[child.worker.workerId] = child
-	}
+	//addChild(child){
+	//	if(this.parentKeyboard){
+	//		return this.parentKeyboard.addChild(this)
+	//	}
+	//	this.children[child.worker.workerId] = child
+	//}
 
 	// we shouldnt post faster than the framerate
-	postKeyEvent(msg){
-		if(!this.focussedWorkerId){
-
-			return this.postMessage(msg)
+	postKeyEvent(msg, stop){
+		// lets find the deepest focussedWorker
+		var worker = this.worker
+		var next = worker
+		while(next){
+			worker = next
+			next = worker.services.keyboard1.focussedWorker
 		}
-		// otherwise post to a child
-		this.children[this.focussedWorkerId].postMessage(msg)
-	}
-
-	postAllEvent(msg){
-		this.postMessage(msg)
-		for(let key in this.children){
-			this.children[key].postMessage(msg)
+		// walk back up the chain posting localIds
+		var lastLocalId = 0
+		while(worker && worker !== stop){
+			worker.postMessage({
+				$:'keyboard1', 
+				msg:{
+					localId:lastLocalId,
+					body:msg
+				}
+			})
+			lastLocalId = worker.localId
+			worker = worker.parent
 		}
 	}
+	
 
 	//
 	//
@@ -288,9 +297,14 @@ module.exports = class extends require('/platform/service'){
 		this.characterAccentMenuPos = msg
 	}
 
-	user_setWorkerKeyboardFocus(msg, workerId){
-		if(this.parentKeyboard)return this.parentKeyboard.user_setWorkerKeyboardFocus(msg, workerId)
-		this.focussedWorkerId = workerId
+	setWorkerFocus(worker){
+		// focus this one
+		var old = this.focussedWorker
+		if(old && old !== worker){
+			old.services.keyboard1.postKeyEvent({fn:'onAppBlur'}, this.worker)
+		}
+		this.focussedWorker = worker
+		if(worker) worker.services.keyboard1.postKeyEvent({fn:'onAppFocus'})
 	}
 
 	user_setTextInputFocus(msg){
@@ -364,7 +378,7 @@ module.exports = class extends require('/platform/service'){
 		this.defaultHeight = window.innerHeight
 		this.hideTextArea()
 		if(this.hasTextInputFocus){
-			this.postAllEvent({
+			this.postKeyEvent({
 				fn:'onKeyboardClose'
 			})
 			this.hasTextInputFocus = false
@@ -374,7 +388,7 @@ module.exports = class extends require('/platform/service'){
 			document.body.scrollTop = 0
 			this.worker.services.painter1.onScreenResize()
 		}
-		this.postAllEvent({
+		this.postKeyEvent({
 			fn:'onOrientationChange'
 		})
 	}
@@ -382,7 +396,7 @@ module.exports = class extends require('/platform/service'){
 	onFocusOut(e) {
 		this.hideTextArea()
 		this.worker.services.painter1.onScreenResize()
-		this.postAllEvent({
+		this.postKeyEvent({
 			fn:'onKeyboardClose'
 		})
 	}
@@ -390,13 +404,13 @@ module.exports = class extends require('/platform/service'){
 	onWindowResize(){
 		if(this.root.isTouchDevice){
 			if(window.innerHeight < this.defaultHeight){
-				this.postAllEvent({
+				this.postKeyEvent({
 					fn:'onKeyboardOpen'
 				})
 			}
 			else{
 				this.hideTextArea()
-				this.postAllEvent({
+				this.postKeyEvent({
 					fn:'onKeyboardClose'
 				})
 			}
@@ -654,7 +668,7 @@ module.exports = class extends require('/platform/service'){
 					// lets clear the canvas
 					this.services.painter1.onScreenResize(st - 15)
 					this.hasTextInputFocus = true
-					this.postAllEvent({
+					this.postKeyEvent({
 						fn:'onKeyboardOpen'
 					})
 

@@ -53,11 +53,11 @@ keyboard.setCharacterAccentMenuPos = function(x, y){
 }
 
 
-keyboard.setWorkerKeyboardFocus = function(){
-	service.postMessage({
-		fn:'setWorkerKeyboardFocus'
-	})
-}
+//keyboard.setWorkerKeyboardFocus = function(){
+//	service.postMessage({
+//		fn:'setWorkerKeyboardFocus'
+//	})
+//}
 
 keyboard.setTextInputFocus = function(focus){
 	service.postMessage({
@@ -70,23 +70,26 @@ var pileupQueue = []
 var pileupTimer
 
 function flushPileupQueue(){
-	for(let i = 0; i < pileupQueue.length; i++){
+	for(let i = 0; i < pileupQueue.length; i+=2){
 		var msg = pileupQueue[i]
-		if(keyboard[msg.fn]) keyboard[msg.fn](msg)
+		var localId = pileupQueue[i+1]
+		if(keyboard[msg.fn]) keyboard[msg.fn](msg, localId)
 	}
 	pileupQueue.length = 0
 }
 
-service.onMessage = function(msg){
+service.onMessage = function(wrap){
+	var msg = wrap.body
+	var localId = wrap.localId
 	if(msg.code) msg.name = idToKeyName[msg.code] || 'unknown'
 	if(Date.now()-msg.pileupTime > 16){
 		if(msg.repeat) return // drop repeat keys
 		if(pileupTimer) clearTimeout(pileupTimer)
-		pileupQueue.push(msg)
+		pileupQueue.push(msg, localId)
 		pileupTimer = setTimeout(flushPileupQueue, 16)
 		return
 	}
 	if(pileupTimer) clearTimeout(pileupTimer), pileupTimer = undefined
-	pileupQueue.push(msg)
+	pileupQueue.push(msg, localId)
 	flushPileupQueue()
 }

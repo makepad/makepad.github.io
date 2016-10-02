@@ -4,7 +4,7 @@ var painter = require('services/painter')
 var fingers = require('services/fingers')
 var keyboard = require('services/keyboard')
 var Store = require('base/store')
-
+var Worker = require('services/worker')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 
@@ -31,6 +31,7 @@ module.exports = class App extends require('base/view'){
 
 	constructor(){
 		super()
+
 		// create app
 		this.store = Store.create()
 
@@ -129,7 +130,16 @@ module.exports = class App extends require('base/view'){
 		app.$fingerDragObject = {}
 
 		// dispatch mouse events
-		fingers.onFingerDown = function(msg){
+		fingers.onFingerDown = function(msg, localId){
+			
+			if(localId){
+				Worker.setFocus(localId)
+				var focusView = app.focusView
+				if(focusView) focusView.clearFocus()
+				return
+			}
+			else Worker.setFocus(0)
+
 			app.$fingerMove[msg.digit] = {
 				todoId:msg.todoId,
 				pickId:msg.pickId
@@ -137,14 +147,16 @@ module.exports = class App extends require('base/view'){
 			fingerMessage('onFingerDown', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerMove = function(msg){
+		fingers.onFingerMove = function(msg, localId){
+			if(localId) return
 			var move = app.$fingerMove[msg.digit]
 			fingerMessage('onFingerMove', move.todoId, move.pickId, msg)
 		}
 
 		var dragTodoId = {}
 		var dragPickId = {}
-		fingers.onFingerDrag = function(msg){
+		fingers.onFingerDrag = function(msg, localId){
+			if(localId) return
 			// we want mouse in/out messages to go to the right view and stamp.
 			var todoId = msg.todoId
 			var pickId = msg.pickId
@@ -158,32 +170,39 @@ module.exports = class App extends require('base/view'){
 			fingerMessage('onFingerDrag', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerUp = function(msg){
+		fingers.onFingerUp = function(msg, localId){
+			if(localId) return
 			var move = app.$fingerMove[msg.digit]
 			fingerMessage('onFingerUp', move.todoId, move.pickId, msg)
 		}
 
-		fingers.onFingerUpNow = function(msg){
+		fingers.onFingerUpNow = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerUpNow', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerForce = function(msg){
+		fingers.onFingerForce = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerForce', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerHover = function(msg){
+		fingers.onFingerHover = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerHover', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerOver = function(msg){
+		fingers.onFingerOver = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerOver', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerOut = function(msg){
+		fingers.onFingerOut = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerOut', msg.todoId, msg.pickId, msg)
 		}
 
-		fingers.onFingerWheel = function(msg){
+		fingers.onFingerWheel = function(msg, localId){
+			if(localId) return
 			fingerMessage('onFingerWheel', msg.todoId, msg.pickId, msg)
 		}
 
@@ -195,37 +214,45 @@ module.exports = class App extends require('base/view'){
 			}
 		}
 
-		keyboard.onKeyDown = function(msg){
+		keyboard.onKeyDown = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyDown', msg)
 		}
 
-		keyboard.onKeyUp = function(msg){
+		keyboard.onKeyUp = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyUp', msg)
 		}
 
-		keyboard.onKeyPress = function(msg){
+		keyboard.onKeyPress = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyPress', msg)
 		}
 
-		keyboard.onKeyPaste = function(msg){
+		keyboard.onKeyPaste = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyPaste', msg)
 		}
 
-		keyboard.onKeyboardOpen = function(msg){
+		keyboard.onKeyboardOpen = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyboardOpen', msg)
 		}
 
-		keyboard.onKeyboardClose = function(msg){
+		keyboard.onKeyboardClose = function(msg, localId){
+			if(localId) return
 			keyboardMessage('onKeyboardClose', msg)
 		}
 
 		var appBlur
-		keyboard.onAppBlur = function(){
+		keyboard.onAppBlur = function(msg, localId){
+			if(localId) return
 			appBlur = app.focusView
 			if(appBlur) appBlur.clearFocus()
 		}
 
-		keyboard.onAppFocus = function(){
+		keyboard.onAppFocus = function(msg, localId){
+			if(localId) return
 			if(appBlur) appBlur.setFocus()
 		}
 
@@ -274,9 +301,9 @@ module.exports = class App extends require('base/view'){
 		keyboard.setCharacterAccentMenuPos(x,y)
 	}
 
-	setWorkerKeyboardFocus(focus){
-		keyboard.setWorkerKeyboardFocus()
-	}
+	//setWorkerKeyboardFocus(focus){
+	//	keyboard.setWorkerKeyboardFocus()
+	//}
 
 	setTextInputFocus(focus){
 		keyboard.setTextInputFocus(focus)

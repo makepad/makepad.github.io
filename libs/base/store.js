@@ -28,7 +28,8 @@ class ProxyMap{
 
 	// TODO wrap these
 	keys(){
-		throw new Error("keys() not implemented")
+		var map = this['0__unwrap__']
+		return map.keys()
 	}
 
 	// TODO wrap these

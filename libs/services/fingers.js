@@ -248,12 +248,14 @@ fingers.startFingerDrag = function(digit){
 }
 
 var pileupTimer= {}
-function pileupMessage(msg){
+function pileupMessage(msg, localId){
 	pileupTimer[msg.fn] = undefined
-	if(fingers[msg.fn]) fingers[msg.fn](msg)
+	if(fingers[msg.fn]) fingers[msg.fn](msg, localId)
 }
 
-service.onMessage = function(msg){
+service.onMessage = function(wrap){
+	var msg = wrap.body
+	var localId = wrap.localId
 	// message pileup removal
 	if(msg.fn === 'onFingerMove' || msg.fn === 'onFingerWheel'){
 		if(Date.now() - msg.pileupTime > 16){ // looks like we are piling up
@@ -265,7 +267,7 @@ service.onMessage = function(msg){
 				}
 				clearTimeout(pileupTimer[msg.fn].to)
 			}
-			var fn = pileupMessage.bind(this, msg)
+			var fn = pileupMessage.bind(this, msg, localId)
 			// if we dont get a new message in 16ms we still send it 
 			pileupTimer[msg.fn] = {fn:fn, msg:msg, to:setTimeout(fn, 16)}
 			return
@@ -282,5 +284,5 @@ service.onMessage = function(msg){
 		}
 	}
 	
-	if(fingers[msg.fn]) fingers[msg.fn](msg)
+	if(fingers[msg.fn]) fingers[msg.fn](msg, localId)
 }

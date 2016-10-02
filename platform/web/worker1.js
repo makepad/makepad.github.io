@@ -94,4 +94,9 @@ module.exports = class extends require('/platform/service'){
 		var worker = this.workers[msg.localId]
 		worker.terminate()
 	}
+
+	user_setFocus(msg){
+		var worker = this.workers[msg.localId]
+		this.worker.services.keyboard1.setWorkerFocus(worker)
+	}
 }

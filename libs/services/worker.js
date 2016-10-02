@@ -1,6 +1,6 @@
 var service = require('$worker1')
 
-var localIdsAlloc = 0
+var localIdsAlloc = 1
 var localIds = {}
 var requires = {}
 var pingTimeouts
@@ -176,6 +176,14 @@ exports.onRequire = function(args, absParent, buildPath){
 				msg:msg,
 				transfers:transfers
 			}, transfers)
+		}
+
+		static setFocus(localId){
+			//if(!localIds[localId]) throw new Error('worker already terminated')
+			service.postMessage({
+				fn:'setFocus',
+				localId: localId
+			})
 		}
 	}
 

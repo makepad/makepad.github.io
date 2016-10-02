@@ -167,32 +167,31 @@ module.exports = class Wave extends require('views/draw'){
 	}
 
 	undo(){
-		var sam = this.undoStack.pop()
-		if(!sam) return 
-		this.redoStack.push({
-			samples:this.samples,
-			recording:this.recording
-		})
-		this.samples = sam.samples
-		this.recording = sam.recording
-		this.redraw()
+		this.undoRedo(this.undoStack, this.redoStack)
 		if(!this.undoStack.length){
 			this.store.act('undoWave',store=>{
 				this.resource.dirty = false
 			})
 		}
-		this.onWaveChange()
 	}
 
 	redo(){
-		var sam = this.redoStack.pop()
+		this.undoRedo(this.redoStack, this.undoStack)
+	}
+
+	undoRedo(stack1, stack2){
+		var sam = stack1.pop()
 		if(!sam) return
-		this.undoStack.push({
+		stack2.push({
 			samples:this.samples,
-			recording:this.recording
+			recording:this.recording,
+			start:this.selStart,
+			end:this.selEnd
 		})
 		this.samples = sam.samples
 		this.recording = sam.recording
+		this.selStart = sam.start
+		this.selEnd = sam.end
 		this.redraw()
 		this.onWaveChange()
 	}
@@ -200,7 +199,7 @@ module.exports = class Wave extends require('views/draw'){
 	cut(){
 		var s = this.selStart, e = this.selEnd
 		this.editWave(this.samples - (this.selEnd - this.selStart), (sample, o, c)=>{
-			if(o < s || o > e) { 
+			if(o < s || o >= e) { 
 				return sample
 			}
 		})
@@ -212,7 +211,7 @@ module.exports = class Wave extends require('views/draw'){
 		var s = this.selStart, e = this.selEnd
 		var range = e-s
 		this.editWave(this.samples, (sample, o, c)=>{
-			if(o > s && o < e) { 
+			if(o >= s && o < e) { 
 				return sample * pow(1 - ((o - s)/ range), 3) 
 			} 
 			return sample
@@ -246,7 +245,26 @@ module.exports = class Wave extends require('views/draw'){
 			} 
 		}) 
 		this.redraw() 
-	}	
+	}
+
+	normalize(){
+		var minx = 0, maxx = 0
+		var s = this.selStart, e = this.selEnd
+		this.editWave(this.samples, (sample,o)=>{
+			if(o > s && o < e) { 
+				if(sample < minx) minx = sample
+				if(sample > maxx) maxx = sample
+			}
+			return sample
+		}, true)
+		var mul = 1./max(abs(minx), maxx)
+		this.editWave(this.samples, (sample,o)=>{
+			if(o > s && o < e){
+				return sample * mul
+			}
+			return sample
+		})
+	}
 
 	onWaveChange(){
 		this.save()
@@ -280,7 +298,9 @@ module.exports = class Wave extends require('views/draw'){
 		this.redoStack = []
 		if(!noUndo) this.undoStack.push({
 			samples:this.samples,
-			recording:this.recording
+			recording:this.recording,
+			start:this.selStart,
+			end:this.selEnd
 		})
 		this.samples = chansNew[0].length 
 		this.recording = [chansNew] 
@@ -363,8 +383,20 @@ module.exports = class Wave extends require('views/draw'){
 			onClick: this.cut
 		}) 
 		this.drawButton({ 
+			text: "Undo", 
+			onClick: this.undo
+		}) 
+		this.drawButton({ 
+			text: "Redo", 
+			onClick: this.undo
+		}) 
+		this.drawButton({ 
 			text: "Fade", 
 			onClick: this.fade
+		}) 
+		this.drawButton({ 
+			text: "Norm", 
+			onClick: this.normalize
 		}) 
 		this.drawSlider({ 
 			onValue: e=>{ 

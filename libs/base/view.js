@@ -818,7 +818,7 @@ module.exports = class View extends require('base/class'){
 
 	setFocus(){
 		var old = this.app.focusView
-		this.app.setWorkerKeyboardFocus()
+		//this.app.setWorkerKeyboardFocus()
 		if(old !== this){
 			this.app.focusView = this
 			if(old) old.hasFocus = false

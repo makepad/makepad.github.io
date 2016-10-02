@@ -32,7 +32,7 @@ module.exports = class extends require('base/drawapp'){
 		this.playFlow = new audio.Flow({
 			gain1: {
 				to: 'output',
-				gain: 0.6
+				gain: 0.5
 			},
 			buffer1: {
 				to: 'gain1',
@@ -48,10 +48,14 @@ module.exports = class extends require('base/drawapp'){
 			}
 		})
 		
-	// alright. so.
-	// the sequencer API!
-	// what is it going to be like.
+	// we have sequenced and realtime, 2 different apis
+	//audio.play(this.playFlow,['c','d','e','f'])
+	// ARSD  curves for realtime
 	
+	}
+	
+	onKeyDown(e) {
+		console.log(e)
 	}
 	
 	onDraw() {

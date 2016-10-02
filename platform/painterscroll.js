@@ -63,10 +63,15 @@ module.exports = function painterScroll(proto){
 		}
 	}
 
+	proto.sendChildMessage = function(message, f){
+		var children = this.children
+		for(var key in children){
+			children[key][message](f)
+		}
+	}
+
 	proto.onFingerDown = function(f){
-
-		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerDown(f)
-
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.sendChildMessage('onFingerDown',f)
 
 		var fingerInfo = this.fingerInfo
 		var args = this.args
@@ -123,7 +128,7 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.onFingerMove = function(f){
-		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerMove(f)
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.sendChildMessage('onFingerMove',f)
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		// store finger pos
@@ -162,7 +167,7 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.onFingerUp = function(f){
-		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerUp(f)
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.sendChildMessage('onFingerUp',f)
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		this.requestRepaint()
@@ -183,7 +188,7 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.onFingerHover = function(f){
-		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerHover(f)
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.sendChildMessage('onFingerHover',f)
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		var o = (f.digit-1) * 4
@@ -195,7 +200,7 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.onFingerWheel = function(f){
-		if(f.workerId && f.workerId !== this.worker.workerId) return this.children[f.workerId].onFingerWheel(f)
+		if(f.workerId && f.workerId !== this.worker.workerId) return this.sendChildMessage('onFingerWheel',f)
 
 		var todo = this.todoIds[f.todoId]
 		if(!todo) return

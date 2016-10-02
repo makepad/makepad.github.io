@@ -10,9 +10,11 @@ module.exports = class extends require('/platform/service'){
 		this.TAP_DIST_MOUSE = 5
 
 		if(this.parent){
-			this.parentFingers = this.parent.services[this.name]
-			return this.parentFingers.addChild(this)
+			return
 		}
+		// 	this.parentFingers = this.parent.services[this.name]
+		// 	//return this.parentFingers.addChild(this)
+		// }
 		this.children = {}
 		this.fingerMap = {}
 		this.dragMap = {}
@@ -44,14 +46,40 @@ module.exports = class extends require('/platform/service'){
 		window.addEventListener('webkitmouseforcechanged', this.onCheckMacForce.bind(this), false)
 	}
 
-	addChild(child){
-		if(this.parent){
-			return this.parentFingers.addChild(this)
-		}
-		this.children[child.worker.workerId] = child
-	}
+	// addChild(child){
+	// 	if(this.parent){
+	// 		return this.parentFingers.addChild(this)
+	// 	}
+	// 	this.children[child.worker.workerId] = child
+	// }
 
 	batchMessage(msg){
+		// allright so we have a message.
+		// it has a workerId.
+		// we need to send the message to the entire worker chain
+		// lets find the worker object
+		if(msg.workerId){
+			var afterEntryCbs = this.worker.afterEntryCallbacks
+			var worker = this.root.workerIds[msg.workerId]
+			// ok now, lets batchmessage for workers all the way up to the root
+			var lastLocalId = 0
+			while(worker){
+				var after = worker.onAfterEntry
+				if(afterEntryCbs.indexOf(after) === -1){
+					afterEntryCbs.push(after)
+				}
+				worker.batchMessages.push({
+					$:'fingers1', 
+					msg:{
+						localId:lastLocalId,
+						body:msg
+					}
+				})
+				lastLocalId = worker.localId
+				worker = worker.parent
+			}
+		}
+		/*		
 		if(msg.workerId === this.worker.workerId){
 			return super.batchMessage(msg)
 		}
@@ -63,15 +91,15 @@ module.exports = class extends require('/platform/service'){
 				this.worker.afterEntryCallbacks.push(after)
 			}
 			child.batchMessage(msg)
-		}
+		}*/
 		//else console.log('fingers1 invalid worker ID', msg)
 	}
-
+	/*
 	postMessage(msg){
 		if(!msg.workerId){
-			 super.postMessage(msg)
-			 for(let key in this.children) this.children[key].postMessage(msg)
-			 return
+			super.postMessage(msg)
+			for(let key in this.children) this.children[key].postMessage(msg)
+			return
 		}
 
 		if(msg.workerId === this.worker.workerId){
@@ -81,7 +109,7 @@ module.exports = class extends require('/platform/service'){
 		var child = this.children[msg.workerId]
 		if(child) child.postMessage(msg)
 		else console.log('fingers1 invalid worker ID', msg)
-	}
+	}*/
 
 	user_setCursor(msg){
 		if(!cursors[msg.cursor]) return
@@ -152,7 +180,7 @@ module.exports = class extends require('/platform/service'){
 
 			// post it twice, first is the immediate message
 			let fm = this.messageFinger(f, 'onFingerDownNow')
-			this.postMessage(fm)
+			this.batchMessage(fm)
 
 			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
 				if(!pick) return
@@ -178,7 +206,7 @@ module.exports = class extends require('/platform/service'){
 				let fm = this.messageFinger(f, 'onFingerDown')
 				this.worker.services.painter1.onFingerDown(fm)
 				// post the message
-				this.postMessage(fm)
+				this.batchMessage(fm)
 
 			}.bind(this, f))
 		}
@@ -218,8 +246,8 @@ module.exports = class extends require('/platform/service'){
 			else{
 				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
 					if(!pick) return
-					this.postMessage(this.messageFinger(f, 'onFingerMove'))
-					this.postMessage(this.messageFinger(f, 'onFingerDrag', pick))
+					this.batchMessage(this.messageFinger(f, 'onFingerMove'))
+					this.batchMessage(this.messageFinger(f, 'onFingerDrag', pick))
 				}.bind(this,f))
 			}
 		}
@@ -259,7 +287,7 @@ module.exports = class extends require('/platform/service'){
 			}
 
 			var fm = this.messageFinger(f, 'onFingerUpNow', oldf)
-			this.postMessage(fm)
+			this.batchMessage(fm)
 
 			// remove mappings
 			this.fingerMap[oldf.digit] = undefined
@@ -276,7 +304,7 @@ module.exports = class extends require('/platform/service'){
 					f.samePick = true
 				}
 				else f.samePick = false
-				this.postMessage(this.messageFinger(f, 'onFingerUp', pick))
+				this.batchMessage(this.messageFinger(f, 'onFingerUp', pick))
 			}.bind(this, f))
 		
 			return f.tapCount
@@ -316,7 +344,7 @@ module.exports = class extends require('/platform/service'){
 			var f = fingers[i]
 			var oldf = this.nearestFinger(f.x, f.y)
 			f.digit = oldf.digit
-			this.postMessage(this.messageFinger(f,'onFingerForce',oldf))
+			this.batchMessage(this.messageFinger(f,'onFingerForce',oldf))
 		}
 	}
 
@@ -328,7 +356,7 @@ module.exports = class extends require('/platform/service'){
 				if(!pick) return
 				var fm = this.messageFinger(f, 'onFingerWheel', pick)
 				this.worker.services.painter1.onFingerWheel(fm)
-				this.postMessage(fm)
+				this.batchMessage(fm)
 			}.bind(this, f))
 		}
 	}
@@ -338,6 +366,7 @@ module.exports = class extends require('/platform/service'){
 		if(this.worker.services.keyboard1.onMouseDown(e))return
 		this.mouseIsDown = true
 		this.onFingerDown(mouseToFinger(e))
+		this.worker.onAfterEntry()
 	}
 
 	onMouseUp(e){
@@ -345,6 +374,7 @@ module.exports = class extends require('/platform/service'){
 		e.preventDefault()
 		if(this.worker.services.keyboard1.onMouseUp(e)) return
 		this.onFingerUp(mouseToFinger(e))
+		this.worker.onAfterEntry()
 	}
 
 	onMouseMove(e){
@@ -354,10 +384,12 @@ module.exports = class extends require('/platform/service'){
 		else{
 			this.onFingerHover(mouseToFinger(e))
 		}
+		this.worker.onAfterEntry()
 	}
 
 	onForceInterval(){
 		this.onFingerForce(touchToFinger(this.touchPollEvent))
+		this.worker.onAfterEntry()
 	}
 
 	onCheckMacForce(e){
@@ -367,6 +399,7 @@ module.exports = class extends require('/platform/service'){
 			fingers[i].force = e.webkitForce / 3.0
 		}
 		this.onFingerForce(fingers)
+		this.worker.onAfterEntry()
 	}
 
 	onTouchStart(e){
@@ -381,10 +414,12 @@ module.exports = class extends require('/platform/service'){
 		}
 		this.worker.services.keyboard1.onTouchStart(e.changedTouches[0].pageX, e.changedTouches[0].pageY)
 		this.onFingerDown(touchToFinger(e))
+		this.worker.onAfterEntry()
 	}
 
 	onTouchMove(e){
 		this.onFingerMove(touchToFinger(e))
+		this.worker.onAfterEntry()
 	}
 
 	onTouchEnd(e){
@@ -397,6 +432,7 @@ module.exports = class extends require('/platform/service'){
 		e.preventDefault()
 		var tapCount = this.onFingerUp(touchToFinger(e))
 		this.worker.services.keyboard1.onTouchEnd(e.changedTouches[0].pageX, e.changedTouches[0].pageY, tapCount)
+		this.worker.onAfterEntry()
 	}
 
 	onWheel(e){
@@ -406,9 +442,11 @@ module.exports = class extends require('/platform/service'){
 		var fac = 1
 		if(e.deltaMode === 1) fac = 40
 		else if(e.deltaMode === 2) fac = window.offsetHeight
+
 		f[0].xWheel = e.deltaX * fac
 		f[0].yWheel = e.deltaY * fac
-		return this.onFingerWheel(f)
+		this.onFingerWheel(f)
+		this.worker.onAfterEntry()
 	}
 }
 

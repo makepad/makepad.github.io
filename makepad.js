@@ -12,7 +12,7 @@ var UserProcess = require('./makepad/userprocess')
 var projectFile = "/makepad.json" 
 var currentFile = "./examples/windtree.js" 
 var ProjectStore = require('base/store') 
-
+var matchCache = {}
 module.exports = class Makepad extends require('base/app'){ 
 	
 	constructor(){
@@ -145,8 +145,19 @@ module.exports = class Makepad extends require('base/app'){
 		deps[resource.path] = data
 		if(typeof data !== 'string') return  
 		var code = data.replace(/\/\*[\S\s]*?\*\//g, '').replace(/\/\/[^\n]*/g, '') 
-		code.replace(/require\s*\(\s*['"](.*?)["']/g, (m, path)=>{ 
-			if(path.charAt(0) === '$') return  
+		code.replace(/require\s*\(\s*(?:['"](.*?)["']|(\/(?![*+?])(?:[^\r\n\[/\\]|\\.|\[(?:[^\r\n\]\\]|\\.)*\])+\/))/g, (m, path, regex)=>{ 
+			if(regex){
+				var wildcard = matchCache[mypath] || (matchCache[mypath] = new RegExp(regex.slice(1,-1)))
+				for(var key of this.store.resourceMap.keys()){
+					if(key.match(wildcard)){
+						var dep = this.store.resourceMap.get(key)
+						if(!deps[dep.path]){
+							this.findResourceDeps(dep,deps)
+						}
+					}
+				}
+				return
+			}
 			var mypath = module.worker.buildPath(resource.path, path) 
 			var dep = this.store.resourceMap.get(mypath)
 			if(dep && !deps[dep.path]) { 
