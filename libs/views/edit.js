@@ -1021,6 +1021,7 @@ module.exports = class Edit extends require('base/view'){
 	//
 	
 	onFingerDown(f){
+		this.$lastKeyPress = undefined
 		if(f.digit!== 1 || f.button !== 1  || f.pickId >= this.$scrollPickIds) return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
 
@@ -1087,6 +1088,7 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	onFingerUp(f){
+		this.$lastKeyPress = undefined
 		if(f.digit!== 1 || f.button !== 1 || f.pickId >=this.$scrollPickIds|| (!f.touch && !this.fingerCursor))return
 		this.fingerCursor = undefined
 		var touchdy = 0//f.touch?-20:0

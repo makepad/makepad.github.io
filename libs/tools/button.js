@@ -6,6 +6,7 @@ module.exports = class Button extends require('base/stamp'){
 			icon:'',
 			index:0,
 			onClick:undefined,
+			onClickStamp:undefined,
 			debug:0
 		}
 

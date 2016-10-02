@@ -5,20 +5,13 @@ var painter = require('services/painter')
 module.exports = class extends require('base/drawapp'){
 	
 	prototype() {
-		
-		this.props = {
-			zoom: 1000.,
-			selStart: 0,
-			selEnd: 0,
-			zoomRange: [2, 1000],
-			zoomScroll: 0,
-		}
+		this.props = {}
 		this.tools = {
-			Rect: {
-				color: '#07c7'
-			},
-			Quad: {color: 'red'},
-			Grid: require('tools/grid')
+			Button: require('tools/button').extend({
+				onClickStamp: function() {
+					this.view.playNote(this.index)
+				}
+			}),
 		}
 	}
 	
@@ -43,74 +36,44 @@ module.exports = class extends require('base/drawapp'){
 				data: sample1.data
 			}
 		})
-		
-	
-	
-	// we have sequenced and realtime, 2 different apis
-	//audio.play(this.playFlow,['c','d','e','f'])
-	// ARSD  curves for realtime
-	
 	}
-	
-	onKeyDown(e) {
-		var base = 440
-		function freq(n) {
-			return base / 440 * pow(2, n / 12)
-		}
-		var factor = {
-			'a': freq(0), //b0 alias
-			'z': freq(1), //c1
-			's': freq(2), //c#1
-			'x': freq(3), //d1
-			'd': freq(4), //d#1
-			'c': freq(5), //e1
-			'f': freq(5), //e1 alias
-			'v': freq(6), //f1
-			'g': freq(7), //f#1
-			'b': freq(8), //g1
-			'h': freq(9), //g#1
-			'n': freq(10), //a1
-			'j': freq(11), //a#1
-			'm': freq(12), //b
-			'k': freq(12), //b alias
-			'comma': freq(13), //c2
-			'l': freq(14), //c#2
-			'period': freq(15), //d2
-			'semiColon': freq(16), //d#2
-			'slash': freq(17), //e2
-			'singleQuote': freq(18), //f2
-			'num1': freq(12), //b2 alias,
-			'q': freq(13), //c2
-			'num2': freq(14), //c#2
-			'w': freq(15), //d2
-			'num3': freq(16), //d#2
-			'e': freq(17), //e2
-			'num4': freq(17), //e2
-			'r': freq(18), //f2
-			'num5': freq(19), //f#2
-			't': freq(20), //g2
-			'num6': freq(21), //g#2
-			'y': freq(22), //a2
-			'num7': freq(23), //a#2
-			'u': freq(24), //b2
-			'num8': freq(24), //b2
-			'i': freq(25), //c3
-			'num9': freq(26), //c#3
-			'o': freq(27), //d3
-			'num0': freq(28), //d#3
-			'p': freq(29), //e3
-		}
-		var fac = factor[e.name]
+	playNote(index) {
+		
+		var fac = pow(2, index / 12)
+		//var just=[16/9*0.5,243/128*0.5,1,256/243,9/8,32/27,81/64,4/3,729/512,3/2,128/81,27/16]
+		//var fac=just[(index-1)%12]*pow(2,floor((index-1)/12))
 		if(!fac) return
 		this.playFlow.play({
 			buffer1: {
 				speed: fac
 			}
 		})
-		
+	}
+	onKeyDown(e) {
+		this.playNote(audio.keyboardNoteMap[e.name])
 	}
 	
 	onDraw() {
+		var xp = 0, yp = 100
+		function click() {
+			console.log(this.text)
+		}
+		this.turtle.wx += 15
+		this.drawButton({text: 'C#', state: 'clickedOver', index: 2})
+		this.drawButton({text: 'D#', index: 4})
+		this.turtle.wx += 32
+		this.drawButton({text: 'F#', index: 7})
+		this.drawButton({text: 'G#', index: 9})
+		this.drawButton({text: 'A#', index: 11})
+		this.turtle.lineBreak()
+		this.drawButton({text: 'C1', index: 1})
+		this.drawButton({text: 'D1', index: 3})
+		this.drawButton({text: 'E1', index: 5})
+		this.drawButton({text: 'F1', index: 6})
+		this.drawButton({text: 'G1', index: 8})
+		this.drawButton({text: 'A1', index: 10})
+		this.drawButton({text: 'B1', index: 12})
+		this.turtle.lineBreak()
 		
 	}
 }
