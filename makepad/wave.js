@@ -226,7 +226,15 @@ module.exports = class Wave extends require('views/draw'){
 			this.onWaveChange()
 		}
 		else { 
-			this.recording.length = 0 
+			this.undoStack.push({
+				samples:this.samples,
+				recording:this.recording,
+				start:this.selStart,
+				end:this.selEnd
+			})
+			this.selStart = 0
+			this.selEnd = 0
+			this.recording = []
 			this.samples = 0 
 			this.recFlow.start() 
 		} 
