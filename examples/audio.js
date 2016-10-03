@@ -9,7 +9,7 @@ module.exports = class extends require('base/drawapp'){
 		this.tools = {
 			Button: require('tools/button').extend({
 				onDownStamp: function() {
-					this.view.playNote(this.index)
+					this.view.plaqyNote(this.index)
 				}
 			}),
 		}
