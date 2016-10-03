@@ -21,9 +21,14 @@ module.exports = class extends require('base/drawapp'){
 		audio.reset()
 		
 		var sample1 = wav.parse(require('./sample1.wav'), true)
+		var sample2 = wav.parse(require('./sample2.wav'), true)
 		
 		this.playFlow = new audio.Flow({
 			gain1: {
+				to: 'output',
+				gain: 0.5
+			},
+			gain2: {
 				to: 'output',
 				gain: 0.5
 			},
@@ -34,6 +39,14 @@ module.exports = class extends require('base/drawapp'){
 				loop: false,
 				start: 0,
 				data: sample1.data
+			},
+			buffer2: {
+				to: 'gain2',
+				rate: 44100,
+				speed: 1,
+				loop: false,
+				start: 0,
+				data: sample2.data
 			}
 		})
 	}
@@ -43,9 +56,20 @@ module.exports = class extends require('base/drawapp'){
 		//var just=[16/9*0.5,243/128*0.5,1,256/243,9/8,32/27,81/64,4/3,729/512,3/2,128/81,27/16]
 		//var fac=just[(index-1)%12]*pow(2,floor((index-1)/12))
 		if(!fac) return
+		var sam1 = fac > 2? 1: 0
+		var sam2 = 1 - sam1
 		this.playFlow.play({
+			gain1: {
+				gain: sam1 * .5
+			},
+			gain2: {
+				gain: sam2
+			},
 			buffer1: {
-				speed: fac
+				playbackRate: fac * 1.15 * 0.5
+			},
+			buffer2: {
+				playbackRate: fac * 2
 			}
 		})
 	}

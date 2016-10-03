@@ -107,6 +107,7 @@
 		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
 			{"name":"sample1.wav"},
+			{"name":"sample2.wav"},
 			{"name":"windtree.js"},
 			{"name":"lines.js"},
 			{"name":"buttons.js"},

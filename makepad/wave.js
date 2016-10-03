@@ -120,7 +120,7 @@ module.exports = class Wave extends require('views/draw'){
 	onKeyS(e){
 		if(!e.ctrl && !e.meta && !e.alt) return
 		// save it
-		this.save()
+		this.save(true)
 		return true
 	}
 

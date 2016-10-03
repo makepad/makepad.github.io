@@ -135,7 +135,7 @@ module.exports = class extends require('/platform/service'){
 				if(conf.loop !== undefined) bufsrc.loop = conf.loop
 				if(conf.loopStart !== undefined) bufsrc.loopStart = conf.loopStart
 				if(conf.loopEnd !== undefined) bufsrc.loopEnd = conf.loopEnd
-				if(conf.speed !== undefined) bufsrc.playbackRate.value = conf.speed 
+				if(conf.playbackRate !== undefined) bufsrc.playbackRate.value = conf.playbackRate 
 			}
 			else if(type === 'biquad'){
 
