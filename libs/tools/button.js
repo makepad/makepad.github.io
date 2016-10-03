@@ -65,6 +65,8 @@ module.exports = class Button extends require('base/stamp'){
 	}
 
 	onFingerDown(e){
+		if(this.onDownStamp) this.onDownStamp(e)
+		if(this.onDown) this.onDown.call(this.view, e)
 		if(this.click && (this.click.radio !== undefined || this.click.toggle !== undefined)){
 			// lets check if there are other stamps in the radio group
 			if(this.click.radio !== undefined){ // its a radio group
@@ -96,6 +98,8 @@ module.exports = class Button extends require('base/stamp'){
 	}
 
 	onFingerUp(e){
+		if(this.onUpStamp) this.onUpStamp(e)
+		if(this.onUp) this.onUp.call(this.view, e)
 		if(this.click&& (this.click.radio !== undefined || this.click.toggle !== undefined)){
 			if(this.isClicked()){
 				if(e.samePick) this.state = this.styles.clickedOver

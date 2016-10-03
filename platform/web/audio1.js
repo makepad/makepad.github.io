@@ -124,7 +124,11 @@ module.exports = class extends require('/platform/service'){
 					// lets copy the data into an audiobuffer
 					var buffer = this.context.createBuffer(data.length, data[0].length, Math.max(Math.min(conf.rate,192000),3000))
 					for(let i = 0; i < data.length; i++){
-						buffer.copyToChannel(data[i], i)
+						var out = buffer.getChannelData(i)
+						var inp = data[i]
+						for (var c = 0, cl = inp.length; c < cl; c++){
+							out[c] = inp[c]
+						}
 					}
 					bufsrc.buffer = buffer
 				}

@@ -8,7 +8,7 @@ module.exports = class extends require('base/drawapp'){
 		this.props = {}
 		this.tools = {
 			Button: require('tools/button').extend({
-				onClickStamp: function() {
+				onDownStamp: function() {
 					this.view.playNote(this.index)
 				}
 			}),

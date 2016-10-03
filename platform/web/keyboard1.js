@@ -646,7 +646,7 @@ module.exports = class extends require('/platform/service'){
 
 	onTouchEnd(x, y, tapCount){
 		//document.body.requestFullscreen();
-		//return
+		return
 		if(this.root.isTouchDevice && tapCount === 1){
 			this.textAreaTouchMode()
 			this.showTextArea()
