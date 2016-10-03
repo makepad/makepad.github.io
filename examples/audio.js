@@ -56,7 +56,7 @@ module.exports = class extends require('base/drawapp'){
 		//var just=[16/9*0.5,243/128*0.5,1,256/243,9/8,32/27,81/64,4/3,729/512,3/2,128/81,27/16]
 		//var fac=just[(index-1)%12]*pow(2,floor((index-1)/12))
 		if(!fac) return
-		var sam1 = sample
+		var sam1 = fac > 2? 1: 0
 		var sam2 = 1 - sam1
 		this.playFlow.play({
 			gain1: {
@@ -75,7 +75,7 @@ module.exports = class extends require('base/drawapp'){
 	}
 	onKeyDown(e) {
 		var map = audio.keyboardNoteMap[e.name]
-		this.playNote(map[0], map[1])
+		if(map) this.playNote(map[0], map[1])
 	}
 	
 	onDraw() {
