@@ -63,6 +63,14 @@ module.exports = class extends require('/platform/service'){
 		}
 	}
 
+	user_destroy(msg){
+		var flow = this.ids[msg.id]
+		if(flow){
+			stopFlow(flow)
+			delete this.ids[msg.id]
+		}
+	}
+
 	spawnFlow(flow, overlay){
 		
 		// lets spawn all the nodes
@@ -185,6 +193,8 @@ module.exports = class extends require('/platform/service'){
 	// lets spawn a flow
 	user_start(msg){
 		var flow = this.ids[msg.id]
+		console.log("STARTING", msg.id, this.ids)
+
 		if(flow.started){
 			stopFlow(flow)
 		}

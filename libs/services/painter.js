@@ -37,6 +37,8 @@ service.onMessage = function(msg){
 		painter.w = msg.w
 		painter.h = msg.h
 		painter.pixelRatio = msg.pixelRatio
+		if(painter[msg.fn]) painter[msg.fn](msg)
+		return
 	}
 	if(Date.now()-msg.pileupTime > 16){
 		if(pileupTimer) clearTimeout(pileupTimer)

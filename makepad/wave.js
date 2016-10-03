@@ -39,8 +39,6 @@ module.exports = class Wave extends require('views/draw'){
 		super(...args) 
 		
 		//runtime()
-		
-		audio.reset() 
 		this.undoStack = []
 		this.redoStack = []
 		this.recording = [] 
@@ -81,6 +79,11 @@ module.exports = class Wave extends require('views/draw'){
 		}) 
 	} 
 	
+	onDestroy(){
+		this.recFlow.destroy()
+		this.playFlow.destroy()
+	}
+
 	onScroll(e) { 
 		this.redraw() 
 	} 

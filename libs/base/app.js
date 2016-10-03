@@ -150,6 +150,7 @@ module.exports = class App extends require('base/view'){
 		fingers.onFingerMove = function(msg, localId){
 			if(localId) return
 			var move = app.$fingerMove[msg.digit]
+			if(!move) return
 			fingerMessage('onFingerMove', move.todoId, move.pickId, msg)
 		}
 
@@ -173,6 +174,7 @@ module.exports = class App extends require('base/view'){
 		fingers.onFingerUp = function(msg, localId){
 			if(localId) return
 			var move = app.$fingerMove[msg.digit]
+			if(!move) return
 			fingerMessage('onFingerUp', move.todoId, move.pickId, msg)
 		}
 
@@ -258,6 +260,7 @@ module.exports = class App extends require('base/view'){
 
 
 		painter.onResize = function(){
+			console.log("RELAYOUT", painter.h)
 			app.relayout()
 		}
 
@@ -401,18 +404,19 @@ module.exports = class App extends require('base/view'){
 		iter._y = 0
 		iter._w = painter.w
 		iter._h = painter.h
+
 		var turtle = layout.turtle
 		while(iter){
 			var turtle = layout.turtle
 
-			iter.$matrixClean = false
 
 			// copy the props from the iterator node to the turtle
 			turtle._x = iter._x
 			turtle._y = iter._y
 
-			if(iter.$drawDependentLayout){
-				iter.$drawDependentLayout = false
+			if(iter.$drawDepLayout){
+				//console.log("DRAWDEP!")
+				iter.$drawDepLayout = false
 				turtle._w = iter.$wDraw
 				turtle._h = iter.$hDraw
 			}
@@ -439,6 +443,8 @@ module.exports = class App extends require('base/view'){
 			iter.$hInside = turtle.height
 			iter.$wLast = iter.$w
 			iter.$hLast = iter.$h
+			iter.$xLast = iter.$xAbs
+			iter.$yLast = iter.$yAbs
 			iter.$w = turtle.width + turtle.padding[3] + turtle.padding[1]
 			iter.$h = turtle.height+ turtle.padding[0] + turtle.padding[2]
 			// depth first recursion free walk
@@ -448,28 +454,25 @@ module.exports = class App extends require('base/view'){
 				var view = turtle.context
 				
 				var ot = layout.endTurtle()
-				//view.onFlag = 0
+				view.onFlag = 0
 
 				turtle = layout.turtle
 		
-				//if(!layout.turtle.outer)debugger
 				turtle.walk(ot)
 				
 				// copy the layout from the turtle to the view
 				view.$xAbs = turtle._x 
 				view.$yAbs = turtle._y 
+				view.$xLast = 
 				view.$w = turtle._w
 				view.$h = turtle._h
 				if(view.$w !== view.$wLast || view.$h !== view.$hLast){
 					view.$drawCleanFalse()
 				}
+				if(view.$xAbs !== view.$xLast || view.$yAbs !== view.$yLast){
+					view.$matrixClean = false
+				}
 
-				// we need an extra layout cycle after redraw
-				//if(isNaN(view.$w) || isNaN(view.$h)){
-				//	iter.$drawDependentLayout = true
-				//	this.$drawDependentLayout = true
-				//}
-				//console.log(view.name, view.$w)
 				// treewalk
 				var index = iter.$childIndex + 1 // make next index
 				iter = iter.parent // hop to parent
@@ -525,13 +528,14 @@ module.exports = class App extends require('base/view'){
 			this.$layoutClean = true
 			this.$relayoutViews()
 		}
-
+		this.$drawDepLayoutStep = 0
+		this.$drawDepLayoutNext = false
 		this.$redrawView()
 
-		// needs another draw cycle because some sizes depended on their draw
-		if(this.$drawDependentLayout){
+		// needs another layout/draw cycle because some sizes depended on their draw output
+		if(this.$drawDepLayoutNext){
 			this._frameId++
-			this.$drawDependentLayout = false
+			this.$drawDepLayoutStep = 1
 			this.$relayoutViews()
 			this.$redrawView()
 		}

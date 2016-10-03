@@ -1126,7 +1126,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.fastText('try', this.styles.TryStatement)
 		var block = node.block
 		this[block.type](block)
-		this.trace += 'handler'
 		var handler = node.handler
 		if(handler){
 			let above = handler.above

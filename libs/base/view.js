@@ -635,17 +635,23 @@ module.exports = class View extends require('base/class'){
 			}
 		}
 
-		// content sized views
+		// draw dependent layouts (content sized views)
 		if(typeof this.w === "number" && isNaN(this.w)){
-			this.app.$drawDependentLayout = true
-			this.$drawDependentLayout = true
+			if(this.app.$drawDepLayoutStep === 0){
+				this.app.$drawDepLayoutNext = true
+				this.$drawDepLayout = true
+			}
 			this.$wDraw = tx2 === -Infinity?0:tx2
 			if(addVer) this.$wDraw += this.$scrollBarSize
 		}
 
 		if(typeof this.h === "number" && isNaN(this.h) ){
-			this.app.$drawDependentLayout = true
-			this.$drawDependentLayout = true
+			if(this.app.$drawDepLayoutStep === 0){
+				this.app.$drawDepLayoutNext = true
+				this.$drawDepLayout = true
+			}
+			//this.app.$drawDependentLayout = true
+			//this.$drawDependentLayout = true
 			this.$hDraw = ty2 === -Infinity?0:ty2
 			if(addHor) this.$hDraw += this.$scrollBarSize
 		}

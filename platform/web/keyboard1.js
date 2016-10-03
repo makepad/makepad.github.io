@@ -49,7 +49,7 @@ module.exports = class extends require('/platform/service'){
 		this.keyboardAnimPlaying = false
 		this.lastIdlePoll = Date.now()
 
-		setInterval(this.idlePoll, 500)
+		//setInterval(this.idlePoll, 500)
 
 		this.defaultHeight = window.innerHeight
 

@@ -1,7 +1,7 @@
 var service = require('$audio1')
 
-var flowIdsAlloc = 1
-var flowIds = {}
+var IdAlloc = require('base/idalloc')
+var flowIds = new IdAlloc()
 
 var pileupQueue = []
 var pileupTimer
@@ -43,64 +43,63 @@ function deepCopy(obj) {
 }
 
 exports.keyboardNoteMap = {
-	'a': 0,
-	'z': 1,
-	's': 2,
-	'x': 3,
-	'd': 4,
-	'c': 5,
-	'f': 5,
-	'v': 6,
-	'g': 7,
-	'b': 8,
-	'h': 9,
-	'n': 10,
-	'j': 11,
-	'm': 12,
-	'k': 12,
-	'comma': 13,
-	'l': 14,
-	'period': 15,
-	'semiColon': 16,
-	'slash': 17,
-	'singleQuote': 18,
-	'accent': 11,
-	'tab': 12,
-	'num1': 12,
-	'q': 13,
-	'num2': 14,
-	'w': 15,
-	'num3': 16,
-	'e': 17,
-	'num4': 17,
-	'r': 18,
-	'num5': 19,
-	't': 20,
-	'num6': 21,
-	'y': 22,
-	'num7': 23,
-	'u': 24,
-	'num8': 24,
-	'i': 25,
-	'num9': 26,
-	'o': 27,
-	'num0': 28,
-	'p': 29,
-	'dash': 30,
-	'openBracket': 30,
-	'equals': 31,
-	'closeBracket': 32,
-	'backSpace': 33,
-	'backSlash': 34
+	'a': [0, 0],
+	'z': [1, 0],
+	's': [2, 0],
+	'x': [3, 0],
+	'd': [4, 0],
+	'c': [5, 0],
+	'f': [5, 0],
+	'v': [6, 0],
+	'g': [7, 0],
+	'b': [8, 0],
+	'h': [9, 0],
+	'n': [10, 0],
+	'j': [11, 0],
+	'm': [12, 0],
+	'k': [12, 0],
+	'comma': [13, 0],
+	'l': [14, 0],
+	'period': [15, 0],
+	'semiColon': [16, 0],
+	'slash': [17, 0],
+	'singleQuote': [18, 0],
+	'accent': [11, 1],
+	'tab': [12, 1],
+	'num1': [12, 1],
+	'q': [13, 1],
+	'num2': [14, 1],
+	'w': [15, 1],
+	'num3': [16, 1],
+	'e': [17, 1],
+	'num4': [17, 1],
+	'r': [18, 1],
+	'num5': [19, 1],
+	't': [20, 1],
+	'num6': [21, 1],
+	'y': [22, 1],
+	'num7': [23, 1],
+	'u': [24, 1],
+	'num8': [24, 1],
+	'i': [25, 1],
+	'num9': [26, 1],
+	'o': [27, 1],
+	'num0': [28, 1],
+	'p': [29, 1],
+	'dash': [30, 1],
+	'openBracket': [30, 1],
+	'equals': [31, 1],
+	'closeBracket': [32, 1],
+	'backSpace': [33, 1],
+	'backSlash': [34, 1]
 }
 
 exports.Flow = class Flow extends require('base/class'){
 	constructor(config) {
 		super()
 		this.config = config
-		this.id = flowIdsAlloc++
+		this.id = flowIds.alloc(this)
 		this.running
-		flowIds[this.id] = this
 		// lets deep copy the flow
 		// and skip functions
 		// those are kept as callbacks for the system
@@ -112,6 +111,7 @@ exports.Flow = class Flow extends require('base/class'){
 	}
 	
 	start(overlay) {
+		if(!this.id) throw new Error("flow destroyed")
 		this.running = true
 		service.batchMessage({
 			fn: 'start',
@@ -122,6 +122,7 @@ exports.Flow = class Flow extends require('base/class'){
 	}
 	
 	stop() {
+		if(!this.id) throw new Error("flow destroyed")
 		this.running = false
 		service.batchMessage({
 			fn: 'stop',
@@ -131,6 +132,7 @@ exports.Flow = class Flow extends require('base/class'){
 	}
 	
 	play(overlay) {
+		if(!this.id) throw new Error("flow destroyed")
 		// todo
 		service.batchMessage({
 			fn: 'trigger',
@@ -138,6 +140,16 @@ exports.Flow = class Flow extends require('base/class'){
 			overlay: deepCopy(overlay)
 		})
 		return this
+	}
+	
+	destroy() {
+		if(!this.id) throw new Error("flow destroyed")
+		flowIds.free(this.id)
+		service.batchMessage({
+			fn: 'destroy',
+			id: this.id
+		})
+		this.id = undefined
 	}
 }
 

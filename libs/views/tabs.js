@@ -187,8 +187,8 @@ module.exports=class Tabs extends require('base/view'){
 
 		this.onCloseTab(index)
 
-		if(child.onCloseTab) child.onCloseTab()
-		
+		child.destroy()
+
 		if(this.selectedIndex === index){
 			var next = clamp(index, 0, this.children.length -1)
 			this.selectedIndex = -1

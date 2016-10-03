@@ -410,7 +410,7 @@ function workerBoot(){
 			}
 			catch(e){
 				if(worker.onError) worker.onError(worker.decodeException(e))
-			//	console.log("POSTING",e.message)
+				console.log(source)
 				worker.postMessage({
 					$:'exception',
 					msg:{path:path}

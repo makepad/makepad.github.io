@@ -91,7 +91,6 @@ module.exports = class extends require('/platform/service'){
 			w = canvas.offsetWidth
 			h = canvas.offsetHeight
 		}
-
 		var sw = canvas.width = w * pixelRatio
 		var sh = canvas.height = h * pixelRatio
 
