@@ -8,19 +8,6 @@ var Worker = require('services/worker')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 
-module.worker.define_({
-	get:function(){
-		throw new Error()
-	},
-	set:console.log.bind(console)
-	/*function(v){
-		if(!v) return console.log(v)
-		var meta = v.__proxymeta__
-		if(meta) return console.log(meta.object)
-		console.log(v)
-	}*/
-})
-
 module.exports = class App extends require('base/view'){
 	
 	// lets define some props
@@ -260,7 +247,6 @@ module.exports = class App extends require('base/view'){
 
 
 		painter.onResize = function(){
-			console.log("RELAYOUT", painter.h)
 			app.relayout()
 		}
 
@@ -443,8 +429,8 @@ module.exports = class App extends require('base/view'){
 			iter.$hInside = turtle.height
 			iter.$wLast = iter.$w
 			iter.$hLast = iter.$h
-			iter.$xLast = iter.$xAbs
-			iter.$yLast = iter.$yAbs
+			//iter.$xLast = iter.$xAbs
+			//iter.$yLast = iter.$yAbs
 			iter.$w = turtle.width + turtle.padding[3] + turtle.padding[1]
 			iter.$h = turtle.height+ turtle.padding[0] + turtle.padding[2]
 			// depth first recursion free walk
@@ -463,14 +449,10 @@ module.exports = class App extends require('base/view'){
 				// copy the layout from the turtle to the view
 				view.$xAbs = turtle._x 
 				view.$yAbs = turtle._y 
-				view.$xLast = 
 				view.$w = turtle._w
 				view.$h = turtle._h
 				if(view.$w !== view.$wLast || view.$h !== view.$hLast){
 					view.$drawCleanFalse()
-				}
-				if(view.$xAbs !== view.$xLast || view.$yAbs !== view.$yLast){
-					view.$matrixClean = false
 				}
 
 				// treewalk
@@ -492,6 +474,13 @@ module.exports = class App extends require('base/view'){
 				iter.$x = iter.$xAbs - iter.parent.$xAbs
 				iter.$y = iter.$yAbs - iter.parent.$yAbs
 			}			
+
+			if(iter.$x !== iter.$xLast || iter.$yAbs !== iter.$yLast || iter.$w !== iter.$wLast && iter.xCenter || iter.$h !== iter.$hLast && iter.yCenter){
+				iter.$xLast = iter.$x
+				iter.$yLast = iter.$y
+				iter.$recomputeMatrix()
+			}
+
 			var next = iter.children[0]
 			if(next) next.$childIndex = 0
 			else while(!next){ // skip to parent next

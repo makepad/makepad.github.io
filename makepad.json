@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/sample1.wav", "/examples/audio.js"],
-	"run":[],
+	"open":["/examples/tiny.js"],
+	"run":["/examples/tiny.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -115,6 +115,7 @@
 			{"name":"tiny.js"}
 		]},
 		{"name":"makepad","folder":[
+			{"name":"log.js"},
 			{"name":"source.js"},
 			{"name":"filetree.js"},
 			{"name":"homescreen.js"},

@@ -67,18 +67,30 @@ class Code extends require('views/code'){
 	onBeginFormatAST(){
 		this.trace = ''
 		this.probes = []
+		this.logs = {}
+	}
+
+	getNodeName(node){
+		if(!node) return ''
+		if(node.type === 'Identifier') node = lhs.name
+		if(node.type === 'MemberExpression') node = lhs.property.name
+	}
+
+	onLog(node, lhs){
+		// current line
+		var line = this.$fastTextLines.length
+		var logs = this.logs[line] ||  (this.logs[line] = [])
+		var id = logs.push(node)
+		return line*10+id
 	}
 
 	onProbe(node, lhs){
 		// ok we have a probe, but what is it
 		var name='prop'
-		if(lhs){
-			if(lhs.type === 'Identifier') name = lhs.name
-			if(lhs.type === 'MemberExpression') name = lhs.property.name
-		}
+	
 		//if(lhs.type === )
 		this.redraw()
-		return this.parent.probes.push({
+		return this.probes.push({
 			node:node,
 			name:name
 		}) - 1
@@ -101,7 +113,7 @@ class Errors extends require('views/tree'){
 		this.tools = {
 			Bg:{
 				borderRadius:8,
-				//color:'#777c'
+				color:'#777c'
 			},
 			Cursor:{
 				duration:0.,
@@ -321,7 +333,7 @@ module.exports = class Source extends require('base/view'){
 				name: 'Code', 
 				y: '28', 
 				w: '100%', 
-				h: '100%-28', 
+				h: '100%', 
 			}), 
 			new this.Probes({ 
 				resource:this.resource,
@@ -334,8 +346,9 @@ module.exports = class Source extends require('base/view'){
 			new this.Errors({
 				name: 'Errors',
 				resource:this.resource,
+				y:'30',
 				x:'30',
-				w:'100%-30',
+				w:'100%-40',
 				h:NaN
 			})
 		] 

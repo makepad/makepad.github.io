@@ -32,7 +32,7 @@ root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources, appPr
 		// look up loads
 		code.replace(/require\s*\(\s*['"](.*?)["']/g, function(m, path){
 			if(path.indexOf('$') === 0) return // its a service
-			var subUrl = buildPath(absUrl, path)
+			var subUrl = buildPath(path, absUrl)
 			deps.push(root.downloadWithDeps(subUrl, absUrl, singleLoad, resources, appProgress))
 		})
 		return Promise.all(deps)
@@ -136,7 +136,7 @@ root.onInitApps = function(apps){
 		var app = apps[i]
 		app.singleLoad = {}
 		app.resources = {}
-		app.main = buildPath('/',app.main)
+		app.main = buildPath(app.main, '/')
 		allApps.push(
 			root.downloadWithDeps(app.main, '', app.singleLoad, app.resources, app)
 		)
@@ -176,7 +176,7 @@ allApps.push(Promise.all(allServices).then(function(){
 
 	function serviceRequire(absParent){
 		return function(path){
-			var absPath = buildPath(absParent, path)
+			var absPath = buildPath(path, absParent)
 			var module = serviceModules[absPath]
 			if(!module.exports){
 				module.exports = {}
@@ -226,17 +226,9 @@ function workerBoot(){
 	worker.services = {init:{}, ping:{}}
 	worker.modules = modules
 	worker.appMain = undefined
-	worker.buildPath = buildPath
+
 	createOnMessage(worker)
 
-	worker.define_ = function(getset){
-		Object.defineProperty(global,'_',{
-			configurable:true,
-			get:getset.get,
-			set:getset.set
-		})
-	}
-	// parse and normalize exception x-browser
 	worker.decodeException = function(e){
 		if(e.number !== undefined){ // ms edge
 			//edge: e.message, e.description, e.number, e.stack
@@ -341,6 +333,46 @@ function workerBoot(){
 		}
 	}
 
+	class Module{
+
+		constructor(path, source){
+			this.worker = worker
+			this.path = path
+			this.source = source
+			this.deps = {}
+		}
+
+		buildPath(path, base){
+			return buildPath(path, base || this.path)
+		}
+
+		probe(id, arg){
+		}
+
+		log(id, arg){
+			this.worker.postMessage({
+				$:'worker1',
+				msg:{
+					fn:'onLog',
+					logId:id,
+					path:this.path,
+					value:arg
+				}
+			})
+			return arg
+		}
+	}
+
+	worker.Module = Module
+	/*
+	worker.define_ = function(getset){
+		Object.defineProperty(global,'_',{
+			configurable:true,
+			get:getset.get,
+			set:getset.set
+		})
+	}*/
+
 	function invalidateModuleDeps(module){
 		if(!module || !module.exports) return
 		for(var key in module.deps){
@@ -389,24 +421,13 @@ function workerBoot(){
 			invalidateModuleDeps(modules[path])
 
 			if(typeof source !== 'string'){
-				modules[path] = {
-					path:path,
-					deps:{},
-					source:source,
-					worker:worker,
-					exports:source
-				}
-
+				var m = modules[path] = new worker.Module(path, source)
+				m.exports = source
 				continue
 			}
 			try{
-				modules[path] = {
-					deps:{},
-					path:path,
-					worker:worker,
-					source:source,
-					factory: new Function("require", "exports", "module", source + '\n//# sourceURL='+path+'\n')
-				}
+				var m= modules[path] = new worker.Module(path, source)
+				m.factory = new Function("require", "exports", "module", source + '\n//# sourceURL='+path+'\n')
 			}
 			catch(e){
 				if(worker.onError) worker.onError(worker.decodeException(e))
@@ -483,7 +504,7 @@ function workerRequire(absParent, worker, modules, args){
 			}
 		}
 	
-		var absPath = buildPath(absParent, path)
+		var absPath = buildPath(path, absParent)
 		var module = modules[absPath]
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
@@ -642,7 +663,7 @@ function createOnMessage(worker){
 //
 //
 
-function buildPath(parent, path){
+function buildPath(path, parent){
 	//if(!path || !path.lastIndexOf) return console.log(new Error("").stack)
 	var s = path.lastIndexOf('/')
 	var d = path.lastIndexOf('.')

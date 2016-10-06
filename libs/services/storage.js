@@ -25,9 +25,8 @@ exports.onRequire = function(args, absParent){
 	if(requires[absParent]) return requires[absParent]
 
 	var storage = { 
-		buildPath:module.worker.buildPath,
 		load:function(path, binary){
-			var final = module.worker.buildPath(absParent, path)
+			var final = module.buildPath(path, absParent)
 
 			var prom 
 			if(loadPromises[final]){ // chain it
@@ -49,7 +48,7 @@ exports.onRequire = function(args, absParent){
 			return prom
 		},
 		save:function(path, data, override){
-			var final = module.worker.buildPath(absParent, path)
+			var final = module.buildPath(path, absParent)
 
 			var prom = Promise.defer()
 			if(!override && savePromises[final]){ // its still saving

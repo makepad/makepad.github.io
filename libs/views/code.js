@@ -413,7 +413,9 @@ module.exports = class Code extends require('views/edit'){
 			UnaryExpression: { 
 				$color: '#ff9f00' 
 			}, 
-			
+			ProbeExpression:{
+				$color: '#ff9f00' 
+			},
 			// if and for
 			IfStatement: { 
 				if: {$color: '#779'}, 
@@ -1008,6 +1010,17 @@ module.exports = class Code extends require('views/edit'){
 		for(var i = 0,len = ann.length,step = ann.step; i < len; i += step) { 
 			var txt = ann[i] 
 			var style = ann[i + 1] 
+			var probeId = style.probeId
+			if(probeId !== undefined){
+				if(txt === '@'){
+					s += 'module.probe('+probeId+','
+				}
+				else if(txt === '#'){
+					s += 'module.log('+probeId+','
+				}
+				else s += ')'
+				continue
+			}
 			var dx = ann[i + 5] 
 			var sx = abs(dx) 
 			if(txt.indexOf('\n') !== -1) { 

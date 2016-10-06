@@ -22,8 +22,8 @@ function flushPileupQueue(){
 		else if(msg.fn == 'onError'){
 			localIds[msg.localId].onError(msg.error)
 		}
-		else if(msg.fn == 'onProbe'){
-			localIds[msg.localId].onProbe(msg)
+		else if(msg.fn == 'onDebug'){
+			localIds[msg.localId].onLog(msg)
 		}
 	}
 	pileupQueue.length = 0
@@ -98,6 +98,9 @@ exports.onRequire = function(args, absParent, buildPath){
 				}
 				resources['main'] = run.toString().replace(/function\s*\([^\)]*?\)\s*\{([\S\s]*)\}\s*$/, function(m,b){return b})
 				this.init('main', resources)
+			}
+
+			this.onDebug = function(){
 			}
 
 			this.onPingTimeout = function(){

@@ -71,16 +71,16 @@ module.exports=class Dock extends require('base/view'){
 			}
 			return tabs
 		}
-		else if(node.left || node.top){ // splitter
+		else if(node.left){ // splitter
 			return new this.Splitter({
 					dock:this,
-					vertical:node.left?true:false,
+					vertical:node.vertical,
 					isLocked:node.locked,
 					pos:node.pos,
 					mode:node.mode
 				},
-				this.composeFromData(node.left || node.top),
-				this.composeFromData(node.right || node.bottom)
+				this.composeFromData(node.left),
+				this.composeFromData(node.right)
 			)
 		}
 		else{ // other type

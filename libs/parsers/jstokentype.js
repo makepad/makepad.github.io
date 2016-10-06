@@ -81,7 +81,7 @@ var types = exports.types = {
 	eq: new TokenType("=", {beforeExpr: true, isAssign: true}),
 	assign: new TokenType("_=", {beforeExpr: true, isAssign: true}),
 	incDec: new TokenType("++/--", {prefix: true, postfix: true, startsExpr: true}),
-	//probe: new TokenType("@", {prefix: true, postfix: false, startsExpr: true}),
+	probe: new TokenType("probe", {beforeExpr: true, prefix: true, startsExpr: true}),
 	prefix: new TokenType("prefix", {beforeExpr: true, prefix: true, startsExpr: true}),
 	logicalOR: binop("||", 1),
 	logicalAND: binop("&&", 2),

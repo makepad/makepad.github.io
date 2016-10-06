@@ -122,14 +122,14 @@ module.exports = class Makepad extends require('base/app'){
 			if(proj.open) {
 				for(var i = 0; i < proj.open.length; i++) { 
 					var open = proj.open[i]
-					var resource = resources.get(storage.buildPath('/', open))
+					var resource = resources.get(module.buildPath(open, '/'))
 					this.addSourceTab(resource, open) 
 				} 
 			}
 			if(!module.worker.hasParent && proj.run) { 
 				for(var i = 0; i < proj.run.length; i++) { 
 					var run = proj.run[i] 
-					var resource = resources.get(storage.buildPath('/', run))
+					var resource = resources.get(module.buildPath(run, '/'))
 					this.addProcessTab(resource, run)
 				} 
 			} 
@@ -158,7 +158,7 @@ module.exports = class Makepad extends require('base/app'){
 				}
 				return
 			}
-			var mypath = module.worker.buildPath(resource.path, path) 
+			var mypath = module.buildPath(path, resource.path) 
 			var dep = this.store.resourceMap.get(mypath)
 			if(dep && !deps[dep.path]) { 
 				this.findResourceDeps(dep, deps) 
@@ -289,6 +289,7 @@ module.exports = class Makepad extends require('base/app'){
 					mode: 1, 
 					locked: false, 
 					pos: 95, 
+					vertical:true,
 					left: { 
 						bottom: false, 
 						tabs: [ 
@@ -298,20 +299,33 @@ module.exports = class Makepad extends require('base/app'){
 					}, 
 					right: { 
 						mode: 0, 
+						vertical:true,
 						locked: false, 
 						pos: 0.5, 
 						left: { 
 							bottom: false, 
 							tabs: [ 
-								{type: 'HomeScreen', name: 'HomeSource', tabIcon: 'home', open: true, noCloseTab: true} 
+								{type: 'HomeScreen', name: 'HomeSource', tabIcon: 'file-text', open: true, noCloseTab: true} 
 							] 
 						}, 
 						right: { 
-							bottom: false, 
-							folded:false,
-							tabs: [ 
-								{type: 'HomeScreen', name: 'HomeProcess', tabIcon: 'home', open: true, noCloseTab: true} 
-							] 
+							mode: 2, 
+							vertical:false,
+							locked: false, 
+							pos: 150, 
+							left: {
+								bottom: false, 
+								tabs: [ 
+									{type: 'HomeScreen', name: 'HomeProcess', tabIcon: 'youtube-play', open: true, noCloseTab: true} 
+								] 
+							}, 
+							right: { 
+								bottom: true, 
+								folded:true,
+								tabs: [ 
+									{type: 'HomeScreen', name: 'HomeLogs', tabIcon: 'align-justify', open: true, noCloseTab: true} 
+								] 
+							}
 						} 
 					} 
 				} 

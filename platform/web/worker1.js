@@ -6,7 +6,7 @@ module.exports = class extends require('/platform/service'){
 		this.workers = []
 	}
 
-	user_onProbe(msg){
+	user_onDebug(msg){
 		msg.localId = this.worker.localId
 		msg.pileupTimer = Date.now()
 		this.parent.batchMessages.push({

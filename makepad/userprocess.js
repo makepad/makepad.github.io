@@ -100,10 +100,31 @@ module.exports = class UserProcess extends require('views/draw'){
 			return a === b
 		}
 
+		this.worker.onDebug = e=>{
+			console.log("HERE",e)
+			// alright so where do we put it.
+			this.store.act("addLog", store=>{
+				var logs = this.process.logs
+				// check if we are the same as the last
+				var last = logs[logs.length - 1]
+				console.log(e)
+				//logs.push(e)
+				//if(logs.length > 10000){
+				//	logs.unshift()
+				//}
+			})
+		}
+
 		this.worker.onError = e => {
 			// we haz error, update the process
 			this.store.act("addRuntimeError",store=>{
 				var rt = this.process.runtimeErrors
+				var logs = this.process.logs
+				logs.push(e)
+				if(logs.length > 10000){
+					logs.unshift()
+				}
+
 				// lets find a duplicate entry
 				for(let i = rt.length-1; i >=0; i--){
 					var r = rt[i]

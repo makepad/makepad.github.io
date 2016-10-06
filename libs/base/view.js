@@ -24,8 +24,8 @@ module.exports = class View extends require('base/class'){
 			x:'0',
 			y:'0',
 			z:NaN,
-			w:'100%',
-			h:'100%',
+			w:'100%-this.x',
+			h:'100%-this.y',
 			xOverflow:'scroll',
 			yOverflow:'scroll',
 			d:NaN,
@@ -506,6 +506,24 @@ module.exports = class View extends require('base/class'){
 		this.todo.scrollTo(sx, sy)
 	}
 
+	$recomputeMatrix(){
+		var hw = this.$w * this.xCenter
+		var hh = this.$h * this.yCenter
+		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
+		if(this.parent){
+			mat4.multiply(this.viewTotal, this.parent.viewPosition, this.viewPosition)
+			mat4.invert(this.viewInverse, this.viewTotal)
+			if(!this.parent.surface){
+				mat4.multiply(this.viewPosition, this.parent.viewPosition, this.viewPosition)
+			}
+		}
+		var todo = this.todo
+		// lets set some globals
+		var todoUbo = todo.todoUbo
+		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
+		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+	}
+
 	$redrawView(){		
 		this._time = this.app._time
 
@@ -514,27 +532,11 @@ module.exports = class View extends require('base/class'){
 
 		// what if drawClean is true?....
 		// update the matrix?
-		if(!this.$matrixClean){
-			this.$matrixClean = true
-			var hw = this.$w * this.xCenter
-			var hh = this.$h * this.yCenter
-			mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
-			if(this.parent){
-				mat4.multiply(this.viewTotal, this.parent.viewPosition, this.viewPosition)
-				mat4.invert(this.viewInverse, this.viewTotal)
-				if(!this.parent.surface){
-					mat4.multiply(this.viewPosition, this.parent.viewPosition, this.viewPosition)
-				}
-			}
-		}
 		// begin a new todo stack
 		var todo = this.todo
 		if(!todo) return // init failed
 
-		// lets set some globals
 		var todoUbo = todo.todoUbo
-		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
-		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
 
 		// alright so now we decide wether this todo needs updating
 		if(this.$drawClean) return

@@ -563,8 +563,21 @@ module.exports = class JSFormatter extends require('base/class'){
 	}
 
 	//CallExpression:{callee:1, arguments:2},
-	CallExpression(node){
+	CallExpression(node, lhs){
 		var callee = node.callee
+
+		if(callee.type === 'MemberExpression' && callee.object.name === 'module' && node.arguments && node.arguments.length === 2){
+			if(callee.property.name === 'log'){
+				// lets store our log in the annotator
+				this.onProbeExpression('log',  node.arguments[1], lhs)
+				return
+			}
+			else if(callee.property.name === 'probe'){
+				this.onProbeExpression('probe',  node.arguments[1], lhs)
+				return
+			}
+		}
+
 		var args = node.arguments
 
 		if(this.traceMap) this.trace += '$T(' + this.traceMap.push(node)+','
@@ -915,27 +928,49 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
  	}
 
+ 	onProbeExpression(op, arg, lhs){
+		if(op === 'probe'){
+			var id = this.onProbe(arg, lhs)
+			this.trace += 'module.probe('+id+','
+			var style = Object.create(this.styles.ProbeExpression)
+			style.probeId = id
+			this.fastText('#', style)
+			// store ID in fontsize
+			this.ann[this.ann.length-2] = id
+			// allright lets store in ann some metadata on our probe
+			var argtype = arg.type
+			this[argtype](arg)
+			this.trace += ')'
+			this.fastText('', style)
+		}
+		if(op === 'log'){
+			var id = this.onLog(arg, lhs)
+			this.trace += 'module.log('+id+','
+			var style = Object.create(this.styles.ProbeExpression)
+			style.probeId = id
+			this.fastText('@', style)
+			var argtype = arg.type
+			this[argtype](arg)
+			this.trace += ')'
+			this.fastText('', style)
+		}
+ 	}
+
+ 	ProbeExpression(node, lhs){
+		var op = node.operator
+		this.onProbeExpression(op === '#'?'probe':'log', node.argument, lhs)
+ 	}
+
 	//UnaryExpression:{operator:0, prefix:0, argument:1},
 	UnaryExpression(node, lhs){
 		if(node.prefix){
 			var op = node.operator
-			if(node.operator === '@'){
-				var id = this.onProbe(node, lhs)
-				this.trace += '$P('+id+','
-				this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
-				var arg = node.argument
-				var argtype = arg.type
-				this[argtype](arg)
-				this.trace += ')'
-			}
-			else{
-				if(op.length > 1) op = op + ' '
-				this.trace += op
-				this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
-				var arg = node.argument
-				var argtype = arg.type
-				this[argtype](arg)
-			}
+			if(op.length > 1) op = op + ' '
+			this.trace += op
+			this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
+			var arg = node.argument
+			var argtype = arg.type
+			this[argtype](arg)
 		}
 		else{
 			var arg = node.argument

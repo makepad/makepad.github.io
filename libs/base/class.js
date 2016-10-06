@@ -149,6 +149,7 @@ Object.defineProperty(module.exports.prototype, '__initproto__', {
 		proto = this 
 		while(proto && !inheritReady.get(proto)){ 
 			inheritReady.set(proto, true) 
+			// freeze it
 			proto = Object.getPrototypeOf(proto) 
 		} 
 	} 
