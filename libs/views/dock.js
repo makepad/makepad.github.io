@@ -269,10 +269,8 @@ module.exports=class Dock extends require('base/view'){
 	}
 
 	onFingerUp(e){
-		console.log("ONFINGERUP", this.dragTab)
 		if(!this.dragTab)return
 		// splitting?
-		console.log(this.dragTabDrop , this.dragTabDrop.part)
 
 		if(this.dragTabDrop && this.dragTabDrop.part >= 0){
 			var oldTabs = this.dragTabDrop.tabs
