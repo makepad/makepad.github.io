@@ -159,9 +159,10 @@ module.exports = class App extends require('base/view'){
 		}
 
 		fingers.onFingerUp = function(msg, localId){
-			if(localId) return
+			//if(localId) return
 			var move = app.$fingerMove[msg.digit]
 			if(!move) return
+			app.$fingerMove[msg.digit] = undefined
 			fingerMessage('onFingerUp', move.todoId, move.pickId, msg)
 		}
 

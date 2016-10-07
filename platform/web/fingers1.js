@@ -296,7 +296,7 @@ module.exports = class extends require('/platform/service'){
 			this.tapMap[oldf.digit] = f
 			
 			this.worker.services.painter1.onFingerUp(fm)
-
+			console.log("FINGERUP!")
 			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
 				if(pick && f.workerId === pick.workerId &&
 					f.pickId === pick.pickId &&
@@ -304,6 +304,8 @@ module.exports = class extends require('/platform/service'){
 					f.samePick = true
 				}
 				else f.samePick = false
+				console.log("FINGERUP!",pick)
+
 				this.batchMessage(this.messageFinger(f, 'onFingerUp', pick))
 			}.bind(this, f))
 		
