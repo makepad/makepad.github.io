@@ -332,8 +332,7 @@ module.exports = class Source extends require('base/view'){
 				resource:this.resource,
 				name: 'Code', 
 				y: '28', 
-				w: '100%', 
-				h: '100%', 
+				w: '100%'
 			}), 
 			new this.Probes({ 
 				resource:this.resource,
