@@ -13,6 +13,7 @@ module.exports = class Tree extends require('base/view'){
 		this.hasFolderButtons = false
 		this.overflow = 'scroll'
 		this.padding = [2, 0, 0, 2]
+		this.cursorMargin = [0, 0, 2, 0]
 		this.fontSize = 11
 		this.folderTextColor = '#f'
 		this.fileTextColor = '#a'
@@ -242,9 +243,7 @@ module.exports = class Tree extends require('base/view'){
 			this.pickMap[treePick] = {node: node, type: 'tree'}
 			this.pickMap[textPick] = {node: node, type: 'text'}
 			this.setPickId(textPick)
-			this.beginCursor({
-				selected: this.selected === node
-			})
+			
 			this.setPickId(treePick)
 			for(let j = 0, dl = depth.length - 1; j <= dl; j++) {
 				var isFolder = j == dl && node.folder? 1: 0
@@ -285,7 +284,11 @@ module.exports = class Tree extends require('base/view'){
 			}
 			else this.turtle.wx += 2
 			this.setPickId(textPick)
+			this.beginCursor({
+				selected: this.selected === node
+			})
 			this.drawText({
+				margin: closed? 0: this.cursorMargin,
 				fontSize: closed? 0: this.fontSize,
 				color: this.selected === node? this.selectedTextColor: node.folder? this.folderTextColor: this.fileTextColor,
 				text: name
