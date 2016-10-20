@@ -86,9 +86,9 @@ module.exports = class Tree extends require('base/view'){
 							return this.colorSolidDistance(aa, ftotal, this.shadowColor)
 						}
 						var bg = this.colorSolidDistance(aa, ftotal, this.lineColor)
-						var dy = 4. + this.isOpen * 2.
+						var dy = 4.5 + this.isOpen * 2.
 						var pt = vec2(p.x - (4 - p.y * 0.3) * this.isOpen, p.y)
-						var fopen = this.boxDistance(pt, 0., dy, 11., 14. - dy, 1.5)
+						var fopen = this.boxDistance(pt, 0., dy, 11., 14. - dy, 1.)
 						var fg = this.colorSolidDistance(aa, fopen, '#9')
 						return mix(bg, fg, fg.a)
 						//return 'red'
