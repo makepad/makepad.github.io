@@ -1,4 +1,4 @@
-module.exports = class FileTree extends require('base/view'){
+module.exports = class FileTree extends require('views/tree'){
 	prototype() {
 		this.props = {
 			data: {inward: 'Tree', prop: 'data'}
