@@ -14,18 +14,20 @@ module.exports = class Tree extends require('base/view'){
 		this.overflow = 'scroll'
 		this.padding = [2, 0, 0, 2]
 		this.fontSize = 11
+		this.folderTextColor = '#f'
+		this.fileTextColor = '#9'
 		this.openWithText = true
 		this.tools = {
 			Bg: require('tools/bg').extend({
-				color: '#6',
+				color: '#3',
 				wrap: false,
 			}),
 			Cursor: require('tools/hover').extend({
 				color: '#0000',
 				wrap: false,
-				selectedColor: '#779',
-				hoverColor: '#5',
-				borderRadius: 5,
+				selectedColor: [.44, .3, .97, 1.],
+				hoverColor: [.44, .3, .97, .6],
+				borderRadius: 1,
 				pickAlpha: -1,
 				tween: 2,
 				duration: 0.2,
@@ -37,7 +39,7 @@ module.exports = class Tree extends require('base/view'){
 			Text: require('tools/text').extend({
 				font: require('fonts/ubuntu_monospace_256.font'),
 				tween: 2,
-				shadowOffset: [1, 1],
+				shadowOffset: [0, 0],
 				shadowColor: '#0005',
 				shadowBlur: 1,
 				duration: 0.2,
@@ -59,9 +61,9 @@ module.exports = class Tree extends require('base/view'){
 				pickAlpha: -1,
 				duration: 0.2,
 				ease: [0, 10, 0, 0],
-				w: 12,
+				w: 12.5,
 				h: 16,
-				shadowOffset: [1, 1],
+				shadowOffset: [0, 0],
 				shadowColor: '#0005',
 				isLast: 0,
 				isFirst: 0,
@@ -70,7 +72,7 @@ module.exports = class Tree extends require('base/view'){
 				isOpen: 1,
 				isSide: 0,
 				isFiller: 0,
-				lineColor: '#8',
+				lineColor: '#2',
 				vertexStyle: function() {},
 				pixel: function() {$
 					var p = vec2(this.w, this.h) * this.mesh.xy
@@ -81,15 +83,14 @@ module.exports = class Tree extends require('base/view'){
 						var fbody = this.boxDistance(p, 0., 4., 11., 9., 1.)
 						var ftab = this.boxDistance(p, 0., 2.5, 10. - 4., 10., 1.)
 						var ftotal = this.unionDistance(ftab, fbody)
-						var col1 = this.lineColor
 						if(this.mesh.z < .5) {
 							return this.colorSolidDistance(aa, ftotal, this.shadowColor)
 						}
-						var bg = this.colorSolidDistance(aa, ftotal, this.lineColor)
+						var bg = this.colorSolidDistance(aa, ftotal, '#7')
 						var dy = 4.5 + this.isOpen * 2.
 						var pt = vec2(p.x - (4 - p.y * 0.3) * this.isOpen, p.y)
 						var fopen = this.boxDistance(pt, 0., dy, 11., 14. - dy, 1.)
-						var fg = this.colorSolidDistance(aa, fopen, '#9')
+						var fg = this.colorSolidDistance(aa, fopen, '#8')
 						return mix(bg, fg, fg.a)
 						//return 'red'
 					}
@@ -285,6 +286,7 @@ module.exports = class Tree extends require('base/view'){
 			this.setPickId(textPick)
 			this.drawText({
 				fontSize: closed? 0: this.fontSize,
+				color: node.folder? this.folderTextColor: this.fileTextColor,
 				text: name
 			})
 			this.endCursor(true)
