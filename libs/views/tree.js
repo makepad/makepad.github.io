@@ -15,7 +15,8 @@ module.exports = class Tree extends require('base/view'){
 		this.padding = [2, 0, 0, 2]
 		this.fontSize = 11
 		this.folderTextColor = '#f'
-		this.fileTextColor = '#9'
+		this.fileTextColor = '#a'
+		this.selectedTextColor = '#f'
 		this.openWithText = true
 		this.tools = {
 			Bg: require('tools/bg').extend({
@@ -286,7 +287,7 @@ module.exports = class Tree extends require('base/view'){
 			this.setPickId(textPick)
 			this.drawText({
 				fontSize: closed? 0: this.fontSize,
-				color: node.folder? this.folderTextColor: this.fileTextColor,
+				color: this.selected === node? this.selectedTextColor: node.folder? this.folderTextColor: this.fileTextColor,
 				text: name
 			})
 			this.endCursor(true)
