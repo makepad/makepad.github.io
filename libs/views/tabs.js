@@ -220,7 +220,6 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onOverlay(){
-		
 		if(!this.isBottom){
 			this.beginBackground({
 				align:[0.,0.],
@@ -256,7 +255,7 @@ module.exports=class Tabs extends require('base/view'){
 					},
 					index:i,
 					state:isSel?
-						(this.selSliding?'selected_slide':'selected_over'):
+						(this.selSliding?'selected_slide':this.defSliding?'dragging':'selected'):
 						(this.defSliding?'slide':'default'),
 					icon:child.tabIcon,
 					canClose:false,//child.tabCanClose,

@@ -1,4 +1,46 @@
 module.exports = class Tree extends require('base/view'){
+
+	// default style sheet
+	defaultStyle(style){ 
+		var c = style.colors, a = style.anims, f = style.fonts
+		style.to = {
+
+			hasRootLine:false,
+			hasFolderButtons:false,
+			openWithText:true,
+
+			folderTextColor: c.textNormal,
+			fileTextColor: c.textMed,
+			selectedTextColor: c.textHi,
+
+			padding:[2, 0, 0, 2],
+			cursorMargin:[0, 0, 2, 1],
+
+			fontSize:f.size,
+
+			$tween: a.tween,
+			$duration: a.duration,
+			$ease: a.ease,
+
+			Bg:{
+				color:c.bgNormal,
+			},
+
+			TreeLine:{
+				lineColor: c.accentGray,
+				folderBase: c.textMed,
+				folderHighlight:c.textAccent,
+			},
+
+			Cursor:{
+				displace: [0, -1],
+				color:c.bgNormal,
+				selectedColor: c.accentNormal,
+				hoverColor: c.accentGray,
+			}
+		}
+	}
+
 	prototype() {
 		this.name = 'Tree'
 		this.props = {
@@ -9,72 +51,39 @@ module.exports = class Tree extends require('base/view'){
 				]}
 			]
 		}
-		this.hasRootLine = false
-		this.hasFolderButtons = false
+		
 		this.overflow = 'scroll'
-		this.padding = [2, 0, 0, 2]
-		this.cursorMargin = [0, 0, 2, 0]
-		this.fontSize = 11
-		this.folderTextColor = '#f'
-		this.fileTextColor = '#a'
-		this.selectedTextColor = '#f'
-		this.openWithText = true
+		
 		this.tools = {
 			Bg: require('tools/bg').extend({
-				color: '#3',
 				wrap: false,
 			}),
 			Cursor: require('tools/hover').extend({
-				color: '#0000',
 				wrap: false,
-				selectedColor: [.44, .3, .97, 1.],
-				hoverColor: [.44, .3, .97, .6],
-				borderRadius: 1,
 				pickAlpha: -1,
-				tween: 2,
-				duration: 0.2,
-				displace: [0, -1],
-				ease: [0, 10, 0, 0],
-				w: '100%-2',
-				padding: [0, 0, 0, 2]
+				w: '100%-2'
 			}),
 			Text: require('tools/text').extend({
-				font: require('fonts/ubuntu_monospace_256.font'),
-				tween: 2,
-				shadowOffset: [0, 0],
-				shadowColor: '#0005',
-				shadowBlur: 1,
-				duration: 0.2,
-				ease: [0, 10, 0, 0],
-				color: 'white'
 			}),
 			Icon: require('tools/icon').extend({
-				tween: 2,
-				duration: 0.2,
-				shadowOffset: [1, 1],
-				shadowColor: '#0005',
-				shadowBlur: 1,
-				ease: [0, 10, 0, 0],
-				color: '#a',
-				margin: [0, 4, 0, 0]
 			}),
 			TreeLine: require('tools/shadowquad').extend({
-				tween: 2,
-				pickAlpha: -1,
-				duration: 0.2,
-				ease: [0, 10, 0, 0],
-				w: 12.5,
-				h: 16,
-				shadowOffset: [0, 0],
-				shadowColor: '#0005',
 				isLast: 0,
 				isFirst: 0,
-				hasFolderButtons: 0,
 				isFolder: 0,
 				isOpen: 1,
 				isSide: 0,
+
 				isFiller: 0,
-				lineColor: '#2',
+				pickAlpha: {kind:'uniform',value:-1},
+				w: 12.6,
+				h: 16,
+
+				hasFolderButtons: {kind:'uniform',value:0},
+				lineColor: {kind:'uniform', value:'#2'},
+				folderBase: {kind:'uniform', value:'#7'},
+				folderHighlight: {kind:'uniform', value:'#8'},
+				
 				vertexStyle: function() {},
 				pixel: function() {$
 					var p = vec2(this.w, this.h) * this.mesh.xy
@@ -88,15 +97,13 @@ module.exports = class Tree extends require('base/view'){
 						if(this.mesh.z < .5) {
 							return this.colorSolidDistance(aa, ftotal, this.shadowColor)
 						}
-						var bg = this.colorSolidDistance(aa, ftotal, '#7')
+						var bg = this.colorSolidDistance(aa, ftotal, this.folderBase)
 						var dy = 4.5 + this.isOpen * 2.
 						var pt = vec2(p.x - (4 - p.y * 0.3) * this.isOpen, p.y)
 						var fopen = this.boxDistance(pt, 0., dy, 11., 14. - dy, 1.)
-						var fg = this.colorSolidDistance(aa, fopen, '#8')
+						var fg = this.colorSolidDistance(aa, fopen, this.folderHighlight)
 						return mix(bg, fg, fg.a)
-						//return 'red'
 					}
-					//return 'red'
 					if(this.isFiller > .99 && this.hasFolderButtons > .5) return vec4(0.)
 					if(this.isLast > .5 && this.hasFolderButtons > .5) {
 						hh = this.h * .5 + 2
@@ -195,6 +202,7 @@ module.exports = class Tree extends require('base/view'){
 		if(e.name === 'downArrow') {
 			var idx = list.indexOf(sel) + 1
 			this.selected = list[idx] || list[list.length - 1]
+			
 		}
 		else if(e.name === 'upArrow') {
 			var idx = list.indexOf(sel) - 1
@@ -284,15 +292,21 @@ module.exports = class Tree extends require('base/view'){
 			}
 			else this.turtle.wx += 2
 			this.setPickId(textPick)
+			if(this.selected === node) {
+				//this.scrollIntoView(0,this.turtle.wy,1,10)
+			}
+
 			this.beginCursor({
 				selected: this.selected === node
 			})
+
 			this.drawText({
 				margin: closed? 0: this.cursorMargin,
 				fontSize: closed? 0: this.fontSize,
 				color: this.selected === node? this.selectedTextColor: node.folder? this.folderTextColor: this.fileTextColor,
 				text: name
 			})
+
 			this.endCursor(true)
 			this.turtle.lineBreak()
 			if(node.folder) {

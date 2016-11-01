@@ -31,6 +31,7 @@
 				{"name":"sha256.js"},
 				{"name":"store.js"},
 				{"name":"types.js"},
+				{"name":"style.js"},
 				{"name":"idalloc.js"}
 			]},
 			{"name":"tools","folder":[

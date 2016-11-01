@@ -20,7 +20,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 			borderWidth: 1,
 			borderRadius: 4,
 			fontSize:12.,
-			bgColor: {pack:'float12', value:'gray'},
+			color: {pack:'float12', value:'gray'},
 			borderColor: {pack:'float12', value:'gray'},
 
 			// make these uniforms
@@ -60,7 +60,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 					open:style.open,
 					borderWidth: style.borderWidth,
 					borderRadius: style.borderRadius,
-					bgColor: style.bgColor,
+					color: style.color,
 					borderColor: style.borderColor
 				})
 			},
@@ -134,7 +134,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	blend(a, b, k){
+	blend(a, b, k){$
 	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
 	    return mix(b, a, h) - k * h * (1.0 - h)
 	}
@@ -151,9 +151,9 @@ module.exports = class CodeBlock extends require('base/shader'){
 			//if(this.errorTime<0.5) return vec4(0.)
 			if(this.open < 0.5) return vec4(0.)
 			if(this.mesh.z > .5){
-				return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.x)
+				return mix(this.color, vec4(this.color.rgb,0.),this.mesh.x)
 			}
-			return mix(this.bgColor, vec4(this.bgColor.rgb,0.),this.mesh.y)
+			return mix(this.color, vec4(this.color.rgb,0.),this.mesh.y)
 		}
 
 		// background field
@@ -205,6 +205,6 @@ module.exports = class CodeBlock extends require('base/shader'){
 		// blend the fields
 		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topLine,leftLine, .5), topBlob, gloop), bottomBlob, gloop)
 		// compute color
-		return this.colorBorderDistance(aa, dist, this.borderWidth, this.bgColor, this.borderColor )
+		return this.colorBorderDistance(aa, dist, this.borderWidth, this.color, this.borderColor )
 	}
 }

@@ -1,469 +1,36 @@
 var painter = require('services/painter')
 
-//
-//
-// Cursors
-//
-//
-
-class Cursor extends require('base/class'){
-	
-	constructor(cursorSet, editor){
-		super()
-		this.cursorSet = cursorSet
-		this.editor = editor 
-		this.start = 0
-		this.end = 0
-		this.max = 0
-	}
-
-	hi(){
-		return this.start > this.end? this.start: this.end
-	}
-
-	lo(){
-		return this.start > this.end? this.end: this.start
-	}
-
-	span(){
-		return abs(this.start - this.end)
-	}
-
-	hasSelection(){
-		return this.start !== this.end
-	}
-
-	moveDelta(delta, onlyEnd){
-		this.end = clamp(this.end + delta, 0, this.editor.textLength())
-		if(!onlyEnd){
-			this.start = this.end
-		}
-		//var rect = this.editor.cursorRect(this.end)
-		this.max = -1//true
-		//this.max = rect?rect.x:0
-		this.editor.cursorChanged(this)
-	}
-
-	moveHome(onlyEnd){
-		this.end = 0
-		if(!onlyEnd) this.start = this.end
-		//var rect = this.editor.cursorRect(this.end)
-		this.max = -1//true
-		//this.max = rect?rect.x:0
-		this.editor.cursorChanged(this)
-	}
-
-	moveEnd(onlyEnd){
-		this.end = this.editor.textLength()
-		if(!onlyEnd) this.start = this.end
-		//var rect = this.editor.cursorRect(this.end)
-		this.max = -1//true
-		//this.max = rect?rect.x:0
-		this.editor.cursorChanged(this)
-	}
-
-	moveLine(lines, onlyEnd){
-		var rect = this.editor.cursorRect(this.end)
-		this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
-		if(this.end < 0) this.end = 0
-		if(!onlyEnd) this.start = this.end
-		//console.log(this.max)
-		this.editor.cursorChanged(this)
-	}
-	
-	moveTo(x, y, onlyEnd){
-		var end = this.editor.offsetFromPos(x, y)
-
-		if(this.end === end && (onlyEnd || this.start === end)) return
-		this.end = end
-		//var rect = this.editor.cursorRect(this.end)
-		//this.max = rect?rect.x:0
-		this.max = -1//true
-		//console.log(this.max)
-		if(!onlyEnd) this.start = this.end
-		this.editor.cursorChanged(this)
-	}
-
-	moveWordRight(onlyEnd){
-		this.moveDelta(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
-	}
-
-	moveWordLeft(onlyEnd){
-		this.moveDelta(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
-	}
-
-	moveLineLeft(onlyEnd){
-		var delta = this.editor.scanLineLeft(this.end) - this.end
-		this.moveDelta(delta, onlyEnd)
-		return delta
-	}
-
-	moveLineRight(onlyEnd){
-		var delta = this.editor.scanLineRight(this.end) - this.end
-		if(delta) this.moveDelta(delta, onlyEnd)
-	}
-
-	moveLineLeftUp(onlyEnd){
-		var delta = this.editor.scanLineLeft(this.end) - this.end
-		if(delta) this.moveDelta(delta, onlyEnd)
-		else this.moveLine(-1, onlyEnd)
-	}
-
-	moveLineRightDown(onlyEnd){
-		var delta = this.editor.scanLineRight(this.end) - this.end
-		if(delta) this.moveDelta(delta, onlyEnd)
-		else this.moveLine(1, onlyEnd)
-	}
-
-	insertText(text){
-			var lo = this.lo(), hi = this.hi()
-
-		this.editor.addUndoInsert(lo, hi)
-		this.editor.removeText(lo, hi)
-
-		this.cursorSet.delta -= this.span()
-		var len = text.length
-		if(len){
-			
-			len = this.editor.insertText(lo, text)
-			
-			this.cursorSet.delta += len
-			this.editor.addUndoDelete(lo, lo +len)
-		}
-		this.start = this.end = lo
-		//this.max = this.editor.cursorRect(this.end).x
-		this.max = -1//true
-		//console.log(this.max)
-		this.editor.cursorChanged(this)
-	}
-
-	deleteRange(lo, hi){
-		if(lo === undefined) lo = this.lo()
-		if(hi === undefined) hi = this.hi()
-		this.editor.addUndoInsert(lo, hi)
-		this.editor.removeText(lo, hi)
-		this.cursorSet.delta -= hi - lo
-		this.start = this.end = lo
-		this.max = -1//true
-		//this.max = this.editor.cursorRect(this.end).x
-		this.editor.cursorChanged(this)
-	}
-
-	delete(){
-		if(this.start !== this.end) return this.deleteRange()
-		var next = this.end + 1
-		this.editor.addUndoInsert(this.end, next)
-		this.editor.removeText(this.end, next)
-		this.cursorSet.delta -= 1
-		this.editor.forkRedo()
-		this.max = -1//true
-		//this.max = this.editor.cursorRect(this.end).x
-		this.editor.cursorChanged(this)
-	}
-
-	deleteWord(){
-		// move start to beginning of word
-		if(this.start !== this.end) return this.deleteRange()
-		this.deleteRange(this.end, this.editor.scanWordRight(this.end))
-	}
-
-	deleteLine(){
-		// move start to beginning of word
-		if(this.start !== this.end) return this.deleteRange()
-		this.deleteRange(this.end, this.editor.scanLineRight(this.end))
-	}
-
-	backSpace(){
-		if(this.start !== this.end) return this.deleteRange()
-		if(this.start === 0) return
-		var prev = this.end - 1
-		this.editor.addUndoInsert(prev, this.end)
-		prev += this.editor.removeText(prev, this.end)
-		this.cursorSet.delta -= 1
-		this.editor.forkRedo()
-		this.start = this.end = prev
-		this.max = -1//true
-		//this.max = this.editor.cursorRect(this.end).x
-		this.editor.cursorChanged(this)
-	}
-
-	backSpaceWord(){
-		// move start to beginning of word
-		if(this.start !== this.end) return this.deleteRange()
-		this.deleteRange(this.editor.scanWordLeft(this.end))
-	}
-
-	backSpaceLine(){
-		// move start to beginning of word
-		if(this.start !== this.end) return this.deleteRange()
-		this.deleteRange(this.editor.scanLineLeft(this.end))
-	}
-
-	select(start, end){
-		this.start = start
-		this.end = end
-		this.editor.cursorChanged()
-	}
-
-	clampCursor(mi, ma){
-		this.start = clamp(this.start, mi, ma)
-		this.end = clamp(this.end, mi, ma)
-	}
-
-	scanChange(pos, oldText, newText){
-		if(this.start !== this.end) return
-		if(pos < this.end){
-
-			// attempt #5001
-			var p1 = oldText.charCodeAt(this.end)
-			var p2 = oldText.charCodeAt(this.end+1)
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
-					break
-				}
-			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
-					break
-				}
-			}
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j
-			/*
-			var d = 0
-			var oc1
-			if(this.editor.wasNewlineChange){
-				oc1 = oldText.charCodeAt(this.end)
-				d = 2
-			}
-			else{
-				oc1 = oldText.charCodeAt(this.end)
-				// find something better than a newline to hold on to
-				if(!this.editor.wasNoopChange){
-					var ocm1 = oldText.charCodeAt(this.end-1)
-					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
-					// cant reverse these, find another way
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
-				}
-			}
-
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === oc1){
-					i+=d
-					break
-				}
-			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === oc1){
-					j+=d
-					break
-				}
-			}
-			var arr = oldText.split('')
-			var s= ''
-			for(let k =0; k < arr.length;k++){
-				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
-			}
-
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j*/
-		}
-	}
-	/*
-	scanChange(pos, oldText, newText){
-		if(this.start !== this.end) return
-		if(pos < this.end){
-
-			// scan for the closest position for the cursor
-			
-			var d = 0
-			var oc1
-			if(this.editor.wasNewlineChange){
-				oc1 = oldText.charCodeAt(this.end)
-				d = 2
-			}
-			else{
-				oc1 = oldText.charCodeAt(this.end)
-				// find something better than a newline to hold on to
-				if(!this.editor.wasNoopChange){
-					var ocm1 = oldText.charCodeAt(this.end-1)
-					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
-					// cant reverse these, find another way
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
-				}
-			}
-
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === oc1){
-					i+=d
-					break
-				}
-			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === oc1){
-					j+=d
-					break
-				}
-			}
-			var arr = oldText.split('')
-			var s= ''
-			for(let k =0; k < arr.length;k++){
-				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
-			}
-
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j
-		}
-	}*/
-
-	invalidateMax(){
-		this.max = -1
-	}
-
-	toggleSlashComment(){
-		// toggle a line comment on or off
-		var start = this.end
-		var ct = 0
-		// lets find the end of the line
-		for(var i = this.end, l = this.editor.textLength();i<l;i++){
-			var code = this.editor.charCodeAt(i)
-			if(code === 10){
-				i--
-				break
-			}
-		}
-		for(;i >= 0; i--){
-			var code = this.editor.charCodeAt(i)
-			if(code === 47) ct++
-			else ct = 0
-			if(ct === 2) break
-			if(code === 10 || code === 13) break
-		}
-		var d = 0
-		if(ct === 2){
-			this.editor.addUndoInsert(i, i+2)
-			this.editor.removeText(i, i+2)
-			d = -min(abs(i-this.end), 2.)
-		}
-		else{
-			this.editor.insertText(i+1, '//')
-			this.cursorSet.delta += 2
-			this.editor.addUndoDelete(i+1, i+3)
-			d = 2
-		}
-
-		this.cursorSet.delta = d
-		this.start += d
-		this.end += d
-		this.editor.cursorChanged()
-	}
-}
-
-class CursorSet extends require('base/class'){
-	prototype(){
-		function makeSetCall(key, fn){
-			return function(){
-				this.delta = 0
-				var cursors = this.cursors
-				for(let i = 0; i < cursors.length; i++){
-					var cursor = cursors[i]
-					cursor.start += this.delta
-					cursor.end += this.delta
-					cursor[key].apply(cursor, arguments)
-				}
-				this.updateSet()
-			}
-		}
-
-		var props = Object.getOwnPropertyNames(Cursor.prototype)
-		for(var i = 0; i < props.length; i++){
-			var key = props[i]
-			var value = Cursor.prototype[key]
-			if(key !== 'constructor' && typeof value === 'function'){
-				this[key] = makeSetCall(key, value)
-			}
-		}
-	}
-
-	constructor(editor){
-		super()
-		this.editor = editor
-		this.cursors = []
-		this.addCursor()
-	}
-
-	addCursor(){
-		var cur = new Cursor(this, this.editor)
-		this.cursors.push(cur)
-		return cur
-	}
-
-	clearCursors(){
-		this.cursors = []
-		return this.addCursor()
-	}
-
-	// set has changed
-	updateSet(){
-		this.editor.redraw()
-	}
-
-	serializeToArray(){
-		var out = []
-		for(let i = 0; i < this.cursors.length; i++){
-			var cursor = this.cursors[i]
-			out.push(cursor.start, cursor.end, cursor.max)
-		}
-		return out
-	}
-
-	deserializeFromArray(inp){
-		this.cursors = []
-		for(let i = 0; i < inp.length; i += 3){
-			var cursor = new Cursor(this, this.editor)
-			cursor.start = inp[i]
-			cursor.end = inp[i+1]
-			cursor.max = inp[i+2]
-			this.cursors.push(cursor)
-		}
-		this.updateSet()
-	}
-
-	fuse(){
-
-		this.cursors.sort(function(a,b){ return (a.start<a.end?a.start:a.end) < (b.start<b.end?b.start:b.end)? -1: 1})
-		// lets do single pass
-		for(let i = 0; i < this.cursors.length - 1;){
-			var cur = this.cursors[i]
-			var nxt = this.cursors[i + 1]
-			if(cur.hi() >= nxt.lo()){
-				if(cur.hi() <= nxt.hi()){
-					if(nxt.end < nxt.start){
-						cur.end = cur.lo()
-						cur.start = nxt.hi()
-					}
-					else{
-						cur.start = cur.lo()
-						cur.end = nxt.hi()
-					}
-				}
-				this.cursors.splice(i+1, 1)
-			}
-			else i++
-		}
-	}
-}
-
-
 module.exports = class Edit extends require('base/view'){
+
+	defaultStyle(style){
+		var c = style.colors
+		style.to = {
+			Bg:{
+				borderRadius:0,
+				padding:2,
+				color:c.bgNormal
+			},
+			Text:{
+				font:require('fonts/ubuntu_medium_256.font'),
+				fontSize:24,
+				color:'#ccc',
+			},
+			Selection:{
+				bgColor:c.textSelect,
+				fieldPush:0.8,
+				borderWidth:0,//0.25,
+				gloop:6,
+				borderRadius:3,
+				borderColor:'#458',
+			},
+			Cursor:{
+				duration:0.0,
+				ease:[1,100,0,0],
+				tween:2,
+				color:'#fff',
+			}
+		}
+	}
 
 	prototype(){
 
@@ -473,6 +40,7 @@ module.exports = class Edit extends require('base/view'){
 			cursorTrim:0.,
 			text:''
 		}
+
 		this.cursor = 'text'
 		//
 		//
@@ -481,29 +49,11 @@ module.exports = class Edit extends require('base/view'){
 		//
 		this.tools = {
 			Bg:require('tools/bg').extend({
-				borderRadius:0,
-				padding:2,
-				color:'#0c2141'
-			}),
-			Debug:require('tools/rect').extend({
-				color:[0,0,0,0],
-				borderRadius:1,
-				borderWidth:1,
-				borderColor:'red'
 			}),
 			Text:require('tools/text').extend({
-				font:require('fonts/ubuntu_medium_256.font'),
-				fontSize:24,
-				color:'#ccc',
 				drawDiscard:'y'
 			}),
 			Selection:require('tools/selection').extend({
-				bgColor:'#458',
-				fieldPush:0.8,
-				borderWidth:0,//0.25,
-				gloop:6,
-				borderRadius:3,
-				borderColor:'#458',
 				drawDiscard:'y',
 				vertexStyle:function(){
 					if(this.w<0.001) return
@@ -520,10 +70,6 @@ module.exports = class Edit extends require('base/view'){
 				}
 			}),
 			Cursor:require('tools/rect').extend({
-				duration:0.0,
-				ease:[1,100,0,0],
-				tween:2,
-				color:'#fff',
 				vertexStyle:function(){
 					
 					var time = this.normalTween
@@ -1105,4 +651,466 @@ function charType(char){
 	if(char.match(/\w/))return 1
 	if(char.match(/\s/))return 2
 	return 3
+}
+
+//
+//
+// Cursors
+//
+//
+
+class Cursor extends require('base/class'){
+	
+	constructor(cursorSet, editor){
+		super()
+		this.cursorSet = cursorSet
+		this.editor = editor 
+		this.start = 0
+		this.end = 0
+		this.max = 0
+	}
+
+	hi(){
+		return this.start > this.end? this.start: this.end
+	}
+
+	lo(){
+		return this.start > this.end? this.end: this.start
+	}
+
+	span(){
+		return abs(this.start - this.end)
+	}
+
+	hasSelection(){
+		return this.start !== this.end
+	}
+
+	moveDelta(delta, onlyEnd){
+		this.end = clamp(this.end + delta, 0, this.editor.textLength())
+		if(!onlyEnd){
+			this.start = this.end
+		}
+		//var rect = this.editor.cursorRect(this.end)
+		this.max = -1//true
+		//this.max = rect?rect.x:0
+		this.editor.cursorChanged(this)
+	}
+
+	moveHome(onlyEnd){
+		this.end = 0
+		if(!onlyEnd) this.start = this.end
+		//var rect = this.editor.cursorRect(this.end)
+		this.max = -1//true
+		//this.max = rect?rect.x:0
+		this.editor.cursorChanged(this)
+	}
+
+	moveEnd(onlyEnd){
+		this.end = this.editor.textLength()
+		if(!onlyEnd) this.start = this.end
+		//var rect = this.editor.cursorRect(this.end)
+		this.max = -1//true
+		//this.max = rect?rect.x:0
+		this.editor.cursorChanged(this)
+	}
+
+	moveLine(lines, onlyEnd){
+		var rect = this.editor.cursorRect(this.end)
+		this.end = this.editor.offsetFromPos(this.max, rect.y + .5*rect.h + lines * rect.h)
+		if(this.end < 0) this.end = 0
+		if(!onlyEnd) this.start = this.end
+		//console.log(this.max)
+		this.editor.cursorChanged(this)
+	}
+	
+	moveTo(x, y, onlyEnd){
+		var end = this.editor.offsetFromPos(x, y)
+
+		if(this.end === end && (onlyEnd || this.start === end)) return
+		this.end = end
+		//var rect = this.editor.cursorRect(this.end)
+		//this.max = rect?rect.x:0
+		this.max = -1//true
+		//console.log(this.max)
+		if(!onlyEnd) this.start = this.end
+		this.editor.cursorChanged(this)
+	}
+
+	moveWordRight(onlyEnd){
+		this.moveDelta(this.editor.scanWordRight(this.end) - this.end, onlyEnd)
+	}
+
+	moveWordLeft(onlyEnd){
+		this.moveDelta(this.editor.scanWordLeft(this.end) - this.end, onlyEnd)
+	}
+
+	moveLineLeft(onlyEnd){
+		var delta = this.editor.scanLineLeft(this.end) - this.end
+		this.moveDelta(delta, onlyEnd)
+		return delta
+	}
+
+	moveLineRight(onlyEnd){
+		var delta = this.editor.scanLineRight(this.end) - this.end
+		if(delta) this.moveDelta(delta, onlyEnd)
+	}
+
+	moveLineLeftUp(onlyEnd){
+		var delta = this.editor.scanLineLeft(this.end) - this.end
+		if(delta) this.moveDelta(delta, onlyEnd)
+		else this.moveLine(-1, onlyEnd)
+	}
+
+	moveLineRightDown(onlyEnd){
+		var delta = this.editor.scanLineRight(this.end) - this.end
+		if(delta) this.moveDelta(delta, onlyEnd)
+		else this.moveLine(1, onlyEnd)
+	}
+
+	insertText(text){
+			var lo = this.lo(), hi = this.hi()
+
+		this.editor.addUndoInsert(lo, hi)
+		this.editor.removeText(lo, hi)
+
+		this.cursorSet.delta -= this.span()
+		var len = text.length
+		if(len){
+			
+			len = this.editor.insertText(lo, text)
+			
+			this.cursorSet.delta += len
+			this.editor.addUndoDelete(lo, lo +len)
+		}
+		this.start = this.end = lo
+		//this.max = this.editor.cursorRect(this.end).x
+		this.max = -1//true
+		//console.log(this.max)
+		this.editor.cursorChanged(this)
+	}
+
+	deleteRange(lo, hi){
+		if(lo === undefined) lo = this.lo()
+		if(hi === undefined) hi = this.hi()
+		this.editor.addUndoInsert(lo, hi)
+		this.editor.removeText(lo, hi)
+		this.cursorSet.delta -= hi - lo
+		this.start = this.end = lo
+		this.max = -1//true
+		//this.max = this.editor.cursorRect(this.end).x
+		this.editor.cursorChanged(this)
+	}
+
+	delete(){
+		if(this.start !== this.end) return this.deleteRange()
+		var next = this.end + 1
+		this.editor.addUndoInsert(this.end, next)
+		this.editor.removeText(this.end, next)
+		this.cursorSet.delta -= 1
+		this.editor.forkRedo()
+		this.max = -1//true
+		//this.max = this.editor.cursorRect(this.end).x
+		this.editor.cursorChanged(this)
+	}
+
+	deleteWord(){
+		// move start to beginning of word
+		if(this.start !== this.end) return this.deleteRange()
+		this.deleteRange(this.end, this.editor.scanWordRight(this.end))
+	}
+
+	deleteLine(){
+		// move start to beginning of word
+		if(this.start !== this.end) return this.deleteRange()
+		this.deleteRange(this.end, this.editor.scanLineRight(this.end))
+	}
+
+	backSpace(){
+		if(this.start !== this.end) return this.deleteRange()
+		if(this.start === 0) return
+		var prev = this.end - 1
+		this.editor.addUndoInsert(prev, this.end)
+		prev += this.editor.removeText(prev, this.end)
+		this.cursorSet.delta -= 1
+		this.editor.forkRedo()
+		this.start = this.end = prev
+		this.max = -1//true
+		//this.max = this.editor.cursorRect(this.end).x
+		this.editor.cursorChanged(this)
+	}
+
+	backSpaceWord(){
+		// move start to beginning of word
+		if(this.start !== this.end) return this.deleteRange()
+		this.deleteRange(this.editor.scanWordLeft(this.end))
+	}
+
+	backSpaceLine(){
+		// move start to beginning of word
+		if(this.start !== this.end) return this.deleteRange()
+		this.deleteRange(this.editor.scanLineLeft(this.end))
+	}
+
+	select(start, end){
+		this.start = start
+		this.end = end
+		this.editor.cursorChanged()
+	}
+
+	clampCursor(mi, ma){
+		this.start = clamp(this.start, mi, ma)
+		this.end = clamp(this.end, mi, ma)
+	}
+
+	scanChange(pos, oldText, newText){
+		if(this.start !== this.end) return
+		if(pos < this.end){
+
+			// attempt #5001
+			var p1 = oldText.charCodeAt(this.end)
+			var p2 = oldText.charCodeAt(this.end+1)
+			for(var i = pos+1; i > 0; i--){
+				if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
+					break
+				}
+			}
+			for(var j = pos-1; j < newText.length; j++){
+				if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
+					break
+				}
+			}
+			if(Math.abs(pos-i) < Math.abs(pos-j)){
+				this.start = this.end = i
+			}
+			else this.start = this.end =j
+			/*
+			var d = 0
+			var oc1
+			if(this.editor.wasNewlineChange){
+				oc1 = oldText.charCodeAt(this.end)
+				d = 2
+			}
+			else{
+				oc1 = oldText.charCodeAt(this.end)
+				// find something better than a newline to hold on to
+				if(!this.editor.wasNoopChange){
+					var ocm1 = oldText.charCodeAt(this.end-1)
+					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
+					// cant reverse these, find another way
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+				}
+			}
+
+			for(var i = pos+1; i > 0; i--){
+				if(newText.charCodeAt(i) === oc1){
+					i+=d
+					break
+				}
+			}
+			for(var j = pos-1; j < newText.length; j++){
+				if(newText.charCodeAt(j) === oc1){
+					j+=d
+					break
+				}
+			}
+			var arr = oldText.split('')
+			var s= ''
+			for(let k =0; k < arr.length;k++){
+				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
+			}
+
+			if(Math.abs(pos-i) < Math.abs(pos-j)){
+				this.start = this.end = i
+			}
+			else this.start = this.end =j*/
+		}
+	}
+	/*
+	scanChange(pos, oldText, newText){
+		if(this.start !== this.end) return
+		if(pos < this.end){
+
+			// scan for the closest position for the cursor
+			
+			var d = 0
+			var oc1
+			if(this.editor.wasNewlineChange){
+				oc1 = oldText.charCodeAt(this.end)
+				d = 2
+			}
+			else{
+				oc1 = oldText.charCodeAt(this.end)
+				// find something better than a newline to hold on to
+				if(!this.editor.wasNoopChange){
+					var ocm1 = oldText.charCodeAt(this.end-1)
+					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
+					// cant reverse these, find another way
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
+					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
+				}
+			}
+
+			for(var i = pos+1; i > 0; i--){
+				if(newText.charCodeAt(i) === oc1){
+					i+=d
+					break
+				}
+			}
+			for(var j = pos-1; j < newText.length; j++){
+				if(newText.charCodeAt(j) === oc1){
+					j+=d
+					break
+				}
+			}
+			var arr = oldText.split('')
+			var s= ''
+			for(let k =0; k < arr.length;k++){
+				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
+			}
+
+			if(Math.abs(pos-i) < Math.abs(pos-j)){
+				this.start = this.end = i
+			}
+			else this.start = this.end =j
+		}
+	}*/
+
+	invalidateMax(){
+		this.max = -1
+	}
+
+	toggleSlashComment(){
+		// toggle a line comment on or off
+		var start = this.end
+		var ct = 0
+		// lets find the end of the line
+		for(var i = this.end, l = this.editor.textLength();i<l;i++){
+			var code = this.editor.charCodeAt(i)
+			if(code === 10){
+				i--
+				break
+			}
+		}
+		for(;i >= 0; i--){
+			var code = this.editor.charCodeAt(i)
+			if(code === 47) ct++
+			else ct = 0
+			if(ct === 2) break
+			if(code === 10 || code === 13) break
+		}
+		var d = 0
+		if(ct === 2){
+			this.editor.addUndoInsert(i, i+2)
+			this.editor.removeText(i, i+2)
+			d = -min(abs(i-this.end), 2.)
+		}
+		else{
+			this.editor.insertText(i+1, '//')
+			this.cursorSet.delta += 2
+			this.editor.addUndoDelete(i+1, i+3)
+			d = 2
+		}
+
+		this.cursorSet.delta = d
+		this.start += d
+		this.end += d
+		this.editor.cursorChanged()
+	}
+}
+
+class CursorSet extends require('base/class'){
+	prototype(){
+		function makeSetCall(key, fn){
+			return function(){
+				this.delta = 0
+				var cursors = this.cursors
+				for(let i = 0; i < cursors.length; i++){
+					var cursor = cursors[i]
+					cursor.start += this.delta
+					cursor.end += this.delta
+					cursor[key].apply(cursor, arguments)
+				}
+				this.updateSet()
+			}
+		}
+
+		var props = Object.getOwnPropertyNames(Cursor.prototype)
+		for(var i = 0; i < props.length; i++){
+			var key = props[i]
+			var value = Cursor.prototype[key]
+			if(key !== 'constructor' && typeof value === 'function'){
+				this[key] = makeSetCall(key, value)
+			}
+		}
+	}
+
+	constructor(editor){
+		super()
+		this.editor = editor
+		this.cursors = []
+		this.addCursor()
+	}
+
+	addCursor(){
+		var cur = new Cursor(this, this.editor)
+		this.cursors.push(cur)
+		return cur
+	}
+
+	clearCursors(){
+		this.cursors = []
+		return this.addCursor()
+	}
+
+	// set has changed
+	updateSet(){
+		this.editor.redraw()
+	}
+
+	serializeToArray(){
+		var out = []
+		for(let i = 0; i < this.cursors.length; i++){
+			var cursor = this.cursors[i]
+			out.push(cursor.start, cursor.end, cursor.max)
+		}
+		return out
+	}
+
+	deserializeFromArray(inp){
+		this.cursors = []
+		for(let i = 0; i < inp.length; i += 3){
+			var cursor = new Cursor(this, this.editor)
+			cursor.start = inp[i]
+			cursor.end = inp[i+1]
+			cursor.max = inp[i+2]
+			this.cursors.push(cursor)
+		}
+		this.updateSet()
+	}
+
+	fuse(){
+
+		this.cursors.sort(function(a,b){ return (a.start<a.end?a.start:a.end) < (b.start<b.end?b.start:b.end)? -1: 1})
+		// lets do single pass
+		for(let i = 0; i < this.cursors.length - 1;){
+			var cur = this.cursors[i]
+			var nxt = this.cursors[i + 1]
+			if(cur.hi() >= nxt.lo()){
+				if(cur.hi() <= nxt.hi()){
+					if(nxt.end < nxt.start){
+						cur.end = cur.lo()
+						cur.start = nxt.hi()
+					}
+					else{
+						cur.start = cur.lo()
+						cur.end = nxt.hi()
+					}
+				}
+				this.cursors.splice(i+1, 1)
+			}
+			else i++
+		}
+	}
 }

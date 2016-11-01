@@ -6,7 +6,7 @@ module.exports=class Splitter extends require('base/view'){
 			pos:.5,
 			mode:0,
 			lockedWidth:1,
-			unlockedWidth:6,
+			unlockedWidth:3,
 			isLocked:false,
 			color:'red'
 		}

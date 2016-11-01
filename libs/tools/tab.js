@@ -4,6 +4,7 @@ module.exports = class Tab extends require('base/stamp'){
 		this.props = {
 			text:'',
 			icon:'',
+			id:'',
 			index:0,
 			h:26,
 			canDrag:false,
@@ -50,101 +51,89 @@ module.exports = class Tab extends require('base/stamp'){
 				color:'#3'
 			})
 		}
-
+		
 		this.styles = {
-			default:{
-				Bg:{
-					
+			base:{
+				default:{
+					Bg:{
+						//borderRadius:[20,20,20,20]
+					},
+					Text:{},
+					Icon:{}
 				},
-				Text:{
-					
+				slide$default:{
+					$tween:2,
+					$ease:[0,10,0,0],
+					$duration:0.3,
+				},
+				default_over$default:{
+					Bg:{
+						color:'#4'
+					},
+					Text:{
+						color:'#c'
+					},
+					Icon:{}
+				},
+				selected$default:{
+					Bg:{
+						color:'#5'
+					},
+					Text:{
+						color:'#e'
+					},
+					Icon:{}
+				},
+				selected_slide$selected:{
+					$tween:2,
+					$ease:[0,10,0,0],
+					$duration:0.3,
+				},	
+				selected_over$selected:{
+					Bg:{
+						color:'#c'
+					},
+					Text:{
+						color:'#f'
+					},
+					Icon:{}
+				},
+				selected_slide_over$selected_over:{
+					$tween:2,
+					$ease:[0,10,0,0],
+					$duration:0.3,
+				},
+				dragging$selected_over:{
 				}
-			},
-			slide:{
-				$tween:2,
-				$ease:[0,10,0,0],
-				$duration:0.3,
-				Bg:{
-					color:'#3'
-				},
-				Text:{
-					color:'#9'
-				},
-				Icon:{}
-			},
-			default_over:{
-				Bg:{
-					color:'#4'
-				},
-				Text:{
-					color:'#c'
-				},
-				Icon:{}
-			},
-			selected:{
-				Bg:{
-					color:'#5'
-				},
-				Text:{
-					color:'#e'
-				},
-				Icon:{}
-			},
-			selected_slide:{
-				$tween:2,
-				$ease:[0,10,0,0],
-				$duration:0.3,
-				Bg:{
-					color:'#8'
-				},
-				Text:{
-					color:'#f'
-				},
-				Icon:{}
-			},		
-			selected_over:{
-				Bg:{
-					color:'#8'
-				},
-				Text:{
-					color:'#f'
-				},
-				Icon:{}
 			}
 		}
 	}
 
 	onFingerDown(e){
 		if(this.onTabSelected) this.onTabSelected(e)
-		this.state = this.styles.selected_over
-		this.stateExt = '_over'
-		// lets start dragging it
+		this.state = this.states.dragging
+		if(this.onTabSlide) this.onTabSlide(e)
 	}
 
 	onFingerMove(e){
-		// we have to choose an injection point
 		if(this.onTabSlide) this.onTabSlide(e)
-		//this.x = e.xView
 	}
 
 	onFingerUp(e){
 		if(this.onTabReleased) this.onTabReleased()
-		//this.x = undefined
-		this.stateExt = ''
-		this.state = this.styles.selected
+		this.state = this.states.selected_over
 	}
 
 	onFingerOver(){
-		if(this.state === this.styles.selected || this.state === this.styles.selected_over){
-			this.state = this.styles.selected_over
+		if(this.state === this.states.selected || this.state === this.states.selected_over){
+			this.state = this.states.selected_over
 		}
-		else this.state = this.styles.default_over
-		this.stateExt = '_over'
+		else this.state = this.states.default_over
 	}
 
 	onFingerOut(){
 		this.stateExt = ''
-		this.state = this.styles.default
+		this.state = this.states.default
 	}
 
 	onDraw(){

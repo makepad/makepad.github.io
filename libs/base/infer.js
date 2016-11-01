@@ -6,7 +6,6 @@ var painter = require('services/painter')
 module.exports = class ShaderInfer extends require('base/class'){
 
 	static generateGLSL(root, fn, varyIn, mapexception){
-		
 		var gen = new this()
 
 		// geometry props
@@ -36,6 +35,9 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 		// the function object info of the current function
 		var source = fn.toString()
+		if(source.indexOf('function') !== 0){
+			source = 'function ' + source
+		}
 		gen.curFunction = {
 			deps:{},
 			inout:{},
@@ -82,6 +84,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 		}
 		catch(e){
 			var dec = module.worker.decodeException(e)
+			console.log("HERE", dec)
 
 			// alright we have a lineoff, now we need to take the node
 			var lines = curfn.source.split('\n')

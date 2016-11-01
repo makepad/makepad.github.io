@@ -4,6 +4,7 @@ module.exports = class Button extends require('base/stamp'){
 		this.props = {
 			text: '',
 			icon: '',
+			id:'',
 			index: 0,
 			onClick: undefined,
 			onClickStamp: undefined,
@@ -23,12 +24,21 @@ module.exports = class Button extends require('base/stamp'){
 			Icon: require('tools/icon').extend({
 			})
 		}
-		
+
+		// determining the style, default way
+		this.onStyle = function(){
+			var styles = this.styles
+			this.states = styles[this.id] || styles.base
+			this._state = this.states.default
+		}
+
 		this.styles = {
-			default: {},
-			defaultOver: {Bg: {color: '#f77'}},
-			//clicked:{Bg:{color:'#f77'}},
-			clickedOver: {Bg: {color: 'red'}}
+			base:{
+				default: {},
+				defaultOver: {Bg: {color: '#f77'}},
+				//clicked:{Bg:{color:'#f77'}},
+				clickedOver: {Bg: {color: 'red'}}
+			}
 		}
 		
 		this.verbs = {
@@ -38,10 +48,10 @@ module.exports = class Button extends require('base/stamp'){
 				if(click) {
 					if(click.radio !== undefined && click.radio === overload.index || 
 						click.toggle !== undefined && click.toggle & (1 << overload.index)) {
-						$stamp._state = $stamp.styles.clicked
+						$stamp._state = $stamp.states.clicked
 					}
 					else {
-						$stamp._state = $stamp.styles.default
+						$stamp._state = $stamp.states.default
 					}
 					if(click.radio !== undefined) {
 						click[overload.index] = $stamp
@@ -56,12 +66,12 @@ module.exports = class Button extends require('base/stamp'){
 	}
 	
 	setClicked(clk) {
-		if(clk) this.state = this.styles.clicked
-		else this.state = this.styles.default
+		if(clk) this.state = this.states.clicked
+		else this.state = this.states.default
 	}
 	
 	isClicked() {
-		return this.state === this.styles.clicked || this.state === this.styles.clickedOver
+		return this.state === this.states.clicked || this.state === this.states.clickedOver
 	}
 	
 	onFingerDown(e) {
@@ -70,22 +80,22 @@ module.exports = class Button extends require('base/stamp'){
 		if(this.click && (this.click.radio !== undefined || this.click.toggle !== undefined)) {
 			// lets check if there are other stamps in the radio group
 			if(this.click.radio !== undefined) { // its a radio group
-				this.state = this.styles.clickedOver
+				this.state = this.states.clickedOver
 				for(let i = 0; this.click[i]; i++) {
 					var other = this.click[i]
 					if(other !== this) {
-						other.state = other.styles.default
+						other.state = other.states.default
 					}
 				}
 				this.click.radio = this.index
 			}
 			else if(this.click.toggle !== undefined) { // bitmask group
 				if(this.isClicked()) {
-					this.state = this.styles.defaultOver
+					this.state = this.states.defaultOver
 					this.click.toggle &= ~(1 << this.index)
 				}
 				else {
-					this.state = this.styles.clickedOver
+					this.state = this.states.clickedOver
 					this.click.toggle |= 1 << this.index
 				}
 			}
@@ -93,7 +103,7 @@ module.exports = class Button extends require('base/stamp'){
 			if(this.onClick) this.onClick.call(this.view, e)
 		}
 		else {
-			this.state = this.styles.clickedOver
+			this.state = this.states.clickedOver
 		}
 	}
 	
@@ -102,38 +112,38 @@ module.exports = class Button extends require('base/stamp'){
 		if(this.onUp) this.onUp.call(this.view, e)
 		if(this.click && (this.click.radio !== undefined || this.click.toggle !== undefined)) {
 			if(this.isClicked()) {
-				if(e.samePick) this.state = this.styles.clickedOver
-				else this.state = this.styles.clicked
+				if(e.samePick) this.state = this.states.clickedOver
+				else this.state = this.states.clicked
 			}
 			else {
-				if(e.samePick) this.state = this.styles.clickedOver
-				else this.state = this.styles.clicked
-				this.state = this.styles.defaultOver
+				if(e.samePick) this.state = this.states.clickedOver
+				else this.state = this.states.clicked
+				this.state = this.states.defaultOver
 			}
 		}
 		else {
 			if(e.samePick) {
 				if(e.touch) {
-					this.state = this.styles.default
+					this.state = this.states.default
 				}
 				else {
-					this.state = this.styles.defaultOver
+					this.state = this.states.defaultOver
 				}
 				if(this.onClickStamp) this.onClickStamp(e)
 				if(this.onClick) this.onClick.call(this.view, e)
 			}
 			else {
-				this.state = this.styles.default
+				this.state = this.states.default
 			}
 		}
 	}
 	
 	onFingerOver() {
-		this.state = this.isClicked()? this.styles.clickedOver: this.styles.defaultOver
+		this.state = this.isClicked()? this.states.clickedOver: this.states.defaultOver
 	}
 	
 	onFingerOut() {
-		this.state = this.isClicked()? this.styles.clicked: this.styles.default
+		this.state = this.isClicked()? this.states.clicked: this.states.default
 	}
 	
 	onDraw() {

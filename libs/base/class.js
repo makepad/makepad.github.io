@@ -19,7 +19,7 @@ function extend(body) {
 			body.call(check, proto, this.prototype) 
 			var keys = Object.keys(check) 
 			if(keys.length) { 
-				throw new Error('Dont assign things to this in class body, use proto as first arg: this.' + keys.join(', ')) 
+				throw new Error('Dont use this in extend callback: '+JSON.stringify(keys))
 			} 
 		}
 		else if(typeof iter === 'object') { 
@@ -89,7 +89,7 @@ Object.defineProperty(module.exports.prototype, 'inheritable', {
 	enumerable: false, 
 	configurable: true, 
 	writable: true, 
-	value: function inheritable(name, callback) { 
+	value: function inheritable(name, callback, type) { 
 		if(!this.hasOwnProperty('__inheritable__')) { 
 			Object.defineProperty(this, '__inheritable__', { 
 				enumerable: false, 
@@ -98,7 +98,7 @@ Object.defineProperty(module.exports.prototype, 'inheritable', {
 				value: this.__inheritable__? Array.prototype.slice.apply(this.__inheritable__): [] 
 			}) 
 		} 
-		this.__inheritable__.push({name: name, cb: callback}) 
+		this.__inheritable__.push({name: name, cb: callback, type:type}) 
 	} 
 }) 
 

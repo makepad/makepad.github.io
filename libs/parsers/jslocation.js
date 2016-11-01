@@ -11,6 +11,7 @@ var pp = Parser.prototype
 // message.
 
 pp.raise = function(pos, message) {
+
 	var loc = getLineInfo(this.input, pos)
 	///var outmsg = message + " (" + loc.line + ":" + loc.column + ")"
 	//var err = new SyntaxError(message)

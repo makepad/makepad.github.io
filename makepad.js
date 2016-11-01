@@ -1,20 +1,26 @@
+
 var storage = require('services/storage')
 var Worker = require('services/worker')
-
-var Dock = require('views/dock')
-var Source = require('./makepad/source')
-var Wave = require('./makepad/wave')
-var FileTree = require('./makepad/filetree')
-var HomeScreen = require('./makepad/homescreen')
-var Settings = require('./makepad/settings')
-var UserProcess = require('./makepad/userprocess')
 
 var projectFile = "/makepad.json"
 var currentFile = "./examples/windtree.js"
 var ProjectStore = require('base/store')
 var matchCache = {}
+
 module.exports = class Makepad extends require('base/app'){
 	
+	prototype(){
+		this.tools = {
+			Dock: require('views/dock'),
+			Source: require('./makepad/source'),
+			Wave: require('./makepad/wave'),
+			FileTree: require('./makepad/filetree'),
+			HomeScreen: require('./makepad/homescreen'),
+			Settings: require('./makepad/settings'),
+			UserProcess: require('./makepad/userprocess')
+		}
+	}
+
 	constructor() {
 		super()
 		
@@ -217,11 +223,11 @@ module.exports = class Makepad extends require('base/app'){
 		var type
 		var config
 		if(ext === 'js') {
-			type = Source
+			type = this.Source
 			config = {}
 		}
 		if(ext === 'wav') {
-			type = Wave
+			type = this.Wave
 			config = {}
 		}
 		
@@ -262,7 +268,7 @@ module.exports = class Makepad extends require('base/app'){
 		})
 		
 		var tabs = this.find('HomeProcess').parent
-		var idx = tabs.addNewChild(new UserProcess({
+		var idx = tabs.addNewChild(new this.UserProcess({
 			name: 'Process' + resource.path,
 			tabText: resource.path,
 			resource: resource,
@@ -278,12 +284,12 @@ module.exports = class Makepad extends require('base/app'){
 	onCompose() {
 		
 		return [
-			new Dock({
+			new this.Dock({
 				classes: {
-					HomeScreen: HomeScreen,
-					Source: Source,
-					FileTree: FileTree,
-					Settings: Settings
+					HomeScreen: this.HomeScreen,
+					Source: this.Source,
+					FileTree: this.FileTree,
+					Settings: this.Settings
 				},
 				data: {
 					mode: 1,
@@ -332,4 +338,4 @@ module.exports = class Makepad extends require('base/app'){
 			})
 		]
 	}
-}
+}.style(require('./makepad/styles'))

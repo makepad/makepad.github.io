@@ -18,7 +18,8 @@ module.exports = class Stamp extends require('base/class'){
 			w:NaN,
 			h:NaN,
 			margin:undefined,
-			cursor:undefined
+			cursor:undefined,
+			id:''
 		}
 
 		this.inheritable('verbs', function(){
@@ -43,6 +44,25 @@ module.exports = class Stamp extends require('base/class'){
 	set state(state){
 		this._state = state
 		this.redraw()	
+	}
+
+	initStates(arg){
+		var styles = this.styles
+		this.states = styles[this.id] || styles.base
+	}
+
+	initState(arg){
+		this.initStates(arg)
+		if(!this.states) return
+		if(arg && this._state){ // maintain _over state
+			var stateName = arg.state
+			// maintain our over state 
+			if(this._state.name.indexOf('_over') !== -1){
+				this._state = this.states[arg.state+'_over'] || this.states[arg.state]
+			}
+			else this._state = this.states[arg.state]
+		}
+		else this._state = this.states.default
 	}
 
 	redraw(){
@@ -105,28 +125,24 @@ module.exports = class Stamp extends require('base/class'){
 		code += indent + 'var $stampId = ++$view.$pickId\n'
 		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
 
-		code += indent + 'if(!$stamp || $stamp.constructor !== this.'+classname+' || $stamp.$layer !== '+macroargs[0]+'.$layer){\n'
+		code += indent + 'if(!$stamp || $stamp.constructor !== this.'+classname+'){\n'
 		code += indent + '	$stamp = $view.$stamps[$stampId] = new this.'+classname+'()\n'
 		code += indent + '	$stamp.$stampId = $stampId\n'
 		code += indent + '	$stamp.view = $view\n'
-		code += indent + '	var $layer = '+macroargs[0]+'.$layer\n'
-		code += indent + '	if($layer){\n'
-		code += indent + '      var $l = $layer + "'+classname+'"\n'
-		code += indent + '		$stamp.$layer = $layer\n'
-		code += indent + '		$stamp.$shaders = this.$shaders[$l]\n'
-		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders[$l] = {})\n'
-		code += indent + '	} else {\n'
-		code += indent + '		$stamp.$shaders = this.$shaders.'+classname+'\n'
-		code += indent + '		if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
-		code += indent + '	}'
-		code += indent + '	if($stamp.styles) $stamp._state = $stamp.styles.default\n'
 		code += indent + '}\n'
-		code += indent + 'if('+mainargs[0]+'){\n'
-		code += indent + '	var $styles = '+mainargs[0]+'.styles\n'
-		code += indent + '	if($styles) $stamp.styles = $styles\n'
-		code += indent + '	var $state = '+mainargs[0]+'.state\n'
-		code += indent + '	if($state) $stamp._state = $stamp.styles[$stamp.stateExt?($state.indexOf("_")!==-1?$state.slice(0,$state.indexOf("_")):$state)+$stamp.stateExt:$state]\n'
-		code += indent + '}\n'
+
+		code += indent + 'var $layer = '+macroargs[0]+'.$layer\n'
+		code += indent + 'if($layer){\n'
+		code += indent + '	var $l = $layer + "'+classname+'"\n'
+		code += indent + '	$stamp.$layer = $layer\n'
+		code += indent + '	$stamp.$shaders = this.$shaders[$l]\n'
+		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders[$l] = {})\n'
+		code += indent + '} else {\n'
+		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
+		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
+		code += indent + '}'
+		code += indent + '$stamp.initState('+mainargs[0]+')\n'
+
 		code += indent + '$turtle._pickId = $stampId\n'
 		code += indent + '$stamp.turtle = $turtle\n'
 		if(macroargs[0]) code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'

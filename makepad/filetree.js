@@ -1,10 +1,10 @@
-module.exports = class FileTree extends require('views/tree'){
+module.exports = class FileTree extends require('base/view'){
 	prototype() {
 		this.props = {
 			data: {inward: 'Tree', prop: 'data'}
 		}
 		this.tools = {
-			Tree: require('views/tree').extend(require('./styles').FileTree, {
+			Tree: require('views/tree').extend({
 				onNodeSelect: function(...args) {
 					this.parent.onNodeSelect(...args)
 				}

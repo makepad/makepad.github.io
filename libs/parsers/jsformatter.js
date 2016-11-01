@@ -96,8 +96,9 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			this.trace += 'try{'
 		}
-
-		this.fastText('{', this.styles.Curly.BlockStatement)
+		if(!colorScheme) colorScheme = this.styles.DefaultBlock
+		//colorScheme = this.styles.
+		this.fastText('{', colorScheme.curly)
 
 		let endx = turtle.wx, lineh = turtle.mh
 		// lets indent
@@ -121,13 +122,13 @@ module.exports = class JSFormatter extends require('base/class'){
 			let statement = body[i]
 			// Support the $ right after function { to mark shaders
 			if(i == 0 && statement.type === 'ExpressionStatement' && statement.expression.type === 'Identifier' && statement.expression.name === '$'){
-				this.scope.$ = 1
+				this.scope.$ = 'magic'
 				var expside = statement.side
 				isFolded = expside && expside.charCodeAt(expside.length - 1) === 13?this.$fastTextFontSize:0
 				if(isFolded) foldAfterFirst = true
 			}
 			if(statement.type === 'FunctionDeclaration'){
-				this.scope[statement.id.name] = 1
+				this.scope[statement.id.name] = 'fn'
 			}
 		}
 
@@ -156,7 +157,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.trace += '}catch($e){$T(-'+traceHandler+',$e);throw $e}finally{$T(-'+traceHandler+',this)}'
 		}
 		else this.trace += '}'
-		this.fastText('}', this.styles.Curly.BlockStatement)
+		this.fastText('}', colorScheme.curly)
 	
 		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
@@ -170,8 +171,8 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.indent,
 			pickId,
 			starty !== blockh?
-				(colorScheme||this.styles.Block.BlockStatement).open:
-				(colorScheme||this.styles.Block.BlockStatement).close
+				(colorScheme||this.styles.Block.BlockStatement).block.open:
+				(colorScheme||this.styles.Block.BlockStatement).block.close
 		)
 	}
 
@@ -180,7 +181,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		let turtle = this.turtle
 
 		let startx = turtle.sx, starty = turtle.wy
-		this.fastText('[', this.styles.Bracket.ArrayExpression)
+		this.fastText('[', this.styles.Array.bracket)
 		this.trace += '['
 		let elems = node.elements
 		let elemslen = elems.length - 1
@@ -204,7 +205,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
 		}
-		let commaStyle = top?this.styles.Comma.ArrayExpression.open:this.styles.Comma.ArrayExpression.close
+		let commaStyle = top?this.styles.Array.commaOpen:this.styles.Array.commaClose
 
 		for(let i = 0; i <= elemslen; i++){
 			let elem = elems[i]
@@ -241,7 +242,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		//this.$fastTextDelta += dy
 		this.trace += ']'
-		this.fastText(']', this.styles.Bracket.ArrayExpression)
+		this.fastText(']', this.styles.Array.bracket)
 
 		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
@@ -256,19 +257,19 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.indent,
 			pickId,
 			top?
-				this.styles.Block.ArrayExpression.open:
-				this.styles.Block.ArrayExpression.close
+				this.styles.Array.block.open:
+				this.styles.Array.block.close
 			)
 	}
 
 	//ObjectExpression:{properties:3},
 	ObjectExpression(node){
 		let turtle = this.turtle
-		let keyStyle = this.styles.ObjectExpression.key
+		let keyStyle = this.styles.Object.key
 
 		let startx = turtle.sx, starty = turtle.wy
 		
-		this.fastText('{', this.styles.Curly.ObjectExpression)
+		this.fastText('{', this.styles.Object.curly)
 		this.trace += '{'
 		let endx = turtle.wx, lineh = turtle.mh
 
@@ -304,7 +305,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 		}		
 		
-		var commaStyle = top?this.styles.Comma.ObjectExpression.open:this.styles.Comma.ObjectExpression.close
+		var commaStyle = top?this.styles.Object.commaOpen:this.styles.Object.commaClose
 		for(let i = 0; i <= propslen; i++){
 
 			let prop = props[i]
@@ -322,7 +323,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 			if(!prop.shorthand){
 				this.trace += ':'
-				this.fastText(':', this.styles.Colon.ObjectExpression,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
+				this.fastText(':', this.styles.Object.colon,keypos?(maxlen - keypos)*keyStyle.alignRight:0)
 				var value = prop.value
 				this[value.type](value, key)
 			}
@@ -356,7 +357,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		//this.$fastTextDelta += dy
 		this.trace += '}'
-		this.fastText('}', this.styles.Curly.ObjectExpression)
+		this.fastText('}', this.styles.Object.curly)
 
 		let blockh = turtle.wy
 
@@ -373,8 +374,8 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.indent,
 			pickId,
 			top?
-				this.styles.Block.ObjectExpression.open:
-				this.styles.Block.ObjectExpression.close
+				this.styles.Object.block.open:
+				this.styles.Object.block.close
 			)
 	}
 
@@ -383,7 +384,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		let turtle = this.turtle
 		let startx = turtle.sx, starty = turtle.wy
 
-		this.fastText('{', this.styles.Curly.ObjectExpression)
+		this.fastText('{', this.styles.Class.curly)
 		this.trace += '{'
 		
 		let endx = turtle.wx, lineh = turtle.mh
@@ -406,7 +407,7 @@ module.exports = class JSFormatter extends require('base/class'){
         if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
 		this.indentOut()
 		this.trace += '}'
-		this.fastText('}', this.styles.Curly.BlockStatement)
+		this.fastText('}', this.styles.Class.curly)
 		// store endx endy
 		var blockh = turtle.wy
 
@@ -423,7 +424,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			blockh - starty,
 			this.indent,
 			pickId,
-			this.styles.Block.ClassBody
+			this.styles.Class.block.open
 		)
 	}
 
@@ -457,7 +458,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	ParenthesizedExpression(node, level){
 		if(!level) level = 0
 		this.trace += '('
-		this.fastText('(', this.styles.Paren.ParenthesizedExpression)
+		this.fastText('(', this.styles.Parens.left)
 		// check if we need to indent
 		if(node.top){
 			this.fastText(node.top, this.styles.Comment.top)
@@ -483,16 +484,16 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += ')'
 		if(this.allowOperatorSpaces && node.rightSpace){
 			for(let i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
-			this.fastText(')'+rs, this.styles.Paren.ParenthesizedExpression)
+			this.fastText(')'+rs, this.styles.Parens.right)
 		}
-		else this.fastText(')', this.styles.Paren.ParenthesizedExpression)
+		else this.fastText(')', this.styles.Parens.right)
 
 	}
 
 	//Literal:{raw:0, value:0},
 	Literal(node){
 		this.trace += node.raw
-		this.fastText(node.raw, this.styles.Literal[node.kind])
+		this.fastText(node.raw, this.styles.Value[node.kind])
 	}
 
 	//Identifier:{name:0},
@@ -502,19 +503,16 @@ module.exports = class JSFormatter extends require('base/class'){
 		var where
 		if(where = this.scope[name]){
 			if(this.scope.hasOwnProperty(name)){
-				if(where === 1) style = this.styles.Identifier.local
-				else if(where === 2) style = this.styles.Identifier.localArg
-				else style = this.styles.Identifier.iterator
+				style = this.styles.Id[where]
 			}
 			else{
-				if(where === 1) style = this.styles.Identifier.closure
-				else style = this.styles.Identifier.closureArg
+				style = this.styles.Id[where].closure
 			}
 		}
 		else if(this.scope.$ && this.glslGlobals[name]){
-			style = this.styles.Identifier.glsl
+			style = this.styles.Id.glsl
 		}
-		else style = this.styles.Identifier.unknown
+		else style = this.styles.Id.unknown
 
 		if(this.traceMap) this.trace += 'T$('+this.traceMap.push(node)+','+name+')'
 		else this.trace += name
@@ -525,7 +523,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	//ThisExpression:{},
 	ThisExpression(node){
 		this.trace += 'this'
-		this.fastText('this', this.styles.ThisExpression)
+		this.fastText('this', this.styles.Class.this)
 	}
 
 	//MemberExpression:{object:1, property:1, computed:0},
@@ -536,11 +534,11 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		if(node.computed){
 			this.trace += '['
-			this.fastText('[', this.styles.Bracket.MemberExpression)
+			this.fastText('[', this.styles.Object.bracket)
 
 			this[prop.type](prop, node)
 			this.trace += ']'
-			this.fastText(']', this.styles.Bracket.MemberExpression)
+			this.fastText(']', this.styles.Object.bracket)
 		}
 		else{
 			if(node.around1){
@@ -548,7 +546,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			this.indentIn()
 			this.trace += '.'
-			this.fastText('.', this.styles.Dot.MemberExpression)
+			this.fastText('.', this.styles.Object.dot)
 			if(node.around2){
 				this.fastText(node.around2, this.styles.Comment.around)
 			}
@@ -556,7 +554,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			else{
 				var name = prop.name
 				this.trace += name
-				this.fastText(name, this.styles.MemberExpression)
+				this.fastText(name, this.styles.Object.member)
 			}
 			this.indentOut()
 		}
@@ -585,7 +583,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[callee.type](callee, node)
 
 		this.trace += '('
-		this.fastText('(', this.styles.Paren.CallExpression)
+		this.fastText('(', this.styles.Call.paren)
 
 		var argslen = args.length - 1
 
@@ -608,7 +606,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[arg.type](arg)
 			if(i < argslen) {
 				this.trace += ','
-				this.fastText(',', node.top?this.styles.Comma.CallExpression.open:this.styles.Comma.CallExpression.close)
+				this.fastText(',', node.top?this.styles.Call.commaOpen:this.styles.Call.commaClosed)
 			}
 			if(top){
 				var side = arg.side
@@ -634,9 +632,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		if(this.allowOperatorSpaces && node.rightSpace){
 			for(let i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
-			this.fastText(')'+rs, this.styles.Paren.CallExpression)
+			this.fastText(')'+rs, this.styles.Call.paren)
 		}
-		else this.fastText(')', this.styles.Paren.CallExpression)
+		else this.fastText(')', this.styles.Call.paren)
 	}
 
 	//NewExpression:{callee:1, arguments:2},
@@ -644,7 +642,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var callee = node.callee
 		var args = node.arguments
 		this.trace += 'new '
-		this.fastText('new ', this.styles.NewExpression)
+		this.fastText('new ', this.styles.Class.new)
 		// check newline/whitespace
 		let around2 = node.around2
 		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
@@ -657,12 +655,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'return '
-			this.fastText('return ', this.styles.ReturnStatement)
+			this.fastText('return ', this.styles.Function.return)
 			this[arg.type](arg, node)
 		}
 		else{
 			this.trace += 'return'
-			this.fastText('return'+node.space, this.styles.ReturnStatement)
+			this.fastText('return'+node.space, this.styles.Function.return)
 		}
 	}
 
@@ -675,18 +673,23 @@ module.exports = class JSFormatter extends require('base/class'){
 	FunctionDeclaration(node, method){
 		var id = node.id
 		if(id){
-			this.scope[name] = 1
+			this.scope[name] = 'fn'
 			this.trace += 'function '+id.name
-			this.fastText('function ', this.styles.FunctionDeclaration)
-			this.fastText(id.name, this.styles.Identifier.FunctionDeclaration)
+			this.fastText('function ', this.styles.Function.function)
+			this.fastText(id.name, this.styles.Id.fn)
 		}
 		else{
-            if(!method) method = 'function'
-			this.trace += method
-			this.fastText(method + (node.space?node.space:''), this.styles.FunctionDeclaration)
+            if(!method){
+				this.trace += 'function'
+				this.fastText('function' + (node.space?node.space:''), this.styles.Function.function)
+            }
+            else{
+				this.trace += method
+				this.fastText(method, this.styles.Class.method)
+            }
 		}
 		this.trace += '('
-		this.fastText('(', this.styles.Paren.FunctionDeclaration.left)
+		this.fastText('(', this.styles.Function.parenLeft)
 
 		let top = node.top
 		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
@@ -703,19 +706,19 @@ module.exports = class JSFormatter extends require('base/class'){
 	
 			if(param.type === 'Identifier'){
 				var name = param.name
-				this.scope[name] = 2
+				this.scope[name] = 'arg'
 				this.trace += name
-				this.fastText(name, this.styles.Identifier.localArg)
+				this.fastText(name, this.styles.Id.arg)
 			}
 			else {
                 if(param.type === 'RestElement'){
-                    this.scope[param.argument.name] = 2
+                    this.scope[param.argument.name] = 'arg'
                 }
 				this[param.type](param)
 			}
 			if(i < paramslen){
 				this.trace += ','
-				this.fastText(',', this.styles.Comma.FunctionDeclaration)
+				this.fastText(',', this.styles.Function.comma)
 			}
 			if(top){
 				let side = param.side
@@ -736,19 +739,20 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this.indentOut()
 		this.trace += ')'
-		this.fastText(')', this.styles.Paren.FunctionDeclaration.right)
+		this.fastText(')', this.styles.Function.parenRight)
 
 		var body = node.body
-		this[body.type](body, this.styles.Block.FunctionDeclaration, node)
+		this[body.type](body, this.styles.Function, node)
 
 		this.scope = oldscope
 	}
 
 	//VariableDeclaration:{declarations:2, kind:0},
 	VariableDeclaration(node, level){
-		if(node.space !== undefined) this.fastText(node.kind+node.space, this.styles.VariableDeclaration)
-		else this.fastText(node.kind+' ', this.styles.VariableDeclaration)
-		this.trace += node.kind+' '
+		var kind = node.kind
+		if(node.space !== undefined) this.fastText(kind+node.space, this.styles.VariableDeclaration)
+		else this.fastText(kind+' ', this.styles.Keyword[kind])
+		this.trace += kind+' '
 		let mid = node.mid
 		if(mid){
 			this.fastText(mid, this.styles.Comment.above), this.trace += mid
@@ -758,24 +762,24 @@ module.exports = class JSFormatter extends require('base/class'){
 		var declslen = decls.length - 1
 		for(let i = 0; i <= declslen; i++){
 			var decl = decls[i]
-			this[decl.type](decl)
+			this[decl.type](decl, kind)
 			if(i !== declslen){
-				this.fastText(',', this.styles.Comma.VariableDeclaration)
+				this.fastText(',', this.styles.Keyword.varComma)
 				this.trace += ','
 			}
 		}
 	}
 
 	//VariableDeclarator:{id:1, init:1},
-	VariableDeclarator(node){
+	VariableDeclarator(node, kind){
 		var id = node.id
 
 		if(node.probe){
-			this.fastText('@', this.styles.Identifier.local)
+			this.fastText('@', this.styles.Operator['@'])
 		}
 		if(id.type === 'Identifier'){
-			this.scope[id.name] = 1//scopeId || 1
-			this.fastText(id.name, this.styles.Identifier.local)
+			this.scope[id.name] = kind//scopeId || 1
+			this.fastText(id.name, this.styles.Id[kind])
 			this.trace += id.name
 		}
 		else this[id.type](id, node)
@@ -786,7 +790,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
 
 			this.trace += '='
-			this.fastText('=', this.styles.AssignmentExpression['='] || this.styles.AssignmentExpression)
+			this.fastText('=', this.styles.Operator['='] || this.styles.Operator.default)
 			let around2 = node.around2
 			if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 			if(node.probe){
@@ -814,7 +818,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.indentIn()
 
 		this.trace += node.operator
-		this.fastText(node.operator, this.styles.LogicalExpression[node.operator] || this.styles.LogicalExpression)
+		this.fastText(node.operator, this.styles.Operator[node.operator] || this.styles.Operator.default)
 		let around2 = node.around2
 		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 
@@ -849,12 +853,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(this.allowOperatorSpaces){
 			for(let ls = '', i = node.leftSpace||0; i > 0; --i) ls += ' '
 			for(let rs = '', i = node.rightSpace||0; i > 0; --i) rs += ' '
-			this.fastText(ls+op+rs, this.styles.BinaryExpression[node.operator] || this.styles.BinaryExpression, 0, 0)
+			this.fastText(ls+op+rs, this.styles.Operator[node.operator] || this.styles.Operator.default, 0, 0)
 		}
 		else {
 			var style
-			if(doIndent) style = this.styles.BinaryExpression[node.operator] || this.styles.BinaryExpression
-			else style = this.styles.BinaryExpressionNL[node.operator] || this.styles.BinaryExpressionNL
+			if(doIndent) style = this.styles.Operator[node.operator] || this.styles.Operator.default
+			else style = this.styles.OperatorNL[node.operator] || this.styles.OperatorNL.default
 			if(op === 'in') op = ' ' + op + ' '
 			this.fastText(op, style)
 		}
@@ -880,7 +884,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		let around1 = node.around1
 		if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
 		this.trace += node.operator
-		this.fastText(node.operator, this.styles.AssignmentExpression[node.operator] || this.styles.AssignmentExpression)
+		this.fastText(node.operator, this.styles.Operator[node.operator] || this.styles.Operator.default)
 		let around2 = node.around2
 		if(around2) this.fastText(around2, this.styles.Comment.around), this.trace += around2
 
@@ -892,14 +896,14 @@ module.exports = class JSFormatter extends require('base/class'){
 		var test = node.test
 		this[test.type](test)
 		this.trace += '?'
-		this.fastText('?', this.styles.QuestionMark)
+		this.fastText('?', this.styles.Operator['?:'])
 		this.indentIn()
 		var afterq = node.afterq
 		if(afterq) this.fastText(afterq, this.styles.Comment.above), this.trace += afterq
 		var cq = node.consequent
 		this[cq.type](cq)
 		this.trace += ':'
-		this.fastText(':', this.styles.Colon.ConditionalExpression)
+		this.fastText(':', this.styles.Operator['?:'])
 		var afterc = node.afterc
 		if(afterc) this.fastText(afterc, this.styles.Comment.above), this.trace += afterc
 		var alt = node.alternate
@@ -913,7 +917,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.prefix){
 			var op = node.operator
 			this.trace += op
-			this.fastText(op, this.styles.UpdateExpression[op] || this.styles.UpdateExpression)
+			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
 			var arg = node.argument
 			var argtype = arg.type
 			this[argtype](arg)
@@ -924,7 +928,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this[argtype](arg)
 			var op = node.operator
 			this.trace += op
-			this.fastText(op, this.styles.UpdateExpression[op] || this.styles.UpdateExpression)
+			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
 		}
  	}
 
@@ -932,7 +936,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(op === 'probe'){
 			var id = this.onProbe(arg, lhs)
 			this.trace += 'module.probe('+id+','
-			var style = Object.create(this.styles.ProbeExpression)
+			var style = Object.create(this.styles.Operator['#'])
 			style.probeId = id
 			this.fastText('#', style)
 			// store ID in fontsize
@@ -946,7 +950,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(op === 'log'){
 			var id = this.onLog(arg, lhs)
 			this.trace += 'module.log('+id+','
-			var style = Object.create(this.styles.ProbeExpression)
+			var style = Object.create(this.styles.Operator['@'])
 			style.probeId = id
 			this.fastText('@', style)
 			var argtype = arg.type
@@ -967,7 +971,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			var op = node.operator
 			if(op.length > 1) op = op + ' '
 			this.trace += op
-			this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
+			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
 			var arg = node.argument
 			var argtype = arg.type
 			this[argtype](arg)
@@ -977,7 +981,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			var argtype = arg.type
 			this[argtype](arg)
 			var op = node.operator
-			this.fastText(op, this.styles.UnaryExpression[op] || this.styles.UnaryExpression)
+			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
 		}
  	}
 
@@ -985,98 +989,98 @@ module.exports = class JSFormatter extends require('base/class'){
 	IfStatement(node){
 		if(this.traceMap) this.trace += 'if(T$('+this.traceMap.push(node)+','
 		else this.trace += 'if('
-		this.fastText('if', this.styles.IfStatement.if)
-		this.fastText('(', this.styles.Paren.IfStatement.left)
+		this.fastText('if', this.styles.If.if)
+		this.fastText('(', this.styles.If.parenLeft)
 		var test = node.test
 		this[test.type](test,1)
 
 		if(this.traceMap) this.trace += '))'
 		else this.trace += ')'
 
-		this.fastText(')', this.styles.Paren.IfStatement.right)
+		this.fastText(')', this.styles.If.parenRight)
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 		var cq = node.consequent
-		this[cq.type](cq, this.styles.Block.IfStatement.if)
+		this[cq.type](cq, this.styles.If)
 		var alt = node.alternate
 		if(alt){
 			this.trace += '\nelse '
-			this.fastText('\nelse ', this.styles.IfStatement.else)
+			this.fastText('\nelse ', this.styles.If.else)
 			let after2 = node.after2
 			if(after2) this.fastText(after2, this.styles.Comment.above), this.trace += after2
-			this[alt.type](alt, this.styles.Block.IfStatement.else)
+			this[alt.type](alt, this.styles.If)
 		}
 	}
 
 	//ForStatement:{init:1, test:1, update:1, body:1},
 	ForStatement(node){
 		this.trace += 'for('
-		this.fastText('for', this.styles.ForStatement)
-		this.fastText('(', this.styles.Paren.ForStatement.left)
+		this.fastText('for', this.styles.For.for)
+		this.fastText('(', this.styles.For.parenLeft)
 		var init = node.init
 		if(init)this[init.type](init, 1, 3)
 		this.trace += ';'
-		this.fastText(';', this.styles.SemiColon.ForStatement)
+		this.fastText(';', this.styles.For.semi)
 		var test = node.test
 		if(test)this[test.type](test, 1)
 		this.trace += ';'
-		this.fastText(';', this.styles.SemiColon.ForStatement)
+		this.fastText(';', this.styles.For.semi)
 		var update = node.update
 		if(update)this[update.type](update, 1)
 		this.trace += ')'
-		this.fastText(')', this.styles.Paren.ForStatement.right)
+		this.fastText(')', this.styles.For.parenRight)
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
-		this[body.type](body, this.styles.Block.ForStatement)
+		this[body.type](body, this.styles.For)
 	}
 
 	//ForInStatement:{left:1, right:1, body:1},
 	ForInStatement(node){
 		this.trace += 'for('
-		this.fastText('for', this.styles.ForStatement)
-		this.fastText('(', this.styles.Paren.ForStatement.left)
+		this.fastText('for', this.styles.For.for)
+		this.fastText('(', this.styles.For.parenLeft)
 		var left = node.left
 		this[left.type](left)
 		this.trace += ' in '
-		this.fastText(' in ', this.styles.ForStatement.in)
+		this.fastText(' in ', this.styles.For.in)
 		var right = node.right
 		this[right.type](right)
 		this.trace += ')'
-		this.fastText(')', this.styles.Paren.ForStatement.right)
+		this.fastText(')', this.styles.For.parenRight)
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
-		this[body.type](body, this.styles.Block.ForStatement)
+		this[body.type](body, this.styles.For)
 	}
 
 	//ForOfStatement:{left:1, right:1, body:1},
 	ForOfStatement(node){
 		this.trace += 'for('
-		this.fastText('for', this.styles.ForStatement)
-		this.fastText('(', this.styles.Paren.ForStatement.left)
+		this.fastText('for', this.styles.For.for)
+		this.fastText('(', this.styles.For.parenLeft)
 		var left = node.left
 		this[left.type](left)
 		this.trace += ' of '
-		this.fastText(' of ', this.styles.ForStatement.in)
+		this.fastText(' of ', this.styles.For.of)
 		var right = node.right
 		this[right.type](right)
 		this.trace += ')'
-		this.fastText(')', this.styles.Paren.ForStatement.right)
+		this.fastText(')', this.styles.For.parenRight)
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
-		this[body.type](body, this.styles.Block.ForStatement)
+		this[body.type](body, this.styles.For)
 	}
 
 	//WhileStatement:{body:1, test:1},
 	WhileStatement(node){
-		this.fastText('while', this.styles.WhileStatement.while)
-		this.fastText('(', this.styles.Paren.WhileStatement.left)
+		this.fastText('while', this.styles.For.while)
+		this.fastText('(', this.styles.For.parenLeft)
 		this.trace += 'while('
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this.styles.Paren.WhileStatement.right)
+		this.fastText(')', this.styles.For.parenRight)
 		this.trace += ')'
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
@@ -1087,15 +1091,15 @@ module.exports = class JSFormatter extends require('base/class'){
 	//DoWhileStatement:{body:1, test:1},
 	DoWhileStatement(node){
 		this.trace += 'do'
-		this.fastText('do', this.styles.DoWhileStatement.do)
+		this.fastText('do', this.styles.For.do)
 		var body = node.body
 		this[body.type](body)
-		this.fastText('while', this.styles.DoWhileStatement.while)
-		this.fastText('(', this.styles.Paren.DoWhileStatement.left)
+		this.fastText('while', this.styles.For.while)
+		this.fastText('(', this.styles.For.parenLeft)
 		this.trace += 'while('
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this.styles.Paren.DoWhileStatement.right)
+		this.fastText(')', this.styles.For.parenRight)
 		this.trace += ')'
 	}
 
@@ -1104,12 +1108,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.label){
 			var label = node.label
 			this.trace += 'break '
-			this.fastText('break ', this.styles.BreakStatement)
+			this.fastText('break ', this.styles.For.break)
 			this[label.type](label)
 		}
 		else{
 			this.trace += 'break'
-			this.fastText('break', this.styles.BreakStatement)
+			this.fastText('break', this.styles.For.break)
 		}
 	}
 
@@ -1118,12 +1122,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(node.label){
 			var label = node.label
 			this.trace += 'continue '
-			this.fastText('continue ', this.styles.ContinueStatement)
+			this.fastText('continue ', this.styles.For.continue)
 			this[label.type](label)
 		}
 		else{
 			this.trace += 'continue'
-			this.fastText('continue', this.styles.ContinueStatement)
+			this.fastText('continue', this.styles.For.continue)
 		}
 	}
 
@@ -1132,12 +1136,12 @@ module.exports = class JSFormatter extends require('base/class'){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'yield '
-			this.fastText('yield ', this.styles.YieldExpression)
+			this.fastText('yield ', this.styles.Function.yield)
 			this[arg.type](arg, node)
 		}
 		else{
 			this.trace += 'yield'
-			this.fastText('yield'+node.space, this.styles.YieldExpression)
+			this.fastText('yield'+node.space, this.styles.Function.yield)
 		}
 	}
 	
@@ -1146,53 +1150,53 @@ module.exports = class JSFormatter extends require('base/class'){
 		var arg = node.argument
 		if(arg){
 			this.trace += 'throw '
-			this.fastText('throw ', this.styles.ThrowStatement)
+			this.fastText('throw ', this.styles.Exception.throw)
 			this[arg.type](arg, node)
 		}
 		else{
 			this.trace += 'throw'
-			this.fastText('throw'+node.space, this.styles.ThrowStatement)
+			this.fastText('throw'+node.space, this.styles.Exception.throw)
 		}
 	}
 
 	//TryStatement:{block:1, handler:1, finalizer:1},
 	TryStatement(node){
 		this.trace += 'try'
-		this.fastText('try', this.styles.TryStatement)
+		this.fastText('try', this.styles.Exception.try)
 		var block = node.block
 		this[block.type](block)
 		var handler = node.handler
 		if(handler){
 			let above = handler.above
 			if(above) this.fastText(above, this.styles.Comment.side), this.trace += above
-			this[handler.type](handler)
+			this[handler.type](handler, this.styles.Exception)
 		}
 		var finalizer = node.finalizer
 		if(finalizer){
 			let above = finalizer.above
 			if(above) this.fastText(above, this.styles.Comment.side), this.trace += above
 			this.trace += 'finally'
-			this.fastText('finally', this.styles.TryStatement)
-			this[finalizer.type](finalizer)
+			this.fastText('finally', this.styles.Exception.finally)
+			this[finalizer.type](finalizer, this.styles.Exception)
 		}
 	}
 
 	//CatchClause:{param:1, body:1},
 	CatchClause(node){
 		this.trace += 'catch('
-		this.fastText('catch', this.styles.CatchClause)
-		this.fastText('(', this.styles.Paren.CatchClause.left)
+		this.fastText('catch', this.styles.Exception.catch)
+		this.fastText('(', this.styles.Exception.parenLeft)
 		var param = node.param
 		this[param.type](param)
-		this.fastText(')', this.styles.Paren.CatchClause.right)
+		this.fastText(')', this.styles.Exception.parenRight)
 		this.trace += ')'
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.Exception)
 	}
 
 	//SpreadElement
 	SpreadElement(node){
-		this.fastText('...', this.styles.RestElement)
+		this.fastText('...', this.styles.Operator['...'])
 		this.trace += '...'
 		var arg = node.argument
 		this[arg.type](arg)
@@ -1200,7 +1204,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//RestElement:{argument:1}
 	RestElement(node){
-		this.fastText('...', this.styles.RestElement)
+		this.fastText('...', this.styles.Operator['...'])
 		this.trace += '...'
 		var arg = node.argument
 		this[arg.type](arg)
@@ -1208,7 +1212,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//Super:{},
 	Super(node){
-		this.fastText('super', this.styles.Super)
+		this.fastText('super', this.styles.Class.super)
 		this.trace += 'super'
 	}
 
@@ -1232,7 +1236,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	ArrowFunctionExpression(node){
 		this.trace += '('
 		if(!node.noParens){
-			this.fastText('(', this.styles.Paren.ArrowFunctionExpression.left)
+			this.fastText('(', this.styles.Function.parenLeft)
 		}
 		var params = node.params
 		var paramslen = params.length - 1
@@ -1240,40 +1244,40 @@ module.exports = class JSFormatter extends require('base/class'){
 			var param = params[i]
 			if(param.type === 'Identifier'){
 				var name = param.name
-				this.scope[name] = 2
+				this.scope[name] = 'arg'
 				this.trace += name
-				this.fastText(name, this.styles.Identifier.localArg)
+				this.fastText(name, this.styles.Id.arg)
 			}
 			else {
                 if(param.type === 'RestElement'){
-                    this.scope[param.argument.name] = 2
+                    this.scope[param.argument.name] = 'arg'
                 }
 				this[param.type](param)
 			}
 			if(i < paramslen){
 				this.trace += ','
-				this.fastText(',', this.styles.Comma.ArrowFunctionExpression)
+				this.fastText(',', this.styles.Function.comma)
 			}
 		}
 		this.trace += ')'
 		if(!node.noParens){
-			this.fastText(')', this.styles.Paren.ArrowFunctionExpression.right)	
+			this.fastText(')', this.styles.Function.parenRight)	
 		}
 		this.trace += '=>'
-		this.fastText('=>', this.styles.ArrowFunctionExpression)
+		this.fastText('=>', this.styles.Function.arrow)
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.Function)
 	}
 
 	//SwitchStatement:{discriminant:1, cases:2},
 	SwitchStatement(node){
 		this.trace += 'switch('
-		this.fastText('switch', this.styles.SwitchStatement)
-		this.fastText('(', this.styles.Paren.SwitchStatement.left)
+		this.fastText('switch', this.styles.If.switch)
+		this.fastText('(', this.styles.If.parentLeft)
 		var disc = node.discriminant
 		this[disc.type](disc)
-		this.fastText(')', this.styles.Paren.SwitchStatement.right)
-		this.fastText('{', this.styles.Curly.SwitchStatement)
+		this.fastText(')', this.styles.If.parentLeft)
+		this.fastText('{', this.styles.If.curly)
 		this.trace += '){\n'
 		
 		var top = node.top
@@ -1287,7 +1291,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var bottom = node.bottom
 		if(bottom) this.fastText(bottom, this.styles.Comment.bottom)
 		
-		this.fastText('}', this.styles.Curly.SwitchStatement)
+		this.fastText('}', this.styles.If.curly)
 		this.trace += '}'
 	}
 
@@ -1298,15 +1302,15 @@ module.exports = class JSFormatter extends require('base/class'){
 		var test = node.test
 		if(!test){
 			this.trace += 'default'
-			this.fastText('default', this.styles.SwitchCase)
+			this.fastText('default', this.styles.If.case)
 		}
 		else{
 			this.trace += 'case '
-			this.fastText('case ', this.styles.SwitchCase)
+			this.fastText('case ', this.styles.If.case)
 			this[test.type](test)
 		}
 		this.trace += ':'
-		this.fastText(':', this.styles.Colon.SwitchCase)
+		this.fastText(':', this.styles.If.caseColon)
 		let side = node.side
 		if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 		this.indentIn()
@@ -1342,21 +1346,21 @@ module.exports = class JSFormatter extends require('base/class'){
 	//ClassDeclaration:{id:1,superClass:1},
 	ClassDeclaration(node){
 		this.trace += 'class '
-		this.fastText('class ', this.styles.ClassDeclaration.class)
+		this.fastText('class ', this.styles.Class.class)
 		var id = node.id
 		if(id){
-            this.scope[id.name] = 1
+            this.scope[id.name] = 'class'
 			this[id.type](id)
 
 			if(node.space){
 				this.trace += ' '
-				this.fastText(' ', this.styles.ClassDeclaration.class)
+				this.fastText(' ', this.styles.Class.class)
 			}
 		}
 		var base = node.superClass
 		if(base){
 			this.trace += 'extends '
-			this.fastText('extends ', this.styles.ClassDeclaration.extends)
+			this.fastText('extends ', this.styles.Class.extends)
 			this[base.type](base)
 		}
 		var body = node.body
@@ -1366,21 +1370,21 @@ module.exports = class JSFormatter extends require('base/class'){
 	//ClassExpression:{id:1,superClass:1},
 	ClassExpression(node){
 		this.trace += 'class '
-		this.fastText('class ', this.styles.ClassExpression.class)
+		this.fastText('class ', this.styles.Class.class)
 		var id = node.id
 		if(id){
-			this.scope[id.name] = 1
+			this.scope[id.name] = 'class'
 			this[id.type](id)
 			
 			if(node.space){
 				this.trace += ' '
-				this.fastText(' ', this.styles.ClassExpression.class)
+				this.fastText(' ', this.styles.Class.class)
 			}
 		}	
 		var base = node.superClass
 		if(base){
 			this.trace += 'extends '
-			this.fastText('extends ', this.styles.ClassExpression.extends)
+			this.fastText('extends ', this.styles.Class.extends)
 			this[base.type](base)
 		}
 		var body = node.body
@@ -1393,7 +1397,7 @@ module.exports = class JSFormatter extends require('base/class'){
         var name = node.key.name
         if(node.static){
             this.trace += 'static '
-            this.fastText('static ', this.styles.MethodDefinition.static)
+            this.fastText('static ', this.styles.Class.static)
         }
         this.FunctionDeclaration(value, name)
 	}

@@ -54,7 +54,7 @@ module.exports = class Split extends require('base/stamp'){
 					setWidth:26,
 					borderWidth:0.,
 					boxSize:120.,
-					bgColor:'gray',
+					bgColor:'#1',
 					borderColor:'black'
 				},
 				vertexStyle:function(){
@@ -128,47 +128,56 @@ module.exports = class Split extends require('base/stamp'){
 				}
 			})
 		}
+	
+		// determining the style, default way
+		this.onStyle = function(){
+			var styles = this.styles
+			this.states = styles[this.id] || styles.base
+			this._state = this.states.default
+		}
 
 		this.styles = {
-			$duration:0.3,
-			$tween:2,
-			$ease:[0,10,0,0],
-			default:{
-				settings:0.,
-				Button:{
-					$fontSize:0,
-					w:0,h:0,
-					Bg:{},
-					Text:{},
-					Icon:{}
+			base:{
+				$duration:0.3,
+				$tween:2,
+				$ease:[0,10,0,0],
+				default:{
+					settings:0.,
+					Button:{
+						$fontSize:0,
+						w:0,h:0,
+						Bg:{},
+						Text:{},
+						Icon:{}
+					},
+					Bg:{}
 				},
-				Bg:{}
-			},
-			settings:{
-				settings:1,
-				Button:{
-					w:22,h:22,
-					Bg:{},
-					$fontSize:14,
-					Text:{},
-					Icon:{}
+				settings:{
+					settings:1,
+					Button:{
+						w:22,h:22,
+						Bg:{},
+						$fontSize:14,
+						Text:{},
+						Icon:{}
+					},
+					Bg:{
+						//borderWidth:.5,
+						//borderColor:'black'
+					}
 				},
-				Bg:{
-					//borderWidth:.5,
-					//borderColor:'black'
+				default_noAnim$default:{
+					$duration:0.
+				},
+				settings_noAnim$settings:{
+					$duration:0.
+				},
+				default_drag$default:{
+					$duration:0.,
+				},
+				settings_drag$settings:{
+					$duration:0.
 				}
-			},
-			default_noAnim$default:{
-				$duration:0.
-			},
-			settings_noAnim$settings:{
-				$duration:0.
-			},
-			default_drag$default:{
-				$duration:0.,
-			},
-			settings_drag$settings:{
-				$duration:0.
 			}
 		}
 	}
@@ -207,6 +216,7 @@ module.exports = class Split extends require('base/stamp'){
 
 	onDraw(){
 		this.beginBg(this)
+		
 		this.drawButton({
 			text:'%',
 			index:0

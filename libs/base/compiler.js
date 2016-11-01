@@ -936,7 +936,7 @@ module.exports = class Compiler extends require('base/class'){
 				if(pack){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					if(pack === 'float12'){
-						if(fastWrite || prop.config.noCast){
+						if(prop.config.noCast){
 							propcode += indent +'$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0),$a[$o+'+(o+1)+']=((_'+prop.name+'[2] * 4095)<<12) + ((_'+prop.name+'[3]*4095)|0)\n'
 						}
 						else{
@@ -950,7 +950,7 @@ module.exports = class Compiler extends require('base/class'){
 						}
 					}
 					else{ // int packing
-						if(fastWrite || prop.config.noCast){
+						if(prop.config.noCast){
 							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]+2048<<12) + (_'+prop.name+'[3]+2048|0)\n'
 						}
 						else{
@@ -964,7 +964,7 @@ module.exports = class Compiler extends require('base/class'){
 				}
 				else{
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(fastWrite || prop.config.noCast){
+					if(prop.config.noCast){
 						propcode += indent +'$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
 					}
 					else{

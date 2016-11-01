@@ -16,8 +16,9 @@ function defineToolInheritable(proto, key){
 			cls = this[key] = inherit
 		}
 		this.$compileVerbs(key, cls)
-	})
+	}, true)
 }
+
 
 module.exports = class Tools extends require('base/class'){
 
@@ -32,6 +33,7 @@ module.exports = class Tools extends require('base/class'){
 				if(inherit && inherit.constructor === Object){ // subclass it
 					var base = this[key]
 					var cls = this[key] = base.extend(inherit)
+					// lets call the callback
 					this.$compileVerbs(key, cls)
 					continue
 				}
@@ -46,7 +48,7 @@ module.exports = class Tools extends require('base/class'){
 		this.inheritable('styles', function(){
 			var styles = this.styles
 			this._stylesProto = protoInherit(this._stylesProto, styles)
-			this.styles = protoProcess(this._stylesProto, null, null, null, new WeakMap())
+			this.styles = protoProcess('', this._stylesProto, null, null, null, new WeakMap())
 		})
 	}
 
@@ -286,8 +288,6 @@ module.exports = class Tools extends require('base/class'){
 	}
 }
 
-
-
 // creates a prototypical inheritance overload from an object
 function protoInherit(oldobj, newobj){
 	// copy oldobj
@@ -306,9 +306,9 @@ function protoInherit(oldobj, newobj){
 			outobj[key] = protoInherit(oldobj && oldobj[key], newobj && newobj[key])
 		}
 		else{
-			if(typeof item === 'string' && item.charAt(0) === '#'){
-				item = module.exports.prototype.parseColor(item,1)
-			}
+			//if(typeof item === 'string' && item.charAt(0) === '#'){
+			//	item = module.exports.prototype.parseColor(item,1)
+			//}
 			outobj[key] = item
 		}
 	}
@@ -316,9 +316,10 @@ function protoInherit(oldobj, newobj){
 }
 
 // we have to return a new objectect
-function protoProcess(base, ovl, parent, incpy, parents){
+function protoProcess(name, base, ovl, parent, incpy, parents){
 	var cpy = incpy
 	var out = {}
+	Object.defineProperty(out, 'name', {value:name})
 	parents.set(out, parent)
 	// make sure our copy props are read first
 	for(let key in base){
@@ -345,10 +346,11 @@ function protoProcess(base, ovl, parent, incpy, parents){
 			var keys = key.split('$')
 			var o = out, bc = keys[1]
 			while(o && !o[bc]) o = parents.get(o)
-			out[keys[0]] = protoProcess(o && o[bc], value, out, cpy, parents)
+			var key0 = keys[0]
+			out[key0] = protoProcess(key0, o && o[bc], value, out, cpy, parents)
 		}
 		else if(value && value.constructor === Object){
-			out[key] = protoProcess(value, null, out, cpy, parents)
+			out[key] = protoProcess(key, value, null, out, cpy, parents)
 		}
 		else{
 			out[key] = value
@@ -362,10 +364,11 @@ function protoProcess(base, ovl, parent, incpy, parents){
 			var keys = key.split('$')
 			var o = out, bc = keys[1]
 			while(o && !o[bc]) o = parents.get(o)
-			out[keys[0]] = protoProcess(out[keys[0]], protoProcess(o && o[bc], value, out, cpy, parents), out, cpy, parents)
+			var key0 = keys[0]
+			out[key0] = protoProcess(key0, out[key0], protoProcess(key0, o && o[bc], value, out, cpy, parents), out, cpy, parents)
 		}
 		else if(value && value.constructor === Object){
-			out[key] = protoProcess(out[key], value, out, cpy, parents)
+			out[key] = protoProcess(key, out[key], value, out, cpy, parents)
 		}
 		else{
 			out[key] = value
@@ -376,6 +379,9 @@ function protoProcess(base, ovl, parent, incpy, parents){
 	}
 	return out
 }
+
+module.exports.protoProcess = protoProcess
+
 var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
 var comment2Rx = new RegExp(/\/\/[^\n]*/g)

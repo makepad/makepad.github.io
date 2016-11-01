@@ -47,14 +47,14 @@ module.exports = class View extends require('base/class'){
 		}
 
 		this.tools = {
-			ScrollBar: require('base/stamp').extend(function ScrollBarStamp(proto){
-				proto.props = {
+			ScrollBar: require('base/stamp').extend({
+				props: {
 					vertical:0.,
 					moveScroll:0.,
 					borderRadius:4
-				}
-				proto.cursor = 'default'
-				proto.tools = {
+				},
+				cursor:'default',
+				tools: {
 					ScrollBar: require('tools/quad').extend({
 						props:{
 							x:{noTween:1, noInPlace:1, value:NaN},
@@ -104,9 +104,9 @@ module.exports = class View extends require('base/class'){
 							return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
 						}
 					})
-				}
+				},
 
-				proto.styles = {
+				styles:{
 					default:{
 						ScrollBar:{
 							//tween:1,
@@ -123,23 +123,23 @@ module.exports = class View extends require('base/class'){
 							handleColor:'yellow'
 						}
 					}
-				}
+				},
 
-				proto.inPlace = true
+				inPlace: true,
 
-				proto.onFingerDown = function(){
+				onFingerDown(){
 					this.state = this.styles.hover
-				}
+				},
 
-				proto.onFingerUp = function(){
+				onFingerUp(){
 					this.state = this.styles.default
-				}
+				},
 
-				proto.onDraw = function(){
+				onDraw(){
 					this.drawScrollBar(this)
-				}
+				},
 
-				proto.verbs = {
+				verbs:{
 					draw:function(overload){
 						this.$STYLESTAMP(overload)
 						this.$DRAWSTAMP()
@@ -148,8 +148,8 @@ module.exports = class View extends require('base/class'){
 				}
 			}),
 			Debug:require('tools/quad'),
-			Surface:require('base/shader').extend(function Surface(proto){
-				proto.props = {
+			Surface:require('base/shader').extend({
+				props:{
 					x: NaN,
 					y: NaN,
 					w: NaN,
@@ -158,24 +158,25 @@ module.exports = class View extends require('base/class'){
 					mesh:{kind:'geometry', type:types.vec2},
 					colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
 					pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
-				}
-				proto.mesh = new painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1)
-				proto.drawTrace = 1
-				proto.vertex = function(){$
+				},
+				mesh:new painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1),
+				drawTrace:1,
+				
+				vertex(){$
 					var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
 					return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
-				}
+				},
 
-				proto.pixelMain = function(){$
+				pixelMain(){$
 					if(this.workerId < 0.){
 						gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 					}
 					else{
 						gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 					}
-				}
+				},
 
-				proto.verbs = {
+				verbs:{
 					draw:function(overload){
 						this.$STYLEPROPS(overload)
 						this.$ALLOCDRAW()
@@ -847,5 +848,10 @@ module.exports = class View extends require('base/class'){
 	animateUniform(value){
 		var timeMax = value[0] + value[1]
 		if(timeMax > this.todo.timeMax) this.todo.timeMax = timeMax
+	}
+
+
+	static style(StyleClass){
+		return StyleClass.apply(this)
 	}
 }

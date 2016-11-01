@@ -447,6 +447,7 @@ function workerBoot(){
 		if(ret !== undefined) module.exports = ret
 		worker.clearAllTimers()
 		if(typeof module.exports === 'function'){
+			Object.defineProperty(module.exports, '__module__', {value:module})
 			if(worker.appMain && worker.appMain.destroy){
 				worker.appMain.destroy()
 			}
@@ -518,7 +519,9 @@ function workerRequire(absParent, worker, modules, args){
 			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
 			if(ret !== undefined) module.exports = ret
 		}
-
+		if(typeof module.exports === 'function'){
+			Object.defineProperty(module.exports, '__module__', {value:module})
+		}
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent)
 		}

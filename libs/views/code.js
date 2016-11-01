@@ -3,6 +3,199 @@ var storage = require('services/storage')
 
 module.exports = class Code extends require('views/edit'){ 
 	
+	defaultStyle(style){
+		super.defaultStyle(style)
+		
+		var c = style.colors
+
+		style.to = {
+			animating:{
+				ease:style.anims.ease,
+				duration:0.2,
+				tween:style.anims.tween,
+			},
+			Text$animating:{
+			},
+			Block$animating:{
+				borderRadius: 2.5,
+			},
+			Marker$animating:{
+
+			},
+			ErrorMarker:{
+				bgColor: '#522', 
+				opMargin: 1, 
+			},
+			styles:{
+				$boldness: 0., 
+				$color: '#fff', 
+				$italic: 0, 
+				$head: 0, 
+				$tail: 0, 
+
+				NewText: { 
+					$color: '#ccc' 
+				},
+
+				curly:{},
+				block:{
+					$borderWidth: 1, 
+					$borderRadius: 3.75, 
+					open:{open:1},
+					close:{open:0}
+				},
+
+				Class:{
+					$color:c.codeClass,
+					class:{},
+					extends:{},
+					super:{},
+					new:{},
+					this:{},
+					curly$curly:{},
+					method:{},
+					static:{},
+					getset:{},
+					block$block:{}
+				},
+				Object:{
+					$color:c.codeObject,
+					curly:{},
+					colon:{},
+					key:{alignLeft:0,alignRight:0.5},
+					block$block:{},
+					commaOpen:{$tail:0.},
+					commaClose:{$tail:0.5},
+					dot:{},
+					bracket:{},
+					member:{}
+				},
+				Array:{
+					$color:c.codeObject,
+					commaOpen:{$tail:0.},
+					commaClose:{$tail:0.5},
+					block$block:{},
+					bracket:{}
+				},
+				Function:{
+					$color:c.codeFunction,
+					function:{},
+					curly:{},
+					block$block:{},
+					comma:{},
+					return:{},
+					yield:{},
+					parenLeft:{},
+					parenRight:{$tail:0.5},
+					arrow:{}
+				},
+				Call:{
+					$color:c.codeCall,
+					paren:{},
+					commaOpen:{},
+					commaClosed:{$tail:0.5}
+				},
+				If:{
+					$color:c.codeIf,
+					if:{},
+					else:{},
+					parenLeft:{},
+					parenRight:{},
+					curly:{},
+					block$block:{},
+					switch:{},
+					case:{},
+					caseColon:{}
+				},
+				For:{
+					$color:c.codeLoop,
+					for:{},
+					in:{},
+					of:{},
+					do:{},
+					while:{},
+					semi:{},
+					parenLeft:{},
+					parenRight:{},
+					curly:{},
+					block$block:{},
+					break:{},
+					continue:{}
+				},
+				Exception:{
+					$color:c.codeException,
+					throw:{},
+					try:{},
+					catch:{},
+					parenLeft:{},
+					parenRight:{},
+					finally:{},
+					curly:{},
+					block$block:{}
+				},
+				Value:{
+					regexp: {
+						$color:c.codeString
+					}, 
+					object: {
+						$color:c.codeObject
+					},
+					num:{
+						$color:c.codeNumber
+					},
+					boolean:{
+						$color:c.codeBoolean
+					},
+					string:{
+						$color:c.codeString
+					},
+				},
+				Comment: { 
+					$boldness: 0.1, 
+					$color: c.codeComment, 
+					$isComment: 1, 
+					side: {$head: 0.5}, 
+					above: {}, 
+					top: {$head: 0.5}, 
+					bottom: {$head: 0.}, 
+					around: {} 
+				}, 
+				Operator:{
+					$color:c.codeOperator,
+					default:{},
+					'=':{$head:0.5,$tail:0.5},
+					'?:':{},
+					'@':{},
+					'#':{},
+					'...':{}
+				},
+				Parens:{
+					$color:c.codeParen,
+					left:{},
+					right:{}
+				},
+				Keyword:{
+					varComma:{$color:c.codeVar, $tail:0.5},
+					var:{$color:c.codeVar, $boldness:0.4},
+					const:{$color:c.codeConst, $boldness:0.2},
+					let:{$color:c.codeLet, $boldness:0.2}
+				},
+				Id:{
+					arg:{$color:c.codeFunction, closure:{}},
+					var:{$color:c.codeVar, closure:{}},
+					const:{$color:c.codeConst, closure:{}},
+					let:{$color:c.codeLet, closure:{}},
+					glsl$const:{},
+					magic$const:{},
+					fn$const:{},
+					class$const:{},
+					unknown:{$color:c.codeUnknown},
+					global:{$color:c.codeGlobal, $boldness:0.2, closure:{}}
+				}
+			} 
+		}
+	}
+
 	// mixin the formatter
 	prototype() { 
 		this.mixin(require('parsers/jsformatter')) 
@@ -21,15 +214,9 @@ module.exports = class Code extends require('views/edit'){
 			
 			Text: require('tools/codetext').extend({ 
 				font: require('fonts/ubuntu_monospace_256.font'), 
-				tween: 2., 
-				ease: [0, 10, 1.0, 1.0], 
-				duration: 0.
 			}), 
 			Block: require('tools/codeblock').extend({ 
-				borderRadius: 2.5, 
-				tween: 2., 
-				ease: [0, 10, 1.0, 1.0], 
-				duration: 0., 
+				
 				pickAlpha: 0., 
 				vertexStyle: function() {$ 
 					this.x -= (6. / 12.) * this.fontSize 
@@ -38,20 +225,17 @@ module.exports = class Code extends require('views/edit'){
 					this.h2 += 2. 
 					var pos = vec2() 
 					if(this.isFingerOver(pos) > 0) { 
-						this.bgColor.rgb += vec3(0.2) 
+						this.color.rgb += vec3(0.2) 
 					}
 					else { 
-						this.bgColor.a *= .25 
+						this.color.a *= .25 
 					} 
 					// lets figure out a hover anim here?
-					this.bgColor.rgb += vec3(this.indent * 0.05) 
-					this.borderColor = this.bgColor 
+					this.color.rgb += vec3(this.indent * 0.05) 
+					this.borderColor = this.color 
 				} 
 			}), 
 			Marker: require('tools/codemarker').extend({ 
-				tween: 2., 
-				ease: [0, 10, 1.0, 1.0], 
-				duration: 0., 
 				vertexStyle: function() {$ 
 					this.opColor = this.bgColor * 1.1 
 					this.borderColor = this.bgColor 
@@ -63,15 +247,8 @@ module.exports = class Code extends require('views/edit'){
 					this.h -= this.level * 2. 
 					this.borderRadius -= this.level 
 				} 
-			}), 
-			
+			}), 			
 			ErrorMarker: require('tools/codemarker').extend({ 
-				bgColor: '#522', 
-				opMargin: 1, 
-				duration: 0., 
-				tween: 2, 
-				ease: [0, 10, 0, 0], 
-				closed: 0, 
 				vertexStyle: function() {$ 
 					//this.errorTime = max(0., .1 - this.errorTime) 
 					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
@@ -80,496 +257,98 @@ module.exports = class Code extends require('views/edit'){
 					this.opColor = this.bgColor * 2.3 
 					this.borderColor = this.bgColor * 1.4 
 				} 
-			}), 
-			ErrorText: require('tools/text').extend({ 
-				font: require('fonts/ubuntu_medium_256.font'), 
-				color: '#cbb', 
-				boldness: -.5, 
-				moveScroll: 0., 
-				fontSize: 16, 
-				y: 2, 
-				x: '@15' 
-			}) 
-		} 
-		
-		this.styles = { 
-			$boldness: 0., 
-			$color: '#fff', 
-			$italic: 0, 
-			$head: 0, 
-			$tail: 0, 
-			NewText: { 
-				$color: '#ccc' 
-			}, 
-			Block: { 
-				$borderColor: '#fff', 
-				$bgColor: 'red', 
-				$borderWidth: 1, 
-				$borderRadius: 3.75, 
-				FunctionDeclaration: { 
-					$bgColor: '#363b', 
-					open: {$open: 1}, 
-					close: {$open: 0}, 
-				}, 
-				IfStatement: { 
-					$bgColor: '#335b', 
-					if: { 
-						open: {$open: 1}, 
-						close: {$open: 0}, 
-					}, 
-					else: { 
-						$bgColor: '#535b', 
-						open: {$open: 1}, 
-						close: {$open: 0}, 
-					} 
-				}, 
-				ForStatement: { 
-					$bgColor: '#550b', 
-					open: {$open: 1}, 
-					close: {$open: 0}, 
-				}, 
-				BlockStatement: { 
-					$bgColor: '#533b', 
-					open: {$open: 1}, 
-					close: {$open: 0}, 
-				}, 
-				ArrayExpression: { 
-					$bgColor: '#353b', 
-					open: {$open: 1}, 
-					close: {$open: 0}, 
-				}, 
-				ObjectExpression: { 
-					$bgColor: '#537b', 
-					open: {$open: 1}, 
-					close: {$open: 0} 
-				}, 
-				ClassBody: { 
-					$bgColor: '#533b', 
-					$open: 1 
-				}, 
-			}, 
-			Marker: { 
-				$borderRadius: 3.5, 
-				$opColor: '#7', 
-				$borderColor: '#7', 
-				$bgColor: '#7778', 
-				$borderWidth: 1., 
-				'+': { 
-					$bgColor: '#3739' 
-				}, 
-				'-': { 
-					$bgColor: '#0779' 
-				}, 
-				'/': { 
-					$bgColor: '#7379' 
-				}, 
-				'*': { 
-					$bgColor: '#3379' 
-				} 
-			}, 
-			Comment: { 
-				$boldness: 0.1, 
-				$color: '#0083f8', 
-				$isComment: 1, 
-				side: { 
-					$head: 0.5 
-				}, 
-				above: {}, 
-				top: {$head: 0.5}, 
-				bottom: {$head: 0.}, 
-				around: {} 
-			}, 
-			Paren: { 
-				$boldness: 0., 
-				FunctionDeclaration: { 
-					left: {}, 
-					right: {$tail: 0.5} 
-				}, 
-				CallExpression: { 
-					$color: '#f70', 
-					$boldness: 0.3, 
-				}, 
-				NewExpression: {}, 
-				ParenthesizedExpression: {}, 
-				IfStatement: { 
-					left: {}, 
-					right: {$tail: 0.5} 
-				}, 
-				ForStatement: { 
-					left: {}, 
-					right: {$tail: 0.5} 
-				}, 
-				SwitchStatement: { 
-					left: {}, 
-					right: {$tail: 0.5} 
-				}, 
-				CatchClause: { 
-					left: {}, 
-					right: {$tail: 0.5} 
-				}, 
-				DoWhileStatement: { 
-					left: {}, 
-					right: {} 
-				}, 
-				WhileStatement: { 
-					left: {}, 
-					right: {} 
-				}, 
-				ArrowFunctionExpression: { 
-					left: {}, 
-					right: {} 
-				} 
-			}, 
-			Comma: { 
-				$color: '#777', 
-				FunctionDeclaration: {$tail: 0.5}, 
-				CallExpression: { 
-					open: {$tail: 0.}, 
-					close: {$tail: 0.5} 
-				}, 
-				ArrayExpression: { 
-					open: {$tail: 0.}, 
-					close: {$tail: 0.5}, 
-				}, 
-				ObjectExpression: { 
-					open: {$tail: 0.}, 
-					close: {$tail: 0.5}, 
-				}, 
-				VariableDeclaration: {
-					$tail:.5
-				}, 
-				SequenceExpression: {$tail: 0.5}, 
-				NewExpression: {$tail: 0.5}, 
-				ArrowFunctionExpression: {$tail: 0.5} 
-			}, 
-			Curly: { 
-				BlockStatement: {}, 
-				ObjectExpression: {$color: '#bac'}, 
-				SwitchStatement: {} 
-			}, 
-			Dot: { 
-				MemberExpression: {} 
-			}, 
-			SemiColon: { 
-				ForStatement: {$tail: 0.5} 
-			}, 
-			Bracket: { 
-				MemberExpression: {}, 
-				ArrayExpression: { 
-					$boldness: 0. 
-				} 
-			}, 
-			QuestionMark: { 
-				$tail: 0.5 
-			}, 
-			Colon: { 
-				ObjectExpression: { 
-					$boldness: 0., 
-					$tail: 0.5, 
-					$color: '#fff' 
-				}, 
-				ConditionalExpression: { 
-					$tail: 0.5 
-				}, 
-				SwitchCase: {} 
-			}, 
-			Program: {}, 
-			EmptyStatement: {}, 
-			ExpressionStatement: {}, 
-			BlockStatement: {}, 
-			SequenceExpression: {}, 
-			ParenthesizedExpression: {}, 
-			ReturnStatement: {}, 
-			YieldExpression: {}, 
-			ThrowStatement: {}, 
-			TryStatement: {}, 
-			CatchClause: {}, 
-			// simple bits
-			Identifier: { 
-				$color: '#eee', 
-				glsl: { 
-					$color: '#3c9' 
-				}, 
-				local: { 
-					$color: '#ccc' 
-				}, 
-				closure: { 
-					$boldness: 0.3, 
-					$color: '#ff9' 
-				}, 
-				localArg: { 
-					$color: '#beb' 
-				}, 
-				iterator: { 
-					$color: '#bb0' 
-				}, 
-				closureArg: { 
-					boldness: 0.3, 
-					$color: '#f70' 
-				}, 
-				unknown: { 
-					//boldness:0.3,
-					$color: '#f99' 
-				}, 
-				ObjectExpression: { 
-					$color: '#f77' 
-				}, 
-				FunctionDeclaration: { 
-					$color: "#bbb" 
-				} 
-			}, 
-			Literal: { 
-				string: { 
-					$color: '#0d0' 
-				}, 
-				num: { 
-					boldness: 0.1, 
-					$color: '#bbf' 
-				}, 
-				boolean: { 
-					$color: '#f33' 
-				}, 
-				regexp: {}, 
-				object: {} 
-			}, 
-			ThisExpression: { 
-				$boldness: 0.1, 
-				$color: '#797' 
-			}, 
-			RestElement: {}, 
-			Super: {}, 
-			// await
-			AwaitExpression: {}, 
-			
-			// new and call
-			MetaProperty: {}, 
-			NewExpression: { 
-				$boldness: 0.1, 
-				$color: '#ffdf00' 
-			}, 
-			CallExpression: {}, 
-			
-			// Objects and arrays
-			ArrayExpression: {}, 
-			ObjectExpression: { 
-				key: { 
-					$alignLeft: 0., 
-					$alignRight: 0.5, 
-					$boldness: 0.1, 
-					$color: '#bac' 
-				} 
-			}, 
-			ObjectPattern: {}, 
-			MemberExpression: { 
-				$color: '#eeb' 
-			}, 
-			
-			// functions
-			FunctionExpression: {}, 
-			ArrowFunctionExpression: {}, 
-			FunctionDeclaration: { 
-				$boldness: 0.1, 
-				$color: '#797' 
-				//	color:'#ffdf00'
-			}, 
-			
-			// variable declarations
-			VariableDeclaration: { 
-				$boldness: 0.1, 
-				$color: '#ffdf00' 
-			}, 
-			VariableDeclarator: {}, 
-			
-			// a+b
-			LogicalExpression: { 
-				$head: 0.5, 
-				$tail: 0.5, 
-				$color: '#ff9f00' 
-			}, 
-			BinaryExpression: { 
-				$head: 0.5, 
-				$tail: 0.5, 
-				$color: '#ff9f00', 
-				in: {$head: 0., $tail: 0.} 
-			}, 
-			BinaryExpressionNL: { 
-				$head: 0., 
-				$tail: 0., 
-				$color: '#ff9f00' 
-			}, 
-			AssignmentExpression: { 
-				$boldness: 0.1, 
-				$head: 0.5, 
-				$tail: 0.5, 
-				$color: '#ff9f00' 
-			}, 
-			ConditionalExpression: { 
-				$head: 0.5, 
-				$tail: 0.5 
-			}, 
-			UpdateExpression: { 
-				$color: '#ff9f00' 
-			}, 
-			UnaryExpression: { 
-				$color: '#ff9f00' 
-			}, 
-			ProbeExpression:{
-				$color: '#ff9f00' 
-			},
-			// if and for
-			IfStatement: { 
-				if: {$color: '#779'}, 
-				else: {$color: '#979'} 
-			}, 
-			ForStatement: { 
-				$color: '#bb0', 
-				in: {} 
-			}, 
-			ForInStatement: {}, 
-			ForOfStatement: {}, 
-			WhileStatement: { 
-				$color: '#bb0', 
-			}, 
-			DoWhileStatement: { 
-				$color: '#bb0', 
-				do: {$tail: 0.5}, 
-				while: {$head: 0.5} 
-			}, 
-			WhileStatement: { 
-				while: {} 
-			}, 
-			BreakStatement: {}, 
-			ContinueStatement: {}, 
-			
-			// switch
-			SwitchStatement: {}, 
-			SwitchCase: {}, 
-			
-			// templates
-			TaggedTemplateExpression: {}, 
-			TemplateElement: {}, 
-			TemplateLiteral: {}, 
-			
-			// classes
-			ClassDeclaration: { 
-				class: {}, 
-				extends: {} 
-			}, 
-			ClassExpression: { 
-				class: {}, 
-				extends: {} 
-			}, 
-			ClassBody: {}, 
-			MethodDefinition: { 
-				static: {} 
-			}, 
-			
-			// modules
-			ExportAllDeclaration: {}, 
-			ExportDefaultDeclaration: {}, 
-			ExportNamedDeclaration: {}, 
-			ExportSpecifier: {}, 
-			ImportDeclaration: {}, 
-			ImportDefaultSpecifier: {}, 
-			ImportNamespaceSpecifier: {}, 
-			ImportSpecifier: {}, 
-			
-			// other
-			DebuggerStatement: {}, 
-			LabeledStatement: {}, 
-			WithStatement: {} 
+			})
 		} 
 		
 		this.defaultScope = { 
-			console: 1, 
-			eval: 1, 
-			Infinity: 1, 
-			NaN: 1, 
-			undefined: 1, 
-			null: 1, 
-			isFinite: 1, 
-			isNaN: 1, 
-			parseFloat: 1, 
-			parseInt: 1, 
-			Symbol: 1, 
-			Error: 1, 
-			EvalError: 1, 
-			InternalError: 1, 
-			RangeError: 1, 
-			ReferenceError: 1, 
-			TypeError: 1, 
-			URIError: 1, 
-			Map: 1, 
-			Set: 1, 
-			WeakMap: 1, 
-			WeakSet: 1, 
-			SIMD: 1, 
-			JSON: 1, 
-			Generator: 1, 
-			GeneratorFunction: 1, 
-			Intl: 1, 
-			SyntaxError: 1, 
-			Function: 1, 
-			RegExp: 1, 
-			Math: 1, 
-			Object: 1, 
-			String: 1, 
-			Number: 1, 
-			Boolean: 1, 
-			Date: 1, 
-			Array: 1, 
-			Int8Array: 1, 
-			Uint8Array: 1, 
-			Uint8ClampedArray: 1, 
-			Int16Array: 1, 
-			Uint16Array: 1, 
-			Int32Array: 1, 
-			Uint32Array: 1, 
-			Float32Array: 1, 
-			Float64Array: 1, 
-			DataView: 1, 
-			ArrayBuffer: 1, 
-			require: 1, 
-			exports: 1, 
-			module: 1, 
-			E: 1, 
-			E: 1, 
-			LN10: 1, 
-			LN2: 1, 
-			LOG10E: 1, 
-			LOG10: 1, 
-			PI: 1, 
-			SQRT2: 1, 
-			SQRT1_2: 1, 
-			random: 1, 
-			radians: 1, 
-			degrees: 1, 
-			sin: 1, 
-			cos: 1, 
-			tan: 1, 
-			asin: 1, 
-			acos: 1, 
-			atan: 1, 
-			pow: 1, 
-			exp: 1, 
-			log: 1, 
-			exp2: 1, 
-			log2: 1, 
-			sqrt: 1, 
-			inversesqrt: 1, 
-			abs: 1, 
-			sign: 1, 
-			floor: 1, 
-			ceil: 1, 
-			fract: 1, 
-			mod: 1, 
-			min: 1, 
-			max: 1, 
-			clamp: 1, 
-			step: 1, 
-			smoothstep: 1, 
-			mix: 1, 
-			arguments: 2 
+			console: 'global', 
+			eval: 'global', 
+			Infinity: 'global', 
+			NaN: 'global', 
+			undefined: 'global', 
+			null: 'global', 
+			isFinite: 'global', 
+			isNaN: 'global', 
+			parseFloat: 'global', 
+			parseInt: 'global', 
+			Symbol: 'global', 
+			Error: 'global', 
+			EvalError: 'global', 
+			InternalError: 'global', 
+			RangeError: 'global', 
+			ReferenceError: 'global', 
+			TypeError: 'global', 
+			URIError: 'global', 
+			Map: 'global', 
+			Set: 'global', 
+			WeakMap: 'global', 
+			WeakSet: 'global', 
+			SIMD: 'global', 
+			JSON: 'global', 
+			Generator: 'global', 
+			GeneratorFunction: 'global', 
+			Intl: 'global', 
+			SyntaxError: 'global', 
+			Function: 'global', 
+			RegExp: 'global', 
+			Math: 'global', 
+			Object: 'global', 
+			String: 'global', 
+			Number: 'global', 
+			Boolean: 'global', 
+			Date: 'global', 
+			Array: 'global', 
+			Int8Array: 'global', 
+			Uint8Array: 'global', 
+			Uint8ClampedArray: 'global', 
+			Int16Array: 'global', 
+			Uint16Array: 'global', 
+			Int32Array: 'global', 
+			Uint32Array: 'global', 
+			Float32Array: 'global', 
+			Float64Array: 'global', 
+			DataView: 'global', 
+			ArrayBuffer: 'global', 
+			require: 'global', 
+			exports: 'global', 
+			module: 'global', 
+			E: 'global', 
+			LN10: 'global', 
+			LN2: 'global', 
+			LOG10E: 'global', 
+			LOG10: 'global', 
+			PI: 'global', 
+			SQRT2: 'global', 
+			SQRT1_2: 'global', 
+			random: 'global', 
+			radians: 'global', 
+			degrees: 'global', 
+			sin: 'global', 
+			cos: 'global', 
+			tan: 'global', 
+			asin: 'global', 
+			acos: 'global', 
+			atan: 'global', 
+			pow: 'global', 
+			exp: 'global', 
+			log: 'global', 
+			exp2: 'global', 
+			log2: 'global', 
+			sqrt: 'global', 
+			inversesqrt: 'global', 
+			abs: 'global', 
+			sign: 'global', 
+			floor: 'global', 
+			ceil: 'global', 
+			fract: 'global', 
+			mod: 'global', 
+			min: 'global', 
+			max: 'global', 
+			clamp: 'global', 
+			step: 'global', 
+			smoothstep: 'global', 
+			mix: 'global', 
+			arguments: 'const' 
 		} 
 	} 
 	
@@ -615,6 +394,7 @@ module.exports = class Code extends require('views/edit'){
 			this.reuseText() 
 		}
 		else { 
+			require('base/perf')
 			//require.perf()
 			this.$fastTextDelay = 0 
 			if(this.debugShow) { 
@@ -780,6 +560,8 @@ module.exports = class Code extends require('views/edit'){
 				//	text: this.error.msg 
 				//}) 
 			} 
+			require('base/perf')
+
 			//require.perf()
 			this.$fastTextDelta = 0 
 		} 
