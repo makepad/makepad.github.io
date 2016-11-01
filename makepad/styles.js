@@ -20,7 +20,7 @@ module.exports = class MakepadStyle extends require('base/style'){
 			textSelect:'Purple900',
 			accentNormal:'Purple900',
 			accentGray:'Grey700',
-			bgNormal:'Grey900',
+			bgNormal:'Grey850',
 			textNormal:'Grey300',
 			textAccent:'Grey400',
 			textMed:'Grey500',
