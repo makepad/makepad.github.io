@@ -6,7 +6,7 @@ module.exports = class MakepadStyle extends require('base/style'){
 
 		this.anims = {
 			tween:2,
-			duration:0.1,
+			duration:0.2,
 			ease:[0,10,0,0]
 		}
 
@@ -29,9 +29,9 @@ module.exports = class MakepadStyle extends require('base/style'){
 
 			codeClass:'Pink300',
 			codeObject:'Indigo200',
-			codeParen:'BlueGray400',
+			codeParen:'BlueGrey400',
 			codeArray:'Cyan300',
-			codeFunction:'Amber500',
+			codeFunction:'Amber300',
 			codeCall:'Yellow300',
 			codeIf:'LightGreen300',
 			codeLoop:'DeepOrange300',

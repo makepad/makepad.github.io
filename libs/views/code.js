@@ -20,7 +20,6 @@ module.exports = class Code extends require('views/edit'){
 				borderRadius: 2.5,
 			},
 			Marker$animating:{
-
 			},
 			ErrorMarker:{
 				bgColor: '#522', 
@@ -521,7 +520,7 @@ module.exports = class Code extends require('views/edit'){
 				if(!ann.length && this._text) { 
 					var txt = this._text 
 					this._text = '' 
-					this.fastText(txt, this.styles.Identifier.unknown, 0) 
+					this.fastText(txt, this.styles.Id.unknown, 0) 
 				}
 				else { 
 					this._text = '' 
@@ -768,13 +767,13 @@ module.exports = class Code extends require('views/edit'){
 			pos += txt.length 
 			if(offset <= pos) { 
 				var idx = offset - (pos - txt.length) 
-				if(ann[i + 1] === this.styles.Identifier.unknown) { 
+				if(ann[i + 1] === this.styles.Id.unknown) { 
 					ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
 				}
 				else { 
 					ann[i] = txt.slice(0, idx) 
 					// lets choose a style
-					ann.splice(i + step, 0, text, this.styles.Identifier.unknown, ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5], txt.slice(idx), ann[i + 1], ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5]) 
+					ann.splice(i + step, 0, text, this.styles.Id.unknown, ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5], txt.slice(idx), ann[i + 1], ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5]) 
 				} 
 				break 
 			} 
