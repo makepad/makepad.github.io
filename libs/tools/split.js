@@ -1,5 +1,54 @@
 module.exports = class Split extends require('base/stamp'){
 
+	defaultStyle(style){
+		style.to = {
+			styles:{
+				base:{
+					$duration:0.3,
+					$tween:2,
+					$ease:[0,10,0,0],
+					default:{
+						settings:0.,
+						Button:{
+							$fontSize:0,
+							w:0,h:0,
+							Bg:{},
+							Text:{},
+							Icon:{}
+						},
+						Bg:{}
+					},
+					settings:{
+						settings:1,
+						Button:{
+							w:22,h:22,
+							Bg:{},
+							$fontSize:14,
+							Text:{},
+							Icon:{}
+						},
+						Bg:{
+							//borderWidth:.5,
+							//borderColor:'black'
+						}
+					},
+					default_noAnim$default:{
+						$duration:0.
+					},
+					settings_noAnim$settings:{
+						$duration:0.
+					},
+					default_drag$default:{
+						$duration:0.,
+					},
+					settings_drag$settings:{
+						$duration:0.
+					}
+				}
+			}
+		}
+	}
+
 	prototype(){
 
 		this.props = {
@@ -135,51 +184,6 @@ module.exports = class Split extends require('base/stamp'){
 			this.states = styles[this.id] || styles.base
 			this._state = this.states.default
 		}
-
-		this.styles = {
-			base:{
-				$duration:0.3,
-				$tween:2,
-				$ease:[0,10,0,0],
-				default:{
-					settings:0.,
-					Button:{
-						$fontSize:0,
-						w:0,h:0,
-						Bg:{},
-						Text:{},
-						Icon:{}
-					},
-					Bg:{}
-				},
-				settings:{
-					settings:1,
-					Button:{
-						w:22,h:22,
-						Bg:{},
-						$fontSize:14,
-						Text:{},
-						Icon:{}
-					},
-					Bg:{
-						//borderWidth:.5,
-						//borderColor:'black'
-					}
-				},
-				default_noAnim$default:{
-					$duration:0.
-				},
-				settings_noAnim$settings:{
-					$duration:0.
-				},
-				default_drag$default:{
-					$duration:0.,
-				},
-				settings_drag$settings:{
-					$duration:0.
-				}
-			}
-		}
 	}
 
 	onFingerDown(e){
@@ -216,7 +220,7 @@ module.exports = class Split extends require('base/stamp'){
 
 	onDraw(){
 		this.beginBg(this)
-		
+		/*
 		this.drawButton({
 			text:'%',
 			index:0
@@ -224,7 +228,7 @@ module.exports = class Split extends require('base/stamp'){
 		this.drawButton({
 			icon:'eye-slash',
 			index:1
-		}, this.buttonClick)
+		}, this.buttonClick)*/
 		this.endBg()
 	}
 }

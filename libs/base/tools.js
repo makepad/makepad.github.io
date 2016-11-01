@@ -45,11 +45,11 @@ module.exports = class Tools extends require('base/class'){
 			}	
 		})
 
-		this.inheritable('styles', function(){
-			var styles = this.styles
-			this._stylesProto = protoInherit(this._stylesProto, styles)
-			this.styles = protoProcess('', this._stylesProto, null, null, null, new WeakMap())
-		})
+		//this.inheritable('styles', function(){
+		//	var styles = this.styles
+		//	this._stylesProto = protoInherit(this._stylesProto, styles)
+		//	this.styles = protoProcess('', this._stylesProto, null, null, null, new WeakMap())
+		//})
 	}
 
 	beginLayout(opts){

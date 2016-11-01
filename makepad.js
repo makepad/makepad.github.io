@@ -318,7 +318,7 @@ module.exports = class Makepad extends require('base/app'){
 							mode: 2,
 							vertical: false,
 							locked: false,
-							pos: 150,
+							pos: 25,
 							left: {
 								bottom: false,
 								tabs: [

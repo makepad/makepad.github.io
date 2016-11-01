@@ -8,7 +8,7 @@ module.exports = class Edit extends require('base/view'){
 			Bg:{
 				borderRadius:0,
 				padding:2,
-				color:c.bgNormal
+				color:c.codeBg
 			},
 			Text:{
 				font:require('fonts/ubuntu_medium_256.font'),

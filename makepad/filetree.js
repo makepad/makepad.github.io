@@ -1,4 +1,13 @@
 module.exports = class FileTree extends require('base/view'){
+
+	defaultStyle(style){
+		style.to = {
+			Bg:{
+				color:style.colors.bgTop
+			}
+		}
+	}
+
 	prototype() {
 		this.props = {
 			data: {inward: 'Tree', prop: 'data'}
@@ -11,6 +20,8 @@ module.exports = class FileTree extends require('base/view'){
 			}),
 			Button: require('tools/button').extend({
 				
+			}),
+			Bg:require('tools/bg').extend({
 			})
 		}
 		this.mixin({
@@ -30,14 +41,16 @@ module.exports = class FileTree extends require('base/view'){
 	}
 	
 	onDraw() {
+		this.beginBg(this.viewGeom)
 		this.drawButton({icon: 'plus', w: '50%'})
 		this.drawButton({icon: 'trash', w: '50%'})
+		this.endBg()
 	}
 	
 	onCompose() {
 		return [
 			new this.Tree({
-				y: '36',
+				y: '26',
 				name: 'Tree'
 			})
 		]

@@ -1,5 +1,32 @@
 module.exports = class Button extends require('base/stamp'){
 	
+	defaultStyle(style){
+		var c = style.colors
+		style.to = {
+			styles:{
+				base:{
+					default: {
+						margin:[5,5,5,5],
+						Icon:{
+							color:c.textMed
+						},
+						Bg:{
+							padding:[1,0,1,0],
+							align:[0.5,.5],
+							borderWidth:1,
+							borderColor:c.textLo,
+							color:c.bgTop
+						}
+					},
+					clicked$default:{},
+					defaultOver$default: {Bg: {color: c.accentNormal}},
+					//clicked:{Bg:{color:'#f77'}},
+					clickedOver$default: {Bg: {color: c.accentDown}}
+				}
+			}
+		}
+	}
+
 	prototype() {
 		this.props = {
 			text: '',
@@ -14,33 +41,30 @@ module.exports = class Button extends require('base/stamp'){
 		this.inPlace = 1
 		
 		this.tools = {
-			Bg: require('tools/rect').extend({
-				color: 'gray',
-				padding: [10, 10, 10, 10]
+			Bg: require('tools/quad').extend({
+				borderRadius:4.,
+				borderWidth:1.,
+				borderColor:'red',
+				pixel(){$
+					var p = this.mesh.xy * vec2(this.w, this.h)
+					var aa = this.antialias(p)
+					
+					// background field
+					var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+
+					// mix the fields
+					return this.colorBorderDistance(aa, fBg, this.borderWidth, this.color, this.borderColor)
+				}
+				//color: 'gray',
+				//padding: [10, 10, 10, 10]
 			}),
 			Text: require('tools/text').extend({
-				font: require('fonts/ubuntu_monospace_256.font')
+				//font: require('fonts/ubuntu_monospace_256.font')
 			}),
 			Icon: require('tools/icon').extend({
 			})
 		}
 
-		// determining the style, default way
-		this.onStyle = function(){
-			var styles = this.styles
-			this.states = styles[this.id] || styles.base
-			this._state = this.states.default
-		}
-
-		this.styles = {
-			base:{
-				default: {},
-				defaultOver: {Bg: {color: '#f77'}},
-				//clicked:{Bg:{color:'#f77'}},
-				clickedOver: {Bg: {color: 'red'}}
-			}
-		}
-		
 		this.verbs = {
 			draw: function(overload, click) {
 				this.$STYLESTAMP(overload)

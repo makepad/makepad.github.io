@@ -2,6 +2,7 @@
 var storage = require('services/storage') 
 
 class Code extends require('views/code'){ 
+	
 	prototype() { 
 		this.drawPadding = [0, 0, 0, 4] 
 		this.wrap = true 
@@ -213,6 +214,15 @@ class Errors extends require('views/tree'){
 }
 
 class Probes extends require('base/view'){
+
+	defaultStyle(style){
+		style.to = {
+			Background:{
+				color:style.colors.bgTop
+			}
+		}
+	}
+
 	prototype(){
 		this.props = {
 			resource:null
@@ -234,9 +244,11 @@ class Probes extends require('base/view'){
 			}),
 			Button:require('tools/button').extend({
 				cursor:'default',
-				Bg:{
-					padding:[6,10,6,10]
-				}
+				w:32,
+				h:18,
+				//Bg:{
+					//padding:[6,10,6,10]
+				//}
 			}),
 			Item:require('tools/button').extend({
 				h:'100%',
@@ -340,7 +352,7 @@ module.exports = class Source extends require('base/view'){
 				x: '0', 
 				w: '100%', 
 				///y:'100%-this.h',
-				h: '28' 
+				h: '26' 
 			}),
 			new this.Errors({
 				name: 'Errors',

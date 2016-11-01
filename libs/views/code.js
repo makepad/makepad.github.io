@@ -43,7 +43,6 @@ module.exports = class Code extends require('views/edit'){
 					open:{open:1},
 					close:{open:0}
 				},
-
 				Class:{
 					$color:c.codeClass,
 					class:{},
@@ -171,7 +170,8 @@ module.exports = class Code extends require('views/edit'){
 				Parens:{
 					$color:c.codeParen,
 					left:{},
-					right:{}
+					right:{},
+					comma:{}
 				},
 				Keyword:{
 					varComma:{$color:c.codeVar, $tail:0.5},

@@ -48,6 +48,31 @@ module.exports = class View extends require('base/class'){
 
 		this.tools = {
 			ScrollBar: require('base/stamp').extend({
+				defaultStyle(style){
+					style.to = {
+						styles:{
+							base:{
+								default:{
+									ScrollBar:{
+										//tween:1,
+										//duration:0.3,
+										bgColor:'#0000',
+										handleColor:'#888'
+									}
+								},
+								hover:{
+									ScrollBar:{
+										//tween:1,
+										//duration:0.1,
+										bgColor:'#0000',
+										//bgColor:'#555f',
+										handleColor:style.colors.accentNormal
+									}
+								}
+							}
+						}
+					}
+				},
 				props: {
 					vertical:0.,
 					moveScroll:0.,
@@ -63,7 +88,8 @@ module.exports = class View extends require('base/class'){
 							bgColor:'#000',
 							handleColor:'#111',
 							borderRadius:4,
-							scrollMinSize:{noTween:1, value:30}
+							scrollMinSize:{noTween:1, value:30},
+							pickAlpha:-1,
 						},
 						vertexStyle:function(){$ // bypass the worker roundtrip :)
 							var pos = vec2()
@@ -106,33 +132,16 @@ module.exports = class View extends require('base/class'){
 					})
 				},
 
-				styles:{
-					default:{
-						ScrollBar:{
-							//tween:1,
-							//duration:0.3,
-							bgColor:'#4448',
-							handleColor:'#888'
-						}
-					},
-					hover:{
-						ScrollBar:{
-							//tween:1,
-							//duration:0.1,
-							bgColor:'#555f',
-							handleColor:'yellow'
-						}
-					}
-				},
+
 
 				inPlace: true,
 
 				onFingerDown(){
-					this.state = this.styles.hover
+					this.state = this.states.hover
 				},
 
 				onFingerUp(){
-					this.state = this.styles.default
+					this.state = this.states.default
 				},
 
 				onDraw(){

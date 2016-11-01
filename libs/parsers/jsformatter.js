@@ -449,7 +449,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(exp)this[exp.type](exp)
 			if(i < expslength){
 				this.trace += ','
-				this.fastText(',', this.styles.Comma.SequenceExpression)
+				this.fastText(',', this.styles.Parens.comma)
 			}
 		}
 	}
@@ -1085,7 +1085,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.For)
 	}
 
 	//DoWhileStatement:{body:1, test:1},
@@ -1093,7 +1093,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.trace += 'do'
 		this.fastText('do', this.styles.For.do)
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.For)
 		this.fastText('while', this.styles.For.while)
 		this.fastText('(', this.styles.For.parenLeft)
 		this.trace += 'while('

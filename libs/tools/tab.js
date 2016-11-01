@@ -1,5 +1,65 @@
 module.exports = class Tab extends require('base/stamp'){
 
+	defaultStyle(style){
+		style.to = {
+			styles:{
+				base:{
+					default:{
+						Bg:{
+							//borderRadius:[20,20,20,20]
+						},
+						Text:{},
+						Icon:{}
+					},
+					slide$default:{
+						$tween:2,
+						$ease:[0,10,0,0],
+						$duration:0.3,
+					},
+					default_over$default:{
+						Bg:{
+							color:'#4'
+						},
+						Text:{
+							color:'#c'
+						},
+						Icon:{}
+					},
+					selected$default:{
+						Bg:{
+							color:'#5'
+						},
+						Text:{
+							color:'#e'
+						},
+						Icon:{}
+					},
+					selected_slide$selected:{
+						$tween:2,
+						$ease:[0,10,0,0],
+						$duration:0.3,
+					},	
+					selected_over$selected:{
+						Bg:{
+							color:'#c'
+						},
+						Text:{
+							color:'#f'
+						},
+						Icon:{}
+					},
+					selected_slide_over$selected_over:{
+						$tween:2,
+						$ease:[0,10,0,0],
+						$duration:0.3,
+					},
+					dragging$selected_over:{
+					}
+				}
+			}
+		}
+	}
+
 	prototype(){
 		this.props = {
 			text:'',
@@ -50,62 +110,6 @@ module.exports = class Tab extends require('base/stamp'){
 				padding:[6,1,3,4],
 				color:'#3'
 			})
-		}
-		
-		this.styles = {
-			base:{
-				default:{
-					Bg:{
-						//borderRadius:[20,20,20,20]
-					},
-					Text:{},
-					Icon:{}
-				},
-				slide$default:{
-					$tween:2,
-					$ease:[0,10,0,0],
-					$duration:0.3,
-				},
-				default_over$default:{
-					Bg:{
-						color:'#4'
-					},
-					Text:{
-						color:'#c'
-					},
-					Icon:{}
-				},
-				selected$default:{
-					Bg:{
-						color:'#5'
-					},
-					Text:{
-						color:'#e'
-					},
-					Icon:{}
-				},
-				selected_slide$selected:{
-					$tween:2,
-					$ease:[0,10,0,0],
-					$duration:0.3,
-				},	
-				selected_over$selected:{
-					Bg:{
-						color:'#c'
-					},
-					Text:{
-						color:'#f'
-					},
-					Icon:{}
-				},
-				selected_slide_over$selected_over:{
-					$tween:2,
-					$ease:[0,10,0,0],
-					$duration:0.3,
-				},
-				dragging$selected_over:{
-				}
-			}
 		}
 	}
 

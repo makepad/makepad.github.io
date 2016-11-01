@@ -54,7 +54,7 @@ module.exports = class Stamp extends require('base/class'){
 	initState(arg){
 		this.initStates(arg)
 		if(!this.states) return
-		if(arg && this._state){ // maintain _over state
+		if(arg && arg.state && this._state){ // maintain _over state
 			var stateName = arg.state
 			// maintain our over state 
 			if(this._state.name.indexOf('_over') !== -1){

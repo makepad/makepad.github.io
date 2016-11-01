@@ -32,14 +32,18 @@ module.exports=class Tabs extends require('base/view'){
 		this.styles = {
 			closeButton:{
 				x:'@1',
+				y:'30',
 				icon:'close',
-				Bg:{
-					margin:[2,0,0,0],
-					color:'#3',
-					padding:[4,0,0,8]
+				Icon:{
+					x:'6',y:'-5'
 				},
-				w:26,
-				h:23,
+				//Bg:{
+					//margin:[0,0,0,0],
+					//color:'#3',
+					//padding:[0,0,0,0]
+				//},
+				w:32,
+				h:18,
 				onClick:function(e){
 					this.view.closeTab(this.view.selectedIndex)
 				}
@@ -47,7 +51,7 @@ module.exports=class Tabs extends require('base/view'){
 			flipButton:{
 				x:'@1',
 				Bg:{
-					margin:[3,0,0,0],
+					margin:[0,0,0,0],
 					color:'#9',
 					padding:0,
 					align:[.5,.5]
