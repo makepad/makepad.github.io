@@ -35,6 +35,8 @@ module.exports = class Text extends require('base/shader'){
 
 			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
+			down: {styleLevel:1, value:0},
+			align: {styleLevel:1, value:[undefined,undefined]},
 			wrapping:{styleLevel:1, value:'line'},
 			margin:{styleLevel:1, value:[0,0,0,0]},
 			noBounds: {styleLevel:1, value:0},

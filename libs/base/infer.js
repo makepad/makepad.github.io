@@ -84,7 +84,6 @@ module.exports = class ShaderInfer extends require('base/class'){
 		}
 		catch(e){
 			var dec = module.worker.decodeException(e)
-			console.log("HERE", dec)
 
 			// alright we have a lineoff, now we need to take the node
 			var lines = curfn.source.split('\n')

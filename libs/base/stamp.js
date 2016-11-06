@@ -18,6 +18,8 @@ module.exports = class Stamp extends require('base/class'){
 			w:NaN,
 			h:NaN,
 			margin:undefined,
+			align:undefined,
+			down:undefined,
 			cursor:undefined,
 			id:''
 		}

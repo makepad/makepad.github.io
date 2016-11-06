@@ -14,10 +14,23 @@ module.exports = class App extends require('base/view'){
 	prototype(){
 		this.name = 'App'
 		this.cursor = 'default'
+		this.style = require('styles/dark')
 	}
 
 	constructor(){
 		super()
+
+		// apply style to all nested classes
+		var obj = this.style.compute(this.constructor)
+		
+		// initialize style
+		for(var key in obj){
+			var value = this[key]
+			if(typeof value.extend === 'function'){ // its a class
+				this[key] = value.extend(obj[key])
+			}
+			else this[key] = obj[key]
+		}
 
 		// create app
 		this.store = Store.create()
@@ -414,6 +427,7 @@ module.exports = class App extends require('base/view'){
 			turtle._margin = iter._margin
 			turtle._padding = iter._padding
 			turtle._align = iter._align
+			turtle._down = iter._down
 			turtle._wrap = iter._wrap
 
 			var level = layout.$turtleStack.len - ((

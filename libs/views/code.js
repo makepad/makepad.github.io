@@ -11,7 +11,7 @@ module.exports = class Code extends require('views/edit'){
 		style.to = {
 			animating:{
 				ease:style.anims.ease,
-				duration:0.2,
+				duration:0.,
 				tween:style.anims.tween,
 			},
 			Text$animating:{
@@ -80,7 +80,7 @@ module.exports = class Code extends require('views/edit'){
 					function:{},
 					curly:{},
 					block$block:{},
-					comma:{},
+					comma:{$tail:0.5},
 					return:{},
 					yield:{},
 					parenLeft:{},
@@ -98,7 +98,7 @@ module.exports = class Code extends require('views/edit'){
 					if:{},
 					else:{},
 					parenLeft:{},
-					parenRight:{},
+					parenRight:{$tail:0.5},
 					curly:{},
 					block$block:{},
 					switch:{},
@@ -160,7 +160,7 @@ module.exports = class Code extends require('views/edit'){
 				}, 
 				Operator:{
 					$color:c.codeOperator,
-					default:{},
+					default:{$head:0.5,$tail:0.5},
 					'=':{$head:0.5,$tail:0.5},
 					'?:':{},
 					'@':{},
@@ -393,7 +393,7 @@ module.exports = class Code extends require('views/edit'){
 			this.reuseText() 
 		}
 		else { 
-			require('base/perf')
+			//require('base/perf')
 			//require.perf()
 			this.$fastTextDelay = 0 
 			if(this.debugShow) { 
@@ -559,7 +559,7 @@ module.exports = class Code extends require('views/edit'){
 				//	text: this.error.msg 
 				//}) 
 			} 
-			require('base/perf')
+			//require('base/perf')
 
 			//require.perf()
 			this.$fastTextDelta = 0 

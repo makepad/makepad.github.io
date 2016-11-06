@@ -11,8 +11,7 @@ module.exports = class Button extends require('base/stamp'){
 							color:c.textMed
 						},
 						Bg:{
-							padding:[1,0,1,0],
-							align:[0.5,.5],
+							padding:5,
 							borderWidth:1,
 							borderColor:c.textLo,
 							color:c.bgTop

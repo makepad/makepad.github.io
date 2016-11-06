@@ -42,15 +42,15 @@ module.exports = class FileTree extends require('base/view'){
 	
 	onDraw() {
 		this.beginBg(this.viewGeom)
-		this.drawButton({icon: 'plus', w: '50%'})
-		this.drawButton({icon: 'trash', w: '50%'})
+		this.drawButton({icon: 'trash',align:[1,0]})
+		this.drawButton({icon: 'plus',align:[0,0]})
 		this.endBg()
 	}
 	
 	onCompose() {
 		return [
 			new this.Tree({
-				y: '26',
+				y: '36',
 				name: 'Tree'
 			})
 		]

@@ -373,12 +373,14 @@ function workerBoot(){
 		})
 	}*/
 
-	function invalidateModuleDeps(module){
-		if(!module || !module.exports) return
+	function invalidateModuleDeps(module, log, path){
+		if(!module) return
 		for(var key in module.deps){
 			var oldModule = module.deps[key]
-			modules[key].exports = undefined
-			invalidateModuleDeps(oldModule)
+			if(oldModule.exports){
+				oldModule.exports = undefined
+				invalidateModuleDeps(oldModule, log, key)
+			}
 		}
 	}
 
@@ -396,6 +398,7 @@ function workerBoot(){
 		if(worker.hasParent && !worker.onError){ // onError handling
 
 			worker.onError = function(e){
+				console.log('worker exception', e)
 				worker.postMessage({
 					$:'worker1',
 					msg:{
@@ -416,9 +419,8 @@ function workerBoot(){
 		var serviceArgs = msg.args
 		for(let path in resources){
 			var source = resources[path]
-
 			// invalidate dependencies
-			invalidateModuleDeps(modules[path])
+			invalidateModuleDeps(modules[path], modules[path])
 
 			if(typeof source !== 'string'){
 				var m = modules[path] = new worker.Module(path, source)
@@ -431,7 +433,7 @@ function workerBoot(){
 			}
 			catch(e){
 				if(worker.onError) worker.onError(worker.decodeException(e))
-				console.log(source)
+
 				worker.postMessage({
 					$:'exception',
 					msg:{path:path}
@@ -446,8 +448,10 @@ function workerBoot(){
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
 		worker.clearAllTimers()
+
 		if(typeof module.exports === 'function'){
 			Object.defineProperty(module.exports, '__module__', {value:module})
+
 			if(worker.appMain && worker.appMain.destroy){
 				worker.appMain.destroy()
 			}
@@ -509,7 +513,6 @@ function workerRequire(absParent, worker, modules, args){
 		var module = modules[absPath]
 
 		if(!module) throw new Error("Cannot require "+absPath+" from "+absParent)
-
 		module.deps[absParent] = modules[absParent]
 
 		if(!module.exports){

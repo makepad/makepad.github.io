@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/makepad.js"],
-	"run":["/makepad.js"],
+	"open":["/examples/tiny.js", "/libs/base/shader.js"],
+	"run":["/examples/tiny.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -64,6 +64,9 @@
 				{"name":"splitter.js"},
 				{"name":"tabs.js"},
 				{"name":"tree.js"}
+			]},
+			{"name":"styles","folder":[
+				{"name":"dark.js"}
 			]},
 			{"name":"services","folder":[
 				{"name":"painter.js"},

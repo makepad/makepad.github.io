@@ -43,6 +43,7 @@ module.exports = class View extends require('base/class'){
 			padding:[0,0,0,0],
 			drawPadding:undefined,
 			align:[0,0],
+			down:0,
 			wrap:1		
 		}
 
@@ -90,6 +91,7 @@ module.exports = class View extends require('base/class'){
 							borderRadius:4,
 							scrollMinSize:{noTween:1, value:30},
 							pickAlpha:-1,
+
 						},
 						vertexStyle:function(){$ // bypass the worker roundtrip :)
 							var pos = vec2()

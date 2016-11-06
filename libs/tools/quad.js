@@ -14,8 +14,10 @@ module.exports = class Quad extends require('base/shader'){
 			h: {noInPlace:1, value:NaN},
 			z: 0,
 
+
+			down: {styleLevel:1, value:0},
+			align: {styleLevel:1, value:[undefined,undefined]},
 			wrap: {styleLevel:2, value:1},
-			align: {styleLevel:2, value:[0,0]},
 			padding: {styleLevel:2, value:[0,0,0,0]},
 			margin: {styleLevel:1, value:[0,0,0,0]},
 

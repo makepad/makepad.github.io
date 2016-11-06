@@ -2,7 +2,7 @@
 module.exports = class MakepadStyle extends require('base/style'){
 	prototype(){
 
-		this.dump = 1
+		//this.dump = 1
 
 		this.anims = {
 			tween:2,

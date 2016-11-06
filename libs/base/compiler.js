@@ -712,8 +712,8 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent + 'var $need = min($propslength + '+need+',$proto.propAllocLimit)\n'
 		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need)\n'
 		if(!fastWrite){
-			code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
-			code += indent + '$view.$writeList.push($props, $propslength, $need, $writelevel)\n'
+			//code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
+			code += indent + '$view.$writeList.push($props, $propslength, $need)\n'
 			
 			if(target.$isStamp){
 				code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
@@ -984,7 +984,7 @@ module.exports = class Compiler extends require('base/class'){
 				if(pack){
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
 					if(pack === 'float12'){
-						if(fastWrite || prop.config.noCast){
+						if(prop.config.noCast){
 							propcode += indent + '$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
 						}
 						else{
@@ -995,7 +995,7 @@ module.exports = class Compiler extends require('base/class'){
 						}
 					}
 					else{ // int packing
-						if(fastWrite || prop.config.noCast){
+						if(prop.config.noCast){
 							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0)\n'
 						}
 						else{
@@ -1008,7 +1008,7 @@ module.exports = class Compiler extends require('base/class'){
 				}
 				else{
 					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(fastWrite || prop.config.noCast){
+					if(prop.config.noCast){
 						propcode += indent + '$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
 					}
 					else{

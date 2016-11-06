@@ -61,7 +61,7 @@ module.exports = class Style extends require('base/class'){
 		return this.object
 	}
 
-	static apply(cls){
+	static compute(cls){
 		var Style = this
 		// lets initialize inheritables
 		// lets walk all the inheritables with arg === 'true'
@@ -84,7 +84,7 @@ module.exports = class Style extends require('base/class'){
 			// lets fire on our node
 			//console.log(toolPath)
 			var s = new Style(cls, out, toolPath, toolName)
-			s.match()
+			if(s.match) s.match()
 			if(!s.changed && cls.prototype.defaultStyle){
 				cls.prototype.defaultStyle(s)
 			}
@@ -95,8 +95,9 @@ module.exports = class Style extends require('base/class'){
 		if(Style.prototype.dump){
 			console.log(obj)
 		}
+		// lets just apply the object
 
-		return cls.extend(obj)
+		return obj//cls.extend(obj)
 	}
 }
 

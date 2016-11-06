@@ -15,7 +15,8 @@ module.exports = class ShadowQuad extends require('base/shader'){
 			z: 0,
 
 			wrap: {styleLevel:2, value:1},
-			align: {styleLevel:2, value:[0,0]},
+			align: {styleLevel:1, value:[0,0]},
+			down: {styleLevel:1, value:0},
 			padding: {styleLevel:2, value:[0,0,0,0]},
 			margin: {styleLevel:1, value:[0,0,0,0]},
 

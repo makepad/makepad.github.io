@@ -19,7 +19,6 @@ function defineToolInheritable(proto, key){
 	}, true)
 }
 
-
 module.exports = class Tools extends require('base/class'){
 
 	prototype(){
@@ -108,12 +107,10 @@ module.exports = class Tools extends require('base/class'){
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len
-		for(let i = start; i < writes.length; i += 4){
+		for(let i = start; i < writes.length; i += 3){
 			var props = writes[i]
 			var begin = writes[i+1]
 			var end = writes[i+2]
-			var level = writes[i+3]
-			if(current > level) continue
 			var slots = props.slots
 			var xoff = props.xOffset
 			var yoff = props.yOffset

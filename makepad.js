@@ -19,11 +19,13 @@ module.exports = class Makepad extends require('base/app'){
 			Settings: require('./makepad/settings'),
 			UserProcess: require('./makepad/userprocess')
 		}
+		// set the styleclasscf4
+		this.style = require('./makepad/styles')
 	}
 
 	constructor() {
 		super()
-		
+
 		this.store.act("init", store=>{
 			store.projectTree = {}
 			store.resourceMap = new Map()
@@ -338,4 +340,4 @@ module.exports = class Makepad extends require('base/app'){
 			})
 		]
 	}
-}.style(require('./makepad/styles'))
+}
