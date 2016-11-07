@@ -18,11 +18,22 @@ module.exports = class FileTree extends require('base/view'){
 					this.parent.onNodeSelect(...args)
 				}
 			}),
-			Button: require('tools/button').extend({
+			ButtonBar: require('base/view').extend({
+				tools:{
+					Button: require('tools/button').extend({
 				
-			}),
-			Bg:require('tools/bg').extend({
+					}),
+					Bg:require('tools/bg').extend({
+					})
+				},
+				onDraw(){
+					this.beginBg(this.viewGeom)
+					this.drawButton({icon: 'trash',align:[1,0]})
+					this.drawButton({icon: 'plus',align:[0,0]})
+					this.endBg()
+				}
 			})
+			
 		}
 		this.mixin({
 			name: 'FileTree'
@@ -41,16 +52,16 @@ module.exports = class FileTree extends require('base/view'){
 	}
 	
 	onDraw() {
-		this.beginBg(this.viewGeom)
-		this.drawButton({icon: 'trash',align:[1,0]})
-		this.drawButton({icon: 'plus',align:[0,0]})
-		this.endBg()
+		
 	}
 	
 	onCompose() {
 		return [
+			new this.ButtonBar({
+				down:1,
+			}),
 			new this.Tree({
-				y: '36',
+				down:1,
 				name: 'Tree'
 			})
 		]

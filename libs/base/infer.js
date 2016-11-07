@@ -377,7 +377,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 	ThisExpression(node){
 		node.infer = {
 			kind:'this',
-			prefix:this.ctxprefix || 'this_DOT_'
+			prefix:this.ctxprefix || 'thisDOT'
 		}
 		return ''
 	}
@@ -459,7 +459,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			else if(objectinfer.kind === 'this'){
 
 				var value = this.root[propname]
-				var fullname = 'this_DOT_' + propname
+				var fullname = 'thisDOT' + propname
 
 				// its a function
 				if(typeof value === 'function'){
@@ -1373,9 +1373,9 @@ var tableBinaryExpression = {
 	ivec2:{int:types.ivec2, ivec2:types.ivec2},
 	ivec3:{int:types.ivec3, ivec3:types.ivec3},
 	ivec4:{int:types.ivec4, ivec4:types.ivec4},
-	mat2:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-	mat3:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-	mat4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+	mat2:{vec2:types.vec2, mat2:types.mat2},
+	mat3:{vec3:types.vec3, mat3:types.mat3},
+	mat4:{vec4:types.vec4, mat4:types.mat4},
 }
 
 var groupBinaryExpression = {

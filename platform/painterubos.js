@@ -7,10 +7,10 @@ module.exports = function painterUbos(proto){
 		var ubo = this.uboIds[framebuffer.uboId]
 		var nameIds = this.nameIds
 
-		this.mat4Ubo(ubo, nameIds.this_DOT_fingerInfo, this.fingerInfo)
-		this.floatUbo(ubo, nameIds.this_DOT_time, this.repaintTime)
-		this.floatUbo(ubo, nameIds.this_DOT_pixelRatio, this.args.pixelRatio)
-		this.floatUbo(ubo, nameIds.this_DOT_workerId, (pick?-1:1)*this.worker.workerId)
+		this.mat4Ubo(ubo, nameIds.thisDOTfingerInfo, this.fingerInfo)
+		this.floatUbo(ubo, nameIds.thisDOTtime, this.repaintTime)
+		this.floatUbo(ubo, nameIds.thisDOTpixelRatio, this.args.pixelRatio)
+		this.floatUbo(ubo, nameIds.thisDOTworkerId, (pick?-1:1)*this.worker.workerId)
 		return ubo
 	}
 

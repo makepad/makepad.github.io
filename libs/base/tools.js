@@ -182,13 +182,13 @@ module.exports = class Tools extends require('base/class'){
 		}
 
 		props.name = this.name + "-"+classname
-		var xProp = info.instanceProps.this_DOT_x
+		var xProp = info.instanceProps.thisDOTx
 		props.xOffset = xProp && xProp.offset
-		var yProp = info.instanceProps.this_DOT_y 
+		var yProp = info.instanceProps.thisDOTy 
 		props.yOffset = yProp && yProp.offset
-		//var wProp = info.instanceProps.this_DOT_w
+		//var wProp = info.instanceProps.thisDOTw
 		//props.wOffset = wProp && wProp.offset
-		//var hProp = info.instanceProps.this_DOT_h
+		//var hProp = info.instanceProps.thisDOTh
 		//props.hOffset = hProp && hProp.offset
 		//props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
 		props.transferData = proto.transferData

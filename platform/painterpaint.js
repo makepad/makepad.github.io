@@ -171,10 +171,10 @@ module.exports = function painterPaint(proto){
 				gl.viewport(0, 0, color0.w, color0.h)
 			}
 
-			this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, lagCompMat)
+			this.mat4Ubo(painterUbo, this.nameIds.thisDOTvertexPostMatrix, lagCompMat)
 		}
 		else{
-			this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, identityMat)
+			this.mat4Ubo(painterUbo, this.nameIds.thisDOTvertexPostMatrix, identityMat)
 			// alright lets 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glfb)
 			var color0 = framebuffer.attach.color0
@@ -267,7 +267,7 @@ module.exports = function painterPaint(proto){
 		// lets set some globals
 		var nameIds = this.nameIds
 		var painterUbo = this.setPainterUbo(framebuffer, true)
-		this.mat4Ubo(painterUbo, nameIds.this_DOT_vertexPostMatrix, identityMat)
+		this.mat4Ubo(painterUbo, nameIds.thisDOTvertexPostMatrix, identityMat)
 		// alright lets bind the pick framebuffer
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glpfb)
 		var pick = framebuffer.attach.pick
@@ -350,7 +350,7 @@ module.exports = function painterPaint(proto){
 
 		// set up global uniforms
 		var painterUbo = this.setPainterUbo(this.mainFramebuffer, true)
-		this.mat4Ubo(painterUbo, this.nameIds.this_DOT_vertexPostMatrix, pickMat)
+		this.mat4Ubo(painterUbo, this.nameIds.thisDOTvertexPostMatrix, pickMat)
 		this.inPickPass = true
 
 		this.runTodo(todo)

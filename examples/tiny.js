@@ -1,3 +1,4 @@
+var p = require('services/painter')
 module.exports = class extends require('base/drawapp'){ //top
 	
 	prototype() {
@@ -5,14 +6,32 @@ module.exports = class extends require('base/drawapp'){ //top
 			Grid:require('tools/grid'),
 			Quad:{
 				pixel:function() {$
-					this.canvas2D(this.mesh.xy * vec2(this.w, this.h), vec2(0.))
-					this.source = 'red'
-					this.clear()
-					this.lineWidth = 1.
-					this.circle(50., 50., 30.)
-					this.fill()
 					
-					return this.blit()
+					this.viewport(this.mesh.xy * vec2(this.w, this.h))
+					this.circle(50., 50., 20.)
+					this.circle(50., 80., 30.)
+					this.gloop(10.)
+					this.fillKeep('red')
+					this.stroke('blue', 4.)
+					
+					this.rectangle(0., 0., 200., 200.)
+					this.fill('blue')
+					
+					this.circle(70., 60., 30.)
+					this.fill('#f0fc')
+					
+					this.box(50., 50., 50., 50., 10.)
+					this.fill('#f')
+					this.rotate(this.time, 50, 75)
+					this.moveTo(100, 100)
+					this.lineTo(50, 50)
+					this.lineTo(50, 150)
+					this.closePath()
+					this.strokeKeep('#f00', 5.)
+					this.blur(18.)
+					this.glow('#f00', 15.)
+					
+					return this.result()
 				}
 			}
 		}

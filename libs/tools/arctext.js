@@ -60,9 +60,9 @@ module.exports = class ArcText extends require('tools/text'){
 		var adjust = length(vec2(length(dFdx(pos)), length(dFdy(pos))))*SQRT12
 		var field = this.arcSdf(pos, nominalSize, atlasPos) / adjust * 1.4
 
-		this.field = field 
+		this._field = field 
 		this.pixelStyle()
-		field = this.field - this.boldness
+		field = this._field - this.boldness
 
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)

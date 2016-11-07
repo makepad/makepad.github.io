@@ -167,6 +167,7 @@ module.exports = class Code extends require('views/edit'){
 					'#':{},
 					'...':{}
 				},
+				OperatorNL$Operator:{},
 				Parens:{
 					$color:c.codeParen,
 					left:{},

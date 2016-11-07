@@ -57,14 +57,14 @@ module.exports = class Shader extends require('base/compiler'){
 			var prop = this._props[key]
 			if(prop.kind === 'uniform') {
 				if( ! prop.block || prop.block === 'draw') continue
-				painter.nameId('this_DOT_' + key)
+				painter.nameId('thisDOT' + key)
 			}
 		}
 		
 		// safety for infinite loops
 		this.propAllocLimit = 150000
 		
-		this.blending = [painter.SRC_ALPHA, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE]
+		this.blending = [painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
 		this.constantColor = undefined
 		
 		this.tweenTime = this.tweenAll
@@ -324,69 +324,165 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	colorSolidDistance(antialias, field, fill) {
-		return mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
+		return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
+	}
+	
+	premulAlpha(color) {
+		return vec4(color.rgb * color.a, color.a)
 	}
 	
 	colorBorderDistance(antialias, field, borderWidth, fill, border) {
-		if(borderWidth < 0.001) return mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
+		if(borderWidth < 0.001) return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
 		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
-		return mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.))
+		return this.premulAlpha(mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.)))
 	}
 	
 	animateUniform(uni) {$
 		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w - uni.z) + uni.z
 	}
 	
-	test2() {$
-		return 'blue'
-	}
-	
-	// 2D canvas api
-	canvas2D(pos, query) {
-		this._pos = vec4(pos, query)
+	// 2D canvas api for shader
+	viewport(pos) {
+		this._pos = pos
 		this._aa = this.antialias(pos)
-		this._blur = vec2(0., 1.)
-		this._color = vec4(1., 0.)
-		this._shape = vec2(1e+20)
+		this._result = vec4(0.)
+		this._shape = 1e+20
 		this._scale = 1.
+		this._blur = 0.00001
 	}
 	
-	clear() {
-		this._color = this.source
+	blur(v) {
+		this._blur = v
 	}
 	
-	blit() {
-		return this._color
+	translate(x, y) {$
+		this._pos -= vec2(x, y)
 	}
 	
-	calcBlur(w) {
-		var f = w - this._blur.x
+	rotate(a, x, y) {$
+		var ca = cos( - a), sa = sin( - a)
+		var p = this._pos - vec2(x, y)
+		this._pos = vec2(p.x * ca - p.y * sa, p.x * sa + p.y * ca) + vec2(x, y)
+	}
+	
+	scale(f, x, y) {$
+		this._scale *= f
+		this._pos = (this._pos - vec2(x, y)) * f + vec2(x, y)
+	}
+	
+	clear(color) {
+		this._result = vec4(color.rgb * color.a + this._result.rgb * (1. - color.a), color.a)
+	}
+	
+	result() {
+		return this._result
+	}
+	
+	_calcBlur(w) {
+		var f = w - this._blur
 		var wa = clamp( - w * this._aa, 0., 1.)
-		var wb = clamp( - w / this._blur.x + this._blur.y, 0., 1.)
+		var wb = clamp( - w / this._blur, 0., 1.)
 		return wa * wb
 	}
 	
-	fill() {$
-		var f = this.calcBlur(this._shape.x)
-		var sa = f * this.source.a
-		var da = this._color.a
-		// if 0 output source entirely
-		// if 1 blend
-		// output alpha = max(dst + )
-		this._color = vec4(mix(this._color.rgb, this.source.rgb, da) * (1 - sa) + this.source.rgb * sa, max(da, sa))
+	fillKeep(color) {$
+		var f = this._calcBlur(this._shape)
+		var source = vec4(color.rgb * color.a, color.a)
+		var dest = this._result
+		this._result = source * f + dest * (1. - source.a * f)
 	}
 	
-	addField(d) {$
-		this._shape = min(this._shape, d / this._scale)
+	fill(color) {$
+		this.fillKeep(color)
+		this._shape = 1e+20
+	}
+	
+	strokeKeep(color, width) {$
+		var f = this._calcBlur(abs(this._shape) - width / this._scale)
+		var source = vec4(color.rgb * color.a, color.a)
+		var dest = this._result
+		this._result = source * f + dest * (1. - source.a * f)
+	}
+	
+	stroke(color, width) {$
+		this.strokeKeep(color, width)
+		this._shape = 1e+20
+	}
+	
+	glowKeep(color, width) {$
+		var f = this._calcBlur(abs(this._shape) - width / this._scale)
+		var source = vec4(color.rgb * color.a, color.a)
+		var dest = this._result
+		this._result = source * f + dest
+	}
+	
+	glow(color, width) {$
+		this.glowKeep(color, width)
+		this._shape = 1e+20
+	}
+	
+	union() {
+		this._shape = max(this._field, this._oldShape)
+	}
+	
+	subtract() {
+		this._shape = max( - this._field, this._oldShape)
+	}
+	
+	gloop(k) {
+		var h = clamp(.5 + .5 * (this._oldShape - this._field) / k, 0., 1.)
+		this._shape = mix(this._oldShape, this._field, h) - k * h * (1.0 - h)
 	}
 	
 	circle(x, y, r) {$
-		var c = this._pos - vec2(x, y).xyxy
-		this.addField(vec2(length(c.xy), length(c.zw)) - r)
+		var c = this._pos - vec2(x, y)
+		this._field = (length(c.xy) - r) / this._scale
+		this._oldShape = this._shape
+		this._shape = min(this._shape, this._field)
 	}
 	
-
-//
+	box(x, y, w, h, r) {$
+		var p = this._pos - vec2(x, y)
+		var size = vec2(.5 * w, .5 * h)
+		var bp = max(abs(p - size.xy) - (size.xy - vec2(2. * r).xy), vec2(0.))
+		this._field = (length(bp) - 2. * r) / this._scale
+		this._oldShape = this._shape
+		this._shape = min(this._shape, this._field)
+	}
+	
+	field(f) {$
+		this._field = f
+		this._oldShape = this._shape
+		this._shape = min(this._shape, this._field)
+	}
+	
+	rectangle(x, y, w, h) {$
+		var p = this._pos - vec2(x, y)
+		this._field = length(max(abs(p) - vec2(w, h), 0.0)) / this._scale
+		this._oldShape = this._shape
+		this._shape = min(this._shape, this._field)
+	}
+	
+	moveTo(x, y) {$
+		this._lastPos = 
+		this._startPos = vec2(x, y)
+	}
+	
+	lineTo(x, y) {$
+		var p = vec2(x, y)
+		var pa = this._pos - this._lastPos.xy
+		var ba = p - this._lastPos
+		var h = clamp(dot(pa.xy, ba) / dot(ba, ba), 0., 1.)
+		this._field = length(pa.xy - ba * h) / this._scale
+		this._oldShape = this._shape
+		this._shape = min(this._shape, this._field)
+		this._lastPos = p
+	}
+	
+	closePath() {$
+		this.lineTo(this._startPos.x, this._startPos.y)
+	}
+	//
 //
 // Default macros
 //

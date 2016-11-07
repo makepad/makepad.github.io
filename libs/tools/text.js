@@ -339,8 +339,8 @@ module.exports = class Text extends require('base/shader'){
 			var borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline,0.,1.))
 			return mix(this.color, borderfinal, clamp(inner, 0., 1.))
 		}
-
-		return vec4(this.color.rgb, smoothstep(.75,-.75, field))
+		var a = smoothstep(.75,-.75, field)
+		return vec4(this.color.rgb*a, a)
 	}
 
 	drawShadow(field){
@@ -351,11 +351,11 @@ module.exports = class Text extends require('base/shader'){
 	pixel(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.01) / adjust * 1.4 
-		this.field = field
+		this._field = field
 
 		this.pixelStyle()
 
-		field = this.field - this.boldness
+		field = this._field - this.boldness
 
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)

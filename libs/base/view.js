@@ -532,8 +532,8 @@ module.exports = class View extends require('base/class'){
 		var todo = this.todo
 		// lets set some globals
 		var todoUbo = todo.todoUbo
-		todoUbo.mat4(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
-		todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+		todoUbo.mat4(painter.nameId('thisDOTviewPosition'), this.viewPosition)
+		todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
 	}
 
 	$redrawView(){		
@@ -563,8 +563,8 @@ module.exports = class View extends require('base/class'){
 		}
 		
 		if(this.app == this){
-			this.painterUbo.mat4(painter.nameId('this_DOT_camPosition'), this.camPosition)
-			this.painterUbo.mat4(painter.nameId('this_DOT_camProjection'), this.camProjection)
+			this.painterUbo.mat4(painter.nameId('thisDOTcamPosition'), this.camPosition)
+			this.painterUbo.mat4(painter.nameId('thisDOTcamProjection'), this.camProjection)
 			todo.clearColor(0.2, 0.2, 0.2, 1)
 		}
 
@@ -574,11 +574,11 @@ module.exports = class View extends require('base/class'){
 			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
 			todo = this.todo
 			todoUbo = todo.todoUbo
-			todoUbo.mat4(painter.nameId('this_DOT_viewPosition'),identityMat4)
-			todoUbo.mat4(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+			todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
+			todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
 			//!TODO SOLVE THIS LATER, for a surface this changes
-			//todoUbo.mat4(painter.nameId('this_DOT_camPosition'),identityMat4)
-			//todoUbo.mat4(painter.nameId('this_DOT_camProjection'),pass.projection)
+			//todoUbo.mat4(painter.nameId('thisDOTcamPosition'),identityMat4)
+			//todoUbo.mat4(painter.nameId('thisDOTcamProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)
 		}
 
@@ -743,8 +743,8 @@ module.exports = class View extends require('base/class'){
 
 		if(this.onOverlay){
 			// reset our matrices
-			//todo.mat4Global(painter.nameId('this_DOT_viewPosition'), this.viewPosition)
-			//todo.mat4Global(painter.nameId('this_DOT_viewInverse'),this.viewInverse)
+			//todo.mat4Global(painter.nameId('thisDOTviewPosition'), this.viewPosition)
+			//todo.mat4Global(painter.nameId('thisDOTviewInverse'),this.viewInverse)
 			this.beginTurtle()
 			this.turtle._x = 0
 			this.turtle._y = 0		

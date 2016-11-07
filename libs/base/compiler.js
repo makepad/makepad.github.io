@@ -418,7 +418,7 @@ module.exports = class Compiler extends require('base/class'){
 			var prop = props[key]
 			if(prop.kind === 'uniform'){
 				let blockName = prop.block
-				var uniName = 'this_DOT_'+ key
+				var uniName = 'thisDOT'+ key
 				if(!blockName || blockName === 'draw'){
 					// if the draw uniform is not used skip it
 					if(!(uniName in uniforms)) continue
@@ -471,14 +471,14 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		/*
-		if(vtx.genFunctions.this_DOT_vertex_T.return.type !== types.vec4){
+		if(vtx.genFunctions.thisDOTvertex_T.return.type !== types.vec4){
 			vtx.mapException({
 				state:{
-					curFunction:vtx.genFunctions.this_DOT_vertex_T
+					curFunction:vtx.genFunctions.thisDOTvertex_T
 				},
 				type:'generate',
 				message:'vertex function not returning a vec4',
-				node:vtx.genFunctions.this_DOT_vertex_T.ast
+				node:vtx.genFunctions.thisDOTvertex_T.ast
 			})
 		}*/
 
@@ -506,7 +506,7 @@ module.exports = class Compiler extends require('base/class'){
 		// add all the props we didnt compile but we do need for styling to styleProps
 		for(let key in this._props){
 			var config = this._props[key]
-			var propname = 'this_DOT_' + key
+			var propname = 'thisDOT' + key
 			if(config.styleLevel && !styleProps[propname]){
 				styleProps[propname] = {
 					name:key,
@@ -601,7 +601,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += '}\n'
 
 		/*
-		if(styleProps.this_DOT_tween){
+		if(styleProps.thisDOTtween){
 			code += 'var $p3 = this.$stampArgs\n'
 			code += 'if($p3){\n'
 			code += styleTweenCode('	', '$p3')
@@ -680,11 +680,11 @@ module.exports = class Compiler extends require('base/class'){
 		for(let key in uniforms){
 			var uniform = uniforms[key]
 			
-			if(key === 'this_DOT_time' && uniform.refcount > 1){
+			if(key === 'thisDOTtime' && uniform.refcount > 1){
 				code += indent +'	$todo.timeMax = Infinity\n'
 			}
 			if(!drawUboDef || !(key in drawUboDef)) continue
-			var thisname = key.slice(9)
+			var thisname = key.slice(7)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
 			if(uniform.config.animate){
@@ -700,7 +700,7 @@ module.exports = class Compiler extends require('base/class'){
 		for(let key in samplers){
 			var sampler = samplers[key]
 
-			var thisname = key.slice(9)
+			var thisname = key.slice(7)
 			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $proto.'+thisname
 
 			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
@@ -766,7 +766,7 @@ module.exports = class Compiler extends require('base/class'){
 		var instanceProps = info.instanceProps
 		var argobj = macroargs[0]
 		for(let key in argobj){
-			var prop = instanceProps['this_DOT_'+key]
+			var prop = instanceProps['thisDOT'+key]
 			// lets write prop
 			if(prop.config.pack) throw new Error('Please implement PREVPROP packing support '+key)
 			if(prop.config.type.slots>1) throw new Error('Please implement PREVPROP vector support '+key)
@@ -795,7 +795,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-		var prop = info.instanceProps['this_DOT_'+macroargs[1].slice(1,-1)]
+		var prop = info.instanceProps['thisDOT'+macroargs[1].slice(1,-1)]
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
 	}
 
@@ -804,7 +804,7 @@ module.exports = class Compiler extends require('base/class'){
 		var code = ''
 		var info = this.$compileInfo
 		if(info.noTween) throw new Error('Property ' + macroargs[1] + ' does not tween')
-		var prop = info.instanceProps['this_DOT_'+macroargs[1].slice(1,-1)]
+		var prop = info.instanceProps['thisDOT'+macroargs[1].slice(1,-1)]
 		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
@@ -891,7 +891,7 @@ module.exports = class Compiler extends require('base/class'){
 				else{
 
 					for(let i = 0; i < slots; i++){
-						//if(key === 'this_DOT_open') tweencode += 'if($o===2*' + info.propSlots +')console.error($duration,$cf, $a[$o+'+(o +i)+'])\n'
+						//if(key === 'thisDOTopen') tweencode += 'if($o===2*' + info.propSlots +')console.error($duration,$cf, $a[$o+'+(o +i)+'])\n'
 
 						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
 							'$1mcf * $a[$o+'+(o + i + slots)+'] + ' +
@@ -1041,37 +1041,37 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		// if we dont have per instance tweening
-		if(!instanceProps.this_DOT_tween){
+		if(!instanceProps.thisDOTtween){
 			code += indent + 'if($proto.tween > 0){\n'
 
-			if(instanceProps.this_DOT_duration){
-				code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
+			if(instanceProps.thisDOTduration){
+				code += indent + '	var $duration = $a[$o + ' + instanceProps.thisDOTduration.offset +']\n'
 			}
 			else{
 				code += indent + '	var $duration = $proto.duration\n'
 			}			
-			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.thisDOTtweenStart.offset +']\n'
 			code += indent + '	if(!$proto.noInterrupt && $view._time < $tweenStart +  $duration){\n'
 			code += indent + '	var $ease = $proto.ease\n'
 			code += indent + '	var $time = $proto.tweenTime($proto.tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +'])/ $duration))'
+			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.thisDOTtweenStart.offset +'])/ $duration))'
 			code += ',$ease[0],$ease[1],$ease[2],$ease[3]'
 			code += ')\n'
 		}
 		else{ // we do have per instance tweening
-			code += indent + 'var $tween = $a[$o + ' + instanceProps.this_DOT_tween.offset +']\n'
+			code += indent + 'var $tween = $a[$o + ' + instanceProps.thisDOTtween.offset +']\n'
 			code += indent + 'if($tween > 0 || $turtle._tween > 0){\n'
-			code += indent + '	var $duration = $a[$o + ' + instanceProps.this_DOT_duration.offset +']\n'
-			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.this_DOT_tweenStart.offset +']\n'
+			code += indent + '	var $duration = $a[$o + ' + instanceProps.thisDOTduration.offset +']\n'
+			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.thisDOTtweenStart.offset +']\n'
 			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
 			code += indent +'	if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 			code += indent + '	if($view._time < $tweenStart + $duration){\n'
 			code += indent + '		var $time = $proto.tweenTime($tween'
 			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
-			code += ',$a[$o + ' + instanceProps.this_DOT_ease.offset +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+1) +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+2) +']'
-			code += ',$a[$o + ' + (instanceProps.this_DOT_ease.offset+3) +']'
+			code += ',$a[$o + ' + instanceProps.thisDOTease.offset +']'
+			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+1) +']'
+			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+2) +']'
+			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+3) +']'
 			code += ')\n'
 		}
 		code += indent + tweencode 
@@ -1092,9 +1092,9 @@ module.exports = class Compiler extends require('base/class'){
 
 		code += propcode
 
-		if(!instanceProps.this_DOT_tween){
+		if(!instanceProps.thisDOTtween){
 			code += indent + 'var $timeMax = $view._time + '
-			code += (instanceProps.this_DOT_duration?'$a[$o + ' + instanceProps.this_DOT_duration.offset +']':'$proto.duration')+'\n'
+			code += (instanceProps.thisDOTduration?'$a[$o + ' + instanceProps.thisDOTduration.offset +']':'$proto.duration')+'\n'
 			code += indent + 'if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
 		}
 

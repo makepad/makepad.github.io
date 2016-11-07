@@ -64,9 +64,9 @@ module.exports = function painterTodo(proto){
 		var nameIds = this.nameIds
 		var todoUbo = this.uboIds[todo.uboId]
 		if(!todoUbo) return false
-		this.floatUbo(todoUbo, nameIds.this_DOT_todoId, todo.todoId)
-		this.vec2fUbo(todoUbo, nameIds.this_DOT_viewScroll, todo.xScroll, todo.yScroll)
-		this.vec4fUbo(todoUbo, nameIds.this_DOT_viewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
+		this.floatUbo(todoUbo, nameIds.thisDOTtodoId, todo.todoId)
+		this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScroll, todo.yScroll)
+		this.vec4fUbo(todoUbo, nameIds.thisDOTviewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 
 		var f32 = todo.f32
 		var i32 = todo.i32

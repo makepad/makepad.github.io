@@ -164,12 +164,12 @@ module.exports = class Rect extends require('base/shader'){
 			quick += vec4(this.shadowBlur,this.shadowBlur,-this.shadowBlur,-this.shadowBlur)
 			if(p.x > quick.x && p.x < quick.z && p.y > quick.y && p.y < quick.w){
 				// alright shadow
-				return this.shadowColor
+				return this.premulAlpha(this.shadowColor)
 			}
 		}
 		else{
 			if(p.x > quick.x && p.x < quick.z && p.y > quick.y && p.y < quick.w){
-				return this.color
+				return this.premulAlpha(this.color)
 			}
 		}
 		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
@@ -202,7 +202,7 @@ module.exports = class Rect extends require('base/shader'){
 
 		if(this.mesh.z < 0.5){
 			var shborder = border / this.shadowBlur
-			return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), pow(clamp(shborder+1., 0., 1.),1.2))
+			return this.premulAlpha(mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), pow(clamp(shborder+1., 0., 1.),1.2)))
 		}
 		else{ // inner field
 			// inner radius
@@ -231,7 +231,7 @@ module.exports = class Rect extends require('base/shader'){
 			if(abs(border - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
 			else borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(border*antialias+1.,0.,1.))
 
-			return mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.))
+			return this.premulAlpha(mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.)))
 		}
 	}
 }

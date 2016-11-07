@@ -164,11 +164,11 @@ module.exports = class CodeText extends require('tools/text'){
 		//if(this.unicode == 10.) return 'red'
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.010) / adjust * 1.4 
-		this.field = field
+		this._field = field
 
 		this.pixelStyle()
 
-		field = this.field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
+		field = this._field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
 
 
 		if(this.mesh.z < 0.5){
