@@ -81,7 +81,7 @@ module.exports = class Quad extends require('base/shader'){
 			0., 
 			1.
 		)
-		this.pos = pos
+		//this.pos = pos
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}

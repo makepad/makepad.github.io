@@ -24,8 +24,8 @@ module.exports = class View extends require('base/class'){
 			x:'0',
 			y:'0',
 			z:NaN,
-			w:'100%-this.x',
-			h:'100%-this.y',
+			w:'100%',
+			h:'100%',
 			xOverflow:'scroll',
 			yOverflow:'scroll',
 			d:NaN,
@@ -111,25 +111,21 @@ module.exports = class View extends require('base/class'){
 							}
 						},
 						pixelStyle:function(){},
-						pixel:function(){
+						pixel:function(){$
 							this.pixelStyle()
-							var p = this.mesh.xy * vec2(this.w, this.h)
-							var aa = this.antialias(p)
+							this.viewport(this.mesh.xy * vec2(this.w, this.h))
 							
-							// background field
-							var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+							this.box(0., 0., this.w, this.h, this.borderRadius)
+							this.fill(this.bgColor)
 
-							var fHan = 0.						
 							if(this.vertical < 0.5){
-								fHan = this.boxDistance(p, this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
+								this.box(this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
 							}
 							else{
-								fHan = this.boxDistance(p, 0., this.h*this.handlePos, this.w, this.handleSize*this.h, this.borderRadius)
+								this.box(0., this.h*this.handlePos, this.w, this.handleSize*this.h, this.borderRadius)
 							}
-							
-							// mix the fields
-							var finalBg = mix(this.bgColor, vec4(this.bgColor.rgb, 0.), clamp(fBg*aa+1.,0.,1.))
-							return mix(this.handleColor, finalBg, clamp(fHan * aa + 1., 0., 1.))
+							this.fill(this.handleColor)
+							return this.result
 						}
 					})
 				},
@@ -590,7 +586,7 @@ module.exports = class View extends require('base/class'){
 		var turtle = this.turtle
 		turtle._margin = zeroMargin
 		turtle._padding = this.padDrawing?this._padding:zeroMargin// this._padding
-		turtle._align = this._align
+		turtle._align = zeroMargin//this._align
 		turtle._wrap = this._wrap
 		turtle._x = 0
 		turtle._y = 0		
@@ -601,7 +597,6 @@ module.exports = class View extends require('base/class'){
 
 		// lets set up a clipping rect
 		if(this.clip){
-			//console.log(this.$x, this.$y, this.$w, this.$h)
 			this.viewClip = [0,0,this.$w,this.$h]
 		}
 		turtle._turtleClip = [-50000,-50000,50000,50000]
@@ -610,7 +605,6 @@ module.exports = class View extends require('base/class'){
 		if(this.dontReuseStamps){
 			this.$stamps = [0]
 		}
-		//this.$stampId = 1
 
 		this.beginTurtle()
 
@@ -619,12 +613,11 @@ module.exports = class View extends require('base/class'){
 			this.onDraw()
 			this.onFlag = 0
 		}
-		//this.drawDebug({
-		//	x:0,y:0,w:10,h:10,color:[random(),random(),random(),1]
-		//})
+
 		this.onDrawChildren()
 
 		this.endTurtle(true)
+
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
 		}
@@ -636,6 +629,7 @@ module.exports = class View extends require('base/class'){
 		
 		this.$x2Old = tx2
 		this.$y2Old = ty2
+
 		var addHor, addVer
 		// lets compute if we need scrollbars
 		if(this.xOverflow === 'scroll' || this.yOverflow === 'scroll'){
@@ -648,6 +642,8 @@ module.exports = class View extends require('base/class'){
 				if(ty2 > th) tw -= this.$scrollBarSize, addVer = true
 			}
 		}
+
+		// these things go away?..
 
 		// draw dependent layouts (content sized views)
 		if(typeof this.w === "number" && isNaN(this.w)){
@@ -860,7 +856,6 @@ module.exports = class View extends require('base/class'){
 		var timeMax = value[0] + value[1]
 		if(timeMax > this.todo.timeMax) this.todo.timeMax = timeMax
 	}
-
 
 	static style(StyleClass){
 		return StyleClass.apply(this)

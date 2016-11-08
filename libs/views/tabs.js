@@ -35,15 +35,15 @@ module.exports=class Tabs extends require('base/view'){
 				y:'30',
 				icon:'close',
 				Icon:{
-					x:'6',y:'-5'
+					x:'-6',y:'-5'
 				},
 				//Bg:{
 					//margin:[0,0,0,0],
 					//color:'#3',
 					//padding:[0,0,0,0]
 				//},
-				w:32,
-				h:18,
+				w:18,
+				h:26,
 				onClick:function(e){
 					this.view.closeTab(this.view.selectedIndex)
 				}

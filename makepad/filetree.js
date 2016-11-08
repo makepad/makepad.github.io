@@ -24,13 +24,14 @@ module.exports = class FileTree extends require('base/view'){
 				
 					}),
 					Bg:require('tools/bg').extend({
+						color:'#3'
 					})
 				},
 				onDraw(){
 					this.beginBg(this.viewGeom)
 					this.drawButton({icon: 'trash',align:[1,0]})
 					this.drawButton({icon: 'plus',align:[0,0]})
-					this.endBg()
+					this.endBg(true)
 				}
 			})
 			
@@ -52,16 +53,18 @@ module.exports = class FileTree extends require('base/view'){
 	}
 	
 	onDraw() {
-		
 	}
 	
 	onCompose() {
 		return [
 			new this.ButtonBar({
+				name:'ButtonBar',
+				y:NaN,
+				h:38,
 				down:1,
 			}),
 			new this.Tree({
-				down:1,
+				y:NaN,
 				name: 'Tree'
 			})
 		]

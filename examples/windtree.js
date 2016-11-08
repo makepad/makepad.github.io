@@ -25,7 +25,7 @@ module.exports=require('base/drawapp').extend({
 						this.mesh.xy-vec2(.5)
 					)*2
 					var col=mix(mix('#0c0','#630',this.autumn),'#130',this.leaf)
-					return mix(col,vec4(col.rgb,0),pow(d,8.))
+					return this.premulAlpha(mix(col,vec4(col.rgb,0),pow(d,8.)))
 				}
 				var s=(14.-(this.depth))*0.2
 				return mix(

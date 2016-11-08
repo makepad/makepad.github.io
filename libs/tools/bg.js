@@ -154,13 +154,18 @@ module.exports = class Bg extends require('base/shader'){
 	}
 
 	pixel(){$
-		var antialias = this.borderRadius*4.*this.pixelRatio
-		var field = (.5-texture2D(this.fieldSampler, this.mesh.zw).x)
-		var fieldaa = field*antialias+1.
+
+		//var antialias = this.borderRadius*4.*this.pixelRatio
+		this._aa = this.borderRadius*4.*this.pixelRatio
+		this._scale = 1.
+		this.result = vec4(0.)
+		this.blur = 0.
+		this.shape = (.5-texture2D(this.fieldSampler, this.mesh.zw).x)
+		
+		this.fill(this.color)
 		if(this.borderWidth < 0.1){
-			return  this.premulAlpha(mix(this.color,vec4(this.color.rgb,0.), clamp(fieldaa, 0., 1.)))
+			return this.result
 		}
-		var borderfinal = mix(this.borderColor, vec4(this.borderColor.rgb, 0.), clamp(fieldaa,0.,1.))
-		return this.premulAlpha(mix(this.color, borderfinal, clamp(fieldaa + this.borderWidth, 0., 1.)))
+		return this.stroke(this.borderColor, this.borderWidth)
 	}
 }

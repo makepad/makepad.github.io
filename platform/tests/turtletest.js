@@ -10,20 +10,17 @@ return require('base/app').extend({
 			font:require('fonts/ubuntu_monospace_256.font')
 		}),
 		Button: require('tools/button').extend({
-		})
+		}),
 	},
 
 	onDraw:function(){
 		var rnd = Math.random
-		/*
-		return
-		*/
 
 		this.beginBg({
 			color:'red',
 			padding:5,
-			x:100,
-			y:100,
+			//x:100,
+			//y:100,
 			w:300,
 			h:80
 		})
@@ -50,10 +47,9 @@ return require('base/app').extend({
 		//this.drawButton({text:'B', align:[0,0]})
 		//this.drawBg({align:[0,0],w:'50%',h:50,color:'orange'})
 		//this.drawBg({align:[0,0],w:'100%',h:50,color:'gray'})
-		console.log("MARK3")
 
 		this.endBg()
-		return
+
 		for(let i = 0 ; i < 20; i++){
 			this.beginBg({
 				//x:(i%15)*100,

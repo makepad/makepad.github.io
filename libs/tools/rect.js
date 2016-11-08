@@ -172,8 +172,8 @@ module.exports = class Rect extends require('base/shader'){
 				return this.premulAlpha(this.color)
 			}
 		}
-		var antialias = 1./length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
-
+		var antialias = this.antialias(p)
+		
 		var br = this.borderRadius
 		var hwh = vec2(.5*this.w, .5*this.h)
 		var ph = abs(p-hwh)

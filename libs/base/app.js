@@ -60,10 +60,10 @@ module.exports = class App extends require('base/view'){
 			$moveWritten:function(start, dx, dy){
 				var writes = this.$writeList
 				var current = this.$turtleStack.len
-				for(let i = start; i < writes.length; i += 2){
+				for(let i = start; i < writes.length; i ++){
 					var node = writes[i]
-					var level = writes[i+1]
-					if(current > level) continue
+					//var level = writes[i+1]
+					//if(current > level) continue
 					node.$xAbs += dx
 					node.$yAbs += dy
 				}
@@ -415,7 +415,6 @@ module.exports = class App extends require('base/view'){
 			turtle._y = iter._y
 
 			if(iter.$drawDepLayout){
-				//console.log("DRAWDEP!")
 				iter.$drawDepLayout = false
 				turtle._w = iter.$wDraw
 				turtle._h = iter.$hDraw
@@ -430,12 +429,12 @@ module.exports = class App extends require('base/view'){
 			turtle._down = iter._down
 			turtle._wrap = iter._wrap
 
-			var level = layout.$turtleStack.len - ((
-				typeof turtle._x === "number" && !isNaN(turtle._x) || typeof turtle._x === "string" || 
-				typeof turtle._y === "number" && !isNaN(turtle._y) || typeof turtle._y === "string"
-			)?-1:0)
+			//var level = layout.$turtleStack.len - ((
+			//	typeof turtle._x === "number" && !isNaN(turtle._x) || typeof turtle._x === "string" || 
+			//	typeof turtle._y === "number" && !isNaN(turtle._y) || typeof turtle._y === "string"
+			//)?-1:0)
 
-			layout.$writeList.push(iter, level)
+			layout.$writeList.push(iter)
 			iter.onFlag = 8
 			layout.beginTurtle(iter)
 			turtle = layout.turtle

@@ -244,8 +244,8 @@ class Probes extends require('base/view'){
 			}),
 			Button:require('tools/button').extend({
 				cursor:'default',
-				w:32,
-				h:18,
+				//w:32,
+				//h:18,
 				//Bg:{
 					//padding:[6,10,6,10]
 				//}
@@ -296,7 +296,6 @@ class Probes extends require('base/view'){
 		if(!this.resource) return
 		//alright so how are we going to select things
 		this.beginBackground(this.viewGeom)
-
 		this.drawButton(this.styles.playButton)
 		//else {
 		//	// lets add a slider widget
@@ -318,7 +317,6 @@ module.exports = class Source extends require('base/view'){
 		super(...args)
 
 		this.probes = []
-
 	}
 
 	prototype() { 
@@ -340,20 +338,19 @@ module.exports = class Source extends require('base/view'){
 	
 	onCompose() {
 		return [ 
-			new this.Code({
-				resource:this.resource,
-				name: 'Code', 
-				y: '28', 
-				w: '100%'
-			}), 
 			new this.Probes({ 
 				resource:this.resource,
 				name: 'Probes',
-				x: '0', 
-				w: '100%', 
-				///y:'100%-this.h',
-				h: '26' 
+				h:38,
+				y:NaN,
+				down:1
 			}),
+			new this.Code({
+				resource:this.resource,
+				name: 'Code',
+				y:NaN,
+				down:1
+			})/*, 
 			new this.Errors({
 				name: 'Errors',
 				resource:this.resource,
@@ -361,7 +358,7 @@ module.exports = class Source extends require('base/view'){
 				x:'30',
 				w:'100%-40',
 				h:NaN
-			})
+			})*/
 		] 
 	} 
 }

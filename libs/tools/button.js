@@ -45,14 +45,12 @@ module.exports = class Button extends require('base/stamp'){
 				borderWidth:1.,
 				borderColor:'red',
 				pixel(){$
-					var p = this.mesh.xy * vec2(this.w, this.h)
-					var aa = this.antialias(p)
-					
-					// background field
-					var fBg = this.boxDistance(p, 0., 0., this.w, this.h, this.borderRadius)
+					this.viewport(this.mesh.xy * vec2(this.w, this.h))	
 
-					// mix the fields
-					return this.colorBorderDistance(aa, fBg, this.borderWidth, this.color, this.borderColor)
+					this.box(0., 0., this.w, this.h, this.borderRadius)
+					
+					this.fillKeep(this.color)
+					return this.stroke(this.borderColor,this.borderWidth)
 				}
 				//color: 'gray',
 				//padding: [10, 10, 10, 10]

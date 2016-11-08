@@ -970,7 +970,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				type:initinfer.type
 			}
 		}
-		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable')
+		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable ' + initstr)
 
 		if(init.infer.kind === 'type'){
 			// just take the type, no constructor args

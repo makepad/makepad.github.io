@@ -283,7 +283,7 @@ module.exports = class Shader extends require('base/compiler'){
 	//
 	// Distance fields
 	//
-	//
+	
 	
 	unionDistance(f1, f2) {
 		return min(f1, f2)
@@ -319,16 +319,9 @@ module.exports = class Shader extends require('base/compiler'){
 		return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)) - r
 	}
 	
-	antialias(p) {
-		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
-	}
 	
 	colorSolidDistance(antialias, field, fill) {
 		return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
-	}
-	
-	premulAlpha(color) {
-		return vec4(color.rgb * color.a, color.a)
 	}
 	
 	colorBorderDistance(antialias, field, borderWidth, fill, border) {
@@ -341,126 +334,136 @@ module.exports = class Shader extends require('base/compiler'){
 		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w - uni.z) + uni.z
 	}
 	
-	// 2D canvas api for shader
-	viewport(pos) {
-		this._pos = pos
-		this._aa = this.antialias(pos)
-		this._result = vec4(0.)
-		this._shape = 1e+20
-		this._scale = 1.
-		this._blur = 0.00001
+	
+	
+	antialias(p) {
+		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 	}
 	
-	blur(v) {
-		this._blur = v
+	premulAlpha(color) {
+		return vec4(color.rgb * color.a, color.a)
+	}
+	
+	
+	// 2D canvas api for shader
+	viewport(pos) {$
+		
+		this.pos = pos
+		this.result = vec4(0.)
+		this._oldShape = 
+		this.shape = 1e+20
+		this.blur = 0.00001
+		
+		this._aa = this.antialias(pos)
+		this._scale = 1.
 	}
 	
 	translate(x, y) {$
-		this._pos -= vec2(x, y)
+		this.pos -= vec2(x, y)
 	}
 	
 	rotate(a, x, y) {$
 		var ca = cos( - a), sa = sin( - a)
-		var p = this._pos - vec2(x, y)
-		this._pos = vec2(p.x * ca - p.y * sa, p.x * sa + p.y * ca) + vec2(x, y)
+		var p = this.pos - vec2(x, y)
+		this.pos = vec2(p.x * ca - p.y * sa, p.x * sa + p.y * ca) + vec2(x, y)
 	}
 	
 	scale(f, x, y) {$
 		this._scale *= f
-		this._pos = (this._pos - vec2(x, y)) * f + vec2(x, y)
+		this.pos = (this.pos - vec2(x, y)) * f + vec2(x, y)
 	}
 	
 	clear(color) {
-		this._result = vec4(color.rgb * color.a + this._result.rgb * (1. - color.a), color.a)
-	}
-	
-	result() {
-		return this._result
+		this.result = vec4(color.rgb * color.a + this.result.rgb * (1. - color.a), color.a)
 	}
 	
 	_calcBlur(w) {
-		var f = w - this._blur
+		var f = w - this.blur
 		var wa = clamp( - w * this._aa, 0., 1.)
-		var wb = clamp( - w / this._blur, 0., 1.)
+		var wb = clamp( - w / this.blur, 0., 1.)
 		return wa * wb
 	}
 	
 	fillKeep(color) {$
-		var f = this._calcBlur(this._shape)
+		var f = this._calcBlur(this.shape)
 		var source = vec4(color.rgb * color.a, color.a)
-		var dest = this._result
-		this._result = source * f + dest * (1. - source.a * f)
+		var dest = this.result
+		this.result = source * f + dest * (1. - source.a * f)
+		return this.result
 	}
 	
 	fill(color) {$
 		this.fillKeep(color)
-		this._shape = 1e+20
+		this._oldShape = this.shape = 1e+20
+		return this.result
 	}
 	
 	strokeKeep(color, width) {$
-		var f = this._calcBlur(abs(this._shape) - width / this._scale)
+		var f = this._calcBlur(abs(this.shape + width - 0.5) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
-		var dest = this._result
-		this._result = source * f + dest * (1. - source.a * f)
+		var dest = this.result
+		this.result = source * f + dest * (1. - source.a * f)
 	}
 	
 	stroke(color, width) {$
 		this.strokeKeep(color, width)
-		this._shape = 1e+20
+		this._oldShape = this.shape = 1e+20
+		return this.result
 	}
 	
 	glowKeep(color, width) {$
-		var f = this._calcBlur(abs(this._shape) - width / this._scale)
+		var f = this._calcBlur(abs(this.shape) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
-		var dest = this._result
-		this._result = source * f + dest
+		var dest = this.result
+		this.result = vec4(source.rgb * f, 0.) + dest
 	}
 	
 	glow(color, width) {$
 		this.glowKeep(color, width)
-		this._shape = 1e+20
+		this._oldShape = this.shape = 1e+20
+		return this.result
 	}
 	
 	union() {
-		this._shape = max(this._field, this._oldShape)
+		this._oldShape = this.shape = min(this.field, this._oldShape)
+	}
+	
+	intersect() {
+		this._oldShape = this.shape = max(this.field, this._oldShape)
 	}
 	
 	subtract() {
-		this._shape = max( - this._field, this._oldShape)
+		this._oldShape = this.shape = max( - this.field, this._oldShape)
 	}
 	
 	gloop(k) {
-		var h = clamp(.5 + .5 * (this._oldShape - this._field) / k, 0., 1.)
-		this._shape = mix(this._oldShape, this._field, h) - k * h * (1.0 - h)
+		var h = clamp(.5 + .5 * (this._oldShape - this.field) / k, 0., 1.)
+		this._oldShape = this.shape = mix(this._oldShape, this.field, h) - k * h * (1.0 - h)
 	}
 	
 	circle(x, y, r) {$
-		var c = this._pos - vec2(x, y)
-		this._field = (length(c.xy) - r) / this._scale
-		this._oldShape = this._shape
-		this._shape = min(this._shape, this._field)
+		var c = this.pos - vec2(x, y)
+		this.field = (length(c.xy) - r) / this._scale
+		this._oldShape = this.shape
+		this.shape = min(this.shape, this.field)
 	}
 	
 	box(x, y, w, h, r) {$
-		var p = this._pos - vec2(x, y)
+		var p = this.pos - vec2(x, y)
 		var size = vec2(.5 * w, .5 * h)
 		var bp = max(abs(p - size.xy) - (size.xy - vec2(2. * r).xy), vec2(0.))
-		this._field = (length(bp) - 2. * r) / this._scale
-		this._oldShape = this._shape
-		this._shape = min(this._shape, this._field)
-	}
-	
-	field(f) {$
-		this._field = f
-		this._oldShape = this._shape
-		this._shape = min(this._shape, this._field)
+		this.field = (length(bp) - 2. * r) / this._scale
+		this._oldShape = this.shape
+		this.shape = min(this.shape, this.field)
 	}
 	
 	rectangle(x, y, w, h) {$
-		var p = this._pos - vec2(x, y)
-		this._field = length(max(abs(p) - vec2(w, h), 0.0)) / this._scale
-		this._oldShape = this._shape
-		this._shape = min(this._shape, this._field)
+		var s = vec2(w, h) * .5
+		var d = abs(vec2(x, y) - this.pos + s) - s
+		var dm = min(d, vec2(0.))
+		this.field = max(dm.x, dm.y) + length(max(d, vec2(0.)))
+		this._oldShape = this.shape
+		this.shape = min(this.shape, this.field)
 	}
 	
 	moveTo(x, y) {$
@@ -470,12 +473,12 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	lineTo(x, y) {$
 		var p = vec2(x, y)
-		var pa = this._pos - this._lastPos.xy
+		var pa = this.pos - this._lastPos.xy
 		var ba = p - this._lastPos
 		var h = clamp(dot(pa.xy, ba) / dot(ba, ba), 0., 1.)
-		this._field = length(pa.xy - ba * h) / this._scale
-		this._oldShape = this._shape
-		this._shape = min(this._shape, this._field)
+		this.field = length(pa.xy - ba * h) / this._scale
+		this._oldShape = this.shape
+		this.shape = min(this.shape, this.field)
 		this._lastPos = p
 	}
 	
