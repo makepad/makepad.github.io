@@ -2,7 +2,7 @@ module.exports=require('base/drawapp').extend({
 	props:{autumn:0},
 	tools:{
 		Rect:{color:'#005'},
-		Branch:require('tools/quad').extend({
+		Branch:require('shaders/quad').extend({
 			path:{noTween:1,value:0},
 			depth:0,
 			leaf:0,

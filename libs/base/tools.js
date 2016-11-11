@@ -51,6 +51,7 @@ module.exports = class Tools extends require('base/class'){
 		//})
 	}
 
+
 	beginLayout(opts){
 		var turtle = this.turtle
 		if(opts){
@@ -74,26 +75,29 @@ module.exports = class Tools extends require('base/class'){
 	beginTurtle(dump){
 		var view = this.view
 		// add a turtle to the stack
-		var len = ++view.$turtleStack.len
+		var len = view.$turtleStack.len++
 		var outer = this.turtle
 		var turtle = this.turtle = view.$turtleStack[len]
 		if(!turtle){
 			turtle = this.turtle = view.$turtleStack[len] = new view.Turtle(view)
 		}
-		turtle.view = view
+		//turtle.view = view
 		turtle.context = view
 		turtle._pickId = outer._pickId
 		turtle.begin(outer, dump)
 		return turtle
 	}
 
-	endTurtle(doBounds){
+	endTurtle(){
 		// call end on a turtle and pop it off the stack
 		var view = this.view
-		this.turtle.end(doBounds)
+		this.turtle.end()
 		// pop the stack
+		view.$turtleStack.len--
+		// switch to outer
 		var last = this.turtle
-		var outer = this.turtle = view.$turtleStack[--view.$turtleStack.len]
+		this.turtle = last.outer
+		//var outer = this.turtle = view.$turtleStack[--view.$turtleStack.len]
 		// forward the pickId back down
 		//outer._pickId = last._pickId
 		return last
@@ -110,6 +114,12 @@ module.exports = class Tools extends require('base/class'){
 		for(let i = start; i < writes.length; i += 3){
 			var props = writes[i]
 			var begin = writes[i+1]
+			if(begin<0){ // its a view
+				// move the view
+				props.$x += dx
+				props.$y += dy
+				continue
+			}
 			var end = writes[i+2]
 			var slots = props.slots
 			var xoff = props.xOffset

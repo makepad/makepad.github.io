@@ -53,12 +53,12 @@ module.exports = class MakepadStyle extends require('base/style'){
 	match(){
 		var style = this
 		// all Text things except icon get this font
-		if(style.module('/libs/tools/text')) style.to = {
+		if(style.module('/libs/shaders/text')) style.to = {
 			font: style.fonts.mono
 		}
 
 		// all Text things except icon get this font
-		if(style.module('/libs/tools/icon')) style.to = {
+		if(style.module('/libs/shaders/icon')) style.to = {
 			font: style.fonts.icon
 		}
 	}

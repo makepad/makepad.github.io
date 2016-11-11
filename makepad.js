@@ -31,7 +31,7 @@ module.exports = class Makepad extends require('base/app'){
 			store.resourceMap = new Map()
 			store.processList = []
 		})
-		
+
 		this.store.observe(this.store.resourceMap, e=>{
 			var store = this.store
 			// we wanna know if dirty on a resource is flipped
@@ -53,7 +53,6 @@ module.exports = class Makepad extends require('base/app'){
 				}
 			}
 			// how about a datastore index? can we provide one?
-		
 		})
 	}
 	

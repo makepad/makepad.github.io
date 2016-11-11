@@ -19,11 +19,11 @@ module.exports = class Wave extends require('views/draw'){
 			Bg:{
 				color:'#1'
 			},
-			Slider: require('tools/slider').extend({ 
+			Slider: require('stamps/slider').extend({ 
 				Bg: {moveScroll: 0},
 				Knob: {moveScroll: 0}
 			}), 
-			Button: require('tools/button').extend({ 
+			Button: require('stamps/button').extend({ 
 				Bg: {moveScroll: 0}, 
 				Text: {moveScroll: 0} 
 			}), 
@@ -31,7 +31,7 @@ module.exports = class Wave extends require('views/draw'){
 				color: '#07c7' 
 			}, 
 			Quad: {color: 'red'}, 
-			Grid: require('tools/grid') 
+			Grid: require('shaders/grid') 
 		} 
 	} 
 	

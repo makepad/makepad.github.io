@@ -6,22 +6,21 @@ module.exports = class Stamp extends require('base/class'){
 			require('base/tools')
 		)
 		
-		this.$isStamp = true
-		this.inPlace = false
 		this.onFlag0 = 1
 		this.onFlag1 = this.redraw
-		this.stateExt = ''
 
 		this.props = {
 			x:NaN,
 			y:NaN,
 			w:NaN,
 			h:NaN,
-			margin:undefined,
-			align:undefined,
-			down:undefined,
+			padding:[0,0,0,0],
+			margin:[0,0,0,0],
+			align:[0,0],
+			down:0,
 			cursor:undefined,
-			id:''
+			id:'',
+			group:''
 		}
 
 		this.inheritable('verbs', function(){
@@ -33,8 +32,7 @@ module.exports = class Stamp extends require('base/class'){
 		this.verbs = {
 			draw:function(overload){
 				this.$STYLESTAMP(overload)
-				this.$DRAWSTAMP()
-				return $stamp
+				$stamp.$redrawStamp()
 			}
 		}
 	}
@@ -59,15 +57,19 @@ module.exports = class Stamp extends require('base/class'){
 		if(arg && arg.state && this._state){ // maintain _over state
 			var stateName = arg.state
 			// maintain our over state 
-			if(this._state.name.indexOf('_over') !== -1){
-				this._state = this.states[arg.state+'_over'] || this.states[arg.state]
+			if(this._state.name.indexOf('Over') !== -1){
+				this._state = this.states[arg.state+'Over'] || this.states[arg.state]
 			}
 			else this._state = this.states[arg.state]
 		}
-		else this._state = this.states.default
+		else if(!this._state) this._state = this.states.default
 	}
 
 	redraw(){
+		var view = this.view
+		if(view) view.redraw()
+
+		/*
 		var view = this.view
 		if(view && this.inPlace){
 			// figure out all the shader props lengths 
@@ -115,40 +117,14 @@ module.exports = class Stamp extends require('base/class'){
 			//console.log('here')
 			// let props update
 		}
-		else if(view) view.redraw()
+		else if(view) */
 	}
-
+	
 	$STYLESTAMP(target, classname, macroargs, mainargs, indent){
 		// so how do we rexecute a stamp
 
 		var code = ''
-		code += indent + 'var $view = this.view\n\n'
-		code += indent + 'var $turtle = this.turtle\n'
-		code += indent + 'var $stampId = ++$view.$pickId\n'
-		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
-
-		code += indent + 'if(!$stamp || $stamp.constructor !== this.'+classname+'){\n'
-		code += indent + '	$stamp = $view.$stamps[$stampId] = new this.'+classname+'()\n'
-		code += indent + '	$stamp.$stampId = $stampId\n'
-		code += indent + '	$stamp.view = $view\n'
-		code += indent + '}\n'
-
-		code += indent + 'var $layer = '+macroargs[0]+'.$layer\n'
-		code += indent + 'if($layer){\n'
-		code += indent + '	var $l = $layer + "'+classname+'"\n'
-		code += indent + '	$stamp.$layer = $layer\n'
-		code += indent + '	$stamp.$shaders = this.$shaders[$l]\n'
-		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders[$l] = {})\n'
-		code += indent + '} else {\n'
-		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
-		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
-		code += indent + '}'
-		code += indent + '$stamp.initState('+mainargs[0]+')\n'
-
-		code += indent + '$turtle._pickId = $stampId\n'
-		code += indent + '$stamp.turtle = $turtle\n'
-		if(macroargs[0]) code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
-		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
+		code += indent + 'var $stamp = this.view.$allocStamp('+mainargs[0]+', "'+classname+'")\n'
 
 		var stack = [
 			macroargs[0],
@@ -189,21 +165,25 @@ module.exports = class Stamp extends require('base/class'){
 		return code
 	}
 
-	$DRAWSTAMP(target, classname, macroargs, mainargs, indent){
-		var code = ''
-		code += indent + '$stamp.$x = $turtle.wx\n'
-		code += indent + '$stamp.$y = $turtle.wy\n'
-		code += indent + '$stamp.$w = $turtle._w\n'
-		code += indent + '$stamp.$h = $turtle._h\n'
-		code += indent + '$stamp.onDraw()\n'
-		code += indent + 'var $turtle = $stamp.turtle\n'
-		code += indent + '$stamp.$x = $turtle._x\n'
-		code += indent + '$stamp.$y = $turtle._y\n'
-		code += indent + '$stamp.$w = $turtle._w\n'
-		code += indent + '$stamp.$h = $turtle._h\n'
-		code += indent + '$turtle._pickId = 0'
-		return code
+	$redrawStamp(){
+		var turtle = this.turtle
+
+		turtle._margin = this._margin
+		turtle._padding = this._padding
+		turtle._align = this._align
+		turtle._down = this._down
+		turtle._wrap = this._wrap
+		turtle._x = this._x
+		turtle._y = this._y
+		turtle._w = this._w
+		turtle._h = this._h
+		this.beginTurtle()
+		this.onDraw()
+		var ot = this.endTurtle()
+		turtle.walk(ot)
+		turtle._pickId = 0
 	}
+
 
 	onCompileVerbs(){
 		this.__initproto__()

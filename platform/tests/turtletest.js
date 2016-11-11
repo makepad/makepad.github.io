@@ -2,14 +2,14 @@
 return require('base/app').extend({
 
 	tools:{
-		Bg: require('tools/rect').extend({
+		Bg: require('shaders/rect').extend({
 		}),
-		Quad: require('tools/quad').extend({
+		Quad: require('shaders/quad').extend({
 		}),
-		Text: require('tools/text').extend({
+		Text: require('shaders/text').extend({
 			font:require('fonts/ubuntu_monospace_256.font')
 		}),
-		Button: require('tools/button').extend({
+		Button: require('stamps/button').extend({
 		}),
 	},
 

@@ -231,18 +231,18 @@ class Probes extends require('base/view'){
 		this.name = 'Probes'
 		this.padding = [0,0,0,0]
 		this.tools = {
-			Text:require('tools/text').extend({
+			Text:require('shaders/text').extend({
 				font:require('fonts/ubuntu_monospace_256.font'),
 				margin:[5,0,0,5],
 				fontSize:14,
 				wrapping:'line',
 				color:'#f'
 			}),
-			Background:require('tools/quad').extend({
+			Background:require('shaders/quad').extend({
 				color:'#6',
 				wrap:1,
 			}),
-			Button:require('tools/button').extend({
+			Button:require('stamps/button').extend({
 				cursor:'default',
 				//w:32,
 				//h:18,
@@ -250,7 +250,7 @@ class Probes extends require('base/view'){
 					//padding:[6,10,6,10]
 				//}
 			}),
-			Item:require('tools/button').extend({
+			Item:require('stamps/button').extend({
 				h:'100%',
 				Bg:{
 					padding:4,
@@ -261,7 +261,7 @@ class Probes extends require('base/view'){
 					wrapping:'char'
 				}
 			}),
-			Slider:require('tools/slider')
+			Slider:require('stamps/slider')
 		}
 		this.styles = {
 			playButton:{

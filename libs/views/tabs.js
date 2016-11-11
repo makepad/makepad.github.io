@@ -25,7 +25,7 @@ module.exports=class Tabs extends require('base/view'){
 				color:'#2',
 				wrap:false,
 			}),
-			Button:require('tools/button').extend({
+			Button:require('stamps/button').extend({
 			})
 		}
 

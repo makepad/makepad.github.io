@@ -20,7 +20,7 @@ module.exports = class FileTree extends require('base/view'){
 			}),
 			ButtonBar: require('base/view').extend({
 				tools:{
-					Button: require('tools/button').extend({
+					Button: require('stamps/button').extend({
 				
 					}),
 					Bg:require('tools/bg').extend({

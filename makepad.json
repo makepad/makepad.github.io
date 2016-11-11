@@ -34,10 +34,9 @@
 				{"name":"style.js"},
 				{"name":"idalloc.js"}
 			]},
-			{"name":"tools","folder":[
+			{"name":"shaders","folder":[
 				{"name":"arctext.js"},
 				{"name":"bg.js"},
-				{"name":"button.js"},
 				{"name":"codeblock.js"},
 				{"name":"codemarker.js"},
 				{"name":"codetext.js"},
@@ -49,10 +48,14 @@
 				{"name":"rect.js"},
 				{"name":"selection.js"},
 				{"name":"shadowquad.js"},
+				{"name":"text.js"}
+			]},
+			{"name":"stamps","folder":[
+				{"name":"button.js"},
 				{"name":"slider.js"},
+				{"name":"scrollbar.js"},
 				{"name":"split.js"},
 				{"name":"tab.js"},
-				{"name":"text.js"}
 			]},
 			{"name":"views","folder":[
 				{"name":"button.js"},

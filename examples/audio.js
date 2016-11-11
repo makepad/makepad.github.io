@@ -7,7 +7,7 @@ module.exports = class extends require('base/drawapp'){
 	prototype() {
 		this.props = {}
 		this.tools = {
-			Button: require('tools/button').extend({
+			Button: require('stamps/button').extend({
 				onDownStamp: function() {
 					this.view.playNote(this.index, 1)
 				}

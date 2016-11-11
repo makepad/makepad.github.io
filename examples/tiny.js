@@ -3,7 +3,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	prototype() {
 		this.tools = {
-			Grid:require('tools/grid'),
+			Grid:require('shaders/grid'),
 			Quad:{
 				pixel:function() {$
 					

@@ -50,7 +50,7 @@ module.exports = class Edit extends require('base/view'){
 		this.tools = {
 			Bg:require('tools/bg').extend({
 			}),
-			Text:require('tools/text').extend({
+			Text:require('shaders/text').extend({
 				drawDiscard:'y'
 			}),
 			Selection:require('tools/selection').extend({
@@ -69,7 +69,7 @@ module.exports = class Edit extends require('base/view'){
 					this.h += 2.*dy
 				}
 			}),
-			Cursor:require('tools/rect').extend({
+			Cursor:require('shaders/rect').extend({
 				vertexStyle:function(){
 					
 					var time = this.normalTween

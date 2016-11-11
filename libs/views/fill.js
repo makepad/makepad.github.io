@@ -5,7 +5,7 @@ module.exports=class Fill extends require('base/view'){
 			color:'red'
 		}
 		this.tools = {
-			Bg:require('tools/quad').extend({
+			Bg:require('shaders/quad').extend({
 				color:''
 			})
 		}
