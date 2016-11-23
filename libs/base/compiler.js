@@ -6,7 +6,6 @@ var ShaderInfer = require('base/infer')
 for(let i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
 const compName = ['x','y','z','w']
-const keyframeTiming = ['tween','in','out','elastic']
 
 module.exports = class Compiler extends require('base/class'){
 
@@ -190,7 +189,20 @@ module.exports = class Compiler extends require('base/class'){
 				for(var i = frames.length - 1; i>=0; i--){
 					var next = frames[i]
 					if(last){
-						code = 'mix('+decodeKeyFrame(prop.name, next.value, i==0)+','+code+',clamp((T-'+forceDot(next.time)+')/'+forceDot(last.time-next.time)+',0.,1.))'
+						code = 'mix('+decodeKeyFrame(prop.name, next.value, i==0)+','+code+','
+						// call function on this with named arguments.
+						// alright lets get the time object
+						var T = '(T-'+forceDot(next.at)+')/'+forceDot(last.at-next.at)
+						var time = last.time
+						if(!time || time.fn === 'linear') code += 'clamp('+T+',0.,1.))'
+						else{
+							var callee = this[time.fn]
+							if(!callee) throw new Error("Cannot use "+time.fn+" as tweening function, it doesnt exist")
+							var name = 'thisDOT'+time.fn
+							var call = vtx.parseNamedCall(name, callee, time, {t:{type:types.float,value:'T'}})
+							last.call = call.slice(call.indexOf('('))
+							code += call + ')'
+						}
 					}
 					else{
 						code = decodeKeyFrame(prop.name, next.value, i==0)
@@ -542,13 +554,17 @@ module.exports = class Compiler extends require('base/class'){
 						var next = frames[f]
 						if(last){
 							if(f == 0) frag += '\t\telse{\n'
-							else frag += '\t\telse if(T>=' + next.time + '){\n'
-							frag += '\t\t\tlet D = (T - '+next.time+')/'+(last.time-next.time)+', ND = 1 - D\n'
+							else frag += '\t\telse if(T>=' + next.at + '){\n'
+							// insert tweening code
+							if(last.time && last.call){
+								frag += 'T = $proto.'+ last.time.fn+last.call+'\n'
+							}
+							frag += '\t\t\tlet D = (T - '+next.at+')/'+(last.at-next.at)+', ND = 1 - D\n'
 							let nvec = next.value
 							let nv = nvec
+							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
 							let lvec = last.value
 							let lv = lvec
-							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
 							if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
 							for(let i = 0; i < slots; i++){
 								frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
@@ -607,12 +623,12 @@ module.exports = class Compiler extends require('base/class'){
 						}
 					}
 				}
-				//if(state.duration)
-				code += '' // do loop/bounce/duration on T
+				// run easing functions over T
+
 				code += stateCode[key]
 				code += '\t\treturn\n\t}\n'
 			}
-			cache = this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t",code)
+			cache = this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
 		}
 
 		this.$interruptAnim = cache
@@ -820,7 +836,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
 		// lets execute
 		code += indent + 'var $last = $a[$o+' + instanceProps.thisDOTanimState.offset+']\n'
-		code += indent + 'if($last) $proto.$interruptAnim($a, $o, $view._time)\n'
+		code += indent + 'if($last) $proto.$interruptAnim($a, $o, $view._time, $proto)\n'
 		code += indent + 'var $max = $view._time + $proto.$stateDuration[$state]\n'
 		code += indent + 'if($max>$todo.timeMax) $todo.timeMax = $max\n'
 
@@ -1002,8 +1018,8 @@ function decodeKeyFrame(name, value, first){
 
 
 function sortFrames(a,b){
-	if(a.time > b.time) return 1
-	if(a.time < b.time) return -1
+	if(a.at > b.at) return 1
+	if(a.at < b.at) return -1
 	return 0
 }
 
@@ -1034,16 +1050,16 @@ function computePropSizes(instanceProps){
 
 				frames.sort(sortFrames)
 				
-				if(frames[0].time != 0){
+				if(frames[0].at != 0){
 					frames.unshift({
-						time:0,
+						at:0,
 						value:null
 					})
 				}
 				var first = frames[0]
 				var last = frames[frames.length-1]
-				if(first.time !== 0 || first.value === null) hasFrom = true
-				if(last.time !== 0 && last.value === null) hasTo = true
+				if(first.at !== 0 || first.value === null) hasFrom = true
+				if(last.at !== 0 && last.value === null) hasTo = true
 			}				
 		}
 		else{
@@ -1072,40 +1088,40 @@ function computePropStates(states, instanceProps){
 		names.push(stateName)
 		var frames = states[stateName]
 		// last and next values
+		var stateTime = frames.time
 		for(var ts in frames){
 			var frame = frames[ts]
-			
+			if(ts === 'time'){
+				continue
+			}
 			if(ts === 'from') ts = 0.
 			else if(ts === 'to') ts = 1.
 			else if(parseFloat(ts) == ts) ts = ts * 0.01
 			else continue
-
-			var timing = {
-				tween:'linear'
-			}
+			var frameTime = frame.time
 			for(var prop in frame){
 				var ip = instanceProps['thisDOT'+prop]
 
-				if(prop in keyframeTiming){ // its a timing prop
-					timing[prop] = frame[prop]
+				if(prop === 'time'){
 					continue
 				}
 				if(!ip) throw new Error("Property "+prop+" keyframed but not found in shader")
 				// store our timing info
-				ip.timing = timing
 				statedProps[prop] = 1
 				if(!ip.states) ip.states = {}
 				var state = ip.states[stateName]
 				if(!state) ip.states[stateName] = state = {}
 				if(!state.frames) state.frames = []
 				var value = frame[prop]
+				var time = frameTime || stateTime
 				if(value && value.constructor === Object){
 					// its a per key timing object
-					ip.timing = value
+					time = value
 					value = value.value
 				}
 				state.frames.push({
-					time:ts,
+					at:ts,
+					time:time,
 					value:value
 				})
 			}

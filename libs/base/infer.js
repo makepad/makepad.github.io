@@ -84,9 +84,9 @@ module.exports = class ShaderInfer extends require('base/class'){
 		}
 		catch(e){
 			var dec = module.worker.decodeException(e)
-
+			var source = curfn.callee.toString()
 			// alright we have a lineoff, now we need to take the node
-			var lines = curfn.source.split('\n')
+			var lines = source.split('\n')
 			// lets count the linenumbers
 			var node = error.node
 			var off = 0, realcol = 0
@@ -98,7 +98,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				off += lines[line].length + 1
 			}
 			var realline = line + dec.line - 1
-			if(curfn.source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
+			if(source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
 
 			this.exception = {
 				message:error.message,
@@ -735,162 +735,225 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 				return fnname + '(' + argstrs.join(', ') + ')'
 			}
-			// expand function macro
-			var source = calleeinfer.callee.toString()
-			if(source.indexOf('function')!== 0) source = 'function '+source
 
-			// parse it, should never not work since it already parsed 
-			try{
-				var ast = parsecache[source] || (parsecache[source] = parser.parse(source))
-			}
-			catch(e){
-				throw this.SyntaxErr(node, "Cant parse function " + source)
-			}
 			
-			// lets build the function name
-			var fnname = calleeinfer.fullname
-			var realargs = []
-			fnname += '_T'
-			for(let i = 0; i < args.length; i++){
-				var arg = args[i]
-				var arginfer = arg.infer
-				if(arginfer.kind === 'value'){
-					fnname += '_' +arginfer.type.name
-					realargs.push(argstrs[i])
-				}
-				else if(arginfer.kind === 'function'){ // what do we do?...
-					fnname += '_' + arginfer.name
-				}
-				else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
-			}
+			var ast = this.parseFunction(calleeinfer.callee)
 
-			var prevfunction = lookupGenFunction(this.genFunctions, fnname)//this.genFunctions[fnname]
-
-			if(prevfunction){
-				// store dependency
-				this.curFunction.deps[fnname] = prevfunction
-				// push all our recursive dependencies to the top
-				recursiveDependencyUpdate(this.genFunctions, prevfunction, fnname)
-
-				var params = prevfunction.ast.body[0].params
-				for(let i = 0; i < args.length; i++){
-					// write the args on the scope
-					var arg = args[i]
-					var arginfer = arg.infer
-					var name = params[i].name
-					if(arginfer.kind === 'value'){
-						if(prevfunction.inout[name] && !arginfer.lvalue){
-							throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
-						}
-					}
-				}
-				node.infer = {
-					kind: 'value',
-					type: prevfunction.return.type
-				}
-				return fnname + '(' + realargs.join(', ') + ')'
-			}
-			var subfunction = {
-				scope:{},
-				inout:{},
-				deps:{},
-				source:source,
-				callee:calleeinfer.callee,
-				name:calleeinfer.name,
-				fullname:calleeinfer.fullname,
-				return:{
-					kind:'value',
-					type:types.void
-				}
-			}
-			this.genFunctions.push({
-				key:fnname,
-				value:subfunction
-			})
-			this.curFunction.deps[fnname] = subfunction
-
-			var sub = Object.create(this)
-
-			if(!ast.body || !ast.body[0] || ast.body[0].type !== 'FunctionDeclaration'){
-				throw this.SyntaxErr(node, "Not a function")
-			}
-			subfunction.ast = ast
-
-			// we have our args, lets process the function declaration
-			// make a new scope
-			sub.indent = ''
-			sub.curFunction = subfunction
-			sub.ctxprefix = calleeinfer.prefix
-
-			var params = ast.body[0].params
-			var paramdef = ''
-			if(args.length !== params.length){
-				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
-				throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
-			}
-			for(let i = 0; i < args.length; i++){
-				var arg = args[i]
-				var arginfer = arg.infer
-				var name = params[i].name
-				if(arginfer.kind === 'value'){
-					subfunction.scope[name] = {
-						kind:'value',
-						lvalue:true,
-						type:arginfer.type,
-						scope:true,
-						isarg:true
-					}
-				}
-				else if(arginfer.kind === 'function'){
-					subfunction.scope[name] = {
-						kind:'value',
-						scope:true,
-						isarg:true,
-						function: arginfer.function
-					}
-				}
-			}
-
-			// alright lets run the function body.
-			var fnbody = ast.body[0].body
-			var body = sub[fnbody.type](fnbody)
-
-			for(let i = 0; i < args.length; i++){
-				// write the args on the scope
-				var arg = args[i]
-				var arginfer = arg.infer
-				var name = params[i].name
-				if(arginfer.kind === 'value'){
-					if(paramdef) paramdef += ', '
-					if(subfunction.inout[name]){
-						paramdef += 'inout '
-						if(!arg.infer.lvalue){
-							throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
-						}
-					}
-
-					paramdef += arginfer.type.name + ' ' + name
-				}
-				else if(arginfer.kind === 'function'){
-
-				}
-			}
-
-			var code = subfunction.return.type.name 
-			code += ' ' + fnname + '(' + paramdef + ')' + body
-			subfunction.code = code
-
-			node.infer = {
-				kind: 'value',
-				type: subfunction.return.type
-			}
-
-			return fnname + '(' + realargs.join() + ')'
+			return this.processCall(ast, calleeinfer, args, argstrs, node)
 		}
 		else throw this.SyntaxErr(node,"Not a callable type: "+calleestr+'('+argstrs.join()+')'+calleeinfer.name+" "+calleeinfer.kind)
 		// ok so now lets type specialize and call our function
 		// ie generate it
 	}
+
+	parseFunction(callee){
+		var source = callee.toString()
+		if(source.indexOf('function')!== 0) source = 'function '+source
+		// parse it, should never not work since it already parsed 
+		try{
+			var ast = parsecache[source] || (parsecache[source] = parser.parse(source))
+		}
+		catch(e){
+			throw this.SyntaxErr(node, "Cant parse function " + source)
+		}
+		return ast
+	}
+
+	parseNamedCall(fullname, callee, args1, args2){
+		
+		var ast = this.parseFunction(callee)
+
+		var calleeinfer = {
+			callee:callee,
+			fullname:fullname
+		}
+
+		var ast = this.parseFunction(callee)
+
+		// lets build args and argstrs from namedArgs
+		var params = ast.body[0].params
+		var args = []
+		var argstrs = []
+
+		for(let i = params.length - 1; i >= 0; i--){
+			var name = params[i].name
+			var arg = args1[name]
+			if(arg === undefined) arg =  args2[name]
+			if(arg === undefined) throw new Error("Unmatched param "+name+" in named call "+fullname)
+			var type
+			var value
+			if(typeof arg === 'number'){
+				type = types.float
+				value = String(arg)
+				if(value.indexOf('.') === -1) value += '.0'
+			}
+			else{
+				type = arg.type
+				value = arg.value
+			}
+			args[i] = {
+				infer:{
+					kind:'value',
+					type:type
+				}
+			}
+			argstrs[i] = value
+		}
+		return this.processCall(ast, calleeinfer, args, argstrs, null)
+	}
+
+	processCall(ast, calleeinfer, args, argstrs, node){
+		// expand function macro
+
+		// lets build the function name from args
+		var fnname = calleeinfer.fullname
+		var realargs = []
+		fnname += '_T'
+		for(let i = 0; i < args.length; i++){
+			var arg = args[i]
+			var arginfer = arg.infer
+			if(arginfer.kind === 'value'){
+				fnname += '_' +arginfer.type.name
+				realargs.push(argstrs[i])
+			}
+			else if(arginfer.kind === 'function'){ // what do we do?...
+				fnname += '_' + arginfer.name
+			}
+			else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
+		}
+
+		var prevfunction = lookupGenFunction(this.genFunctions, fnname)//this.genFunctions[fnname]
+
+		if(prevfunction){
+			// store dependency
+			this.curFunction.deps[fnname] = prevfunction
+			// push all our recursive dependencies to the top
+			recursiveDependencyUpdate(this.genFunctions, prevfunction, fnname)
+
+			// lets check inout
+			var params = prevfunction.ast.body[0].params
+			for(let i = 0; i < args.length; i++){
+				var arg = args[i]
+				var arginfer = arg.infer
+				var name = params[i].name
+				if(arginfer.kind === 'value'){
+					if(prevfunction.inout[name] && !arginfer.lvalue){
+						throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
+					}
+				}
+			}
+			if(node) node.infer = {
+				kind: 'value',
+				type: prevfunction.return.type
+			}
+			return fnname + '(' + realargs.join(',') + ')'
+		}
+
+		var subfunction = {
+			scope:{},
+			inout:{},
+			deps:{},
+			callee:calleeinfer.callee,
+			name:calleeinfer.name,
+			fullname:calleeinfer.fullname,
+			return:{
+				kind:'value',
+				type:types.void
+			}
+		}
+
+		this.genFunctions.push({
+			key:fnname,
+			value:subfunction
+		})
+		this.curFunction.deps[fnname] = subfunction
+
+		// make sub object
+		var sub = Object.create(this)
+
+		if(!ast.body || !ast.body[0] || ast.body[0].type !== 'FunctionDeclaration'){
+			throw this.SyntaxErr(node, "Not a function")
+		}
+		subfunction.ast = ast
+
+		// we have our args, lets process the function declaration
+		// make a new scope
+		sub.indent = ''
+		sub.curFunction = subfunction
+		sub.ctxprefix = calleeinfer.prefix
+
+		var params = ast.body[0].params
+		var paramdef = ''
+		if(args.length !== params.length){
+			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
+			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
+		}
+
+		for(var i = 0; i < args.length; i++){
+			var arg = args[i]
+			var arginfer = arg.infer
+			var name = params[i].name
+			if(arginfer.kind === 'value'){
+				subfunction.scope[name] = {
+					kind:'value',
+					lvalue:true,
+					type:arginfer.type,
+					scope:true,
+					isarg:true
+				}
+			}
+			else if(arginfer.kind === 'function'){
+				subfunction.scope[name] = {
+					kind:'value',
+					scope:true,
+					isarg:true,
+					function: arginfer.function
+				}
+			}
+		}
+		// fill default args
+		for(;i<params.length;i++){
+
+		}
+		// any params left? 
+
+		// alright lets run the function body.
+		var fnbody = ast.body[0].body
+		var body = sub[fnbody.type](fnbody)
+
+		for(let i = 0; i < args.length; i++){
+			// write the args on the scope
+			var arg = args[i]
+			var arginfer = arg.infer
+			var name = params[i].name
+			if(arginfer.kind === 'value'){
+				if(paramdef) paramdef += ', '
+				if(subfunction.inout[name]){
+					paramdef += 'inout '
+					if(!arg.infer.lvalue){
+						throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
+					}
+				}
+
+				paramdef += arginfer.type.name + ' ' + name
+			}
+			else if(arginfer.kind === 'function'){
+
+			}
+		}
+
+		var code = subfunction.return.type.name 
+		code += ' ' + fnname + '(' + paramdef + ')' + body
+		subfunction.code = code
+		
+		if(node) node.infer = {
+			kind: 'value',
+			type: subfunction.return.type
+		}
+
+		return fnname + '(' + realargs.join() + ')'		
+	}
+
 
 	//ReturnStatement:{argument:1},
 	ReturnStatement(node){

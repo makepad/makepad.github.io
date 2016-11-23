@@ -132,72 +132,57 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	//
 	//
-	// Tweening
+	// Timing functions
 	//
 	//
-	
-	
-	tweenSimple(tween, time, easex, easey, easez, easew) {
-		if(tween == 1.) return time
-		return this.tweenEase(time, easex, easey)
-	}
-	
-	tweenAll(tween, time, easex, easey, easez, easew) {
-		if(tween == 1.) return time
-		if(tween == 2.) {
-			return this.tweenEase(time, easex, easey)
-		}
-		if(tween == 3.) {
-			return this.tweenBounce(time, easex)
-		}
-		if(tween == 4.) {
-			return this.tweenOvershoot(time, easex, easey, easez, easew)
-		}
-		if(tween == 5.) {
-			//	return this.tweenBezier(time, easex, easey, easez, easew)
-		}
 		
-		return 1.
+	linear(t){
+		return clamp(t, 0., 1.)
 	}
-	
-	//proto.tweenTime = proto.tweenSimple
-	
-	tweenEase(t, easein, easeout) {
-		var a =  - 1. / max(1., (easein * easein))
-		var b = 1. + 1. / max(1., (easeout * easeout))
+
+	ease(t, begin, end) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
+		var a =  - 1. / max(1., (begin * begin))
+		var b = 1. + 1. / max(1., (end * end))
 		var t2 = pow(((a - 1.) *  - b) / (a * (1. - b)), t)
 		return ( - a * b + b * a * t2) / (a * t2 - b)
 	}
 	
-	tweenBounce(t, f) {
+	bounce(t, dampen) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		// add bounciness
-		var it = t * (1. / (1. - f)) + 0.5
-		var inlog = (f - 1.) * it + 1.
+		var it = t * (1. / (1. - dampen)) + 0.5
+		var inlog = (dampen - 1.) * it + 1.
 		if(inlog <= 0.) return 1.
-		var k = floor(log(inlog) / log(f))
-		var d = pow(f, k)
-		return 1. - (d * (it - (d - 1.) / (f - 1.)) - pow((it - (d - 1.) / (f - 1.)), 2.)) * 4.
+		var k = floor(log(inlog) / log(dampen))
+		var d = pow(dampen, k)
+		return 1. - (d * (it - (d - 1.) / (dampen - 1.)) - pow((it - (d - 1.) / (dampen - 1.)), 2.)) * 4.
 	}
 	
-	tweenOvershoot(t, dur, freq, decay, ease) {
+	elastic(t, duration, frequency, decay, ease) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		var easein = ease
 		var easeout = 1.
 		if(ease < 0.) easeout =  - ease,easein = 1.
 		
-		if(t < dur) {
-			return this.tweenEase(t / dur, easein, easeout)
+		if(t < duration) {
+			return this.easeTiming(t / duration, easein, easeout)
 		}
 		else {
 			// we have to snap the frequency so we end at 0
-			var w = (floor(.5 + (1. - dur) * freq * 2.) / ((1. - dur) * 2.)) * PI * 2.
-			var velo = (this.tweenEase(1.001, easein, easeout) - this.tweenEase(1., easein, easeout)) / (0.001 * dur)
+			var w = (floor(.5 + (1. - duration) * freq * 2.) / ((1. - duration) * 2.)) * PI * 2.
+			var velo = (this.easeTiming(1.001, easein, easeout) - this.easeTiming(1., easein, easeout)) / (0.001 * dur)
 			
-			return 1. + velo * ((sin((t - dur) * w) / exp((t - dur) * decay)) / w)
+			return 1. + velo * ((sin((t - duration) * w) / exp((t - duration) * decay)) / w)
 		}
 	}
 	
-	tweenBezier(cp0, cp1, cp2, cp3, t) {
-		
+	bezier(t, cp0, cp1, cp2, cp3) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 		
 		var epsilon = 1.0 / 200.0 * t

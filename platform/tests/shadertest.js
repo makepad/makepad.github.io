@@ -12,16 +12,17 @@ return require('base/app').extend({
 					from:{
 						color:'red'
 					},
-					50:{
-						color:'blue'
-					},
+					//50:{
+					//	color:'blue'
+					//},
 					to:{
+						time:{fn:'bounce',dampen:0.5,end:1},
 						w:150,
 						color:'green'
 					},
 					duration:1.,
-					bounce:false,
-					repeat:1,
+					loop:'forwards',
+					repeat:10,
 				},
 				hover:{ // some kind of fixed state tweening in 1 sec
 					from:{
@@ -29,10 +30,11 @@ return require('base/app').extend({
 						color:null
 					},
 					to:{
+						time:{fn:'ease',begin:0,end:10},
 						w:250,
 						color:'red'
 					},
-					duration:0.1
+					duration:1.
 				}
 			}
 		})

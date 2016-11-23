@@ -47,7 +47,6 @@ module.exports = class Button extends require('base/stamp'){
 				glowColor:'purple',
 				pixel(){$
 					this.viewport(this.mesh.xy * vec2(this.w, this.h))	
-
 					this.box(0., 0., this.w, this.h, this.borderRadius)
 					this.shape += 3.
 					this.fillKeep(this.color)

@@ -68,7 +68,7 @@ module.exports = class Stamp extends require('base/class'){
 	redraw(){
 		var view = this.view
 		if(view) view.redraw()
-
+			
 		/*
 		var view = this.view
 		if(view && this.inPlace){
@@ -167,7 +167,6 @@ module.exports = class Stamp extends require('base/class'){
 
 	$redrawStamp(){
 		var turtle = this.turtle
-
 		turtle._margin = this._margin
 		turtle._padding = this._padding
 		turtle._align = this._align
