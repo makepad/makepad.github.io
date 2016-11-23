@@ -74,7 +74,6 @@ module.exports = class Text extends require('base/shader'){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
 				if(!this.$shaders.NAME) return {}
-				this.$PROPVARDEF()
 				var len = this.$PROPLEN
 				if(o < 0 || o >= len) return
 				var read = {
@@ -97,7 +96,6 @@ module.exports = class Text extends require('base/shader'){
 				if(!this.$shaders.NAME) return {}
 				var len = this.$PROPLEN
 				var lineSpacing = this.NAME.prototype.lineSpacing
-				this.$PROPVARDEF()
 				if(len === 0){
 					return 0
 				}
@@ -128,7 +126,6 @@ module.exports = class Text extends require('base/shader'){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
 				var lineSpacing = proto.lineSpacing
-				this.$PROPVARDEF()
 				var boxes = []
 				var curBox
 				var lty, ltx, lfs, lad

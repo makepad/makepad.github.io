@@ -6,12 +6,13 @@ module.exports = class Button extends require('base/stamp'){
 			styles:{
 				base:{
 					default: {
-						margin:[5,5,5,5],
+						//margin:[5,5,5,5],
 						Icon:{
 							color:c.textMed
 						},
 						Bg:{
-							padding:5,
+							padding:[5,15,5,15],
+							borderRadius:6,
 							borderWidth:1,
 							borderColor:c.textLo,
 							color:c.bgTop
@@ -43,11 +44,12 @@ module.exports = class Button extends require('base/stamp'){
 				borderRadius:4.,
 				borderWidth:1.,
 				borderColor:'red',
+				glowColor:'purple',
 				pixel(){$
 					this.viewport(this.mesh.xy * vec2(this.w, this.h))	
 
 					this.box(0., 0., this.w, this.h, this.borderRadius)
-					
+					this.shape += 3.
 					this.fillKeep(this.color)
 					return this.stroke(this.borderColor,this.borderWidth)
 				}
@@ -167,7 +169,6 @@ module.exports = class Button extends require('base/stamp'){
 	}
 	
 	onDraw() {
-		//console.log(this.turtle.dump())
 		this.beginBg({
 			w:'100%',
 			h:'100%'

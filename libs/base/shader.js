@@ -9,6 +9,7 @@ module.exports = class Shader extends require('base/compiler'){
 		this.props = {
 			// painter uniforms
 			time:{kind:'uniform', block:'painter', value:1.0},
+
 			pixelRatio:{kind:'uniform', block:'painter', type:types.float},
 			workerId:{kind:'uniform', block:'painter', type:types.float},
 			fingerInfo:{kind:'uniform', block:'painter', type:types.mat4},
@@ -25,19 +26,15 @@ module.exports = class Shader extends require('base/compiler'){
 			viewClip:{kind:'uniform', value:[0, 0, 0, 0]},
 			pickAlpha:{kind:'uniform', value:0.5},
 			
-			pickId:{noTween:1, noStyle:1, value:0.},
-			
-			// tweening
-			tween:{noTween:1, value:0.},
-			ease:{noTween:1, value:[0, 0, 1.0, 1.0]},
-			duration:{noTween:1, value:0.},
-			delay:{styleLevel:1, value:0.},
-			tweenStart:{noTween:1, noStyle:1, value:1.0},
-			
+			pickId:{mask:0, value:0.},
+			animStart:{mask:0, value:1.0},
+			animState:{mask:0, value:0.},
+		
+			state:{value:'default'},
+
 			// clipping and scrolling
-			noBounds:{styleLevel:1, value:0},
-			moveScroll:{noTween:1, value:1.},
-			turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[ - 50000,  - 50000, 50000, 50000]},
+			moveScroll:{value:1.},
+			turtleClip:{value:[-50000, -50000, 50000, 50000]},
 		}
 		
 		this.defines = {
@@ -71,10 +68,10 @@ module.exports = class Shader extends require('base/compiler'){
 		
 		this.verbs = {
 			length:function() {
-				return this.$PROPLEN()
+				return this.PROPLEN()
 			},
 			order:function(overload) {
-				this.$ALLOCDRAW(0)
+				this.ALLOCDRAW(overload, 0)
 			},
 			reuse:function(overload) {
 				// make sure we are drawn
@@ -86,6 +83,8 @@ module.exports = class Shader extends require('base/compiler'){
 				}
 			}
 		}
+
+		
 	}
 	
 	//
@@ -95,20 +94,22 @@ module.exports = class Shader extends require('base/compiler'){
 	//
 	
 	vertexMain() {$
-		var T = 1.
-		this.animTime = this.time
-		if(this.tween > 0.01) {
-			this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
-			T = this.easedTween = this.tweenTime(
-				this.tween,
-				this.normalTween,
-				this.ease.x,
-				this.ease.y,
-				this.ease.z,
-				this.ease.w
-			)
-		}
-		$CALCULATETWEEN
+		var T = this.time
+		this.animStart
+		this.animState
+		//if(this.tween > 0.01) {
+		//	this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
+		//	T = this.easedTween = this.tweenTime(
+		//		this.tween,
+		//		this.normalTween,
+		//		this.ease.x,
+		//		this.ease.y,
+		//		this.ease.z,
+		//		this.ease.w
+		//	)
+		//}
+		$INITIALIZEVARIABLES
+
 		var position = this.vertex()
 		if(this.vertexPostMatrix[0][0] != 1. || this.vertexPostMatrix[1][1] != 1.) {
 			gl_Position = position * this.vertexPostMatrix
@@ -284,7 +285,7 @@ module.exports = class Shader extends require('base/compiler'){
 	// Distance fields
 	//
 	
-	
+	/*
 	unionDistance(f1, f2) {
 		return min(f1, f2)
 	}
@@ -332,10 +333,8 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	animateUniform(uni) {$
 		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w - uni.z) + uni.z
-	}
-	
-	
-	
+	}*/
+		
 	antialias(p) {
 		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 	}
@@ -347,7 +346,6 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	// 2D canvas api for shader
 	viewport(pos) {$
-		
 		this.pos = pos
 		this.result = vec4(0.)
 		this._oldShape = 
@@ -399,7 +397,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	strokeKeep(color, width) {$
-		var f = this._calcBlur(abs(this.shape + width - 0.5) - width / this._scale)
+		var f = this._calcBlur(abs(this.shape + width ) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)

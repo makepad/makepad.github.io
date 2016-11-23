@@ -34,7 +34,6 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 		
 		this.verbs = {
 			stop:function(o, x1, x2, x3, x4, h){
-				this.$PROPVARDEF()
 				this.$PROP[o,'x1'] = x1
 				this.$PROP[o,'x2'] = x2
 				this.$PROP[o,'x3'] = x3
@@ -42,13 +41,11 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 				this.$PROP[o,'h'] = h
 			},
 			$setTweenStart:function(o, v){
-				this.$PROPVARDEF()
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			start:function(y, level, style){
-				this.$ALLOCDRAW(1, true)
+				this.$ALLOCDRAW(1)
 				this.$WRITEPROPS({
-					$fastWrite:true,
 					duration:$proto.duration,
 					y:y,
 					closed:0,

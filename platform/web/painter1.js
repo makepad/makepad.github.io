@@ -16,7 +16,7 @@ module.exports = class extends require('/platform/service'){
 			this.args.y = 0
 			this.onRepaint = this.onRepaint.bind(this)
 			this.onScreenResize()
-			this.runBootCache()
+			//this.runBootCache()
 		}
 		else{
 			// ok we have a parent.

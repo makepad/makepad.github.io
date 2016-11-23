@@ -12,8 +12,8 @@ module.exports = class CodeText extends require('shaders/text'){
 			color:{pack:'float12', value:'black'},
 			fontSize:12,
 			boldness:0, 
-			unicode:{noStyle:1, value:0},
-			italic:{notween:1,value:0.},
+			unicode:{mask:0, value:0},
+			italic:{value:0.},
 
 			outlineColor:{kind:'uniform', value:'white'},
 			shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
@@ -29,18 +29,13 @@ module.exports = class CodeText extends require('shaders/text'){
 			ease: {kind:'uniform', value:[0,10,1.0,1.0]},
 			duration: {kind:'uniform', value:0.3},
 			delay: {styleLevel:1, value:0.},
-			moveScroll:{kind:'uniform', noTween:1, value:1.}
-		}
-
-		this.displace = {
-			0:{
-				x:0,y:0
-			}
+			moveScroll:{kind:'uniform', value:1.}
 		}
 	
+		this.$
+
 		this.verbs = {
 			$setTweenStart:function(o, v){
-				this.$PROPVARDEF()
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(txt, style, ihead, itail){
@@ -48,7 +43,7 @@ module.exports = class CodeText extends require('shaders/text'){
 				var len = txt.length - 1
 				var turtle = this.turtle
 
-				this.$ALLOCDRAW(len + 1, true)
+				this.$ALLOCDRAW(null, len + 1)
 				this.$fastTextWritten += len+1
 
 				var margin = style.margin
@@ -74,6 +69,8 @@ module.exports = class CodeText extends require('shaders/text'){
 
 				var advance = 0
 				var head = ihead!==undefined? ihead: style.head, tail = 0
+
+				/*
 				var tweenDelta
 				if(base >= changeOffset){
 					tweenDelta = -changeDelta
@@ -86,19 +83,20 @@ module.exports = class CodeText extends require('shaders/text'){
 				}
 				else{
 					turtle._delay = -100000
-				}
+				}*/
 
 				var color = style.color
 				var boldness = style.boldness
 				for(let i = 0; i <= len; i++){
 					var unicode = txt.charCodeAt(i)
 					var basei = base + i
+					/*
 					if(basei === changeOffset){
 						tweenDelta = -changeDelta
 					}
 					if(basei === changeStart){
 						turtle._delay = this.$fastNAMEDelay
-					}
+					}*/
 
 					var g = glyphs[unicode] || glyphs[63]
 					//var d = displace[unicode] || displace[0]
@@ -107,8 +105,7 @@ module.exports = class CodeText extends require('shaders/text'){
 					var advance = g.advance
 
 					this.$WRITEPROPS({
-						$fastWrite:true,
-						$tweenDelta:tweenDelta,
+						//$tweenDelta:tweenDelta,
 						x:posx,
 						y:posy,
 						color: color,

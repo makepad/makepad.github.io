@@ -256,6 +256,7 @@ module.exports = class Tools extends require('base/class'){
 			// lets parse our args
 			var marg = code.match(mainArgRx)
 			var mainargs = marg[1].match(argSplitRx) || []
+			var scope = {}
 			code = code.replace(macroRx, function(m, indent, fnname, args){
 				// if args are not a {
 				var macroArgs
@@ -272,18 +273,26 @@ module.exports = class Tools extends require('base/class'){
 				}
 				var fn = sourceProto[fnname]
 				if(!fn) throw new Error('CanvasMacro: '+fnname+ ' does not exist')
-				return sourceProto[fnname](target, className, macroArgs, mainargs, indent)
+				return sourceProto[fnname](macroArgs, indent, className, scope, target)
 			})
 			code = code.replace(nameRx,className)
 
 			var outcode = code.replace(dumpRx,'')
 			if(outcode !== code){
+				console.log(code)
 				code = outcode
 			}
-			
-			code = code.replace(fnnameRx, function(){
-				return 'function '+methodName+'('
+	
+			code = code.replace(fnnameRx, function(m, args){
+				var out = 'function '+methodName+'('+args+'){\n'
+				for(var key in scope){
+					out += '\tvar '+key+' = '+scope[key]+'\n'
+				}
+				return out
 			})
+
+			//console.log(code)
+
 
 			// create the function on target
 			target[methodName] = fnCache[code] || (fnCache[code] = new Function('return ' + code)())
@@ -392,11 +401,11 @@ module.exports.protoProcess = protoProcess
 var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
 var comment2Rx = new RegExp(/\/\/[^\n]*/g)
-var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*)/)
-var macroRx = new RegExp(/([\t]*)this\.([\$][A-Z][A-Z0-9\_]*)(?:\s*[\(\[]([^\)\]]*)[\)\]])?/g)
+var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*?)/)
+var macroRx = new RegExp(/([\t]*)this\.([A-Z][A-Z0-9\_]*)(?:\s*[\(\[]([^\)\]]*)[\)\]])?/g)
 var argSplitRx = new RegExp(/[^,\s]+/g)
 var nameRx = new RegExp(/NAME/g)
-var fnnameRx = new RegExp(/^function\s*\(/)
+var fnnameRx = new RegExp(/^function\s*\(([^\)]*?)\)[^\}]*?\{/)
 var dumpRx = new RegExp(/DUMP/g)
 
 var fnCache = {}

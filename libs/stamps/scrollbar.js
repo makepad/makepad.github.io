@@ -78,9 +78,7 @@ module.exports = require('base/stamp').extend({
 			}
 		})
 	},
-
-
-
+  
 	inPlace: true,
 
 	onFingerDown(){

@@ -134,6 +134,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 		for(let i = 0; i < array.length; i++){
 			var item = array[i]
 			var line = this[item.type](item)
+			if(item.type === 'ExpressionStatement' && item.expression.type === 'MemberExpression') continue
 			//var line = this.walk(array[i], parent)
 			if(line.length){
 				ret += this.indent + line + ';'

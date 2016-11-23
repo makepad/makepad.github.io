@@ -6,6 +6,7 @@ var ShaderInfer = require('base/infer')
 for(let i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
 const compName = ['x','y','z','w']
+const keyframeTiming = ['tween','in','out','elastic']
 
 module.exports = class Compiler extends require('base/class'){
 
@@ -14,6 +15,7 @@ module.exports = class Compiler extends require('base/class'){
 		this.$uniformHeader = ""
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
+		this.$interruptCache = {}
 
 		this.inheritable('props', function(){
 			var props = this.props
@@ -66,6 +68,12 @@ module.exports = class Compiler extends require('base/class'){
 			if(!this.hasOwnProperty('_verbs')) this._verbs = this._verbs?Object.create(this._verbs):{}
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
+
+		this.inheritable('states', function(){
+			var states = this.states
+			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(_states):{}
+			for(let key in states) this._states[key] = states[key]
+		})
 	}
 
 	$defineProp(key, value){
@@ -87,6 +95,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		this._props[key] = config
 		if(config.value !== undefined) this[key] = config.value
+		if(config.mask === undefined) config.mask = 1 
 		if(!config.type) config.type = types.typeFromValue(config.value)
 		if(!config.kind) config.kind = 'instance'		
 	}
@@ -114,12 +123,16 @@ module.exports = class Compiler extends require('base/class'){
 
 	$compileShader(){
 		this.$methodDeps = {}
+
+		// compile shaders
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions)
 
 		if(vtx.exception || pix.exception) return
 
 		var inputs = {}, geometryProps = {}, instanceProps = {}, styleProps = {}, uniforms = {}
+
+		// merge outputs from generateGLSL into tables
 		for(let key in vtx.geometryProps) inputs[key] = geometryProps[key] = vtx.geometryProps[key]
 		for(let key in pix.geometryProps) inputs[key] = geometryProps[key] = pix.geometryProps[key]
 		for(let key in vtx.instanceProps) inputs[key] = styleProps[key] = instanceProps[key] = vtx.instanceProps[key]
@@ -131,148 +144,106 @@ module.exports = class Compiler extends require('base/class'){
 			else uniforms[key] = uni
 		}
 
-		// the shaders
-		var vhead = this.$vertexHeader, vpre = '', vpost = ''
-		var phead = this.$pixelHeader, ppre = '', ppost = ''
+		// compute property handling (if we need tween props)
+		computePropStates(this._states, instanceProps)
+
+		var totalSlots = computePropSizes(instanceProps)
+		var lastSlot = Math.floor(totalSlots/4)
+
+		// the shader chunks
+		var vhead = this.$vertexHeader
+		var vpre = ''
+		var vpost = ''
+		var phead = this.$pixelHeader
+		var ppre = ''
+		var ppost = ''
 
 		// Unpack and tween props
 		vhead += '// prop attributes\n'
 
-		var tweenrep = ''
-
-		// calc prop size
-		var totalslots = 0
-
-		for(let key in instanceProps){
-			var prop = instanceProps[key]
-			var slots = prop.type.slots
-			if(prop.config.pack){
-				if(prop.type.name === 'vec4'){
-					slots = 2
-				}
-				else if(prop.type.name === 'vec2'){
-					slots = 1
-				}
-				else throw new Error('Cant use packing on non vec2 or vec4 type for '+key)
-			}
-			prop.offset = totalslots
-			prop.slots = slots
-			totalslots += slots
-			if(!prop.config.noTween) totalslots += slots
-		}
-
-		function propSlot(idx){
-			var slot = Math.floor(idx/4)
-			var ret = 'ATTR_' +  slot
-			if(lastslot !== slot || totalslots%4 !== 1) ret += '.' + compName[idx%4]
-			return ret
-		}
-
-		// Unpack attributes
-		var lastslot = Math.floor(totalslots/4)
-		var propSlots = 0
+		// per state property tweening/animation values
+		var states = this._states
+		var stateCode = {}
+		var initvars = ''
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
-			// lets create the unpack / mix code here
-			propSlots += slots
-			var pack = prop.config.pack
-			if(pack){
-				if(prop.type.name === 'vec2'){
-					if(prop.config.noTween){
-						vpre += '\t' + key + ' = vec2('
-						var start = propSlots - slots
-						var p1 = propSlot(start)
-						vpre += 'floor('+p1+'/4096.0)'
-						vpre += ',mod('+p1+',4096.0)'
-						if(pack === 'float12') vpre += ')/4095.0;\n'
-						else vpre += ');\n'
-					}
-					else{
-						propSlots += slots
-						tweenrep += '\t' + key + ' = mix(vec2('
-						var start1 = propSlots - slots
-						var start2 = propSlots - slots*2
-						var p1 = propSlot(start1)
-						var p3 = propSlot(start2)
-						tweenrep += 'floor('+p1+'/4096.0)' 
-						tweenrep += ',mod('+p1+',4096.0)' 
-						tweenrep += '),vec2('
-						tweenrep += 'floor('+p3+'/4096.0)'
-						tweenrep += ',mod('+p3+',4096.0)'
-						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
-						else if(pack === 'int12') tweenrep += '),T)-2048.0;\n'
-						else tweenrep += '),T);\n'
-					}
-				}
-				else{
-					if(prop.config.noTween){
-						vpre += '\t' + key + ' = vec4('
-						var start = propSlots - slots
-						var p1 = propSlot(start)
-						var p2 = propSlot(start+1)
-						vpre += 'floor('+p1+'/4096.0)'
-						vpre += ',mod('+p1+',4096.0)'
-						vpre += ',floor('+p2+'/4096.0)' 
-						vpre += ',mod('+p2+',4096.0)' 
-						if(pack === 'float12') vpre += ')/4095.0;\n'
-						else if(pack === 'int12') vpre += ')-2048.0;\n'
-						else vpre += ');\n'
-					}
-					else{
-						propSlots += slots
-						tweenrep += '\t' + key + ' = mix(vec4('
-						var start1 = propSlots - slots
-						var start2 = propSlots - slots*2
-						var p1 = propSlot(start1)
-						var p2 = propSlot(start1+1)
-						var p3 = propSlot(start2)
-						var p4 = propSlot(start2+1)
-						tweenrep += 'floor('+p1+'/4096.0)' 
-						tweenrep += ',mod('+p1+',4096.0)' 
-						tweenrep += ',floor('+p2+'/4096.0)'
-						tweenrep += ',mod('+p2+',4096.0)'
-						tweenrep += '),vec4('
-						tweenrep += 'floor('+p3+'/4096.0)'
-						tweenrep += ',mod('+p3+',4096.0)'
-						tweenrep += ',floor('+p4+'/4096.0)'
-						tweenrep += ',mod('+p4+',4096.0)'
-						if(pack === 'float12') tweenrep += '),T)/4095.0;\n'
-						else if(pack === 'int12') tweenrep += '),T)-2048.0;\n'
-						else tweenrep += '),T);\n'
-					}
-				}
+
+			var propOff = 0
+			if(prop.hasFrom){
+				initvars += '\t'+prop.type.name + ' from_' +key+' = ' + unpackProp(prop, propOff, lastSlot, totalSlots) + ';\n'
+				propOff += slots
 			}
-			else{
-				if(prop.config.noTween){
-					var vdef = prop.type.name + '('
-					if(vdef === 'float(') vdef = '('
-					for(let i = 0, start = propSlots - slots; i < slots; i++){
-						if(i) vdef += ', '
-						vdef += propSlot(start + i)
+			if(prop.hasTo){
+				initvars += '\t'+key+' = ' + unpackProp(prop, propOff, lastSlot, totalSlots) + ';\n'
+			}
+
+			let propStates = prop.states
+			for(var stateName in propStates){
+				var propState = propStates[stateName]
+				var state = states[stateName]
+				var frames = propState.frames
+				var code = ''
+				var last = undefined
+				var duration = state.duration || 1.
+
+				for(var i = frames.length - 1; i>=0; i--){
+					var next = frames[i]
+					if(last){
+						code = 'mix('+decodeKeyFrame(prop.name, next.value, i==0)+','+code+',clamp((T-'+forceDot(next.time)+')/'+forceDot(last.time-next.time)+',0.,1.))'
 					}
-					vdef += ')'
-					vpre += '\t' + key + ' = ' + vdef + ';\n'
-				}
-				else{
-					propSlots += slots
-					var vnew = prop.type.name + '('
-					if(vnew === 'float(') vnew = '('
-					var vold = vnew
-					for(let i = 0, start1 = propSlots - slots, start2 = propSlots - slots*2; i < slots; i++){
-						if(i) vnew += ', ', vold += ', '
-						vnew += propSlot(start1 + i)
-						vold += propSlot(start2 + i)
+					else{
+						code = decodeKeyFrame(prop.name, next.value, i==0)
 					}
-					vnew += ')'
-					vold += ')'
-					tweenrep += '\t' + key + ' = mix(' + vnew + ',' + vold + ',T);\n'
+					last = next
 				}
+				stateCode[stateName] = (stateCode[stateName] || '') + '\t\t' + key + ' = ' + code + ';\n'
 			}
 		}
 
+		var stateDuration = {}
+		var stateIds = {}
+		var stateDelay = {}
+		var stateId = 1
+		initvars += '\tT -= thisDOTanimStart;\n'
+		for(let key in states){
+			let state = states[key]
+			let id = stateId++
+			stateIds[key] = id
+			stateDuration[key] = (state.duration || 1.) * (state.repeat || 1.)
+			stateDelay[key] = state.delay || 0.
+			initvars += '\tif(thisDOTanimState == '+id+'.){\n'
+			var div = forceDot(state.duration||1.)
+			if(div !== '1.0'){
+				initvars += '\t\tT/='+div+';\n'
+			}
+			// now we loop and/or bounce
+			if(state.repeat){
+				if(state.bounce){
+					if(state.repeat === Infinity){
+						initvars += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
+					}
+					else{
+						initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
+					}
+				}
+				else{
+					if(state.repeat === Infinity){
+						initvars += '\t\tT = mod(T,1.);\n'
+					}
+					else{
+						initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
+					}
+				}
+			}
+			//if(state.duration)
+			initvars += '' // do loop/bounce/duration on T
+			initvars += stateCode[key]
+			initvars += '\t}\n'
+		}
+
 		var attrid = 0
-		for(let i = totalslots, pid = 0; i > 0; i -= 4){
+		for(let i = totalSlots, pid = 0; i > 0; i -= 4){
 			if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
 			if(i == 3) vhead += 'attribute vec3 ATTR_'+(attrid)+';\n'
 			if(i == 2) vhead += 'attribute vec2 ATTR_'+(attrid)+';\n'
@@ -280,6 +251,7 @@ module.exports = class Compiler extends require('base/class'){
 			attrid++
 		}
 
+		// unpack geometry Props
 		for(let key in geometryProps){
 			var geom = geometryProps[key]
 			var slots = geom.type.slots
@@ -310,30 +282,8 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		vhead = '// mesh attributes\n' + vhead
 
-		// define structs
-		for(let key in vtx.structs){
-			var struct = vtx.structs[key]
-			// lets output the struct
-			vhead += '\nstruct ' + key + '{\n'
-			var fields = struct.fields
-			for(let fieldname in fields){
-				var field = fields[fieldname]
-				vhead += '	'+field.name +' '+fieldname+';\n'
-			}
-			vhead += '};\n'
-		}
-
-		for(let key in pix.structs){
-			var struct = pix.structs[key]
-			// lets output the struct
-			phead += '\nstruct ' + key + '{\n'
-			var fields = struct.fields
-			for(let fieldname in fields){
-				var field = fields[fieldname]
-				phead += '	'+field.name +' '+fieldname+';\n'
-			}
-			phead += '};\n'
-		}
+		vhead += defineStructs(vtx.structs)
+		phead += defineStructs(pix.structs)
 
 		// define the input variables
 		vhead += '\n// inputs\n'
@@ -470,23 +420,11 @@ module.exports = class Compiler extends require('base/class'){
 			vfunc = '\n'+fn.code + '\n' + vfunc
 		}
 
-		/*
-		if(vtx.genFunctions.thisDOTvertex_T.return.type !== types.vec4){
-			vtx.mapException({
-				state:{
-					curFunction:vtx.genFunctions.thisDOTvertex_T
-				},
-				type:'generate',
-				message:'vertex function not returning a vec4',
-				node:vtx.genFunctions.thisDOTvertex_T.ast
-			})
-		}*/
-
 		var vertex = vhead 
 		vertex += vfunc
 		vertex += '\nvoid main(){\n'
 		vertex += vpre
-		vertex += vtx.main.replace("\t$CALCULATETWEEN",tweenrep)
+		vertex += vtx.main.replace("\t$INITIALIZEVARIABLES",initvars)
 		vertex += vpost
 		vertex += '}\n'
 
@@ -507,7 +445,7 @@ module.exports = class Compiler extends require('base/class'){
 		for(let key in this._props){
 			var config = this._props[key]
 			var propname = 'thisDOT' + key
-			if(config.styleLevel && !styleProps[propname]){
+			if(!styleProps[propname]){
 				styleProps[propname] = {
 					name:key,
 					config:config
@@ -519,6 +457,9 @@ module.exports = class Compiler extends require('base/class'){
 			return
 		}
 
+		this.$stateIds = stateIds
+		this.$stateDelay = stateDelay
+		this.$stateDuration = stateDuration
 		var info = this.$compileInfo = {
 			name:this.name || this.constructor.name,
 			trace:this.drawTrace,
@@ -530,8 +471,10 @@ module.exports = class Compiler extends require('base/class'){
 			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
-			propSlots:propSlots
+			propSlots:totalSlots
 		}
+
+		this.$generateAnimInterrupt()
 
 		this.$toolCacheKey = pixel+vertex
 		if(this.dump) console.log(vertex,pixel)
@@ -550,132 +493,195 @@ module.exports = class Compiler extends require('base/class'){
 		}
 	}
 
+	$generateAnimInterrupt(){
+		var cache = this.$interruptCache[this.$toolCacheKey]
 
-	/*
-	function styleTweenCode(indent, inobj){
-		var code = ''
-		code += indent+'if(_tween === undefined) _tween = '+inobj+'.tween\n'
-		code += indent+'if(_duration === undefined) _duration = '+inobj+'.duration\n'
-		code += indent+'if(_delay === undefined) _delay = '+inobj+'.delay\n'
-		code += indent+'if(_ease === undefined) _ease = '+inobj+'.ease\n'
-		return code
-	}*/
+		if(!cache){
 
-	$STYLEPROPS(target, classname, macroargs, mainargs, indent){
+			var info = this.$compileInfo
+			var instanceProps = info.instanceProps
+
+			// per state property tweening/animation values
+			var states = this._states
+
+			var stateCode = {}
+			var code = '' // args $a, $o, $t
+
+			// compute T from the array
+			code += '\tvar T = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
+			code += '\tvar animState = $a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
+
+			for(let key in instanceProps){
+				var prop = instanceProps[key]
+				var slots = prop.slots
+				var propOff = 0
+				var offset = prop.offset
+
+				if(!prop.hasFrom) continue // if we dont have a from, dont need to compute interrupt
+
+				for(let i = 0; i < slots; i++){
+					code += '\tvar from_'+key+'_'+i+' = $a[$o+' + (offset + i)+']\n'
+				}
+
+				if(prop.hasTo){
+					for(let i = 0; i < slots; i++){
+						code += '\tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
+					}
+				}
+
+				// animation timeline
+				let propStates = prop.states
+				for(var stateName in propStates){
+					var propState = propStates[stateName]
+					var state = states[stateName]
+					var frames = propState.frames
+					var frag = ''
+					var last = undefined
+					var duration = state.duration || 1.
+					for(let f = frames.length - 1; f>=0; f--){
+						var next = frames[f]
+						if(last){
+							if(f == 0) frag += '\t\telse{\n'
+							else frag += '\t\telse if(T>=' + next.time + '){\n'
+							frag += '\t\t\tlet D = (T - '+next.time+')/'+(last.time-next.time)+', ND = 1 - D\n'
+							let nvec = next.value
+							let nv = nvec
+							let lvec = last.value
+							let lv = lvec
+							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
+							if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
+							for(let i = 0; i < slots; i++){
+								frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+								if(nv === null) frag += 'from_'+key+'_'+i	
+								else frag += slots>1?nvec[i]:nvec
+								frag += '*ND + D*'
+								if(lv === null) frag += 'to_'+key+'_'+i	
+								else frag += slots>1?lvec[i]:lvec
+								frag += '\n'
+							}
+							frag += '\t\t}\n'
+						}
+						else{
+							frag += '\t\tif(T>=1.){\n'
+							let nvec = next.value
+							let nv = nvec
+							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
+							for(let i = 0; i < slots; i++){
+								frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+								if(nv === null) frag += 'to_'+key+'_'+i	
+								else frag += slots>1?nvec[i]:nvec
+								frag += '\n'
+							}
+							frag += '\t\t}\n'
+						}
+						last = next
+					}
+					stateCode[stateName] = (stateCode[stateName] || '') + frag
+				}
+			}
+			var stateId = 1
+			for(let key in states){
+				let state = states[key]
+				let id = stateId++
+				code += '\tif(animState == '+id+'.){\n'
+				var div = forceDot(state.duration||1.)
+				if(div !== '1.0'){
+					code += '\t\tT/='+div+';\n'
+				}
+				// now we loop and/or bounce
+				if(state.repeat){
+					if(state.bounce){
+						if(state.repeat === Infinity){
+							code += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
+						}
+						else{
+							code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
+						}
+					}
+					else{
+						if(state.repeat === Infinity){
+							code += '\t\tT = mod(T,1.);\n'
+						}
+						else{
+							code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
+						}
+					}
+				}
+				//if(state.duration)
+				code += '' // do loop/bounce/duration on T
+				code += stateCode[key]
+				code += '\t\treturn\n\t}\n'
+			}
+			cache = this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t",code)
+		}
+
+		this.$interruptAnim = cache
+	}
+
+	// $STYLEPROPS(overload, mask)
+	STYLEPROPS(args, indent, className, scope){//, classname, indent, target){
 		if(!this.$compileInfo) return ''
-		// first generate property overload stack
-		// then write them on the turtles' propbag
+
 		var styleProps = this.$compileInfo.styleProps
-		if(!macroargs) throw new Error('$STYLEPROPS doesnt have overload argument')
+		if(!args) throw new Error('$STYLEPROPS doesnt have overload argument')
 
 		// lets make the vars
-		var code = indent + 'var $turtle = this.turtle'
-		var styleLevel = macroargs[1]
+		var code = ''
+
+		scope.$turtle = 'this.turtle'
+		scope.$proto = 'this.'+className+'.prototype\n'
+
+		var mask = args[1] || 1
+
+		// overload or class
 		for(let key in styleProps){
 			var prop = styleProps[key]
-			if(prop.config.noStyle) continue
-			if(styleLevel && prop.config.styleLevel > styleLevel) continue
-			code += ', _' + prop.name
-		}
-		code += '\n\n'
-		code += 'if(' + macroargs[0] + ' === this){\n'
-		code += styleStampRootCode('	', macroargs[0], target._props, styleProps, styleLevel)
-		code += '}\n'
-		code += 'else if(' + macroargs[0] + '){\n'
-		code += stylePropCode('	', macroargs[0], styleProps, styleLevel, true)
-		code += '}\n'
-
-		code += 'var $p1 = this.$outerState && this.$outerState.'+classname+'\n'
-		code += 'if($p1){\n'
-		code += stylePropCode('	', '$p1', styleProps, styleLevel)
-		code += '}\n'
-
-		code += 'var $p2 = this._state && this._state.'+classname+'\n'
-		code += 'if($p2){\n'
-		code += stylePropCode('	', '$p2', styleProps, styleLevel)
-		code += '}\n'
-
-		code += 'var $p0 = this.$stampArgs && this.$stampArgs.'+classname+'\n'
-		code += 'if($p0){\n'
-		code += stylePropCode('	', '$p0', styleProps, styleLevel)
-		code += '}\n'
-
-		/*
-		if(styleProps.thisDOTtween){
-			code += 'var $p3 = this.$stampArgs\n'
-			code += 'if($p3){\n'
-			code += styleTweenCode('	', '$p3')
-			code += '}\n'
-
-			code += 'var $p4 = this.$outerState\n'
-			code += 'if($p4){\n'
-			code += styleTweenCode('	', '$p4')
-			code += '}\n'
-
-			code += 'var $p5 = this._state\n'
-			code += 'if($p5){\n'
-			code += styleTweenCode('	', '$p5')
-			code += '}\n'
-
-			code += styleTweenCode('', 'this')
-		}
-		*/
-		// last one is the class
-		code += 'var $p9 = this.'+classname+'.prototype\n\n'
-		code += stylePropCode('', '$p9', styleProps, styleLevel)
-
-		//console.log(code)
-		// store it on the turtle
-		code += '\n'
-		for(let key in styleProps){
-			var prop = styleProps[key]
+			if(!(prop.config.mask&mask)) continue
 			var name = prop.name
-			if(prop.config.noStyle) continue
-			if(macroargs[1] && prop.config.styleLevel > macroargs[1]) continue
-			// store on turtle
-			code += indent + '$turtle._' + name +' = _' + name + '\n'
+			code += 'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
 		}
+
 		return code
 	}
 
-	$ALLOCDRAW(target, classname, macroargs, mainargs, indent){
+	ALLOCDRAW(args, indent, className, scope){//indent, target, classname, macroargs){
 		if(!this.$compileInfo) return ''
 		// lets generate the draw code.
 		// what do we do with uniforms?.. object ref them from this?
 		// lets start a propsbuffer 
 		var info = this.$compileInfo
 		var code = ''
-		
-		var need = macroargs[0] || 1
-		var fastWrite = macroargs[1]
+	
+		var overload = args[0]		
+		var allocNeeded = args[1] || 1
 
-		code += indent+'var $view = this.view\n'
-		code += indent+'var $shader = this.$shaders.'+classname+' || this.$allocShader("'+classname+'")\n'
-		code += indent+'var $props = $shader.$props\n'
-		code += indent+'var $proto = this.' + classname +'.prototype\n'
-		code += indent+'if($props.$frameId !== $view._frameId && !$view.$inPlace){\n'
+		// define scope vars
+		scope.$view = 'this.view'
+		scope.$shader = 'this.$shaders.'+className+' || this.$allocShader("'+className+'")' 
+		scope.$props = '$shader.$props'
+		scope.$proto = 'this.' + className +'.prototype'
+		scope.$a = '$props.array'
+		scope.$turtle = 'this.turtle'
+
+		code += indent+'if($props.$frameId !== $view._frameId){\n' 
 		code += indent+'	$props.$frameId = $view._frameId\n'
 		code += indent+'	$props.oldLength = $props.length\n'
 		code += indent+'	$props.updateMesh()\n'
 		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
-		code += indent+'	\n'
 		code += indent+'	var $todo = $view.todo\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.useShader($shader)\n'
-
 		// lets set the blendmode
-		code += '	$todo.blending($proto.blending, $proto.constantColor)\n'
-
+		code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
 		// set the vao
-		code += '	$todo.vao($shader.$vao)\n'
-
+		code += indent+'	$todo.vao($shader.$vao)\n'
 		// set uniforms
 		var uniforms = info.uniforms
 		var drawUboDef = info.uboDefs.draw
-		code += '	$todo.ubo('+painter.nameId('painter')+', $view.app.painterUbo)\n'
-		code += '	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
-		code += '	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('painter')+', $view.app.painterUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
 
 		for(let key in uniforms){
 			var uniform = uniforms[key]
@@ -683,16 +689,13 @@ module.exports = class Compiler extends require('base/class'){
 			if(key === 'thisDOTtime' && uniform.refcount > 1){
 				code += indent +'	$todo.timeMax = Infinity\n'
 			}
+
 			if(!drawUboDef || !(key in drawUboDef)) continue
+
 			var thisname = key.slice(7)
-			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $view.'+ thisname +'|| $proto.'+thisname
+			var source = (args[0]!=='null'?args[0]+' && '+args[0]+'.'+thisname+' || ':'')+'$view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
-			if(uniform.config.animate){
-			 	code += indent+'    var $animate = '+source+'\n'
-				code += indent+'    if($animate[0]+$animate[1] > $todo.timeMax) $todo.timeMax = $animate[0]+$animate[1]\n'
-			 	code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+',$animate)\n'
-			}
-			else code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
+			code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 		}
 
 		// do the samplers
@@ -701,61 +704,52 @@ module.exports = class Compiler extends require('base/class'){
 			var sampler = samplers[key]
 
 			var thisname = key.slice(7)
-			var source = mainargs[0]+' && '+mainargs[0]+'.'+thisname+' || $proto.'+thisname
+			var source = args[0]+' && '+args[0]+'.'+thisname+' || $proto.'+thisname
 
 			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
 		}
 		// lets draw it
 		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent + '}\n'
-		code += indent + 'var $propslength = $props.length\n\n'
-		code += indent + 'var $need = min($propslength + '+need+',$proto.propAllocLimit)\n'
+
+		code += indent + 'var $propsLength = $props.length\n\n'
+		code += indent + 'var $need = min($propsLength + '+allocNeeded+',$proto.propAllocLimit)\n'
 		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need)\n'
-		if(!fastWrite){
-			//code += indent + 'var $writelevel = (typeof _x === "number" && !isNaN(_x) || typeof _x === "string" || typeof _y === "number" && !isNaN(_y) || typeof _y === "string")?$view.$turtleStack.len - 1:$view.$turtleStack.len\n'
-			code += indent + '$view.$writeList.push($props, $propslength, $need)\n'
-			
-			if(target.$isStamp){
-				code += indent + 'if(this.$propsId'+classname+' !== $view._frameId){\n'
-				code += indent + '	this.$propsId'+classname+' = $view._frameId\n'
-				code += indent + '	this.$propsLen'+classname+' = $propslength\n'
-				code += indent + '}\n'
-			}
+
+		if(!this.$noWriteList){
+			code += indent + '$view.$writeList.push($props, $propsLength, $need)\n'
 		}
-		else{
-			code += indent + 'var $a = $props.array\n'
-			code += indent + '$props.dirty = true\n'
-		}
-		code += indent + 'var $turtle = this.turtle\n'
-		code += indent + '$turtle.$propoffset = $propslength\n'
+
+		code += indent + '$props.dirty = true\n'
+		code += indent + '$turtle.$propOffset = $propsLength\n'
 		code += indent + '$props.length = $need\n'
 
 		return code
 	}
-
-	$DUMPPROPS(){
+	
+	DUMPPROPS(){
 		var code = ''
 		var instanceProps = this.$compileInfo.instanceProps
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
 			var o = prop.offset
-			var notween = prop.config.noTween
-			if(!notween){
-				// new, old
+
+			if(prop.hasFrom){
 				for(let i = 0; i < slots; i++){
-					code += 'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i+slots)+']+"->"+$a[$o+'+(o+i)+'])\n'
+					code += 'console.log("'+(prop.name+(slots>1?i:''))+' from: "+$a[$o+'+(o+i)+'])\n'
 				}
+				o += slots
 			}
-			else{
+			if(prop.hasTo){
 				for(let i = 0; i < slots; i++){
-					code +=  'console.log("'+(prop.name+(slots>1?i:''))+' "+$a[$o+'+(o+i)+'])\n'
+					code += 'console.log("'+(prop.name+(slots>1?i:''))+' to: "+$a[$o+'+(o+i)+'])\n'
 				}
 			}
 		}
 		return code
 	}
-
+	/*
 	$PREVPROPS(target, classname, macroargs, mainargs, indent){
 		if(!this.$compileInfo) return ''
 		var code = ''
@@ -774,362 +768,370 @@ module.exports = class Compiler extends require('base/class'){
 			code += indent + '$a[$o+'+prop.offset+'] = ' +argobj[key] +'\n'
 		}
 		return code
+	}*/
+
+	PROPLEN(args, indent, className, scope){
+		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
+		return '$props.length'
 	}
 
-	$PROPLEN(target, classname, macroargs, mainargs, indent){
-		return 'this.$shaders.'+classname+'.$props.length'
-	}
-
-	$PROPVARDEF(target, classname, macroargs, mainargs, indent){
+	PROP(args, indent, className, scope){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-	
-		code += indent +'var $props = this.$shaders.'+classname+'.$props\n'
-		code += indent +'var $a = $props.array\n'
 
-		return code
+		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
+		if(!scope.$a) scope.$a = '$props.array'
+		
+		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
+		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
 	}
 
-	$PROP(target, classname, macroargs, mainargs, indent){
+	PREV(args, indent, className, scope){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-		var prop = info.instanceProps['thisDOT'+macroargs[1].slice(1,-1)]
-		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
+		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
+		if(!scope.$a) scope.$a = '$props.array'
+		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
+		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
-	$PREV(target, classname, macroargs, mainargs, indent){
+	WRITEPROPS(args, indent, className, scope){
 		if(!this.$compileInfo) return ''
-		var code = ''
-		var info = this.$compileInfo
-		if(info.noTween) throw new Error('Property ' + macroargs[1] + ' does not tween')
-		var prop = info.instanceProps['thisDOT'+macroargs[1].slice(1,-1)]
-		return '$a[(' + macroargs[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
-	}
 
-	$WRITEPROPS(target, classname, macroargs, mainargs, indent){
-		if(!this.$compileInfo) return ''
 		// load the turtle
-
-		var fastWrite = typeof macroargs[0] === 'object'?macroargs[0].$fastWrite:false
-
-		var hasTweenDelta = macroargs[0].$tweenDelta
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
-		var code = ''
-		code += indent + 'var $turtle = this.turtle\n'
 
-		if(!fastWrite){
-			code += indent + 'var $view = this.view\n'
-			code += indent + 'var $inPlace = $view.$inPlace\n\n'
-			code += indent +'var $proto = this.' + classname +'.prototype\n'
-			code += indent +'var $shader = this.$shaders.'+classname+'\n'
-			code += indent +'var $props = $shader.$props\n'
-			code += indent +'var $a = $props.array\n'
-			code += indent + '$props.dirty = true\n'
-		}
-
-		if(macroargs[0].$offset){
-			code += indent +'var $o = ('+macroargs[0].$offset+') * ' + info.propSlots +'\n'
-		}
-		else{
-			if(!fastWrite){
-				code += indent +'var $o = $turtle.$propoffset++ * ' + info.propSlots +'\n'
-			}
-			else{
-				code += indent +'var $o = $propslength++ * ' + info.propSlots +'\n'
-			}
-		}
-
-		if(hasTweenDelta){
-			code += indent +'var $tweenDelta = (' + macroargs[0].$tweenDelta + ') * '+info.propSlots+'\n'
-			code += indent +'var $fwdTween =  $o - $tweenDelta\n'
-		}
-		//code += indent +'var $changed = false\n'
-		var tweencode = '	var $f = $time, $1mf = 1.-$time, $upn, $upo\n'
-		tweencode += '	var $cf = Math.min(1.,Math.max(0.,$time)), $1mcf = 1.-$cf\n'
+		// define scope vars
+		if(!scope.$shader) scope.$shader = 'this.$shaders.'+className 
+		scope.$view = 'this.view'
+		scope.$props = '$shader.$props'
+		scope.$proto = 'this.' + className +'.prototype'
+		scope.$a = '$props.array'
+		scope.$turtle = 'this.turtle'
 		
-		var isAnimate = macroargs[0].$animate
 
-		var propcode = ''
-		var deltafwd = ''
-		var copyfwd = ''
-		var copyprev = ''
-		// lets generate the tween
+		// start the writing process
+		var code = ''
+		code += 'var $state = $turtle._state\n'
+		code += indent + '$props.dirty = true\n'
+		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
+		// lets execute
+		code += indent + 'var $last = $a[$o+' + instanceProps.thisDOTanimState.offset+']\n'
+		code += indent + 'if($last) $proto.$interruptAnim($a, $o, $view._time)\n'
+		code += indent + 'var $max = $view._time + $proto.$stateDuration[$state]\n'
+		code += indent + 'if($max>$todo.timeMax) $todo.timeMax = $max\n'
+
+		// write properties.
+		var last = 'if(!$last){\n'
 		for(let key in instanceProps){
-			var prop = instanceProps[key]
-			var slots = prop.slots
-			var o = prop.offset
-			var notween =  prop.config.noTween
-			var noInPlace = fastWrite?false:prop.config.noInPlace
-			propcode += '\n'+indent+'// '+key + '\n'
-			// generate the code to tween.
-			if(!notween){
-				// new, old
-				if(noInPlace) tweencode += indent + 'if(!$inPlace){\n'
+			let prop = instanceProps[key]
+			if(!prop.slots) continue
 
-				tweencode += '\n'+indent+'	//' + key + '\n'
-
-				var pack = prop.config.pack
-				if(pack){
-					// we have to unpack before interpolating
-					for(let i = 0; i < slots; i++){
-						tweencode += indent + 'var _upn = $a[$o+'+(o + i)+'], _upo = $a[$o+'+(o + i + slots)+']\n'
-						tweencode += indent + '$a[$o+'+(o +i)+'] = ' +
-							'(($1mcf * Math.floor(_upo/4096) +' +
-							'$cf * Math.floor(_upn/4096)) << 12) + ' + 
-							'(($1mcf * (_upo%4096) +' +
-							'$cf * (_upn%4096))|0)\n'
-						if(hasTweenDelta){
-							deltafwd += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
-							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-						}
-						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-					}
+			var source = '$turtle._' + prop.name
+			if(!prop.config.mask){ // system values
+				if(key === 'thisDOTanimStart'){ // now?
+					source = '$view._time + $proto.$stateDelay[$state]'
 				}
-				else{
-
-					for(let i = 0; i < slots; i++){
-						//if(key === 'thisDOTopen') tweencode += 'if($o===2*' + info.propSlots +')console.error($duration,$cf, $a[$o+'+(o +i)+'])\n'
-
-						tweencode += indent + '	$a[$o+'+(o +i)+'] = ' +
-							'$1mcf * $a[$o+'+(o + i + slots)+'] + ' +
-							'$cf * $a[$o+'+(o +i)+']\n'
-
-						if(hasTweenDelta){
-							deltafwd += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+'+$tweenDelta]\n'
-							copyfwd += indent + '$a[$fwdTween+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-						}
-						copyprev += indent + '$a[$o+'+(o + i + slots)+'] = $a[$o+'+(o +i)+']\n'
-					}
+				else if(key === 'thisDOTanimState'){ // decode state prop
+					source = '$proto.$stateIds[$state] || 0'
 				}
-				if(noInPlace) tweencode += indent + '}\n'
-			}
-
-			// assign properties
-			// check if we are a vec4 and typeof string
-
-			var propsource = '$turtle._' + prop.name
-
-			if(prop.name === 'tweenStart'){
-				if(macroargs[0].delay) propsource = '($tweenStart !== 0?$view._time +'+macroargs[0].delay+':-Infinity)'
-				else propsource = '($tweenStart !== 0?$view._time + $turtle._delay:-Infinity)'
-			}
-			if(typeof macroargs[0] === 'object'){
-				var marg = macroargs[0][prop.name]
-				if(marg) propsource = marg
-				else if(prop.name !== 'tweenStart' && fastWrite) continue
-			}
-
-			if(isAnimate && !(prop.name in macroargs[0]) && prop.name !== 'tweenStart'){
-				continue
-			}
-
-			if(noInPlace){
-				propcode += indent + 'if(!$inPlace){\n'
-			}
-
-			if(prop.type.name === 'vec4'){
-				// check packing
-				var pack = prop.config.pack
-				if(pack){
-					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(pack === 'float12'){
-						if(prop.config.noCast){
-							propcode += indent +'$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0),$a[$o+'+(o+1)+']=((_'+prop.name+'[2] * 4095)<<12) + ((_'+prop.name+'[3]*4095)|0)\n'
-						}
-						else{
-							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=((Math.min(_'+prop.name+'[0],1.)*4095)<<12) + ((Math.min(_'+prop.name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+prop.name+'[2],1.) * 4095)<<12) + ((Math.min(_'+prop.name+'[3],1.)*4095)|0)\n'
-							propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColorPacked(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
-							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[0]*4095)|0)\n'
-							propcode += indent + '}\n'
-							propcode += indent + 'if(typeof _'+prop.name+' === "string")this.$parseColorPacked(_'+prop.name+',1.0,$a,$o+'+o+')\n'
-							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
-						}
-					}
-					else{ // int packing
-						if(prop.config.noCast){
-							propcode += indent +'$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]+2048<<12) + (_'+prop.name+'[3]+2048|0)\n'
-						}
-						else{
-							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+prop.name+'[2]+2048<<12) + (_'+prop.name+'[3]+2048|0)\n'
-							propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'[0]+2048)<<12) + ((_'+prop.name+'[0]+2048)|0)\n'
-							propcode += indent + '}\n'
-							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+prop.name+'+2048)<<12) + ((_'+prop.name+'+2048)|0)\n'
-						}
-					}
+				else if(key === 'thisDOTpickId'){ 
+					source = '$turtle._pickId'
 				}
-				else{
-					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(prop.config.noCast){
-						propcode += indent +'$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
-					}
-					else{
-						propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-						propcode += indent + '	if(_'+prop.name+'.length === 4)$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1],$a[$o+'+(o+2)+']=_'+prop.name+'[2],$a[$o+'+(o+3)+']=_'+prop.name+'[3]\n'
-						propcode += indent + '	else if(_'+prop.name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=$a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'[0]\n'
-						propcode += indent + '	else if(_'+prop.name+'.length === 2)this.$parseColor(_'+prop.name+'[0], _'+prop.name+'[1],$a,$o+'+o+')\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'else if(typeof _'+prop.name+' === "string")this.$parseColor(_'+prop.name+',1.0,$a,$o+'+o+')\n'
-						propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+'] = $a[$o+'+(o+1)+'] = $a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+prop.name+'\n'
-					}
-				}
+				else throw new Error('Unknown key with mask 0 ' + key)
 			}
-			else if(prop.type.name === 'vec2'){
-				// check packing
-				var pack = prop.config.pack
-				if(pack){
-					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(pack === 'float12'){
-						if(prop.config.noCast){
-							propcode += indent + '$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
-						}
-						else{
-							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	$a[$o+'+(o)+']=((_'+prop.name+'[0]*4095)<<12) + ((_'+prop.name+'[1]*4095)|0)\n'
-							propcode += indent + '}\n'
-							propcode += indent + 'else $a[$o+'+o+']=((_'+prop.name+'*4095)<<12) + ((_'+prop.name+'*4095)|0)\n'
-						}
-					}
-					else{ // int packing
-						if(prop.config.noCast){
-							propcode += indent + '$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0)\n'
-						}
-						else{
-							propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-							propcode += indent + '	$a[$o+'+(o)+']=(_'+prop.name+'[0]+2048<<12) + (_'+prop.name+'[1]+2048|0)\n'
-							propcode += indent + '}\n'
-							propcode += indent + 'else if(typeof _'+prop.name+' === "number")$a[$o+'+o+']=((_'+prop.name+')+2048<<12) + ((_'+prop.name+')+2048|0)\n'
-						}
-					}
-				}
-				else{
-					propcode += indent + 'var _' + prop.name + ' = '+ propsource +'\n'
-					if(prop.config.noCast){
-						propcode += indent + '$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
-					}
-					else{
-						propcode += indent + 'if(typeof _'+prop.name+' === "object"){\n'
-						propcode += indent + '	$a[$o+'+(o)+']=_'+prop.name+'[0],$a[$o+'+(o+1)+']=_'+prop.name+'[1]\n'
-						propcode += indent + '}\n'
-						propcode += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+prop.name+'\n'
-					}
-				}
+			if(prop.hasFrom){ // initialize from from the write value if first write
+				last += packProp(indent, prop, 0, source)
 			}
-			else{
-				if(slots === 1){
-					propcode += indent + '$a[$o+'+o+'] = '+propsource+'\n'
-				}
-				else{
-					propcode += indent + 'var _' + prop.name + ' = '+propsource+'\n'
-					//propcode += indent + 'if(_'+prop.name+' === undefined) console.error("Property '+prop.name+' is undefined")\n'
-					//propcode += indent + 'else '
-					for(let i = 0; i < slots; i++){
-						if(i) propcode += ','
-						propcode += '$a[$o+'+(o+i)+']=_'+prop.name+'['+i+']\n'
-					}
-					propcode += '\n'
-				}
+			if(prop.hasTo){
+				code += packProp(indent, prop, prop.hasFrom?prop.slots:0, source)
 			}
-
-			if(noInPlace){
-				propcode += indent+'}\n'
-			}			
 		}
-
-		// if we dont have per instance tweening
-		if(!instanceProps.thisDOTtween){
-			code += indent + 'if($proto.tween > 0){\n'
-
-			if(instanceProps.thisDOTduration){
-				code += indent + '	var $duration = $a[$o + ' + instanceProps.thisDOTduration.offset +']\n'
-			}
-			else{
-				code += indent + '	var $duration = $proto.duration\n'
-			}			
-			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.thisDOTtweenStart.offset +']\n'
-			code += indent + '	if(!$proto.noInterrupt && $view._time < $tweenStart +  $duration){\n'
-			code += indent + '	var $ease = $proto.ease\n'
-			code += indent + '	var $time = $proto.tweenTime($proto.tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $a[$o + ' + instanceProps.thisDOTtweenStart.offset +'])/ $duration))'
-			code += ',$ease[0],$ease[1],$ease[2],$ease[3]'
-			code += ')\n'
-		}
-		else{ // we do have per instance tweening
-			code += indent + 'var $tween = $a[$o + ' + instanceProps.thisDOTtween.offset +']\n'
-			code += indent + 'if($tween > 0 || $turtle._tween > 0){\n'
-			code += indent + '	var $duration = $a[$o + ' + instanceProps.thisDOTduration.offset +']\n'
-			code += indent + '	var $tweenStart = $a[$o + ' + instanceProps.thisDOTtweenStart.offset +']\n'
-			code += indent + '	var $timeMax = $view._time + $turtle._duration\n'
-			code += indent +'	if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-			code += indent + '	if($view._time < $tweenStart + $duration){\n'
-			code += indent + '		var $time = $proto.tweenTime($tween'
-			code += ',Math.min(1,Math.max(0,($view._time - $tweenStart)/$duration))'
-			code += ',$a[$o + ' + instanceProps.thisDOTease.offset +']'
-			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+1) +']'
-			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+2) +']'
-			code += ',$a[$o + ' + (instanceProps.thisDOTease.offset+3) +']'
-			code += ')\n'
-		}
-		code += indent + tweencode 
-		code += indent + '	}\n'
-		code += indent + '}\n'
-
-		if(hasTweenDelta){
-			code += 'if($tweenDelta>0){\n'
-			code += deltafwd
-			code += '}\n'
-			code += 'else{\n'
-			code += copyfwd
-			code += '}\n'
-		}
-		else{
-			code += copyprev
-		}
-
-		code += propcode
-
-		if(!instanceProps.thisDOTtween){
-			code += indent + 'var $timeMax = $view._time + '
-			code += (instanceProps.thisDOTduration?'$a[$o + ' + instanceProps.thisDOTduration.offset +']':'$proto.duration')+'\n'
-			code += indent + 'if($tweenStart !==0 && $timeMax > $view.todo.timeMax) $view.todo.timeMax = $timeMax\n'
-		}
-
+		last += '}'
+		code += last
+		//code += this.DUMPPROPS()
 		return code
 	}
-
 }
 
-function stylePropCode(indent, inobj, styleProps, styleLevel, noif){
-	var code = ''
-	for(let key in styleProps){
-		var prop = styleProps[key]
-		var name = prop.name
-		if(prop.config.noStyle) continue
-		if(styleLevel && prop.config.styleLevel > styleLevel) continue
-		if(!noif){
-			code += indent+'if(_'+name+' === undefined) _'+name+ ' = '+inobj+'.' + name +'\n'
+
+// process and generate state handling code
+function decodePropSlot(idx, lastSlot, totalSlots){
+	var slot = Math.floor(idx/4)
+	var ret = 'ATTR_' +  slot
+	if(lastSlot !== slot || totalSlots%4 !== 1) ret += '.' + compName[idx%4]
+	return ret
+}
+
+function unpackProp(prop, off, lastSlot, totalSlots){
+	var pack = prop.config.pack
+	if(pack){
+		if(prop.type.name === 'vec2'){
+			var res = 'vec2('
+			var start = prop.offset + off
+			var p1 = decodePropSlot(start, lastSlot, totalSlots)
+			res += 'floor('+p1+'/4096.0)'
+			res += ',mod('+p1+',4096.0)'
+			if(pack === 'float12') res += ')/4095.0'
+			else if(pack === 'int12') res += ')-2048.0'
+			else res += ')'
+			return res
 		}
 		else{
-			code += indent+'_'+name+ ' = '+inobj+'.' + name +'\n'
+			var res = 'vec4('
+			var start = prop.offset + off
+			var p1 = decodePropSlot(start, lastSlot, totalSlots)
+			var p2 = decodePropSlot(start+1, lastSlot, totalSlots)
+			vpre += 'floor('+p1+'/4096.0)'
+			vpre += ',mod('+p1+',4096.0)'
+			vpre += ',floor('+p2+'/4096.0)' 
+			vpre += ',mod('+p2+',4096.0)' 
+			if(pack === 'float12') res += ')/4095.0'
+			else if(pack === 'int12') res += ')-2048.0'
+			else res += ')'
+			return res
 		}
 	}
+	var res = prop.type.name + '('
+	var slots = prop.slots
+	if(res === 'float(') res = '('
+	for(let i = 0, start = prop.offset + off; i < slots; i++){
+		if(i) res += ', '
+		res += decodePropSlot(start + i, lastSlot, totalSlots)
+	}
+	res += ')'
+	return res
+}
+
+function packProp(indent, prop, off, source){
+	var o = prop.offset + off
+	var code = ''
+	if(prop.type.name === 'vec4'){
+		// check packing
+		var pack = prop.config.pack
+		var name = prop.name
+		if(pack){
+			code += indent + 'var _' + name + ' = '+ source +'\n'
+			if(pack === 'float12'){
+				code += indent + 'if(typeof _'+name+' === "object"){\n'
+				code += indent + '	if(_'+name+'.length === 4)$a[$o+'+(o)+']=((Math.min(_'+name+'[0],1.)*4095)<<12) + ((Math.min(_'+name+'[1],1.)*4095)|0),$a[$o+'+(o+1)+']=((Math.min(_'+name+'[2],1.) * 4095)<<12) + ((Math.min(_'+name+'[3],1.)*4095)|0)\n'
+				code += indent + '	else if(_'+name+'.length === 2)this.$parseColorPacked(_'+name+'[0], _'+name+'[1],$a,$o+'+o+')\n'
+				code += indent + '	else if(_'+name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+name+'[0]*4095)<<12) + ((_'+name+'[0]*4095)|0)\n'
+				code += indent + '}\n'
+				code += indent + 'if(typeof _'+name+' === "string")this.$parseColorPacked(_'+name+',1.0,$a,$o+'+o+')\n'
+				code += indent + 'else if(typeof _'+name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+name+'*4095)<<12) + ((_'+name+'*4095)|0)\n'
+				return code
+			}
+			// int packing
+			code += indent + 'if(typeof _'+name+' === "object"){\n'
+			code += indent + '	if(_'+name+'.length === 4)$a[$o+'+(o)+']=(_'+name+'[0]+2048<<12) + (_'+name+'[1]+2048|0),$a[$o+'+(o+1)+']=(_'+name+'[2]+2048<<12) + (_'+name+'[3]+2048|0)\n'
+			code += indent + '	else if(_'+name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+name+'[0]+2048)<<12) + ((_'+name+'[0]+2048)|0)\n'
+			code += indent + '}\n'
+			code += indent + 'else if(typeof _'+name+' === "number")$a[$o+'+o+']=$a[$o+'+(o+1)+']=((_'+name+'+2048)<<12) + ((_'+name+'+2048)|0)\n'
+			return code
+		}
+		// no packing
+		code += indent + 'var _' + name + ' = '+ source +'\n'
+		code += indent + 'if(typeof _'+name+' === "object"){\n'
+		code += indent + '	if(_'+name+'.length === 4)$a[$o+'+(o)+']=_'+name+'[0],$a[$o+'+(o+1)+']=_'+name+'[1],$a[$o+'+(o+2)+']=_'+name+'[2],$a[$o+'+(o+3)+']=_'+name+'[3]\n'
+		code += indent + '	else if(_'+name+'.length === 1)$a[$o+'+o+']=$a[$o+'+(o+1)+']=$a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+name+'[0]\n'
+		code += indent + '	else if(_'+name+'.length === 2)this.$parseColor(_'+name+'[0], _'+name+'[1],$a,$o+'+o+')\n'
+		code += indent + '}\n'
+		code += indent + 'else if(typeof _'+name+' === "string")this.$parseColor(_'+name+',1.0,$a,$o+'+o+')\n'
+		code += indent + 'else if(typeof _'+name+' === "number")$a[$o+'+o+'] = $a[$o+'+(o+1)+'] = $a[$o+'+(o+2)+']=$a[$o+'+(o+3)+']=_'+name+'\n'
+		return code
+	}
+	if(prop.type.name === 'vec2'){
+		// check packing
+		var pack = prop.config.pack
+		if(pack){
+			code += indent + 'var _' + name + ' = '+ source +'\n'
+			if(pack === 'float12'){
+				code += indent + 'if(typeof _'+name+' === "object"){\n'
+				code += indent + '	$a[$o+'+(o)+']=((_'+name+'[0]*4095)<<12) + ((_'+name+'[1]*4095)|0)\n'
+				code += indent + '}\n'
+				code += indent + 'else $a[$o+'+o+']=((_'+name+'*4095)<<12) + ((_'+name+'*4095)|0)\n'
+				return code
+			}
+			// int packing
+			code += indent + 'if(typeof _'+name+' === "object"){\n'
+			code += indent + '	$a[$o+'+(o)+']=(_'+name+'[0]+2048<<12) + (_'+name+'[1]+2048|0)\n'
+			code += indent + '}\n'
+			code += indent + 'else if(typeof _'+name+' === "number")$a[$o+'+o+']=((_'+name+')+2048<<12) + ((_'+name+')+2048|0)\n'
+			return code
+		}
+		code += indent + 'var _' + name + ' = '+ source +'\n'
+		code += indent + 'if(typeof _'+name+' === "object"){\n'
+		code += indent + '	$a[$o+'+(o)+']=_'+name+'[0],$a[$o+'+(o+1)+']=_'+name+'[1]\n'
+		code += indent + '}\n'
+		code += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+name+'\n'
+		return code
+	}
+	var slots = prop.slots
+	if(slots === 1){
+		code += indent + '$a[$o+'+o+'] = '+source+'\n'
+		return code
+	}
+	code += indent + 'var _' + name + ' = '+source+'\n'
+	for(let i = 0; i < slots; i++){
+		if(i) code += ','
+		code += '$a[$o+'+(o+i)+']=_'+name+'['+i+']'
+	}
+	code += '\n'
 	return code
 }
 
-function styleStampRootCode(indent, inobj, props, styleProps, styleLevel){
-	var code = ''
-	for(let key in styleProps){
-		var prop = styleProps[key]
-		var name = prop.name
-		if(prop.config.noStyle) continue
-		if(styleLevel && prop.config.styleLevel > styleLevel) continue
-		if(name in props){
-			code += indent+'_'+name+ ' = '+inobj+'._' + name +'\n'
+function decodeKeyFrame(name, value, first){
+	if(value === null) return first? 'from_thisDOT' + name: 'thisDOT' + name
+	if(typeof value === 'string'){
+		var v4 = []
+		if(!types.colorFromString(value, 1.0, v4, 0)){
+			throw this.SyntaxErr(node,'Cant parse color '+node.value)
+		}
+		return 'vec4('+v4[0]+','+v4[1]+','+v4[2]+','+v4[3]+')'
+	}
+	if(Array.isArray(value)){
+		return 'vec'+value.length+'('+value.join(', ')+')'
+	}
+	if(typeof value === 'number') return forceDot(value)
+	return String(value)
+}
+
+
+function sortFrames(a,b){
+	if(a.time > b.time) return 1
+	if(a.time < b.time) return -1
+	return 0
+}
+
+function computePropSizes(instanceProps){
+	var totalSlots = 0
+	for(let key in instanceProps){
+		var prop = instanceProps[key]
+		var slots = prop.type.slots
+		if(prop.config.pack){
+			if(prop.type.name === 'vec4'){
+				slots = 2
+			}
+			else if(prop.type.name === 'vec2'){
+				slots = 1
+			}
+			else throw new Error('Cant use packing on non vec2 or vec4 type for '+key)
+		}
+
+		// figure out if we have a from or a to
+		var hasFrom = false
+		var hasTo = false
+
+		var states = prop.states
+		if(states){ // no states, we'll just keep 1 slot
+			for(var stateName in states){
+				var state = states[stateName]
+				var frames = state.frames
+
+				frames.sort(sortFrames)
+				
+				if(frames[0].time != 0){
+					frames.unshift({
+						time:0,
+						value:null
+					})
+				}
+				var first = frames[0]
+				var last = frames[frames.length-1]
+				if(first.time !== 0 || first.value === null) hasFrom = true
+				if(last.time !== 0 && last.value === null) hasTo = true
+			}				
+		}
+		else{
+			hasTo = true
+		}
+
+		prop.hasFrom = hasFrom
+		prop.hasTo = hasTo
+		prop.offset = totalSlots
+		if(hasFrom) totalSlots += slots
+		if(hasTo) totalSlots += slots
+		if(!hasFrom && !hasTo) prop.slots = 0
+		else prop.slots = slots
+	}
+	return totalSlots		
+}
+
+
+function computePropStates(states, instanceProps){
+	// takes the 'states' property and computes states+frames per property
+	// including per keyframe easing
+	var names = []
+	var statedProps = {}
+	
+	for(var stateName in states){
+		names.push(stateName)
+		var frames = states[stateName]
+		// last and next values
+		for(var ts in frames){
+			var frame = frames[ts]
+			
+			if(ts === 'from') ts = 0.
+			else if(ts === 'to') ts = 1.
+			else if(parseFloat(ts) == ts) ts = ts * 0.01
+			else continue
+
+			var timing = {
+				tween:'linear'
+			}
+			for(var prop in frame){
+				var ip = instanceProps['thisDOT'+prop]
+
+				if(prop in keyframeTiming){ // its a timing prop
+					timing[prop] = frame[prop]
+					continue
+				}
+				if(!ip) throw new Error("Property "+prop+" keyframed but not found in shader")
+				// store our timing info
+				ip.timing = timing
+				statedProps[prop] = 1
+				if(!ip.states) ip.states = {}
+				var state = ip.states[stateName]
+				if(!state) ip.states[stateName] = state = {}
+				if(!state.frames) state.frames = []
+				var value = frame[prop]
+				if(value && value.constructor === Object){
+					// its a per key timing object
+					ip.timing = value
+					value = value.value
+				}
+				state.frames.push({
+					time:ts,
+					value:value
+				})
+			}
 		}
 	}
-	return code
+}
+
+function defineStructs(structs){
+	// define structs
+	var out = ''
+	for(let key in structs){
+		var struct = structs[key]
+		// lets output the struct
+		out += '\nstruct ' + key + '{\n'
+		var fields = struct.fields
+		for(let fieldname in fields){
+			var field = fields[fieldname]
+			out += '	'+field.name +' '+fieldname+';\n'
+		}
+		out += '};\n'
+	}
+	return out
+}
+
+function forceDot(num){
+	var str = String(num)
+	if(str.indexOf('.') === -1) return str+'.0'
+	return str
 }

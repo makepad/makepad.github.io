@@ -38,13 +38,11 @@ module.exports = class CodeBlock extends require('base/shader'){
 
 		this.verbs = {
 			$setTweenStart:function(o, v){
-				this.$PROPVARDEF()
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(x, y, w, h, w2, h2, indent, pickId, style){
-				this.$ALLOCDRAW(1, true)
+				this.$ALLOCDRAW(1)
 				this.$WRITEPROPS({
-					$fastWrite:true,
 					visible:1,
 					delay:0.,
 					fontSize:this.$fastTextFontSize,

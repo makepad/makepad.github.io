@@ -15,6 +15,10 @@ module.exports = class App extends require('base/view'){
 		this.name = 'App'
 		this.cursor = 'default'
 		this.style = require('styles/dark')
+		this.x = 0
+		this.y = 0
+		this.w = '100%'
+		this.h = '100%'
 	}
 
 	constructor(){
@@ -46,8 +50,8 @@ module.exports = class App extends require('base/view'){
 		app.camPosition = mat4.create()
 		app.camProjection = mat4.create()
 		
-		var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
-		app.painterUbo = new painter.Ubo(painterUboDef)
+		//var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
+		app.painterUbo = new painter.Ubo(this.$painterUboDef)
 
 		app._frameId = 0
 

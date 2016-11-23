@@ -53,6 +53,24 @@ module.exports = class View extends require('base/class'){
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
 
+		this.$todoUboDef = {
+			thisDOTtodoId:{type:{slots:1,name:'float'}},
+			thisDOTviewInverse:{type:{slots:16,name:'mat4'}},
+			thisDOTviewPosition:{type:{slots:16,name:'mat4'}},
+			thisDOTviewScroll:{type:{slots:1,name:'vec2'}},
+			thisDOTviewSpace:{type:{slots:1,name:'vec4'}}
+		}
+
+		this.$painterUboDef = {
+			thisDOTcamPosition:{type:{slots:16,name:'mat4'}},
+			thisDOTcamProjection:{type:{slots:16,name:'mat4'}},
+			thisDOTfingerInfo:{type:{slots:16,name:'mat4'}},
+			thisDOTpixelRatio:{type:{slots:16,name:'float'}},
+			thisDOTtime:{type:{slots:16,name:'float'}},
+			thisDOTvertexPostMatrix:{type:{slots:16,name:'mat4'}},
+			thisDOTworkerId:{type:{slots:16,name:'float'}},
+		}
+		/*
 		this.tools = {
 			ScrollBar: require('stamps/scrollbar'),
 			Debug:require('shaders/quad'),
@@ -92,7 +110,7 @@ module.exports = class View extends require('base/class'){
 					}
 				}
 			})
-		}
+		}*/
 
 		//this.viewId = 0
 		this._onVisible = 8
@@ -207,8 +225,14 @@ module.exports = class View extends require('base/class'){
 
 	$createTodo(){
 		var todo = new painter.Todo()
-		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
-		todo.todoUbo = new painter.Ubo(todoUboDef)
+
+		//var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
+		
+		// we need the todo ubo part
+		// how do we get it without compiling it.
+
+		//console.log(todoUboDef)
+		todo.todoUbo = new painter.Ubo(this.$todoUboDef)
 		todo.view = this
 		return todo
 	}
@@ -546,7 +570,6 @@ module.exports = class View extends require('base/class'){
 		turtle._y = this._y
 		turtle._w = this._w
 		turtle._h = this._h
-
 		this.$turtleStack.len = 0
 
 		// lets set up a clipping rect IF we know the size
