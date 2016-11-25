@@ -7,8 +7,10 @@ module.exports = class Text extends require('base/shader'){
 	prototype(){
 		this.props = {
 			//visible:{noTween:1, value:1.},
-			x:{noInPlace:1, value:NaN},
-			y:{noInPlace:1, value:NaN},
+			x:NaN,
+			y:NaN,
+			dx:0,
+			dy:0,
 
 			color:{pack:'float12', value:'black'},
 			outlineColor:{pack:'float12', value:'white'},
@@ -26,64 +28,67 @@ module.exports = class Text extends require('base/shader'){
 			boldness:0, 
 			shadowOffset: {pack:'int12', value:[0., 0.]},
 
-			unicode:{noStyle:1, value:0},
+			unicode:{mask:0, value:0},
 			
 			// character head/tail margin and advance
-			advance:{noStyle:1, noTween:1, value:0},
-			head:{noStyle:1, noTween:1, value:0},
-			tail:{noStyle:1, noTween:1, value:0},
+			advance:{mask:0, noTween:1, value:0},
+			head:{mask:0, noTween:1, value:0},
+			tail:{mask:0, noTween:1, value:0},
 
 			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
-			down: {styleLevel:1, value:0},
-			align: {styleLevel:1, value:[undefined,undefined]},
-			wrapping:{styleLevel:1, value:'line'},
-			margin:{styleLevel:1, value:[0,0,0,0]},
-			noBounds: {styleLevel:1, value:0},
-			text:{styleLevel:1, value:''},
+			down: {value:0},
+			align: {value:[undefined,undefined]},
+			wrapping:{value:'line'},
+			margin:{value:[0,0,0,0]},
+			//noBounds: {mask:0, value:0},
 
-			x1:{noStyle:1, noTween:1, value:0},
-			y1:{noStyle:1, noTween:1, value:0},
-			x2:{noStyle:1, noTween:1, value:0},
-			y2:{noStyle:1, noTween:1, value:0},
-			tx1:{noStyle:1, noTween:1, value:0},
-			ty1:{noStyle:1, noTween:1, value:0},
-			tx2:{noStyle:1, noTween:1, value:0},
-			ty2:{noStyle:1, noTween:1, value:0}
+			text:'',
+
+			x1:{mask:0, value:0},
+			y1:{mask:0, value:0},
+			x2:{mask:0, value:0},
+			y2:{mask:0, value:0},
+			tx1:{mask:0, value:0},
+			ty1:{mask:0, value:0},
+			tx2:{mask:0, value:0},
+			ty2:{mask:0, value:0}
 		}
 
 		this.lineSpacing = 1.3
 
-		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+		this.mesh = new painter.Mesh(types.vec3).push(
 			0, 0, 0,
 			0, 1, 0,
 			1, 0, 0,
 			1, 1, 0
-		).pushQuad(
+		).push(
 			0,0, 1,
 			1,0, 1,
 			0, 1, 1,
 			1, 1, 1
 		)
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3,4,5,6,6,5,7)
 
 		this.verbs = {
 			$length:function(){
-				return this.$PROPLEN
+				return this.PROPLEN
 			},
 			$readOffset:function(o){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
 				if(!this.$shaders.NAME) return {}
-				var len = this.$PROPLEN
+				var len = this.PROPLEN
 				if(o < 0 || o >= len) return
 				var read = {
-					x:this.$PROP(o, 'x'),
-					y:this.$PROP(o, 'y'),
-					head:this.$PROP(o, 'head'),
-					advance:this.$PROP(o, 'advance'),
-					tail:this.$PROP(o, 'tail'),
-					fontSize:this.$PROP(o, 'fontSize'),
-					italic:this.$PROP(o, 'italic')
+					x:this.PROP(o, 'x'),
+					y:this.PROP(o, 'y'),
+					head:this.PROP(o, 'head'),
+					advance:this.PROP(o, 'advance'),
+					tail:this.PROP(o, 'tail'),
+					fontSize:this.PROP(o, 'fontSize'),
+					italic:this.PROP(o, 'italic')
 				}
 				read.w = (read.head + read.advance + read.tail) * read.fontSize
 				read.lineSpacing = proto.lineSpacing
@@ -94,16 +99,16 @@ module.exports = class Text extends require('base/shader'){
 			$seekPos:function(x, y){
 				// lets find where we are inbetween
 				if(!this.$shaders.NAME) return {}
-				var len = this.$PROPLEN
+				var len = this.PROPLEN
 				var lineSpacing = this.NAME.prototype.lineSpacing
 				if(len === 0){
 					return 0
 				}
 				for(var i = 0; i < len; i++){
-					var tx = this.$PROP(i, 'x')
-					var ty = this.$PROP(i, 'y')
-					var fs = this.$PROP(i, 'fontSize')
-					var total = this.$PROP(i, 'advance') + this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+					var tx = this.PROP(i, 'x')
+					var ty = this.PROP(i, 'y')
+					var fs = this.PROP(i, 'fontSize')
+					var total = this.PROP(i, 'advance') + this.PROP(i, 'head') + this.PROP(i, 'tail')
 
 					var xw = total * fs
 					if(ty >= y){
@@ -130,11 +135,11 @@ module.exports = class Text extends require('base/shader'){
 				var curBox
 				var lty, ltx, lfs, lad
 				for(let i = start; i < end; i++){
-					var tx = this.$PROP(i, 'x')
-					var ty = this.$PROP(i, 'y')
-					var fs = this.$PROP(i, 'fontSize')
-					var advance = this.$PROP(i, 'advance')
-					var total = abs(advance) +  this.$PROP(i, 'head') + this.$PROP(i, 'tail')
+					var tx = this.PROP(i, 'x')
+					var ty = this.PROP(i, 'y')
+					var fs = this.PROP(i, 'fontSize')
+					var advance = this.PROP(i, 'advance')
+					var total = abs(advance) +  this.PROP(i, 'head') + this.PROP(i, 'tail')
 
 					if(curBox && lty !== undefined && lty !== ty){
 						curBox.w = (ltx + lfs * lad) - curBox.x
@@ -152,11 +157,12 @@ module.exports = class Text extends require('base/shader'){
 				return boxes
 			},
 			$resetBuffer:function(){
-				this.$PROPLEN = 0
+				this.PROPLEN = 0
 			},
 			draw:function(overload){
 				var turtle = this.turtle
-				this.$STYLEPROPS(overload, 1)
+
+				this.STYLEPROPS(overload, 1)
 
 				var absx = turtle._x !== undefined
 				var absy = turtle._y !== undefined
@@ -164,14 +170,13 @@ module.exports = class Text extends require('base/shader'){
 				var txt = turtle._text
 				var len = txt.length
 		
-				this.$ALLOCDRAW(len)
+				this.ALLOCDRAW(overload, len)
 
 				// lets fetch the font
 				var glyphs = this.NAME.prototype.font.fontmap.glyphs
 				var lineSpacing = this.NAME.prototype.lineSpacing
 				var wrapping = turtle._wrapping
 				var fontSize = turtle._fontSize
-			
 
 				var off = 0
 
@@ -223,12 +228,13 @@ module.exports = class Text extends require('base/shader'){
 					if(!absx) turtle._x = NaN
 					if(!absy) turtle._y = NaN
 					absx = absy = false
+
 					turtle.walk()
 
 					for(let i = start; i < off; i++){
 						var unicode = txt.charCodeAt(i)
 						var g = glyphs[unicode] || glyphs[63]
-						this.$WRITEPROPS({
+						this.WRITEPROPS({
 							advance:g.advance,
 							head:0.,
 							tail:0.,
@@ -284,7 +290,7 @@ module.exports = class Text extends require('base/shader'){
 		)
 
 		// clip the rect
-		var shift = vec2(-this.viewScroll.x*this.moveScroll, -this.viewScroll.y*this.moveScroll)
+		var shift = vec2(-this.viewScroll.x*this.moveScroll+this.dx, -this.viewScroll.y*this.moveScroll+this.dy)
 
 		if(this.mesh.z < 0.5){
 			shift += this.shadowOffset.xy

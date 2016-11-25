@@ -10,9 +10,13 @@ module.exports = class Quad extends require('base/shader'){
 
 			x: NaN,
 			y: NaN,
+			dx:0,
+			dy:0,
 			w: NaN,
 			h: NaN,
 			z: 0,
+			dx:0,
+			dy:0,
 
 			down: {value:0},
 			align: {value:[undefined,undefined]},
@@ -29,8 +33,11 @@ module.exports = class Quad extends require('base/shader'){
 			mesh:{kind:'geometry', type:types.vec2},
 		}
 
+
 		var x = new painter.Mesh(types.vec2)
-		this.mesh = new painter.Mesh(types.vec2).pushQuad(0,0,0,1,1,0,1,1)
+		this.mesh = new painter.Mesh(types.vec2).push(0,0,0,1,1,0,1,1)
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3)
 
 		this.verbs = {
 			draw:function(overload){
@@ -44,8 +51,8 @@ module.exports = class Quad extends require('base/shader'){
 				this.ALLOCDRAW(overload)
 				this.beginTurtle()
 			},
-			end:function(doBounds){
-				var ot = this.endTurtle(doBounds)
+			end:function(){
+				var ot = this.endTurtle()
 				this.turtle.walk(ot)
 				this.WRITEPROPS()
 			}
@@ -62,7 +69,7 @@ module.exports = class Quad extends require('base/shader'){
 	}
 
 	scrollAndClip(meshxy, delta){
-		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll) + delta
+		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll+this.dx, this.y - this.viewScroll.y*this.moveScroll+this.dy) + delta
 		var size = vec2(max(0.,this.w), max(0.,this.h))
 		
 		this.mesh.xy = (clamp(

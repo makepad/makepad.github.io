@@ -2,7 +2,7 @@
 return require('base/app').extend({
 
 	tools:{
-		Bg: require('shaders/rect').extend({
+		Bg: require('shaders/rounded').extend({
 		}),
 		Quad: require('shaders/quad').extend({
 		}),

@@ -18,33 +18,35 @@ module.exports = class Rounded extends require('./quad'){
 			mesh:{kind:'geometry', type:types.vec3},
 		}
 
-		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+		this.mesh = new painter.Mesh(types.vec3).push(
 			0,0, 0,
 			1,0, 0,
 			0, 1, 0,
 			1, 1, 0
 		)
-		.pushQuad(
+		.push(
 			0,0, 1,
 			1,0, 1,
 			0, 1, 1,
 			1, 1, 1
 		)
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3,4,5,6,6,5,7)
 
 		this.verbs = {
 			$readOffset:function(o){
-				var len = this.$PROPLEN()
+				var len = this.PROPLEN()
 				if(o < 0 || o >= len) return
 				return {
-					x:this.$PROP(o, 'x'),
-					y:this.$PROP(o, 'y'),
-					w:this.$PROP(o, 'w'),
-					h:this.$PROP(o, 'h')
+					x:this.PROP(o, 'x'),
+					y:this.PROP(o, 'y'),
+					w:this.PROP(o, 'w'),
+					h:this.PROP(o, 'h')
 				}
 			},
 			begin:function(overload){
-				this.$STYLEPROPS(overload, 2)
-				this.$ALLOCDRAW()
+				this.STYLEPROPS(overload, 3)
+				this.ALLOCDRAW(overload)
 				var t = this.turtle
 				t.shiftPadding(t._borderWidth)
 				this.beginTurtle()

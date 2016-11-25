@@ -167,6 +167,7 @@ module.exports = class Tools extends require('base/class'){
 
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
+		props.shaderProto = proto
 		// create a vao
 		var vao = shader.$vao = new painter.Vao(shader)
 
@@ -258,6 +259,7 @@ module.exports = class Tools extends require('base/class'){
 			var mainargs = marg[1].match(argSplitRx) || []
 			var scope = {}
 			code = code.replace(macroRx, function(m, indent, fnname, args){
+				if(fnname === 'NAME') return m
 				// if args are not a {
 				var macroArgs
 				if(typeof args === 'string'){ 
@@ -273,7 +275,7 @@ module.exports = class Tools extends require('base/class'){
 				}
 				var fn = sourceProto[fnname]
 				if(!fn) throw new Error('CanvasMacro: '+fnname+ ' does not exist')
-				return sourceProto[fnname](macroArgs, indent, className, scope, target)
+				return sourceProto[fnname](macroArgs, indent, className, scope, target, code)
 			})
 			code = code.replace(nameRx,className)
 
@@ -402,7 +404,7 @@ var argRx = new RegExp(/([a-zA-Z\_\$][a-zA-Z0-9\_\$]*)\s*\:\s*([^\,\}]+)/g)
 var comment1Rx = new RegExp(/\/\*[\S\s]*?\*\//g)
 var comment2Rx = new RegExp(/\/\/[^\n]*/g)
 var mainArgRx = new RegExp(/function\s*[a-zA-Z\_\$]*\s*\(([^\)]*?)/)
-var macroRx = new RegExp(/([\t]*)this\.([A-Z][A-Z0-9\_]*)(?:\s*[\(\[]([^\)\]]*)[\)\]])?/g)
+var macroRx = new RegExp(/([\t]*)this\.([A-Z][A-Z0-9\_]+)(?:\s*[\(\[]([^\)\]]*)[\)\]])?/g)
 var argSplitRx = new RegExp(/[^,\s]+/g)
 var nameRx = new RegExp(/NAME/g)
 var fnnameRx = new RegExp(/^function\s*\(([^\)]*?)\)[^\}]*?\{/)

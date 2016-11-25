@@ -1,11 +1,7 @@
-
-module.exports = class MakepadStyle extends require('base/style'){
+module.exports = class DarkStyle extends require('base/style'){
 	prototype(){
-
 		this.anims = {
-			tween:2,
-			duration:0.2,
-			ease:[0,10,0,0]
+			openAnim:{fn:'ease', begin:10, end:10}
 		}
 
 		this.fonts = {
@@ -50,15 +46,15 @@ module.exports = class MakepadStyle extends require('base/style'){
 		}
 	}
 
-	match(){
+	match(path){
 		var style = this
 		// all Text things except icon get this font
-		if(style.module('/libs/shaders/text')) style.to = {
+		if(path == '/libs/shaders/text.js') style.to = {
 			font: style.fonts.mono
 		}
 
 		// all Text things except icon get this font
-		if(style.module('/libs/shaders/icon')) style.to = {
+		if(path == '/libs/shaders/icon.js') style.to = {
 			font: style.fonts.icon
 		}
 	}

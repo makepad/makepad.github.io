@@ -179,7 +179,7 @@ module.exports = class View extends require('base/class'){
 
 		if(overload){
 			for(let key in overload){
-				this[key] = overload[key]
+				this['_'+key] = overload[key]
 			}
 		}
 	}
@@ -497,9 +497,8 @@ module.exports = class View extends require('base/class'){
 			stamp.$shaders = this.$shaders[classname]
 			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[classname] = {})
 		}
-		stamp.initState(args)
 		stamp.turtle = turtle
-		turtle._pickId = stamp.$pickId
+		//turtle._pickId = stamp.$pickId
 		return stamp
 	}
 
@@ -559,6 +558,9 @@ module.exports = class View extends require('base/class'){
 		if(this.parent){ // push us into the displacement list
 			this.parent.$writeList.push(this,-1,-1)
 		}
+
+		// clear our write list
+		this.$writeList.length = 0
 
 		// set input props
 		turtle._margin = this._margin

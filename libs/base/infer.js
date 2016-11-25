@@ -651,7 +651,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 					this.instanceProps[fullname] = {
 						type:type,
 						name:propname,
-						config:{type:type}
+						config:{type:type,mask:1}
 					}
 
 					node.infer = {

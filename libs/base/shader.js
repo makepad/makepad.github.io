@@ -265,60 +265,6 @@ module.exports = class Shader extends require('base/compiler'){
 		return 0
 	}
 	
-	//
-	//
-	// Distance fields
-	//
-	
-	/*
-	unionDistance(f1, f2) {
-		return min(f1, f2)
-	}
-	
-	intersectDistance(f1, f2) {
-		return max(f1, f2)
-	}
-	
-	subtractDistance(f1, f2) {
-		return max( - f1, f2)
-	}
-	
-	blendDistance(a, b, k) {
-		var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
-		return mix(b, a, h) - k * h * (1.0 - h)
-	}
-	
-	boxDistance(p, x, y, w, h, r) {
-		var size = vec2(.5 * w, .5 * h)
-		return length(max(abs(p - vec2(x, y) - size) - (size - vec2(2. * r)), 0.)) - 2. * r
-	}
-	
-	circleDistance(p, x, y, r) {
-		return distance(p, vec2(x, y)) - r
-	}
-	
-	lineDistance(p, x1, y1, x2, y2, r) {
-		var a = vec2(x1, y1)
-		var b = vec2(x2, y2)
-		var pa = p - a
-		var ba = b - a
-		return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)) - r
-	}
-	
-	
-	colorSolidDistance(antialias, field, fill) {
-		return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
-	}
-	
-	colorBorderDistance(antialias, field, borderWidth, fill, border) {
-		if(borderWidth < 0.001) return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
-		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
-		return this.premulAlpha(mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.)))
-	}
-	
-	animateUniform(uni) {$
-		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w - uni.z) + uni.z
-	}*/
 		
 	antialias(p) {
 		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))

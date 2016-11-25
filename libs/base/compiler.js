@@ -111,6 +111,12 @@ module.exports = class Compiler extends require('base/class'){
 				return // shaders are class things
 			}
 			var deps = this.$methodDeps
+
+			if(this._states !== deps.states){
+				this.$compileShader()
+				return
+			}
+
 			for(let key in deps){
 				if(this[key] !== deps[key]){
 					this.$compileShader()
@@ -121,7 +127,9 @@ module.exports = class Compiler extends require('base/class'){
 	}
 
 	$compileShader(){
-		this.$methodDeps = {}
+		this.$methodDeps = {
+			states:this._states
+		}
 
 		// compile shaders
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions)
@@ -184,7 +192,7 @@ module.exports = class Compiler extends require('base/class'){
 				var frames = propState.frames
 				var code = ''
 				var last = undefined
-				var duration = state.duration || 1.
+				var duration = state.duration || 0.
 
 				for(var i = frames.length - 1; i>=0; i--){
 					var next = frames[i]
@@ -222,10 +230,10 @@ module.exports = class Compiler extends require('base/class'){
 			let state = states[key]
 			let id = stateId++
 			stateIds[key] = id
-			stateDuration[key] = (state.duration || 1.) * (state.repeat || 1.)
+			stateDuration[key] = (state.duration || 0.) * (state.repeat || 1.)
 			stateDelay[key] = state.delay || 0.
 			initvars += '\tif(thisDOTanimState == '+id+'.){\n'
-			var div = forceDot(state.duration||1.)
+			var div = forceDot(state.duration||0.)
 			if(div !== '1.0'){
 				initvars += '\t\tT/='+div+';\n'
 			}
@@ -469,10 +477,12 @@ module.exports = class Compiler extends require('base/class'){
 			return
 		}
 
-		this.$stateIds = stateIds
-		this.$stateDelay = stateDelay
-		this.$stateDuration = stateDuration
+		this.$toolCacheKey = pixel+vertex
+
 		var info = this.$compileInfo = {
+			stateDuration:stateDuration,
+			stateDelay:stateDelay,
+			stateIds:stateIds,
 			name:this.name || this.constructor.name,
 			trace:this.drawTrace,
 			instanceProps:instanceProps,
@@ -483,12 +493,10 @@ module.exports = class Compiler extends require('base/class'){
 			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
-			propSlots:totalSlots
+			propSlots:totalSlots,
+			interrupt:this.$generateAnimInterrupt(instanceProps)
 		}
-
-		this.$generateAnimInterrupt()
-
-		this.$toolCacheKey = pixel+vertex
+		
 		if(this.dump) console.log(vertex,pixel)
 
 		// push our compilation up the protochain as far as we can
@@ -505,133 +513,126 @@ module.exports = class Compiler extends require('base/class'){
 		}
 	}
 
-	$generateAnimInterrupt(){
+	$generateAnimInterrupt(instanceProps){
 		var cache = this.$interruptCache[this.$toolCacheKey]
+		if(cache) return cache
 
-		if(!cache){
+		// per state property tweening/animation values
+		var states = this._states
 
-			var info = this.$compileInfo
-			var instanceProps = info.instanceProps
+		var stateCode = {}
+		var code = '' // args $a, $o, $t
 
-			// per state property tweening/animation values
-			var states = this._states
+		// compute T from the array
+		code += '\tvar T = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
+		code += '\tvar animState = $a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
 
-			var stateCode = {}
-			var code = '' // args $a, $o, $t
+		for(let key in instanceProps){
+			var prop = instanceProps[key]
+			var slots = prop.slots
+			var propOff = 0
+			var offset = prop.offset
 
-			// compute T from the array
-			code += '\tvar T = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
-			code += '\tvar animState = $a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
+			if(!prop.hasFrom) continue // if we dont have a from, dont need to compute interrupt
 
-			for(let key in instanceProps){
-				var prop = instanceProps[key]
-				var slots = prop.slots
-				var propOff = 0
-				var offset = prop.offset
+			for(let i = 0; i < slots; i++){
+				code += '\tvar from_'+key+'_'+i+' = $a[$o+' + (offset + i)+']\n'
+			}
 
-				if(!prop.hasFrom) continue // if we dont have a from, dont need to compute interrupt
-
+			if(prop.hasTo){
 				for(let i = 0; i < slots; i++){
-					code += '\tvar from_'+key+'_'+i+' = $a[$o+' + (offset + i)+']\n'
-				}
-
-				if(prop.hasTo){
-					for(let i = 0; i < slots; i++){
-						code += '\tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
-					}
-				}
-
-				// animation timeline
-				let propStates = prop.states
-				for(var stateName in propStates){
-					var propState = propStates[stateName]
-					var state = states[stateName]
-					var frames = propState.frames
-					var frag = ''
-					var last = undefined
-					var duration = state.duration || 1.
-					for(let f = frames.length - 1; f>=0; f--){
-						var next = frames[f]
-						if(last){
-							if(f == 0) frag += '\t\telse{\n'
-							else frag += '\t\telse if(T>=' + next.at + '){\n'
-							// insert tweening code
-							if(last.time && last.call){
-								frag += 'T = $proto.'+ last.time.fn+last.call+'\n'
-							}
-							frag += '\t\t\tlet D = (T - '+next.at+')/'+(last.at-next.at)+', ND = 1 - D\n'
-							let nvec = next.value
-							let nv = nvec
-							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
-							let lvec = last.value
-							let lv = lvec
-							if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
-							for(let i = 0; i < slots; i++){
-								frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
-								if(nv === null) frag += 'from_'+key+'_'+i	
-								else frag += slots>1?nvec[i]:nvec
-								frag += '*ND + D*'
-								if(lv === null) frag += 'to_'+key+'_'+i	
-								else frag += slots>1?lvec[i]:lvec
-								frag += '\n'
-							}
-							frag += '\t\t}\n'
-						}
-						else{
-							frag += '\t\tif(T>=1.){\n'
-							let nvec = next.value
-							let nv = nvec
-							if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
-							for(let i = 0; i < slots; i++){
-								frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
-								if(nv === null) frag += 'to_'+key+'_'+i	
-								else frag += slots>1?nvec[i]:nvec
-								frag += '\n'
-							}
-							frag += '\t\t}\n'
-						}
-						last = next
-					}
-					stateCode[stateName] = (stateCode[stateName] || '') + frag
+					code += '\tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
 				}
 			}
-			var stateId = 1
-			for(let key in states){
-				let state = states[key]
-				let id = stateId++
-				code += '\tif(animState == '+id+'.){\n'
-				var div = forceDot(state.duration||1.)
-				if(div !== '1.0'){
-					code += '\t\tT/='+div+';\n'
-				}
-				// now we loop and/or bounce
-				if(state.repeat){
-					if(state.bounce){
-						if(state.repeat === Infinity){
-							code += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
+
+			// animation timeline
+			let propStates = prop.states
+			for(var stateName in propStates){
+				var propState = propStates[stateName]
+				var state = states[stateName]
+				var frames = propState.frames
+				var frag = ''
+				var last = undefined
+				var duration = state.duration || 0.
+				for(let f = frames.length - 1; f>=0; f--){
+					var next = frames[f]
+					if(last){
+						if(f == 0) frag += '\t\telse{\n'
+						else frag += '\t\telse if(T>=' + next.at + '){\n'
+						// insert tweening code
+						if(last.time && last.call){
+							frag += 'T = $proto.'+ last.time.fn+last.call+'\n'
 						}
-						else{
-							code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
+						frag += '\t\t\tlet D = (T - '+next.at+')/'+(last.at-next.at)+', ND = 1 - D\n'
+						let nvec = next.value
+						let nv = nvec
+						if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
+						let lvec = last.value
+						let lv = lvec
+						if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
+						for(let i = 0; i < slots; i++){
+							frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+							if(nv === null) frag += 'from_'+key+'_'+i	
+							else frag += slots>1?nvec[i]:nvec
+							frag += '*ND + D*'
+							if(lv === null) frag += 'to_'+key+'_'+i	
+							else frag += slots>1?lvec[i]:lvec
+							frag += '\n'
 						}
+						frag += '\t\t}\n'
 					}
 					else{
-						if(state.repeat === Infinity){
-							code += '\t\tT = mod(T,1.);\n'
+						frag += '\t\tif(T>=1.){\n'
+						let nvec = next.value
+						let nv = nvec
+						if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
+						for(let i = 0; i < slots; i++){
+							frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+							if(nv === null) frag += 'to_'+key+'_'+i	
+							else frag += slots>1?nvec[i]:nvec
+							frag += '\n'
 						}
-						else{
-							code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
-						}
+						frag += '\t\t}\n'
+					}
+					last = next
+				}
+				stateCode[stateName] = (stateCode[stateName] || '') + frag
+			}
+		}
+		var stateId = 1
+		for(let key in states){
+			let state = states[key]
+			let id = stateId++
+			code += '\tif(animState == '+id+'.){\n'
+			var div = forceDot(state.duration||0.)
+			if(div !== '1.0'){
+				code += '\t\tT/='+div+';\n'
+			}
+			// now we loop and/or bounce
+			if(state.repeat){
+				if(state.bounce){
+					if(state.repeat === Infinity){
+						code += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
+					}
+					else{
+						code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
 					}
 				}
-				// run easing functions over T
-
-				code += stateCode[key]
-				code += '\t\treturn\n\t}\n'
+				else{
+					if(state.repeat === Infinity){
+						code += '\t\tT = mod(T,1.);\n'
+					}
+					else{
+						code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
+					}
+				}
 			}
-			cache = this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
-		}
+			// run easing functions over T
 
-		this.$interruptAnim = cache
+			code += stateCode[key]
+			code += '\t\treturn\n\t}\n'
+		}
+		return this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
 	}
 
 	// $STYLEPROPS(overload, mask)
@@ -648,13 +649,17 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$proto = 'this.'+className+'.prototype\n'
 
 		var mask = args[1] || 1
-
 		// overload or class
 		for(let key in styleProps){
 			var prop = styleProps[key]
 			if(!(prop.config.mask&mask)) continue
 			var name = prop.name
-			code += 'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
+			if(key === 'state'){
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
+			}
+			else{
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
+			}
 		}
 
 		return code
@@ -673,6 +678,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		// define scope vars
 		scope.$view = 'this.view'
+		scope.$todo = '$view.todo'
 		scope.$shader = 'this.$shaders.'+className+' || this.$allocShader("'+className+'")' 
 		scope.$props = '$shader.$props'
 		scope.$proto = 'this.' + className +'.prototype'
@@ -685,7 +691,6 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'	$props.updateMesh()\n'
 		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
-		code += indent+'	var $todo = $view.todo\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
@@ -720,7 +725,7 @@ module.exports = class Compiler extends require('base/class'){
 			var sampler = samplers[key]
 
 			var thisname = key.slice(7)
-			var source = args[0]+' && '+args[0]+'.'+thisname+' || $proto.'+thisname
+			var source = (args[0]!=='null'?args[0]+' && '+args[0]+'.'+thisname+' || ':'')+'$proto.'+thisname
 
 			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
 		}
@@ -730,7 +735,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		code += indent + 'var $propsLength = $props.length\n\n'
 		code += indent + 'var $need = min($propsLength + '+allocNeeded+',$proto.propAllocLimit)\n'
-		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need)\n'
+		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need), $a = $props.array\n'
 
 		if(!this.$noWriteList){
 			code += indent + '$view.$writeList.push($props, $propsLength, $need)\n'
@@ -813,7 +818,7 @@ module.exports = class Compiler extends require('base/class'){
 		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
 	}
 
-	WRITEPROPS(args, indent, className, scope){
+	WRITEPROPS(args, indent, className, scope, target, source){
 		if(!this.$compileInfo) return ''
 
 		// load the turtle
@@ -824,20 +829,25 @@ module.exports = class Compiler extends require('base/class'){
 		if(!scope.$shader) scope.$shader = 'this.$shaders.'+className 
 		scope.$view = 'this.view'
 		scope.$props = '$shader.$props'
+		scope.$todo = '$view.todo'
 		scope.$proto = 'this.' + className +'.prototype'
+		scope.$info = '$proto.$compileInfo'
 		scope.$a = '$props.array'
-		scope.$turtle = 'this.turtle'
 		
-
 		// start the writing process
 		var code = ''
-		code += 'var $state = $turtle._state\n'
+		if(source.indexOf('this.endTurtle') !== -1){
+			code += indent + 'var $turtle = this.turtle\n'
+		}
+		else scope.$turtle = 'this.turtle'
+		
+		code += indent + 'var $state = $turtle._state\n'
 		code += indent + '$props.dirty = true\n'
 		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
 		// lets execute
 		code += indent + 'var $last = $a[$o+' + instanceProps.thisDOTanimState.offset+']\n'
-		code += indent + 'if($last) $proto.$interruptAnim($a, $o, $view._time, $proto)\n'
-		code += indent + 'var $max = $view._time + $proto.$stateDuration[$state]\n'
+		code += indent + 'if($last) $info.interrupt($a, $o, $view._time, $proto)\n'
+		code += indent + 'var $max = $view._time + $info.stateDuration[$state]\n'
 		code += indent + 'if($max>$todo.timeMax) $todo.timeMax = $max\n'
 
 		// write properties.
@@ -849,15 +859,18 @@ module.exports = class Compiler extends require('base/class'){
 			var source = '$turtle._' + prop.name
 			if(!prop.config.mask){ // system values
 				if(key === 'thisDOTanimStart'){ // now?
-					source = '$view._time + $proto.$stateDelay[$state]'
+					source = '$view._time + $info.stateDelay[$state]'
 				}
 				else if(key === 'thisDOTanimState'){ // decode state prop
-					source = '$proto.$stateIds[$state] || 0'
+					source = '$info.stateIds[$state] || 1'
 				}
 				else if(key === 'thisDOTpickId'){ 
 					source = '$turtle._pickId'
 				}
-				else throw new Error('Unknown key with mask 0 ' + key)
+				else{
+					source = args[0][prop.name]
+					if(!source) throw new Error('Unknown key with mask 0 ' + key)
+				}
 			}
 			if(prop.hasFrom){ // initialize from from the write value if first write
 				last += packProp(indent, prop, 0, source)
@@ -901,10 +914,10 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 			var start = prop.offset + off
 			var p1 = decodePropSlot(start, lastSlot, totalSlots)
 			var p2 = decodePropSlot(start+1, lastSlot, totalSlots)
-			vpre += 'floor('+p1+'/4096.0)'
-			vpre += ',mod('+p1+',4096.0)'
-			vpre += ',floor('+p2+'/4096.0)' 
-			vpre += ',mod('+p2+',4096.0)' 
+			res += 'floor('+p1+'/4096.0)'
+			res += ',mod('+p1+',4096.0)'
+			res += ',floor('+p2+'/4096.0)' 
+			res += ',mod('+p2+',4096.0)' 
 			if(pack === 'float12') res += ')/4095.0'
 			else if(pack === 'int12') res += ')-2048.0'
 			else res += ')'
@@ -925,10 +938,9 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 function packProp(indent, prop, off, source){
 	var o = prop.offset + off
 	var code = ''
+	var pack = prop.config.pack
+	var name = prop.name
 	if(prop.type.name === 'vec4'){
-		// check packing
-		var pack = prop.config.pack
-		var name = prop.name
 		if(pack){
 			code += indent + 'var _' + name + ' = '+ source +'\n'
 			if(pack === 'float12'){
@@ -961,8 +973,6 @@ function packProp(indent, prop, off, source){
 		return code
 	}
 	if(prop.type.name === 'vec2'){
-		// check packing
-		var pack = prop.config.pack
 		if(pack){
 			code += indent + 'var _' + name + ' = '+ source +'\n'
 			if(pack === 'float12'){
@@ -1115,8 +1125,7 @@ function computePropStates(states, instanceProps){
 				var value = frame[prop]
 				var time = frameTime || stateTime
 				if(value && value.constructor === Object){
-					// its a per key timing object
-					time = value
+					if(value.time) time = value.time
 					value = value.value
 				}
 				state.frames.push({

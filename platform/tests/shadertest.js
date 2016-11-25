@@ -16,7 +16,7 @@ return require('base/app').extend({
 					//	color:'blue'
 					//},
 					to:{
-						time:{fn:'bounce',dampen:0.5,end:1},
+						time:{fn:'ease',dampen:0.5,begin:0,end:10},
 						w:150,
 						color:'green'
 					},
@@ -30,7 +30,7 @@ return require('base/app').extend({
 						color:null
 					},
 					to:{
-						time:{fn:'ease',begin:0,end:10},
+						time:{fn:'bounce',dampen:0.6,begin:0,end:10},
 						w:250,
 						color:'red'
 					},

@@ -14,7 +14,6 @@ module.exports = class App extends require('base/view'){
 	prototype(){
 		this.name = 'App'
 		this.cursor = 'default'
-		this.style = require('styles/dark')
 		this.x = 0
 		this.y = 0
 		this.w = '100%'
@@ -24,18 +23,6 @@ module.exports = class App extends require('base/view'){
 	constructor(){
 		super()
 		
-		// apply style to all nested classes
-		var obj = this.style.compute(this.constructor)
-		
-		// initialize style
-		for(var key in obj){
-			var value = this[key]
-			if(typeof value.extend === 'function'){ // its a class
-				this[key] = value.extend(obj[key])
-			}
-			else this[key] = obj[key]
-		}
-
 		// create app
 		this.store = Store.create()
 
@@ -486,8 +473,12 @@ module.exports = class App extends require('base/view'){
 		}
 	}*/
 
+	getTime(){
+		return (Date.now() - painter.timeBoot) / 1000
+	}
+
 	$updateTime(){
-		this._time = (Date.now() - painter.timeBoot) / 1000
+		this._time = this.getTime()
 		this._frameId++
 	}
 
