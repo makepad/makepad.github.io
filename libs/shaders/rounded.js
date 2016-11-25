@@ -5,15 +5,15 @@ module.exports = class Rounded extends require('./quad'){
 
 	prototype(){
 		this.props = {
-			borderColor: {value:[0,0,0,1]},
-			shadowColor: {value:[0,0,0,0.5]},
+			borderColor: [0,0,0,1],
+			shadowColor: [0,0,0,0.5],
 
-			borderWidth: {value:[0,0,0,0]},
-			borderRadius: {value:[8,8,8,8]},
+			borderWidth: [0,0,0,0],
+			borderRadius: [8,8,8,8],
 
 			shadowBlur: 0.0,
 			shadowSpread: 0.0,
-			shadowOffset: {value:[0.0,0.0]},
+			shadowOffset: [0.0,0.0],
 			
 			mesh:{kind:'geometry', type:types.vec3},
 		}

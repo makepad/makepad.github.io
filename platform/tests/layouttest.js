@@ -8,7 +8,7 @@ module.exports = require('base/app').extend({
 	},
 
 	onDraw(){
-		for(var i=0;i<800;i++)
+		for(var i=0;i<1000;i++)
 		this.drawButton({id:i,icon:'search'})
 	}
 })

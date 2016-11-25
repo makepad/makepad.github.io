@@ -172,6 +172,7 @@ module.exports = class Compiler extends require('base/class'){
 		var states = this._states
 		var stateCode = {}
 		var initvars = ''
+		var fromProps = {}
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
@@ -193,11 +194,15 @@ module.exports = class Compiler extends require('base/class'){
 				var code = ''
 				var last = undefined
 				var duration = state.duration || 0.
-
-				for(var i = frames.length - 1; i>=0; i--){
+				var name = prop.name
+			
+				for(let i = frames.length - 1; i>=0; i--){
 					var next = frames[i]
+					var first = i == 0
+					var value = next.value
+					if(value === null && first) fromProps[name] = 1
 					if(last){
-						code = 'mix('+decodeKeyFrame(prop.name, next.value, i==0)+','+code+','
+						code = 'mix('+decodeKeyFrame(name, value, first)+','+code+','
 						// call function on this with named arguments.
 						// alright lets get the time object
 						var T = '(T-'+forceDot(next.at)+')/'+forceDot(last.at-next.at)
@@ -213,7 +218,7 @@ module.exports = class Compiler extends require('base/class'){
 						}
 					}
 					else{
-						code = decodeKeyFrame(prop.name, next.value, i==0)
+						code = decodeKeyFrame(name, value, first)
 					}
 					last = next
 				}
@@ -221,47 +226,83 @@ module.exports = class Compiler extends require('base/class'){
 			}
 		}
 
+		// extracted state information
 		var stateDuration = {}
 		var stateIds = {}
 		var stateDelay = {}
 		var stateId = 1
-		initvars += '\tT -= thisDOTanimStart;\n'
+
+		initvars += '\tfloat at = thisDOTtime - thisDOTanimStart;\n'
+		initvars += '\tint first = int(mod(thisDOTanimState,4096.0));\n'
+		initvars += '\tint next = int(floor(thisDOTanimState/4096.0));\n'
+		
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
 			stateIds[key] = id
 			stateDuration[key] = (state.duration || 0.) * (state.repeat || 1.)
 			stateDelay[key] = state.delay || 0.
-			initvars += '\tif(thisDOTanimState == '+id+'.){\n'
+			initvars += '\t'
+			if(stateId>2) initvars += 'else '
+			initvars += 'if(first == '+id+'){\n'
 			var div = forceDot(state.duration||0.)
-			if(div !== '1.0'){
-				initvars += '\t\tT/='+div+';\n'
-			}
+			initvars += '\t\tfloat T = at'
+			if(div !== '1.0') initvars += '/'+div
+			initvars += ';\n'
+			initvars += '\t\tat -= '+div +';\n'
 			// now we loop and/or bounce
 			if(state.repeat){
 				if(state.bounce){
-					if(state.repeat === Infinity){
-						initvars += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
-					}
-					else{
-						initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
-					}
+					if(state.repeat === Infinity) initvars += '\t\tfloat T = mod(st,2.);if(T>1.)T=2.-T;\n'
+					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.), next = 0;else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
 				}
 				else{
-					if(state.repeat === Infinity){
-						initvars += '\t\tT = mod(T,1.);\n'
-					}
-					else{
-						initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
-					}
+					if(state.repeat === Infinity) initvars += '\t\tT = mod(T,1.);\n'
+					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.), next=0;else T = 1.;\n'
 				}
 			}
+			else initvars += '\t\tif(T<=1.)next = 0;\n'
 			//if(state.duration)
 			initvars += '' // do loop/bounce/duration on T
 			initvars += stateCode[key]
 			initvars += '\t}\n'
 		}
+		
+		stateId = 1
+		initvars += '\tif(next != 0){\n'
+		for(let key in fromProps){
+			initvars += '\t\tfrom_thisDOT'+key+' = thisDOT'+key+';\n'
+		}
 
+		for(let key in states){
+			let state = states[key]
+			let id = stateId++
+			initvars += ' '
+			if(stateId>2) initvars += 'else '
+			initvars += '\t\tif(next == '+id+'){\n'
+			var div = forceDot(state.duration||0.)
+			initvars += '\t\t\tfloat st = at'
+			if(div !== '1.0') initvars += '/'+div
+			initvars += ';\n'
+			// now we loop and/or bounce
+			if(state.repeat){
+				if(state.bounce){
+					if(state.repeat === Infinity) initvars += '\t\t\tfloat T = mod(st,2.);if(T>1.)T=2.-T;\n'
+					else initvars += '\t\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
+				}
+				else{
+					if(state.repeat === Infinity) initvars += '\t\tT = mod(T,1.);\n'
+					else initvars += '\t\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
+				}
+			}
+			else initvars += '\t\t\tif(T<=1.)next = 0;\n'
+			initvars += '' // do loop/bounce/duration on T
+			initvars += stateCode[key]
+			initvars += '\t\t}\n'
+		}
+	
+		initvars += '\t}\n'
+		
 		var attrid = 0
 		for(let i = totalSlots, pid = 0; i > 0; i -= 4){
 			if(i >= 4) vhead += 'attribute vec4 ATTR_'+(attrid)+';\n'
@@ -547,6 +588,7 @@ module.exports = class Compiler extends require('base/class'){
 
 			// animation timeline
 			let propStates = prop.states
+			var fromKeys = []
 			for(var stateName in propStates){
 				var propState = propStates[stateName]
 				var state = states[stateName]
@@ -572,7 +614,7 @@ module.exports = class Compiler extends require('base/class'){
 						if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
 						for(let i = 0; i < slots; i++){
 							frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
-							if(nv === null) frag += 'from_'+key+'_'+i	
+							if(nv === null) frag += 'from_'+key+'_'+i
 							else frag += slots>1?nvec[i]:nvec
 							frag += '*ND + D*'
 							if(lv === null) frag += 'to_'+key+'_'+i	
@@ -599,6 +641,7 @@ module.exports = class Compiler extends require('base/class'){
 				stateCode[stateName] = (stateCode[stateName] || '') + frag
 			}
 		}
+		
 		var stateId = 1
 		for(let key in states){
 			let state = states[key]
@@ -628,8 +671,9 @@ module.exports = class Compiler extends require('base/class'){
 				}
 			}
 			// run easing functions over T
-
 			code += stateCode[key]
+			//if(this.dump) code += this.DUMPPROPS(instanceProps)//'console.log($a$a[$o+'+instanceProps.thisDOTcolor.offset+'])\n'
+			
 			code += '\t\treturn\n\t}\n'
 		}
 		return this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
@@ -748,9 +792,9 @@ module.exports = class Compiler extends require('base/class'){
 		return code
 	}
 	
-	DUMPPROPS(){
+	DUMPPROPS(instanceProps){
 		var code = ''
-		var instanceProps = this.$compileInfo.instanceProps
+		//var instanceProps = this.$compileInfo.instanceProps
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
@@ -899,9 +943,9 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 	var pack = prop.config.pack
 	if(pack){
 		if(prop.type.name === 'vec2'){
-			var res = 'vec2('
-			var start = prop.offset + off
-			var p1 = decodePropSlot(start, lastSlot, totalSlots)
+			let res = 'vec2('
+			let start = prop.offset + off
+			let p1 = decodePropSlot(start, lastSlot, totalSlots)
 			res += 'floor('+p1+'/4096.0)'
 			res += ',mod('+p1+',4096.0)'
 			if(pack === 'float12') res += ')/4095.0'
@@ -910,10 +954,10 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 			return res
 		}
 		else{
-			var res = 'vec4('
-			var start = prop.offset + off
-			var p1 = decodePropSlot(start, lastSlot, totalSlots)
-			var p2 = decodePropSlot(start+1, lastSlot, totalSlots)
+			let res = 'vec4('
+			let start = prop.offset + off
+			let p1 = decodePropSlot(start, lastSlot, totalSlots)
+			let p2 = decodePropSlot(start+1, lastSlot, totalSlots)
 			res += 'floor('+p1+'/4096.0)'
 			res += ',mod('+p1+',4096.0)'
 			res += ',floor('+p2+'/4096.0)' 
@@ -924,8 +968,8 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 			return res
 		}
 	}
-	var res = prop.type.name + '('
-	var slots = prop.slots
+	let res = prop.type.name + '('
+	let slots = prop.slots
 	if(res === 'float(') res = '('
 	for(let i = 0, start = prop.offset + off; i < slots; i++){
 		if(i) res += ', '
@@ -936,10 +980,10 @@ function unpackProp(prop, off, lastSlot, totalSlots){
 }
 
 function packProp(indent, prop, off, source){
-	var o = prop.offset + off
-	var code = ''
-	var pack = prop.config.pack
-	var name = prop.name
+	let o = prop.offset + off
+	let code = ''
+	let pack = prop.config.pack
+	let name = prop.name
 	if(prop.type.name === 'vec4'){
 		if(pack){
 			code += indent + 'var _' + name + ' = '+ source +'\n'
@@ -996,7 +1040,7 @@ function packProp(indent, prop, off, source){
 		code += indent + 'else $a[$o+'+(o)+']=$a[$o+'+(o+1)+']=_'+name+'\n'
 		return code
 	}
-	var slots = prop.slots
+	let slots = prop.slots
 	if(slots === 1){
 		code += indent + '$a[$o+'+o+'] = '+source+'\n'
 		return code

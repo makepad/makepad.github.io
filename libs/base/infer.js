@@ -810,8 +810,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 		var realargs = []
 		fnname += '_T'
 		for(let i = 0; i < args.length; i++){
-			var arg = args[i]
-			var arginfer = arg.infer
+			let arg = args[i]
+			let arginfer = arg.infer
 			if(arginfer.kind === 'value'){
 				fnname += '_' +arginfer.type.name
 				realargs.push(argstrs[i])
@@ -831,11 +831,11 @@ module.exports = class ShaderInfer extends require('base/class'){
 			recursiveDependencyUpdate(this.genFunctions, prevfunction, fnname)
 
 			// lets check inout
-			var params = prevfunction.ast.body[0].params
+			let params = prevfunction.ast.body[0].params
 			for(let i = 0; i < args.length; i++){
-				var arg = args[i]
-				var arginfer = arg.infer
-				var name = params[i].name
+				let arg = args[i]
+				let arginfer = arg.infer
+				let name = params[i].name
 				if(arginfer.kind === 'value'){
 					if(prevfunction.inout[name] && !arginfer.lvalue){
 						throw this.InferErr(arg, "Function arg is inout but argument is not a valid lvalue: " +name)
@@ -882,17 +882,17 @@ module.exports = class ShaderInfer extends require('base/class'){
 		sub.curFunction = subfunction
 		sub.ctxprefix = calleeinfer.prefix
 
-		var params = ast.body[0].params
-		var paramdef = ''
+		let params = ast.body[0].params
+		let paramdef = ''
 		if(args.length !== params.length){
 			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 		}
 
-		for(var i = 0; i < args.length; i++){
-			var arg = args[i]
-			var arginfer = arg.infer
-			var name = params[i].name
+		for(let i = 0; i < args.length; i++){
+			let arg = args[i]
+			let arginfer = arg.infer
+			let name = params[i].name
 			if(arginfer.kind === 'value'){
 				subfunction.scope[name] = {
 					kind:'value',
@@ -912,20 +912,20 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 		}
 		// fill default args
-		for(;i<params.length;i++){
+		//for(;i<params.length;i++){
 
-		}
+		//}
 		// any params left? 
 
 		// alright lets run the function body.
-		var fnbody = ast.body[0].body
-		var body = sub[fnbody.type](fnbody)
+		let fnbody = ast.body[0].body
+		let body = sub[fnbody.type](fnbody)
 
 		for(let i = 0; i < args.length; i++){
 			// write the args on the scope
-			var arg = args[i]
-			var arginfer = arg.infer
-			var name = params[i].name
+			let arg = args[i]
+			let arginfer = arg.infer
+			let name = params[i].name
 			if(arginfer.kind === 'value'){
 				if(paramdef) paramdef += ', '
 				if(subfunction.inout[name]){
@@ -942,7 +942,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 		}
 
-		var code = subfunction.return.type.name 
+		let code = subfunction.return.type.name 
 		code += ' ' + fnname + '(' + paramdef + ')' + body
 		subfunction.code = code
 		

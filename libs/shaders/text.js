@@ -12,9 +12,9 @@ module.exports = class Text extends require('base/shader'){
 			dx:0,
 			dy:0,
 
-			color:{pack:'float12', value:'black'},
-			outlineColor:{pack:'float12', value:'white'},
-			shadowColor: {pack:'float12', value:[0,0,0,0.5]},
+			color:'black',
+			outlineColor:'white',
+			shadowColor:[0,0,0,0.5],
 
 			fontSize:12,
 
@@ -26,25 +26,23 @@ module.exports = class Text extends require('base/shader'){
 
 			outlineWidth:0.,
 			boldness:0, 
-			shadowOffset: {pack:'int12', value:[0., 0.]},
-
-			unicode:{mask:0, value:0},
+			shadowOffset: [0., 0.],
 			
-			// character head/tail margin and advance
-			advance:{mask:0, noTween:1, value:0},
-			head:{mask:0, noTween:1, value:0},
-			tail:{mask:0, noTween:1, value:0},
-
 			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 
-			down: {value:0},
-			align: {value:[undefined,undefined]},
-			wrapping:{value:'line'},
-			margin:{value:[0,0,0,0]},
+			down: 0,
+			align: [undefined,undefined],
+			wrapping:'line',
+			margin:[0,0,0,0],
 			//noBounds: {mask:0, value:0},
 
 			text:'',
 
+			// character head/tail margin and advance
+			advance:{mask:0, value:0},
+			unicode:{mask:0, value:0},
+			head:{mask:0, value:0},
+			tail:{mask:0, value:0},
 			x1:{mask:0, value:0},
 			y1:{mask:0, value:0},
 			x2:{mask:0, value:0},
