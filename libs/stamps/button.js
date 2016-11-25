@@ -20,7 +20,8 @@ module.exports = class Button extends require('base/stamp'){
 				default:{
 					to:{
 						Bg:{
-							glowSize:0
+							glowSize:0,
+							borderColor:c.textLo
 						}
 					},
 					duration:0.8
@@ -28,6 +29,7 @@ module.exports = class Button extends require('base/stamp'){
 				over:{
 					to:{
 						Bg:{
+							borderColor:'white',
 							glowSize:1
 						}
 					},
