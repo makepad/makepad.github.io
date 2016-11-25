@@ -314,7 +314,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	fillKeep(color) {$
-		var f = this._calcBlur(this.shape)
+		var f = this._calcBlur(this.shape+.5)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)
@@ -340,15 +340,15 @@ module.exports = class Shader extends require('base/compiler'){
 		return this.result
 	}
 	
-	glowKeep(color, width) {$
-		var f = this._calcBlur(abs(this.shape) - width / this._scale)
+	glowKeep(color, width, displace) {$
+		var f = this._calcBlur(abs(this.shape+displace) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = vec4(source.rgb * f, 0.) + dest
 	}
 	
-	glow(color, width) {$
-		this.glowKeep(color, width)
+	glow(color, width, displace) {$
+		this.glowKeep(color, width, displace)
 		this._oldShape = this.shape = 1e+20
 		return this.result
 	}

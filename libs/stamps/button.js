@@ -11,30 +11,27 @@ module.exports = class Button extends require('base/stamp'){
 			},
 			Bg:{
 				padding:[5,15,5,15],
-				borderRadius:6,
+				borderRadius:6.4,
 				borderWidth:1,
 				borderColor:c.textLo,
 				color:c.bgTop
 			},
 			states:{ // animation!
 				default:{
-					time:{fn:'ease', begin:10, end:10},
 					to:{
 						Bg:{
-							dx:{value:0, time:{fn:'bounce', dampen:0.3}},
-							color:'blue'
+							glowSize:0
 						}
 					},
-					duration:0.3
+					duration:0.8
 				},
 				over:{
 					to:{
 						Bg:{
-							dx:{value:10, time:{fn:'bounce', dampen:0.9}},
-							color:'red'
+							glowSize:1
 						}
 					},
-					duration:0.6
+					duration:0.05
 				}
 			}
 		}
@@ -58,13 +55,16 @@ module.exports = class Button extends require('base/stamp'){
 				borderRadius:4.,
 				borderWidth:1.,
 				borderColor:'red',
-				glowColor:'purple',
+				glowColor:'#30f',
+				glowSize:0,
 				pixel(){$
 					this.viewport(this.mesh.xy * vec2(this.w, this.h))
 					this.box(0., 0., this.w, this.h, this.borderRadius)
 					this.shape += 3.
 					this.fillKeep(this.color)
-					return this.stroke(this.borderColor, this.borderWidth)
+					this.strokeKeep(this.borderColor, this.borderWidth)
+					this.blur = 2.
+					return this.glow(this.glowColor, this.glowSize*4.,this.borderWidth)
 				}
 			}),
 			Text: require('shaders/text').extend({

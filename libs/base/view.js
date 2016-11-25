@@ -485,7 +485,14 @@ module.exports = class View extends require('base/class'){
 			stamp.view = this
 			stamp.$pickId = pickId
 		}
-		else if(stamp.constructor !== this[classname]) console.error("Stamp ID reused for different class!")
+		else if(stamp.constructor !== this[classname]){
+			console.error("Stamp ID reused for different class!")
+		}
+		else if(stamp.$frameId == this._frameId){
+			console.error("Please provide a unique id to each stamp")
+		}
+		stamp.$frameId = this._frameId
+
 		var group = args.group
 		if(group){
 			var l = group + classname
