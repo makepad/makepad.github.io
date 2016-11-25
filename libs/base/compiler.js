@@ -170,7 +170,8 @@ module.exports = class Compiler extends require('base/class'){
 
 		// per state property tweening/animation values
 		var states = this._states
-		var stateCode = {}
+		var firstStateCode = {}
+		var nextStateCode = {}
 		var initvars = ''
 		var fromProps = {}
 		for(let key in instanceProps){
@@ -191,38 +192,42 @@ module.exports = class Compiler extends require('base/class'){
 				var propState = propStates[stateName]
 				var state = states[stateName]
 				var frames = propState.frames
-				var code = ''
+				var firstCode = ''
+				var nextCode = ''
 				var last = undefined
 				var duration = state.duration || 0.
 				var name = prop.name
 			
 				for(let i = frames.length - 1; i>=0; i--){
 					var next = frames[i]
-					var first = i == 0
+					var isFirst = i == 0
 					var value = next.value
-					if(value === null && first) fromProps[name] = 1
 					if(last){
-						code = 'mix('+decodeKeyFrame(name, value, first)+','+code+','
+						firstCode = 'mix('+decodeKeyFrame(name, value, isFirst)+','+firstCode+','
+						nextCode = 'mix('+decodeKeyFrame(name, value, false)+','+nextCode+','
 						// call function on this with named arguments.
 						// alright lets get the time object
 						var T = '(T-'+forceDot(next.at)+')/'+forceDot(last.at-next.at)
 						var time = last.time
-						if(!time || time.fn === 'linear') code += 'clamp('+T+',0.,1.))'
+						if(!time || time.fn === 'linear') firstCode += 'clamp('+T+',0.,1.))', nextCode += 'clamp('+T+',0.,1.))'
 						else{
 							var callee = this[time.fn]
 							if(!callee) throw new Error("Cannot use "+time.fn+" as tweening function, it doesnt exist")
 							var name = 'thisDOT'+time.fn
 							var call = vtx.parseNamedCall(name, callee, time, {t:{type:types.float,value:'T'}})
 							last.call = call.slice(call.indexOf('('))
-							code += call + ')'
+							firstCode += call + ')'
+							nextCode += call + ')'
 						}
 					}
 					else{
-						code = decodeKeyFrame(name, value, first)
+						firstCode = decodeKeyFrame(name, value, isFirst)
+						nextCode =  decodeKeyFrame(name, value, false)
 					}
 					last = next
 				}
-				stateCode[stateName] = (stateCode[stateName] || '') + '\t\t' + key + ' = ' + code + ';\n'
+				firstStateCode[stateName] = (firstStateCode[stateName] || '') + '\t\t' + key + ' = ' + firstCode + ';\n'
+				nextStateCode[stateName] = (nextStateCode[stateName] || '') + '\t\t' + key + ' = ' + nextCode + ';\n'
 			}
 		}
 
@@ -236,6 +241,7 @@ module.exports = class Compiler extends require('base/class'){
 		initvars += '\tint first = int(mod(thisDOTanimState,4096.0));\n'
 		initvars += '\tint next = int(floor(thisDOTanimState/4096.0));\n'
 		
+		// first animation state
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
@@ -264,16 +270,14 @@ module.exports = class Compiler extends require('base/class'){
 			else initvars += '\t\tif(T<=1.)next = 0;\n'
 			//if(state.duration)
 			initvars += '' // do loop/bounce/duration on T
-			initvars += stateCode[key]
+			initvars += firstStateCode[key]
 			initvars += '\t}\n'
 		}
 		
+		// next animation state
 		stateId = 1
 		initvars += '\tif(next != 0){\n'
-		for(let key in fromProps){
-			initvars += '\t\tfrom_thisDOT'+key+' = thisDOT'+key+';\n'
-		}
-
+		
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
@@ -281,7 +285,7 @@ module.exports = class Compiler extends require('base/class'){
 			if(stateId>2) initvars += 'else '
 			initvars += '\t\tif(next == '+id+'){\n'
 			var div = forceDot(state.duration||0.)
-			initvars += '\t\t\tfloat st = at'
+			initvars += '\t\t\tfloat T = at'
 			if(div !== '1.0') initvars += '/'+div
 			initvars += ';\n'
 			// now we loop and/or bounce
@@ -297,7 +301,7 @@ module.exports = class Compiler extends require('base/class'){
 			}
 			else initvars += '\t\t\tif(T<=1.)next = 0;\n'
 			initvars += '' // do loop/bounce/duration on T
-			initvars += stateCode[key]
+			initvars += nextStateCode[key]
 			initvars += '\t\t}\n'
 		}
 	

@@ -20,7 +20,7 @@ module.exports = class Text extends require('base/shader'){
 
 			italic:0.,
 			baseLine:{kind:'uniform', value:1.},
-
+			aaFactor:{kind:'uniform', value:0.01},
 			shadowBlur: 1.0,
 			shadowSpread: -1.,
 
@@ -351,7 +351,7 @@ module.exports = class Text extends require('base/shader'){
 
 	pixel(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.002) / adjust * 1.4 
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
 		this._field = field
 
 		this.pixelStyle()

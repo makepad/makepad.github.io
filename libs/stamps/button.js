@@ -45,7 +45,7 @@ module.exports = class Button extends require('base/stamp'){
 					duration:0.05
 				},
 				down:{
-					0:{
+					from:{
 						Bg:{
 							borderColor:'white',
 							color:'#f',

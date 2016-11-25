@@ -79,31 +79,36 @@ module.exports = class Stamp extends require('base/class'){
 		}
 	}
 
-	setState(state, props){
+	setState(state, queue, props){
 		this._state = state
 		// alright now what. now we need to change state on our range.
-		var view = this.view
-		var todo = view.todo
-		var time = view.app.getTime()
-		var $writeList = view.$writeList
+		let view = this.view
+		let todo = view.todo
+		let time = view.app.getTime()
+		let $writeList = view.$writeList
 		for(let i = this.$writeStart; i < this.$writeEnd; i+=3){
-			var mesh = $writeList[i]
-			var start = $writeList[i+1]
-			var end = $writeList[i+2]
-			var proto = mesh.shaderProto
-			var info = proto.$compileInfo
-			var instanceProps = info.instanceProps
-			var interrupt = info.interrupt
-			var slots = mesh.slots
-			var animState = instanceProps.thisDOTanimState.offset
-			var animStart = instanceProps.thisDOTanimStart.offset
-			var stateId = info.stateIds[state] || 1
-			var final = time + (info.stateDelay[state] || 0)
-			var total = final + (info.stateDuration[state] || 0)
-			var array = mesh.array
+			let mesh = $writeList[i]
+			let start = $writeList[i+1]
+			let end = $writeList[i+2]
+			let proto = mesh.shaderProto
+			let info = proto.$compileInfo
+			let instanceProps = info.instanceProps
+			let interrupt = info.interrupt
+			let slots = mesh.slots
+			let animState = instanceProps.thisDOTanimState.offset
+			let animStart = instanceProps.thisDOTanimStart.offset
+			let stateId = info.stateIds[state] || 1
+			let final = time + (info.stateDelay[state] || 0)
+			let total = final + (info.stateDuration[state] || 0)
+			let array = mesh.array
 			for(let j = start; j < end; j++){
-				var o = j * slots
+				let o = j * slots
+				if(queue){ // alright. we have to mask in a thing.
+
+				}
 				interrupt(array, o, time, proto)
+				// lets check if the animation needs to be queued or not.
+
 				array[o + animState] = stateId // set new state
 				array[o + animStart] = final // new start
 				if(props) for(let key in props){
@@ -121,15 +126,6 @@ module.exports = class Stamp extends require('base/class'){
 			}
 		}
 		todo.updateTodoTime()
-	}
-
-	// sets a stamp to a new state
-	set state(state){
-		this.setState(state)
-	}
-
-	get state(){
-		return this._state
 	}
 
 	redraw(){
