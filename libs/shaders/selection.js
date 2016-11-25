@@ -1,7 +1,7 @@
 var types = require('base/types')
 var painter = require('services/painter')
 
-module.exports = class Selection extends require('tools/quad'){
+module.exports = class Selection extends require('shaders/quad'){
 	// special
 	prototype(){
 		this.props = {

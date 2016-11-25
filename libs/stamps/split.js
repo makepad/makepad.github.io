@@ -69,7 +69,7 @@ module.exports = class Split extends require('base/stamp'){
 		}
 
 		this.tools = {
-			Button:require('tools/button').extend({
+			Button:require('stamps/button').extend({
 				w:25,
 				h:25,
 				onClick:function(){
@@ -95,7 +95,7 @@ module.exports = class Split extends require('base/stamp'){
 					padding:0
 				}
 			}),
-			Bg:require('tools/quad').extend({
+			Bg:require('shaders/quad').extend({
 				align:[.5,.5],
 				props:{
 					vertical:1,

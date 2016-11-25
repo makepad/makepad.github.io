@@ -447,6 +447,7 @@ function workerBoot(){
 		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
+		if(worker.onRequire) worker.onRequire(module)
 		worker.clearAllTimers()
 
 		if(typeof module.exports === 'function'){
@@ -521,6 +522,7 @@ function workerRequire(absParent, worker, modules, args){
 
 			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
 			if(ret !== undefined) module.exports = ret
+			if(worker.onRequire) worker.onRequire(module)
 		}
 		if(typeof module.exports === 'function'){
 			Object.defineProperty(module.exports, '__module__', {value:module})
@@ -528,7 +530,10 @@ function workerRequire(absParent, worker, modules, args){
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent)
 		}
-		//if(module.exports)
+
+		// someone called new, just pretend we can do that
+		if(this instanceof require) return new module.exports()
+
 		return module.exports
 	}
 }

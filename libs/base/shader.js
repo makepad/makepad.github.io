@@ -9,6 +9,7 @@ module.exports = class Shader extends require('base/compiler'){
 		this.props = {
 			// painter uniforms
 			time:{kind:'uniform', block:'painter', value:1.0},
+
 			pixelRatio:{kind:'uniform', block:'painter', type:types.float},
 			workerId:{kind:'uniform', block:'painter', type:types.float},
 			fingerInfo:{kind:'uniform', block:'painter', type:types.mat4},
@@ -25,19 +26,15 @@ module.exports = class Shader extends require('base/compiler'){
 			viewClip:{kind:'uniform', value:[0, 0, 0, 0]},
 			pickAlpha:{kind:'uniform', value:0.5},
 			
-			pickId:{noTween:1, noStyle:1, value:0.},
-			
-			// tweening
-			tween:{noTween:1, value:0.},
-			ease:{noTween:1, value:[0, 0, 1.0, 1.0]},
-			duration:{noTween:1, value:0.},
-			delay:{styleLevel:1, value:0.},
-			tweenStart:{noTween:1, noStyle:1, value:1.0},
-			
+			pickId:{mask:0, value:0.},
+			animStart:{mask:0, value:1.0},
+			animState:{mask:0, value:0.},
+		
+			state:{value:'default'},
+
 			// clipping and scrolling
-			noBounds:{styleLevel:1, value:0},
-			moveScroll:{noTween:1, value:1.},
-			turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[ - 50000,  - 50000, 50000, 50000]},
+			moveScroll:{value:1.},
+			turtleClip:{value:[-50000, -50000, 50000, 50000]},
 		}
 		
 		this.defines = {
@@ -71,10 +68,10 @@ module.exports = class Shader extends require('base/compiler'){
 		
 		this.verbs = {
 			length:function() {
-				return this.$PROPLEN()
+				return this.PROPLEN()
 			},
 			order:function(overload) {
-				this.$ALLOCDRAW(0)
+				this.ALLOCDRAW(overload, 0)
 			},
 			reuse:function(overload) {
 				// make sure we are drawn
@@ -86,6 +83,8 @@ module.exports = class Shader extends require('base/compiler'){
 				}
 			}
 		}
+
+		
 	}
 	
 	//
@@ -95,20 +94,22 @@ module.exports = class Shader extends require('base/compiler'){
 	//
 	
 	vertexMain() {$
-		var T = 1.
-		this.animTime = this.time
-		if(this.tween > 0.01) {
-			this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
-			T = this.easedTween = this.tweenTime(
-				this.tween,
-				this.normalTween,
-				this.ease.x,
-				this.ease.y,
-				this.ease.z,
-				this.ease.w
-			)
-		}
-		$CALCULATETWEEN
+		var T = this.time
+		this.animStart
+		this.animState
+		//if(this.tween > 0.01) {
+		//	this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
+		//	T = this.easedTween = this.tweenTime(
+		//		this.tween,
+		//		this.normalTween,
+		//		this.ease.x,
+		//		this.ease.y,
+		//		this.ease.z,
+		//		this.ease.w
+		//	)
+		//}
+		$INITIALIZEVARIABLES
+
 		var position = this.vertex()
 		if(this.vertexPostMatrix[0][0] != 1. || this.vertexPostMatrix[1][1] != 1.) {
 			gl_Position = position * this.vertexPostMatrix
@@ -131,72 +132,57 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	//
 	//
-	// Tweening
+	// Timing functions
 	//
 	//
-	
-	
-	tweenSimple(tween, time, easex, easey, easez, easew) {
-		if(tween == 1.) return time
-		return this.tweenEase(time, easex, easey)
-	}
-	
-	tweenAll(tween, time, easex, easey, easez, easew) {
-		if(tween == 1.) return time
-		if(tween == 2.) {
-			return this.tweenEase(time, easex, easey)
-		}
-		if(tween == 3.) {
-			return this.tweenBounce(time, easex)
-		}
-		if(tween == 4.) {
-			return this.tweenOvershoot(time, easex, easey, easez, easew)
-		}
-		if(tween == 5.) {
-			//	return this.tweenBezier(time, easex, easey, easez, easew)
-		}
 		
-		return 1.
+	linear(t){
+		return clamp(t, 0., 1.)
 	}
-	
-	//proto.tweenTime = proto.tweenSimple
-	
-	tweenEase(t, easein, easeout) {
-		var a =  - 1. / max(1., (easein * easein))
-		var b = 1. + 1. / max(1., (easeout * easeout))
+
+	ease(t, begin, end) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
+		var a =  - 1. / max(1., (begin * begin))
+		var b = 1. + 1. / max(1., (end * end))
 		var t2 = pow(((a - 1.) *  - b) / (a * (1. - b)), t)
 		return ( - a * b + b * a * t2) / (a * t2 - b)
 	}
 	
-	tweenBounce(t, f) {
+	bounce(t, dampen) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		// add bounciness
-		var it = t * (1. / (1. - f)) + 0.5
-		var inlog = (f - 1.) * it + 1.
+		var it = t * (1. / (1. - dampen)) + 0.5
+		var inlog = (dampen - 1.) * it + 1.
 		if(inlog <= 0.) return 1.
-		var k = floor(log(inlog) / log(f))
-		var d = pow(f, k)
-		return 1. - (d * (it - (d - 1.) / (f - 1.)) - pow((it - (d - 1.) / (f - 1.)), 2.)) * 4.
+		var k = floor(log(inlog) / log(dampen))
+		var d = pow(dampen, k)
+		return 1. - (d * (it - (d - 1.) / (dampen - 1.)) - pow((it - (d - 1.) / (dampen - 1.)), 2.)) * 4.
 	}
 	
-	tweenOvershoot(t, dur, freq, decay, ease) {
+	elastic(t, duration, frequency, decay, ease) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		var easein = ease
 		var easeout = 1.
 		if(ease < 0.) easeout =  - ease,easein = 1.
 		
-		if(t < dur) {
-			return this.tweenEase(t / dur, easein, easeout)
+		if(t < duration) {
+			return this.easeTiming(t / duration, easein, easeout)
 		}
 		else {
 			// we have to snap the frequency so we end at 0
-			var w = (floor(.5 + (1. - dur) * freq * 2.) / ((1. - dur) * 2.)) * PI * 2.
-			var velo = (this.tweenEase(1.001, easein, easeout) - this.tweenEase(1., easein, easeout)) / (0.001 * dur)
+			var w = (floor(.5 + (1. - duration) * freq * 2.) / ((1. - duration) * 2.)) * PI * 2.
+			var velo = (this.easeTiming(1.001, easein, easeout) - this.easeTiming(1., easein, easeout)) / (0.001 * dur)
 			
-			return 1. + velo * ((sin((t - dur) * w) / exp((t - dur) * decay)) / w)
+			return 1. + velo * ((sin((t - duration) * w) / exp((t - duration) * decay)) / w)
 		}
 	}
 	
-	tweenBezier(cp0, cp1, cp2, cp3, t) {
-		
+	bezier(t, cp0, cp1, cp2, cp3) {
+		if(t<0.) return 0.
+		if(t>1.) return 1.
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 		
 		var epsilon = 1.0 / 200.0 * t
@@ -279,63 +265,7 @@ module.exports = class Shader extends require('base/compiler'){
 		return 0
 	}
 	
-	//
-	//
-	// Distance fields
-	//
-	
-	
-	unionDistance(f1, f2) {
-		return min(f1, f2)
-	}
-	
-	intersectDistance(f1, f2) {
-		return max(f1, f2)
-	}
-	
-	subtractDistance(f1, f2) {
-		return max( - f1, f2)
-	}
-	
-	blendDistance(a, b, k) {
-		var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
-		return mix(b, a, h) - k * h * (1.0 - h)
-	}
-	
-	boxDistance(p, x, y, w, h, r) {
-		var size = vec2(.5 * w, .5 * h)
-		return length(max(abs(p - vec2(x, y) - size) - (size - vec2(2. * r)), 0.)) - 2. * r
-	}
-	
-	circleDistance(p, x, y, r) {
-		return distance(p, vec2(x, y)) - r
-	}
-	
-	lineDistance(p, x1, y1, x2, y2, r) {
-		var a = vec2(x1, y1)
-		var b = vec2(x2, y2)
-		var pa = p - a
-		var ba = b - a
-		return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)) - r
-	}
-	
-	
-	colorSolidDistance(antialias, field, fill) {
-		return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
-	}
-	
-	colorBorderDistance(antialias, field, borderWidth, fill, border) {
-		if(borderWidth < 0.001) return this.premulAlpha(mix(fill, vec4(fill.rgb, 0.), clamp(field * antialias + 1., 0., 1.)))
-		var col = mix(border, vec4(border.rgb, 0.), clamp(field * antialias + 1., 0., 1.))
-		return this.premulAlpha(mix(fill, col, clamp((field + borderWidth) * antialias + 1., 0., 1.)))
-	}
-	
-	animateUniform(uni) {$
-		return clamp((this.animTime - uni.x) / uni.y, 0., 1.) * (uni.w - uni.z) + uni.z
-	}
-	
-	
-	
+		
 	antialias(p) {
 		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
 	}
@@ -347,7 +277,6 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	// 2D canvas api for shader
 	viewport(pos) {$
-		
 		this.pos = pos
 		this.result = vec4(0.)
 		this._oldShape = 
@@ -385,7 +314,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	fillKeep(color) {$
-		var f = this._calcBlur(this.shape)
+		var f = this._calcBlur(this.shape+.5)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)
@@ -399,7 +328,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	strokeKeep(color, width) {$
-		var f = this._calcBlur(abs(this.shape + width - 0.5) - width / this._scale)
+		var f = this._calcBlur(abs(this.shape + width ) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)
@@ -411,15 +340,15 @@ module.exports = class Shader extends require('base/compiler'){
 		return this.result
 	}
 	
-	glowKeep(color, width) {$
-		var f = this._calcBlur(abs(this.shape) - width / this._scale)
+	glowKeep(color, width, displace) {$
+		var f = this._calcBlur(abs(this.shape+displace) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = vec4(source.rgb * f, 0.) + dest
 	}
 	
-	glow(color, width) {$
-		this.glowKeep(color, width)
+	glow(color, width, displace) {$
+		this.glowKeep(color, width, displace)
 		this._oldShape = this.shape = 1e+20
 		return this.result
 	}

@@ -6,7 +6,7 @@ module.exports=class Dock extends require('base/view'){
 		})
 
 		this.tools = {
-			Rect:require('tools/rect'),
+			Rect:require('shaders/rect'),
 			Tab:require('tools/tab').extend({
 				Bg:{
 					color:'#8',
@@ -18,7 +18,7 @@ module.exports=class Dock extends require('base/view'){
 					pickAlpha:2.
 				}
 			}),
-			SplitZone:require('tools/quad').extend({
+			SplitZone:require('shaders/quad').extend({
 				color:"#77f4",
 				tween:2,
 				ease:[0,10,0,0],

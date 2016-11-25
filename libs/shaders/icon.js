@@ -1,4 +1,4 @@
-module.exports = class Icon extends require('tools/text'){
+module.exports = class Icon extends require('shaders/text'){
 
 	prototype(){
 		this.font = require('fonts/fontawesome_low.font')

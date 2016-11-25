@@ -146,6 +146,10 @@ var todoIds = new IdAlloc()
 
 painter.Todo = class Todo extends require('base/class'){
 
+	prototype(){
+		this.todoIds = todoIds
+	}
+
 	constructor(initalloc){
 		super()
 
@@ -199,7 +203,7 @@ painter.Todo = class Todo extends require('base/class'){
 		}
 		return [{
 			fn:'updateTodo',
-			name:this.name,
+			viewId:this.viewId,
 			deps:deps,
 			children:this.children,
 			todoId:this.todoId,

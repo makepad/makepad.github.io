@@ -104,6 +104,9 @@ module.exports = class Turtle extends require('base/class'){
 		this.sy = this.wy = this.iy + padding[0] + margin[0]
 		this.$writeCursor = 
 		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
+
+		this.$xAbs = outer.$xAbs
+		this.$yAbs = outer.$yAbs
 	}	
 
 	// lets do alignment
@@ -255,7 +258,8 @@ module.exports = class Turtle extends require('base/class'){
 			if(this._x < this.x1) this.x1 = this._x
 			if(this._y < this.y1) this.y1 = this._y
 		}
-
+		this._x -= this.$xAbs
+		this._y -= this.$yAbs
 		// alright lets do the per-item alignment.
 		// only if it changes or ends
 		// however what do we do when align-right ends?
@@ -269,19 +273,17 @@ module.exports = class Turtle extends require('base/class'){
 	}
 
 
-	end(doBounds){
+	end(){
 		var padding = this.padding
 		var outer = this.outer
 
 		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
 		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
 
-		if(doBounds){
-			if(this.x1 < outer.x1) outer.x1 = this.x1
-			if(this.y1 < outer.y1) outer.y1 = this.y1
-			if(this.x2 > outer.x2) outer.x2 = this.x2
-			if(this.y2 > outer.y2) outer.y2 = this.y2
-		}
+		if(this.x1 < outer.x1) outer.x1 = this.x1
+		if(this.y1 < outer.y1) outer.y1 = this.y1
+		if(this.x2 > outer.x2) outer.x2 = this.x2
+		if(this.y2 > outer.y2) outer.y2 = this.y2
 
 		this.doAlign(true)
 	}

@@ -6,22 +6,21 @@ module.exports = class Stamp extends require('base/class'){
 			require('base/tools')
 		)
 		
-		this.$isStamp = true
-		this.inPlace = false
 		this.onFlag0 = 1
 		this.onFlag1 = this.redraw
-		this.stateExt = ''
 
 		this.props = {
 			x:NaN,
 			y:NaN,
 			w:NaN,
 			h:NaN,
-			margin:undefined,
-			align:undefined,
-			down:undefined,
+			padding:[0,0,0,0],
+			margin:[0,0,0,0],
+			align:[0,0],
+			down:0,
 			cursor:undefined,
-			id:''
+			id:'',
+			group:''
 		}
 
 		this.inheritable('verbs', function(){
@@ -30,195 +29,151 @@ module.exports = class Stamp extends require('base/class'){
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
 
+		this.inheritable('states', function(){
+			// process stamp states. into shader states
+			var states = this.states
+			for(let stateName in states){
+				var state = states[stateName]
+				var stateTime = state.time
+				for(let frameName in state){
+					var frame = state[frameName]
+					if(frameName === 'time' || typeof frame !== 'object') continue // its a playback prop
+					var frameTime = frame.time
+					
+					for(let subName in frame){
+						var subFrame = frame[subName]
+						
+						// ok lets create/modify a subFrame with playback props.
+						if(!this.hasOwnProperty(subName)) this[subName] = {}
+						var subObj = this[subName]
+
+						if(!subObj.hasOwnProperty('states')) subObj.states = {}
+						var subStates = subObj.states
+
+						// lets create the state
+						if(!subStates[stateName]) subStates[stateName] = {
+							duration:state.duration,
+							repeat:state.repeat,
+							bounce:state.bounce
+						}
+						var subState = subStates[stateName]
+						if(stateTime) subState.time = stateTime
+						
+						// alright lets create the keyframe
+						var outFrame = subState[frameName] = {}
+						if(frameTime) outFrame.time = frameTime
+						for(let prop in subFrame){
+							outFrame[prop] = subFrame[prop]
+						}
+					}
+				}
+			}
+		})
+
 		this.verbs = {
-			draw:function(overload){
-				this.$STYLESTAMP(overload)
-				this.$DRAWSTAMP()
-				return $stamp
+			draw: function(overload, click) {
+				var stamp = this.ALLOCSTAMP(overload)
+				this.STYLESTAMP(stamp, overload)
+				stamp.drawStamp()
 			}
 		}
 	}
-	
+
+	setState(state, props){
+		this._state = state
+		// alright now what. now we need to change state on our range.
+		var view = this.view
+		var todo = view.todo
+		var time = view.app.getTime()
+		var $writeList = view.$writeList
+		for(let i = this.$writeStart; i < this.$writeEnd; i+=3){
+			var mesh = $writeList[i]
+			var start = $writeList[i+1]
+			var end = $writeList[i+2]
+			var proto = mesh.shaderProto
+			var info = proto.$compileInfo
+			var instanceProps = info.instanceProps
+			var interrupt = info.interrupt
+			var slots = mesh.slots
+			var animState = instanceProps.thisDOTanimState.offset
+			var animStart = instanceProps.thisDOTanimStart.offset
+			var stateId = info.stateIds[state] || 1
+			var final = time + (info.stateDelay[state] || 0)
+			var total = final + (info.stateDuration[state] || 0)
+			var array = mesh.array
+			for(let j = start; j < end; j++){
+				var o = j * slots
+				interrupt(array, o, time, proto)
+				array[o + animState] = stateId // set new state
+				array[o + animStart] = final // new start
+				if(props) for(let key in props){
+					let prop = instanceProps['thisDOT'+key]
+					if(!prop) continue
+					if(prop.config.pack || prop.slots > 1) throw new Error("Implement propwrite for packed/props with more than 1 slot")
+					array[o + prop.offset] = props[key]
+				}
+				if(total>todo.timeMax) todo.timeMax = total
+			}
+			// alright so how do we declare this thing dirty
+			if(!mesh.dirty){
+				mesh.updateMesh()
+				mesh.dirty = true
+			}
+		}
+		todo.updateTodoTime()
+	}
+
+	// sets a stamp to a new state
+	set state(state){
+		this.setState(state)
+	}
+
 	get state(){
 		return this._state
-	}	
-
-	set state(state){
-		this._state = state
-		this.redraw()	
-	}
-
-	initStates(arg){
-		var styles = this.styles
-		this.states = styles[this.id] || styles.base
-	}
-
-	initState(arg){
-		this.initStates(arg)
-		if(!this.states) return
-		if(arg && arg.state && this._state){ // maintain _over state
-			var stateName = arg.state
-			// maintain our over state 
-			if(this._state.name.indexOf('_over') !== -1){
-				this._state = this.states[arg.state+'_over'] || this.states[arg.state]
-			}
-			else this._state = this.states[arg.state]
-		}
-		else this._state = this.states.default
 	}
 
 	redraw(){
 		var view = this.view
-		if(view && this.inPlace){
-			// figure out all the shader props lengths 
-			var keys = Object.keys(this)
-			var lengths = {}
-			for(let i = 0; i < keys.length; i++){
-				var key = keys[i]
-				if(key.indexOf('$propsLen') === 0){
-					var shader = key.slice(9)
-					// lets reset the $props.length
-					var props = this.$shaders[shader].$props
-					lengths[shader] = props.length
-					props.length = this[key]
-				}
-			}
-			
-			// re-run draw
-			view.app.$updateTime()
-			view._frameId = view.app._frameId
-			view._time = view.app._time
-			view.$writeList.length = 0
-
-			// flag in place so the drawcalls dont modify the todo
-			view.$inPlace = true
-			view.todo.timeStart = view._time 
-			view.$turtleStack.len = 0
-			this.turtle = view.$turtleStack[0]
-			this.turtle._pickId = this.$stampId
-
-			// re-run draw
-			this.onDraw()
-
-			// putback the lengths
-			for(let key in lengths){
-				var props = this.$shaders[key].$props
-				props.length = lengths[key]
-				props.updateMesh()
-			}
-			view.todo.updateTodoTime()
-
-			// remove inplace flag
-			view.$inPlace = false
-
-			// put back lengths
-			//console.log('here')
-			// let props update
-		}
-		else if(view) view.redraw()
+		if(view) view.redraw()
 	}
 
-	$STYLESTAMP(target, classname, macroargs, mainargs, indent){
-		// so how do we rexecute a stamp
+	ALLOCSTAMP(args, indent, className, scope){
+		return 'this.view.$allocStamp('+args[0]+', "'+className+'")\n'
+	}
 
+	STYLESTAMP(args, indent, className, scope){
 		var code = ''
-		code += indent + 'var $view = this.view\n\n'
-		code += indent + 'var $turtle = this.turtle\n'
-		code += indent + 'var $stampId = ++$view.$pickId\n'
-		code += indent + 'var $stamp =  $view.$stamps[$stampId]\n\n'
-
-		code += indent + 'if(!$stamp || $stamp.constructor !== this.'+classname+'){\n'
-		code += indent + '	$stamp = $view.$stamps[$stampId] = new this.'+classname+'()\n'
-		code += indent + '	$stamp.$stampId = $stampId\n'
-		code += indent + '	$stamp.view = $view\n'
-		code += indent + '}\n'
-
-		code += indent + 'var $layer = '+macroargs[0]+'.$layer\n'
-		code += indent + 'if($layer){\n'
-		code += indent + '	var $l = $layer + "'+classname+'"\n'
-		code += indent + '	$stamp.$layer = $layer\n'
-		code += indent + '	$stamp.$shaders = this.$shaders[$l]\n'
-		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders[$l] = {})\n'
-		code += indent + '} else {\n'
-		code += indent + '	$stamp.$shaders = this.$shaders.'+classname+'\n'
-		code += indent + '	if(!$stamp.$shaders) $stamp.$shaders = (this.$shaders.'+classname+' = {})\n'
-		code += indent + '}'
-		code += indent + '$stamp.initState('+mainargs[0]+')\n'
-
-		code += indent + '$turtle._pickId = $stampId\n'
-		code += indent + '$stamp.turtle = $turtle\n'
-		if(macroargs[0]) code += indent + '$stamp.$stampArgs = '+macroargs[0]+'\n'
-		code += indent + '$stamp.$outerState = this._state && this._state.'+classname+'\n'
-
-		var stack = [
-			macroargs[0],
-			'this._state && this._state.'+classname, // outer state
-			'$stamp._state'
-		]
-		
 		var props = this._props
-
-		code += indent + 'var '
-		var nprops = 0
+		code += indent + 'var $v;if(($v=' + args[1] + '.state) !== undefined) '+args[0]+'._state = $v;\n'
 		for(let key in props){
-			if(nprops++) code +=', '
-			code += '_'+key
+			code += indent + 'var $v;if(($v=' + args[1] + '.' + key + ') !== undefined) '+args[0]+'._'+key+' = $v;\n'
 		}
-		code += '\n'
-
-		if(macroargs[0]){
-			code += indent +'if('+macroargs[0]+'){\n'
-			code += styleStampCode(indent+'	', macroargs[0], props, true)
-			code += indent +'}\n'
-		}
-
-		code += indent +'var $p0=this._state && this._state.'+classname+'\n'
-		code += indent +'if($p0){\n'
-		code += styleStampCode(indent+'	', '$p0', props)
-		code += indent +'}\n'
-
-		code += indent +'var $p1=$stamp._state\n'
-		code +=	indent +'if($p1){\n'
-		code += styleStampCode(indent+'	', '$p1', props)
-		code += indent +'}\n'
-
-		for(let key in props){
-			code += indent + 'if(_'+key+' !== undefined) $stamp._'+key+' = _'+key+'\n'
-		}
-
 		return code
 	}
 
-	$DRAWSTAMP(target, classname, macroargs, mainargs, indent){
-		var code = ''
-		code += indent + '$stamp.$x = $turtle.wx\n'
-		code += indent + '$stamp.$y = $turtle.wy\n'
-		code += indent + '$stamp.$w = $turtle._w\n'
-		code += indent + '$stamp.$h = $turtle._h\n'
-		code += indent + '$stamp.onDraw()\n'
-		code += indent + 'var $turtle = $stamp.turtle\n'
-		code += indent + '$stamp.$x = $turtle._x\n'
-		code += indent + '$stamp.$y = $turtle._y\n'
-		code += indent + '$stamp.$w = $turtle._w\n'
-		code += indent + '$stamp.$h = $turtle._h\n'
-		code += indent + '$turtle._pickId = 0'
-		return code
+	drawStamp(){
+		var view = this.view
+		var $writeList = view.$writeList
+		this.$writeStart = $writeList.length
+		var turtle = this.turtle
+		turtle._margin = this._margin
+		turtle._padding = this._padding
+		turtle._align = this._align
+		turtle._down = this._down
+		turtle._wrap = this._wrap
+		turtle._x = this._x
+		turtle._y = this._y
+		turtle._w = this._w
+		turtle._h = this._h
+		this.beginTurtle()
+		this.turtle._pickId = this.$pickId
+		this.onDraw()
+		var ot = this.endTurtle()
+		turtle.walk(ot)
+		this.$writeEnd = $writeList.length
 	}
 
 	onCompileVerbs(){
 		this.__initproto__()
 	}
-}
-
-function styleStampCode(indent, inobj, props, noif){
-	var code = ''
-	for(let key in props){
-		if(noif){
-			code += indent + '_'+key+' = ' + inobj +'.' + key + '\n'
-		}
-		else{
-			code += indent + 'if(_'+key+' === undefined) _'+key+' = ' + inobj +'.' + key + '\n'
-		}
-	}
-	return code
 }

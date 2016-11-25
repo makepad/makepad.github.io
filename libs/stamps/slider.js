@@ -14,11 +14,11 @@ module.exports = class Slider extends require('base/stamp'){
 		this.dragOffset = -1
 		this.inPlace = 1
 		this.tools = {
-			Bg:require('tools/rect').extend({
+			Bg:require('shaders/rect').extend({
 				color:'gray',
 				padding:5
 			}),
-			Knob:require('tools/rect').extend({
+			Knob:require('shaders/rect').extend({
 				color:'white',
 				vertical:{noTween:1,value:0.},
 				pos:{noTween:1,value:0.},

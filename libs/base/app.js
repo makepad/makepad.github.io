@@ -14,71 +14,31 @@ module.exports = class App extends require('base/view'){
 	prototype(){
 		this.name = 'App'
 		this.cursor = 'default'
-		this.style = require('styles/dark')
+		this.x = 0
+		this.y = 0
+		this.w = '100%'
+		this.h = '100%'
 	}
 
 	constructor(){
 		super()
-
-		// apply style to all nested classes
-		var obj = this.style.compute(this.constructor)
 		
-		// initialize style
-		for(var key in obj){
-			var value = this[key]
-			if(typeof value.extend === 'function'){ // its a class
-				this[key] = value.extend(obj[key])
-			}
-			else this[key] = obj[key]
-		}
-
 		// create app
 		this.store = Store.create()
 
-		var app = this
-		
-		var viewTodoMap = app.$viewTodoMap = []
+		// the turtle writelist
+		this.$writeList = []
 
-		// our layout object used for running turtles on the view tree
-		var layout = app.$turtleLayout = {
-			$writeList: [],
-			Turtle:app.Turtle,
-			beginTurtle:function(context){
-				var len = ++this.$turtleStack.len
-				var outer = this.turtle
-				var turtle = this.turtle = (this.$turtleStack[len] || (this.$turtleStack[len] = new this.Turtle(this)))
-				turtle.context = context
-				turtle.begin(outer)
-				return turtle
-			},
-			endTurtle:function(){
-				this.turtle.end()
-				var last = this.turtle
-				this.turtle = this.$turtleStack[--this.$turtleStack.len]
-				return last
-			},
-			$moveWritten:function(start, dx, dy){
-				var writes = this.$writeList
-				var current = this.$turtleStack.len
-				for(let i = start; i < writes.length; i ++){
-					var node = writes[i]
-					//var level = writes[i+1]
-					//if(current > level) continue
-					node.$xAbs += dx
-					node.$yAbs += dy
-				}
-			}
-		}
-		layout.turtle = new app.Turtle(layout)
-		layout.$turtleStack = [layout.turtle]
-		layout.$writeList = []
-		layout.view = layout
+		var app = this.app = this
+		var viewTodoMap = this.$viewTodoMap = []
+
+		viewTodoMap[this.todo.todoId] = this
 
 		app.camPosition = mat4.create()
 		app.camProjection = mat4.create()
 		
-		var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
-		app.painterUbo = new painter.Ubo(painterUboDef)
+		//var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
+		app.painterUbo = new painter.Ubo(this.$painterUboDef)
 
 		app._frameId = 0
 
@@ -99,8 +59,7 @@ module.exports = class App extends require('base/view'){
 			if(view[event]) view[event](msg)
 
 			// lets find the right cursor
-			var stamp = view.$stamps[pickId]
-
+			var stamp = view.$pickIds[pickId]
 			if(stamp){
 				let msg2 = Object.create(msg)
 				msg2.x = msg.xLocal - stamp.$x
@@ -261,22 +220,26 @@ module.exports = class App extends require('base/view'){
 
 
 		painter.onResize = function(){
-			app.relayout()
+			app._x = 0
+			app._y = 0
+			app._w = painter.w
+			app._h = painter.h
+			app.redraw()
 		}
 
 		// lets do our first redraw
 		app.app = app
 		// we are the default focus
 		app.focusView = app
-		app.$recomposeList = []
 		// lets attach our todo and ubo to the main framebuffer
 		painter.mainFramebuffer.assignTodoAndUbo(app.todo, app.painterUbo)
 
+		this.appTurtle = new this.Turtle(this)
+
 		// compose the tree
-		app.recompose()
 		//app.$composeTree(app)
 		// first draw
-		//app.redraw()
+		painter.onResize()
 		//app.$redrawViews()
 	}
 
@@ -312,6 +275,7 @@ module.exports = class App extends require('base/view'){
 		keyboard.setTextInputFocus(focus)
 	}
 
+	/*
 	$composeTree(node, oldChildren){
 		// it calls compose recursively
 		if(node.onCompose){
@@ -364,7 +328,7 @@ module.exports = class App extends require('base/view'){
 		}
 		if(node.onAfterCompose) node.onAfterCompose()
 	}
-
+	*/
 	/*
 	proto.$generateViewIds = function(){
 		var viewId = 1
@@ -391,6 +355,7 @@ module.exports = class App extends require('base/view'){
 	}*/
 
 	// relayout the viewtree
+	/*
 	$relayoutViews(){
 		var iter = this
 		var layout = this.$turtleLayout
@@ -506,10 +471,14 @@ module.exports = class App extends require('base/view'){
 			}
 			iter = next
 		}
+	}*/
+
+	getTime(){
+		return (Date.now() - painter.timeBoot) / 1000
 	}
 
 	$updateTime(){
-		this._time = (Date.now() - painter.timeBoot) / 1000
+		this._time = this.getTime()
 		this._frameId++
 	}
 
@@ -517,30 +486,26 @@ module.exports = class App extends require('base/view'){
 		this.$updateTime()
 		// we can submit a todo now
 		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
-
 		var todo = this.todo
 
-		var recList = this.$recomposeList
-		for(var i = 0; i < recList.length; i++){
-			var node = recList[i]
-			this.$composeTree(node)//, node.children)
-		}
-		recList.length = 0
+		// copy to turtle
+		//this.$turtleStack.len = 0
+		this.$writeList.length = 0
 
-		if(!this.$layoutClean){
-			this.$layoutClean = true
-			this.$relayoutViews()
-		}
-		this.$drawDepLayoutStep = 0
-		this.$drawDepLayoutNext = false
+		// set up our root turtle
+		var turtle = this.appTurtle
+		turtle.$xAbs = 0
+		turtle.$yAbs = 0
+		turtle._x = 0
+		turtle._y = 0
+		turtle.wy = 0
+		turtle.wx = 0
+		turtle.ix = 0
+		turtle.iy = 0
+		turtle._w = turtle.width = this._w
+		turtle._h = turtle.height = this._h
+
 		this.$redrawView()
-
-		// needs another layout/draw cycle because some sizes depended on their draw output
-		if(this.$drawDepLayoutNext){
-			this._frameId++
-			this.$drawDepLayoutStep = 1
-			this.$relayoutViews()
-			this.$redrawView()
-		}
+		this.$recomputeMatrix()
 	}
 }

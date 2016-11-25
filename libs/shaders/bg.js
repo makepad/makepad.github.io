@@ -1,48 +1,29 @@
 var types = require('base/types')
 var painter = require('services/painter')
 
-module.exports = class Bg extends require('base/shader'){
+module.exports = class Bg extends require('./quad'){
 
 	prototype(){
 		
 		this.props = {
-			visible: {noTween:true, value:1.0},
-
-			x: {noInPlace:1, value:NaN},
-			y: {noInPlace:1, value:NaN},
-			w: {noInPlace:1, value:NaN},
-			h: {noInPlace:1, value:NaN},
-			z: 0,
-
-			wrap: {styleLevel:2, value:1},
-			down: {styleLevel:1, value:0},
-			align: {styleLevel:1, value:[undefined,undefined]},
-			padding: {styleLevel:2, value:[0,0,0,0]},
-			margin: {styleLevel:1, value:[0,0,0,0]},
-			noBounds: {styleLevel:1, value:1},
-			
-			color: {pack:'float12', value:'gray'},
-			borderColor: {pack:'float12', value:'white'},
+			borderColor: {value:'white'},
 			borderRadius: {value:0},
 			borderWidth: {value:0},
 
-			moveScroll:{noTween:1, value:1.},
-			turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 			fieldSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 			mesh:{kind:'geometry', type:types.vec4},
 		}
 
 		this.verbs = {
 			draw:function(overload){
-				this.$STYLEPROPS(overload, 1)
-				this.$ALLOCDRAW()
+				this.STYLEPROPS(overload, 1)
+				this.ALLOCDRAW(overload)
 				this.turtle.walk()
-				this.$WRITEPROPS()
+				this.WRITEPROPS()
 			},
 			begin:function(overload){
-				this.$STYLEPROPS(overload, 2)
-				this.$ALLOCDRAW()
+				this.STYLEPROPS(overload, 2)
+				this.ALLOCDRAW(overload)
 				var t = this.turtle
 				t.shiftPadding(t._borderWidth)
 				this.beginTurtle()
@@ -50,7 +31,7 @@ module.exports = class Bg extends require('base/shader'){
 			end:function(doBounds){
 				var ot = this.endTurtle(doBounds)
 				this.turtle.walk(ot)
-				this.$WRITEPROPS()
+				this.WRITEPROPS()
 			}
 		}
 
@@ -136,25 +117,12 @@ module.exports = class Bg extends require('base/shader'){
 			this.mesh.y = clamp(1. - this.borderRadius / this.h,0.,1.)
 		}
 
-		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
-		var size = vec2(max(0.,this.w), max(0.,this.h))
-
-		this.mesh.xy = (clamp(
-			this.mesh.xy * size + shift, 
-			max(this.turtleClip.xy, this.viewClip.xy),
-			min(this.turtleClip.zw, this.viewClip.zw)
-		) - shift) / size
-
-		var pos = vec2(
-			this.mesh.x * this.w,
-			this.mesh.y * this.h
-		) + shift
+		var pos = this.scrollAndClip(this.mesh.xy)
 			
 		return vec4(pos , 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	pixel(){$
-
 		//var antialias = this.borderRadius*4.*this.pixelRatio
 		this._aa = this.borderRadius*4.*this.pixelRatio
 		this._scale = 1.

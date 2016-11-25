@@ -1,33 +1,31 @@
 var types = require('base/types')
 var painter = require('services/painter')
 
-module.exports = class Quad extends require('base/shader'){
+module.exports = class Clip extends require('base/shader'){
 
 	prototype(){
 		// special
 		this.props = {
-			visible: {noTween:true, value:1.0},
+			visible: {value:1.0},
 
-			x: {noInPlace:1, value:NaN},
-			y: {noInPlace:1, value:NaN},
-			w: {noInPlace:1, value:NaN},
-			h: {noInPlace:1, value:NaN},
+			x: {value:NaN},
+			y: {value:NaN},
+			w: {value:NaN},
+			h: {value:NaN},
 			z: 0,
 
+			down: {value:0},
+			align: {value:[undefined,undefined]},
+			margin: {value:[0,0,0,0]},
+			wrap: {mask:2, value:1},
+			padding: {mask:2, value:[0,0,0,0]},
 
-			down: {styleLevel:1, value:0},
-			align: {styleLevel:1, value:[undefined,undefined]},
-			wrap: {styleLevel:2, value:1},
-			padding: {styleLevel:2, value:[0,0,0,0]},
-			margin: {styleLevel:1, value:[0,0,0,0]},
-
-			color: {pack:'float12', value:'gray'},
-
-			mesh:{kind:'geometry', type:types.vec2},
+			turtleClip:{value:[-50000,-50000,50000,50000]},
+			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+			moveScroll:{value:1.},
 		}
 
 		var x = new painter.Mesh(types.vec2)
-
 		this.mesh = new painter.Mesh(types.vec2).pushQuad(0,0,0,1,1,0,1,1)
 
 		this.verbs = {
@@ -38,7 +36,7 @@ module.exports = class Quad extends require('base/shader'){
 				this.$WRITEPROPS()
 			},
 			begin:function(overload){
-				this.$STYLEPROPS(overload, 2)
+				this.$STYLEPROPS(overload, 3)
 				this.$ALLOCDRAW()
 				this.beginTurtle()
 			},
@@ -50,10 +48,10 @@ module.exports = class Quad extends require('base/shader'){
 		}
 	}
 
-	vertexStyle(){
+	vertexStyle(){$
 	}
 
-	vertexPost(){
+	vertexPost(){$
 	}
 
 	vertexPre(){$
@@ -81,12 +79,11 @@ module.exports = class Quad extends require('base/shader'){
 			0., 
 			1.
 		)
-		//this.pos = pos
 
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	pixel(){$
-		return this.color
+		return 'red'
 	}
 }

@@ -63,9 +63,9 @@ module.exports = class Tree extends require('base/view'){
 				pickAlpha: - 1,
 				w:'100%-2'
 			}),
-			Text:require('tools/text').extend({
+			Text:require('shaders/text').extend({
 			}),
-			Icon:require('tools/icon').extend({
+			Icon:require('shaders/icon').extend({
 			}),
 			TreeLine:require('tools/shadowquad').extend({
 				isLast:0,

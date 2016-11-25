@@ -2,7 +2,7 @@ var types = require('base/types')
 var painter = require('services/painter')
 var fontloader = require('parsers/font')
 
-module.exports = class ArcText extends require('tools/text'){
+module.exports = class ArcText extends require('shaders/text'){
 
 	prototype(){
 		this.props = {

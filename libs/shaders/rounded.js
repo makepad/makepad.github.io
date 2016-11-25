@@ -1,85 +1,55 @@
 var types = require('base/types')
 var painter = require('services/painter')
 
-module.exports = class Rect extends require('base/shader'){
+module.exports = class Rounded extends require('./quad'){
 
 	prototype(){
 		this.props = {
-			visible: {noTween:true, value:1.0},
+			borderColor: {value:[0,0,0,1]},
+			shadowColor: {value:[0,0,0,0.5]},
 
-			x: {noInPlace:1, value:NaN},
-			y: {noInPlace:1, value:NaN},
-			w: {noInPlace:1, value:NaN},
-			h: {noInPlace:1, value:NaN},
-			z: 0,
-
-			wrap: {styleLevel:2, value:1},
-			down: {styleLevel:1, value:0},
-			align: {styleLevel:1, value:[undefined,undefined]},
-			padding: {styleLevel:2, value:[0,0,0,0]},
-			margin: {styleLevel:1, value:[0,0,0,0]},
-			noBounds: {styleLevel:1, value:0},
-
-			color: {pack:'float12', value:'gray'},
-			borderColor: {pack:'float12' ,value:[0,0,0,1]},
-			shadowColor: {pack:'float12', value:[0,0,0,0.5]},
-
-			borderWidth: {pack:'int12', value:[0,0,0,0]},
-			borderRadius: {pack:'int12', value:[8,8,8,8]},
-
-			moveScroll:{noTween:1, value:1.},
-			turtleClip:{styleLevel:3, noInPlace:1, noCast:1, value:[-50000,-50000,50000,50000]},
-			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+			borderWidth: {value:[0,0,0,0]},
+			borderRadius: {value:[8,8,8,8]},
 
 			shadowBlur: 0.0,
 			shadowSpread: 0.0,
-			shadowOffset: {pack:'int12', value:[0.0,0.0]},
+			shadowOffset: {value:[0.0,0.0]},
 			
 			mesh:{kind:'geometry', type:types.vec3},
 		}
 
-		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+		this.mesh = new painter.Mesh(types.vec3).push(
 			0,0, 0,
 			1,0, 0,
 			0, 1, 0,
 			1, 1, 0
 		)
-		.pushQuad(
+		.push(
 			0,0, 1,
 			1,0, 1,
 			0, 1, 1,
 			1, 1, 1
 		)
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3,4,5,6,6,5,7)
 
 		this.verbs = {
 			$readOffset:function(o){
-				this.$PROPVARDEF()
-				var len = this.$PROPLEN()
+				var len = this.PROPLEN()
 				if(o < 0 || o >= len) return
 				return {
-					x:this.$PROP(o, 'x'),
-					y:this.$PROP(o, 'y'),
-					w:this.$PROP(o, 'w'),
-					h:this.$PROP(o, 'h')
+					x:this.PROP(o, 'x'),
+					y:this.PROP(o, 'y'),
+					w:this.PROP(o, 'w'),
+					h:this.PROP(o, 'h')
 				}
 			},
-			draw:function(overload){
-				this.$STYLEPROPS(overload, 1)
-				this.$ALLOCDRAW()
-				this.turtle.walk()
-				this.$WRITEPROPS()
-			},
 			begin:function(overload){
-				this.$STYLEPROPS(overload, 2)
-				this.$ALLOCDRAW()
+				this.STYLEPROPS(overload, 3)
+				this.ALLOCDRAW(overload)
 				var t = this.turtle
 				t.shiftPadding(t._borderWidth)
 				this.beginTurtle()
-			},
-			end:function(){
-				var ot = this.endTurtle()
-				this.turtle.walk(ot)
-				this.$WRITEPROPS()
 			}
 		}
 	}
@@ -94,25 +64,12 @@ module.exports = class Rect extends require('base/shader'){
 
 		if (this.visible < 0.5) return vec4(0.0)
 
-		// compute the normal rect positions
-		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
+		var delta = vec2(0.)
 		if(this.mesh.z < 0.5){
-			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
+			delta += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
 		}
 
-		// lets clip it
-		var size = vec2(this.w, this.h)
-
-		this.mesh.xy = (clamp(
-			this.mesh.xy * size + shift, 
-			max(this.turtleClip.xy, this.viewClip.xy),
-			min(this.turtleClip.zw, this.viewClip.zw)
-		) - shift) / size
-
-		var pos = vec2(
-			this.mesh.x * this.w,
-			this.mesh.y * this.h
-		) + shift
+		var pos = this.scrollAndClip(this.mesh.xy, delta)
 
 		var adjust = 1.
 		if(this.mesh.z < 0.5){
@@ -156,9 +113,6 @@ module.exports = class Rect extends require('base/shader'){
 		//return 'red'
 		this.pixelStyle()
 		
-		// NOT ENOUGH VARYINGS ON IOS. otherwise this goes in the vertex shader
-		//var quick = this.quick
-
 		// quick out
 		if(this.mesh.z < 0.5){
 			quick += vec4(this.shadowBlur,this.shadowBlur,-this.shadowBlur,-this.shadowBlur)

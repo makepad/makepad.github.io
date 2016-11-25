@@ -87,7 +87,7 @@ module.exports = class Tab extends require('base/stamp'){
 
 		this.inPlace = 0	
 		this.tools = {
-			Text:require('tools/text').extend({
+			Text:require('shaders/text').extend({
 				font:require('fonts/ubuntu_monospace_256.font'),
 				shadowOffset:[1,1],
 				fontSize:11,
@@ -97,7 +97,7 @@ module.exports = class Tab extends require('base/stamp'){
 				margin:[0,4,0,0],
 				color:'#9'
 			}),
-			Icon:require('tools/icon').extend({
+			Icon:require('shaders/icon').extend({
 				shadowOffset:[1,1],
 				shadowColor:'#0005',
 				shadowBlur:1,
@@ -105,7 +105,7 @@ module.exports = class Tab extends require('base/stamp'){
 				color:'#a',
 				margin:[0,4,0,0]
 			}),
-			Bg:require('tools/rect').extend({
+			Bg:require('shaders/rect').extend({
 				borderRadius:[1,1,6,6],
 				padding:[6,1,3,4],
 				color:'#3'

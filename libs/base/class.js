@@ -90,6 +90,14 @@ Object.defineProperty(module.exports.prototype, 'inheritable', {
 	configurable: true, 
 	writable: true, 
 	value: function inheritable(name, callback, type) { 
+		// if(!callback){
+		// 	var inh = this.__inheritable__
+		// 	if(!inh) return false
+		// 	for(let i = inh.length - 1; i>=0; i--){
+		// 		if(inh[i].name === name) return true
+		// 	}
+		// 	return false
+		// }
 		if(!this.hasOwnProperty('__inheritable__')) { 
 			Object.defineProperty(this, '__inheritable__', { 
 				enumerable: false, 

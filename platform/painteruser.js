@@ -238,7 +238,7 @@ module.exports = function painterUser(proto){
 		todo.f32 = new Float32Array(msg.buffer)
 		todo.i32 = new Int32Array(msg.buffer)
 
-		todo.name = msg.name
+		todo.viewId = msg.viewId
 		todo.length = msg.length
 		//todo.timeStart = msg.timeStart
 

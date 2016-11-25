@@ -2,12 +2,18 @@ var Tools = require('base/tools')
 
 module.exports = class Style extends require('base/class'){
 
-	constructor(cls, object, toolPath, toolName){
+	constructor(){
 		super()
-		this.class = cls
-		this.object = object
-		this.toolPath = toolPath
-		this.toolName = toolName
+		module.worker.style = this
+		module.worker.onRequire = m=>{
+			this.processModule(m)
+		}
+		var chain = this.protoChain = []
+		var proto = this
+		while(proto){
+			chain.unshift(proto)
+			proto = Object.getPrototypeOf(proto)
+		}
 	}
 
 	prototype(){
@@ -28,30 +34,32 @@ module.exports = class Style extends require('base/class'){
 		})
 	}
 
-	module(match){
-		// lets check if we have the module path in our protochain
-		var cls = this.class
-		while(cls){
-			//if(cls.__module__)console.log(cls.__module__.path)
-			if(cls.__module__ && cls.__module__.path.match(match)) return true
-			var proto = Object.getPrototypeOf(cls.prototype)
-			cls = proto && proto.constructor
-		}
-		return false
-	}
+	processModule(m){
+		var cls = m.exports
+		if(typeof cls !== 'function' || typeof cls.extend !== 'function') return
+		var proto = cls.prototype
+		var path = m.path
+		var object = this.object = {}
+		this.changed = false
 
-	tool(match){
-		return this.toolName.match(match) || this.toolPath.match(match)
+		if(proto.baseStyle){
+			proto.baseStyle(this)
+		}
+		
+		// ok now lets walk our chain and apply module based queries
+		var chain = this.protoChain
+		for(let i =0; i < chain.length; i++){
+			var item = chain[i]
+			if(item.match) item.match.call(this, path)
+			var sub = item.constructor.__module__
+			if(sub) m.deps[sub.path] = sub
+		}
+		if(this.changed){ // inherit class
+			var final = Tools.protoProcess('', object, null, null, null, new WeakMap())
+			m.exports = cls.extend(final)
+		}
 	}
 	
-	root(){
-		return false
-	}
-
-	extend(name, v){
-
-	}
-
 	set to(v){
 		this.changed = true
 		deepCopy(this.object, v)
@@ -59,45 +67,6 @@ module.exports = class Style extends require('base/class'){
 
 	get to(){
 		return this.object
-	}
-
-	static compute(cls){
-		var Style = this
-		// lets initialize inheritables
-		// lets walk all the inheritables with arg === 'true'
-		function walk(cls, toolPath, toolName){
-			var out = {}
-			var proto = cls.prototype
-			proto.__initproto__()
-			var inheritable = proto.__inheritable__
-			for(let i = 0; i < inheritable.length;i++){
-				var inh = inheritable[i]
-				var name = inh.name
-				//console.log(name)
-				if(inh.type !== true) continue
-
-				var sub = walk(proto[name], toolPath?toolPath + '.' + name:name, name)
-				if(Object.keys(sub).length){
-					out[name] = sub
-				}
-			}
-			// lets fire on our node
-			//console.log(toolPath)
-			var s = new Style(cls, out, toolPath, toolName)
-			if(s.match) s.match()
-			if(!s.changed && cls.prototype.defaultStyle){
-				cls.prototype.defaultStyle(s)
-			}
-			// lets process object for $ inheritable props
-			return Tools.protoProcess('', out, null, null, null, new WeakMap())
-		}
-		var obj = walk(cls, '', '')
-		if(Style.prototype.dump){
-			console.log(obj)
-		}
-		// lets just apply the object
-
-		return obj//cls.extend(obj)
 	}
 }
 

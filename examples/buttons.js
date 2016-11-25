@@ -1,6 +1,6 @@
 module.exports = require('base/drawapp').extend({
 	tools: {
-		Button:require('tools/button').extend({
+		Button:require('stamps/button').extend({
 			inPlace:0,
 			styles:{
 				$tween:4,

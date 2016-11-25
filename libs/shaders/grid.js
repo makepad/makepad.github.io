@@ -1,4 +1,4 @@
-module.exports = class Grid extends require('tools/quad'){ 
+module.exports = class Grid extends require('shaders/quad'){ 
 	prototype() { 
 		this.bgColor = 'gray' 
 		this.lineColor 

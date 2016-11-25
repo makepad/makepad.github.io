@@ -3,7 +3,7 @@ module.exports = require('base/drawapp').extend({
 		Line: { 
 			lineWidth: 2 
 		}, 
-		Slider: require('tools/slider').extend({ 
+		Slider: require('stamps/slider').extend({ 
 			inPlace: 0 
 		}) 
 	}, 
