@@ -20,8 +20,12 @@ module.exports = class Button extends require('base/stamp'){
 				default:{
 					to:{
 						Bg:{
+							color:c.bgTop,
 							glowSize:0,
 							borderColor:c.textLo
+						},
+						Icon:{
+							color:c.textMed
 						}
 					},
 					duration:0.8
@@ -29,11 +33,39 @@ module.exports = class Button extends require('base/stamp'){
 				over:{
 					to:{
 						Bg:{
+							color:c.bgTop,
 							borderColor:'white',
 							glowSize:1
+						},
+						Icon:{
+							color:'#c'
 						}
 					},
 					duration:0.05
+				},
+				down:{
+					5:{
+						Bg:{
+							borderColor:'white',
+							color:'#f',
+							glowSize:1
+						},
+						Icon:{
+							color:'#0'
+						}
+					},
+					to:{
+						Bg:{
+							borderColor:'white',
+							color:'#6',
+							glowSize:1
+						},
+						Icon:{
+							color:'#f'
+						}
+					},
+					//time:{fn:'ease',begin:0,end:10},
+					duration:0.5
 				}
 			}
 		}
@@ -84,6 +116,14 @@ module.exports = class Button extends require('base/stamp'){
 
 	onFingerOut(){
 		this.state = 'default'
+	}
+	
+	onFingerDown(){
+		this.state = 'down'
+	}
+
+	onFingerUp(){
+		this.state = 'over'
 	}
 
 	onDraw() {
