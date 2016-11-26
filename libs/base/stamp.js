@@ -146,6 +146,7 @@ module.exports = class Stamp extends require('base/class'){
 				interrupt(array, o, time, proto)
 				array[o + animStateOff] = newState // set new state
 				array[o + animStartOff] = time + newDelay // new start
+				array[o + animNextOff] = 0 // wipe next
 				if(newTotal>todo.timeMax) todo.timeMax = newTotal
 			}
 			// alright so how do we declare this thing dirty

@@ -7,6 +7,7 @@ module.exports = class Button extends require('base/stamp'){
 				color:c.textMed
 			},
 			Icon:{
+				dump:1,
 				color:c.textMed
 			},
 			Bg:{
