@@ -94,9 +94,9 @@ module.exports = class Compiler extends require('base/class'){
 
 		this._props[key] = config
 		if(config.value !== undefined) this[key] = config.value
-		if(config.mask === undefined) config.mask = 1 
+		if(config.mask === undefined) config.mask = 1
 		if(!config.type) config.type = types.typeFromValue(config.value)
-		if(!config.kind) config.kind = 'instance'		
+		if(!config.kind) config.kind = 'instance'
 	}
 
 	onCompileVerbs(){
@@ -233,25 +233,23 @@ module.exports = class Compiler extends require('base/class'){
 
 		// extracted state information
 		var stateDuration = {}
-		var stateIds = {}
 		var stateDelay = {}
+		var stateIds = {}
 		var stateId = 1
 
 		initvars += '\tfloat at = thisDOTtime - thisDOTanimStart;\n'
-		initvars += '\tint first = int(mod(thisDOTanimState,4096.0));\n'
-		initvars += '\tint next = int(floor(thisDOTanimState/4096.0));\n'
 		
 		// first animation state
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
 			stateIds[key] = id
-			stateDuration[key] = (state.duration || 0.) * (state.repeat || 1.)
-			stateDelay[key] = state.delay || 0.
+			stateDuration[id] = (state.duration || 0.) * (state.repeat || 1.)
+			stateDelay[id] = state.delay || 0.
 			initvars += '\t'
 			if(stateId>2) initvars += 'else '
-			initvars += 'if(first == '+id+'){\n'
-			var div = forceDot(state.duration||0.)
+			initvars += 'if(thisDOTanimState == '+id+'.){\n'
+			var div = forceDot(state.duration || 0.)
 			initvars += '\t\tfloat T = at'
 			if(div !== '1.0') initvars += '/'+div
 			initvars += ';\n'
@@ -260,14 +258,14 @@ module.exports = class Compiler extends require('base/class'){
 			if(state.repeat){
 				if(state.bounce){
 					if(state.repeat === Infinity) initvars += '\t\tfloat T = mod(st,2.);if(T>1.)T=2.-T;\n'
-					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.), next = 0;else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
+					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.), thisDOTanimNext = 0.;else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
 				}
 				else{
 					if(state.repeat === Infinity) initvars += '\t\tT = mod(T,1.);\n'
-					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.), next=0;else T = 1.;\n'
+					else initvars += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.), thisDOTanimNext=0.;else T = 1.;\n'
 				}
 			}
-			else initvars += '\t\tif(T<=1.)next = 0;\n'
+			else initvars += '\t\tif(T<=1.)thisDOTanimNext = 0.;\n'
 			//if(state.duration)
 			initvars += '' // do loop/bounce/duration on T
 			initvars += firstStateCode[key]
@@ -276,15 +274,15 @@ module.exports = class Compiler extends require('base/class'){
 		
 		// next animation state
 		stateId = 1
-		initvars += '\tif(next != 0){\n'
+		initvars += '\tif(thisDOTanimNext != 0.){\n'
 		
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
 			initvars += ' '
 			if(stateId>2) initvars += 'else '
-			initvars += '\t\tif(next == '+id+'){\n'
-			var div = forceDot(state.duration||0.)
+			initvars += '\t\tif(thisDOTanimNext == '+id+'.){\n'
+			var div = forceDot(state.duration || 0.)
 			initvars += '\t\t\tfloat T = at'
 			if(div !== '1.0') initvars += '/'+div
 			initvars += ';\n'
@@ -299,7 +297,7 @@ module.exports = class Compiler extends require('base/class'){
 					else initvars += '\t\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
 				}
 			}
-			else initvars += '\t\t\tif(T<=1.)next = 0;\n'
+			//else initvars += '\t\t\tif(T <= 1.) thisDOTanimNext = 0.;\n'
 			initvars += '' // do loop/bounce/duration on T
 			initvars += nextStateCode[key]
 			initvars += '\t\t}\n'
@@ -569,8 +567,12 @@ module.exports = class Compiler extends require('base/class'){
 		var code = '' // args $a, $o, $t
 
 		// compute T from the array
-		code += '\tvar T = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
+		code += '\tvar at = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
 		code += '\tvar animState = $a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
+		code += '\tvar animNext = $a[$o+'+instanceProps.thisDOTanimNext.offset+']\n'
+		
+		code += '\tfor(let i = 0; i < 2;i++){\n'
+		code += '\tvar state = i?animNext:animState\n'
 
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
@@ -586,7 +588,7 @@ module.exports = class Compiler extends require('base/class'){
 
 			if(prop.hasTo){
 				for(let i = 0; i < slots; i++){
-					code += '\tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
+					code += ' \tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
 				}
 			}
 
@@ -650,36 +652,35 @@ module.exports = class Compiler extends require('base/class'){
 		for(let key in states){
 			let state = states[key]
 			let id = stateId++
-			code += '\tif(animState == '+id+'.){\n'
-			var div = forceDot(state.duration||0.)
-			if(div !== '1.0'){
-				code += '\t\tT/='+div+';\n'
-			}
+			code += '\t'
+			if(id>2) code += 'else '
+			code += 'if(state == '+id+'.){\n'
+
+			var div = forceDot(state.duration || 0.)
+			code += '\t\tvar T = at'
+			if(div !== '1.0') code += '/'+div
+			code += ';\n'
+			code += '\t\tat -= '+div +';\n'
+
 			// now we loop and/or bounce
 			if(state.repeat){
 				if(state.bounce){
-					if(state.repeat === Infinity){
-						code += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
-					}
-					else{
-						code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.);else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
-					}
+					if(state.repeat === Infinity) code += '\t\tT = mod(T,2.);if(T>1.)T=2.-T;\n'
+					else code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,2.), animNext = 0;else T = '+(state.repeat%2?'1.':'0.')+';if(T>1.)T=2.-T;\n'
 				}
 				else{
-					if(state.repeat === Infinity){
-						code += '\t\tT = mod(T,1.);\n'
-					}
-					else{
-						code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.);else T = 1.;\n'
-					}
+					if(state.repeat === Infinity) code += '\t\tT = mod(T,1.);\n'
+					else code += '\t\tif(T<'+forceDot(state.repeat)+') T = mod(T,1.), animNext = 0;else T = 1.;\n'
 				}
 			}
+			else code += '\t\tif(T<=1.) animNext = 0.\n'
 			// run easing functions over T
 			code += stateCode[key]
 			//if(this.dump) code += this.DUMPPROPS(instanceProps)//'console.log($a$a[$o+'+instanceProps.thisDOTcolor.offset+'])\n'
 			
-			code += '\t\treturn\n\t}\n'
+			code += '\t}\n'
 		}
+		code += '\tif(!animNext)break;\n\t}\n'
 		return this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
 	}
 
@@ -889,13 +890,13 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		else scope.$turtle = 'this.turtle'
 		
-		code += indent + 'var $state = $turtle._state\n'
+		code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'
 		code += indent + '$props.dirty = true\n'
 		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
 		// lets execute
 		code += indent + 'var $last = $a[$o+' + instanceProps.thisDOTanimState.offset+']\n'
 		code += indent + 'if($last) $info.interrupt($a, $o, $view._time, $proto)\n'
-		code += indent + 'var $max = $view._time + $info.stateDuration[$state]\n'
+		code += indent + 'var $max = $view._time + $info.stateDuration[$stateId]\n'
 		code += indent + 'if($max>$todo.timeMax) $todo.timeMax = $max\n'
 
 		// write properties.
@@ -907,13 +908,16 @@ module.exports = class Compiler extends require('base/class'){
 			var source = '$turtle._' + prop.name
 			if(!prop.config.mask){ // system values
 				if(key === 'thisDOTanimStart'){ // now?
-					source = '$view._time + $info.stateDelay[$state]'
+					source = '$view._time + $info.stateDelay[$stateId]'
 				}
 				else if(key === 'thisDOTanimState'){ // decode state prop
-					source = '$info.stateIds[$state] || 1'
+					source = '$stateId'
 				}
 				else if(key === 'thisDOTpickId'){ 
 					source = '$turtle._pickId'
+				}
+				else if(key === 'thisDOTanimNext'){
+					continue
 				}
 				else{
 					source = args[0][prop.name]

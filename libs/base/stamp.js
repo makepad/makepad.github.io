@@ -95,29 +95,58 @@ module.exports = class Stamp extends require('base/class'){
 			let instanceProps = info.instanceProps
 			let interrupt = info.interrupt
 			let slots = mesh.slots
-			let animState = instanceProps.thisDOTanimState.offset
-			let animStart = instanceProps.thisDOTanimStart.offset
-			let stateId = info.stateIds[state] || 1
-			let final = time + (info.stateDelay[state] || 0)
-			let total = final + (info.stateDuration[state] || 0)
+
+			let animStateOff = instanceProps.thisDOTanimState.offset
+			let animNextOff = instanceProps.thisDOTanimNext.offset
+			let animStartOff = instanceProps.thisDOTanimStart.offset
+
+			let newState = info.stateIds[state] || 1
+			let newDelay = (info.stateDelay[newState] || 0)
+			let newDuration = (info.stateDuration[newState] || 0)
+	
+			let newTotal = time + newDelay + newDuration
+
 			let array = mesh.array
+
 			for(let j = start; j < end; j++){
 				let o = j * slots
-				if(queue){ // alright. we have to mask in a thing.
-
-				}
-				interrupt(array, o, time, proto)
-				// lets check if the animation needs to be queued or not.
-
-				array[o + animState] = stateId // set new state
-				array[o + animStart] = final // new start
 				if(props) for(let key in props){
 					let prop = instanceProps['thisDOT'+key]
 					if(!prop) continue
 					if(prop.config.pack || prop.slots > 1) throw new Error("Implement propwrite for packed/props with more than 1 slot")
 					array[o + prop.offset] = props[key]
 				}
-				if(total>todo.timeMax) todo.timeMax = total
+
+				if(queue){ // alright. we have to mask in the next state.
+					let animStart = array[o + animStartOff]
+					let animState = array[o + animStateOff]
+					let animNext = array[o + animNextOff]
+					let animDuration = info.stateDuration[animState] || 0
+					if(animNext && time > animStart + animDuration){ // we have a next anim
+						var animNextDuration = info.stateDuration[animNext] || 0
+
+						interrupt(array, o, animStart+animDuration)
+						// and now shift it
+						array[o + animStateOff] = animNext
+						array[o + animNextOff] = newState
+						array[o + animStartOff] = animStart + animDuration
+						// we have to com
+						let shiftTotal = animStart + animDuration + animNextDuration + newDuration
+						if(shiftTotal>todo.timeMax) todo.timeMax = shiftTotal
+						continue
+					}
+					else if(time < animStart + animDuration){ // previous anim still playing
+						array[o + animNextOff] = newState
+						let nextTotal = animStart + animDuration + newDuration
+						if(nextTotal>todo.timeMax) todo.timeMax = nextTotal
+						continue
+					}
+				}
+				// just interrupt and start a new anim
+				interrupt(array, o, time, proto)
+				array[o + animStateOff] = newState // set new state
+				array[o + animStartOff] = time + newDelay // new start
+				if(newTotal>todo.timeMax) todo.timeMax = newTotal
 			}
 			// alright so how do we declare this thing dirty
 			if(!mesh.dirty){

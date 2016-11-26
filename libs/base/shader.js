@@ -29,6 +29,7 @@ module.exports = class Shader extends require('base/compiler'){
 			pickId:{mask:0, value:0.},
 			animStart:{mask:0, value:1.0},
 			animState:{mask:0, value:0.},
+			animNext:{mask:0, value:0.},
 		
 			state:{value:'default'},
 
@@ -94,9 +95,12 @@ module.exports = class Shader extends require('base/compiler'){
 	//
 	
 	vertexMain() {$
-		var T = this.time
+		// reference the props
+		this.time
 		this.animStart
 		this.animState
+		this.animNext
+		
 		//if(this.tween > 0.01) {
 		//	this.normalTween = clamp((this.animTime - this.tweenStart) / this.duration, 0.0, 1.0)
 		//	T = this.easedTween = this.tweenTime(
