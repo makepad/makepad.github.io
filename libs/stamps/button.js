@@ -124,8 +124,8 @@ module.exports = class Button extends require('base/stamp'){
 		this.setState('down')
 	}
 
-	onFingerUp(){
-		this.setState('over',true)
+	onFingerUp(e){
+		this.setState(e.samePick?'over':'default',true)
 	}
 
 	onDraw() {
