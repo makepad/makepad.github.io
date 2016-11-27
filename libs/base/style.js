@@ -6,6 +6,7 @@ module.exports = class Style extends require('base/class'){
 		super()
 		module.worker.style = this
 		module.worker.onRequire = m=>{
+			console.log("MODULE", m.path)
 			this.processModule(m)
 		}
 		var chain = this.protoChain = []

@@ -7,7 +7,6 @@ module.exports = class Button extends require('base/stamp'){
 				color:c.textMed
 			},
 			Icon:{
-				dump:1,
 				color:c.textMed
 			},
 			Bg:{
@@ -66,7 +65,6 @@ module.exports = class Button extends require('base/stamp'){
 							color:'#f'
 						}
 					},
-					//time:{fn:'ease',begin:0,end:10},
 					duration:0.2
 				}
 			}
@@ -130,7 +128,6 @@ module.exports = class Button extends require('base/stamp'){
 
 	onDraw() {
 		this.beginBg({
-			state:'default',
 			w:'100%',
 			h:'100%'
 		})

@@ -37,8 +37,8 @@ module.exports = class App extends require('base/view'){
 		app.camPosition = mat4.create()
 		app.camProjection = mat4.create()
 		
-		//var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
-		app.painterUbo = new painter.Ubo(this.$painterUboDef)
+		var painterUboDef = app.Surface.prototype.$compileInfo.uboDefs.painter
+		app.painterUbo = new painter.Ubo(painterUboDef)
 
 		app._frameId = 0
 

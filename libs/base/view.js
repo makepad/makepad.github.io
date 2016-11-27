@@ -52,13 +52,13 @@ module.exports = class View extends require('base/class'){
 			if(!this.hasOwnProperty('_verbs')) this._verbs = this._verbs?Object.create(this._verbs):{}
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
-
+		/*
 		this.$todoUboDef = {
 			thisDOTtodoId:{type:{slots:1,name:'float'}},
 			thisDOTviewInverse:{type:{slots:16,name:'mat4'}},
 			thisDOTviewPosition:{type:{slots:16,name:'mat4'}},
-			thisDOTviewScroll:{type:{slots:1,name:'vec2'}},
-			thisDOTviewSpace:{type:{slots:1,name:'vec4'}}
+			thisDOTviewScroll:{type:{slots:2,name:'vec2'}},
+			thisDOTviewSpace:{type:{slots:4,name:'vec4'}}
 		}
 
 		this.$painterUboDef = {
@@ -69,8 +69,8 @@ module.exports = class View extends require('base/class'){
 			thisDOTtime:{type:{slots:16,name:'float'}},
 			thisDOTvertexPostMatrix:{type:{slots:16,name:'mat4'}},
 			thisDOTworkerId:{type:{slots:16,name:'float'}},
-		}
-		/*
+		}*/
+		
 		this.tools = {
 			ScrollBar: require('stamps/scrollbar'),
 			Debug:require('shaders/quad'),
@@ -100,17 +100,9 @@ module.exports = class View extends require('base/class'){
 					else{
 						gl_FragColor = texture2D(this.colorSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 					}
-				},
-
-				verbs:{
-					draw:function(overload){
-						this.$STYLEPROPS(overload)
-						this.$ALLOCDRAW()
-						this.$WRITEPROPS()
-					}
 				}
 			})
-		}*/
+		}
 
 		//this.viewId = 0
 		this._onVisible = 8
@@ -226,13 +218,13 @@ module.exports = class View extends require('base/class'){
 	$createTodo(){
 		var todo = new painter.Todo()
 
-		//var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
+		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
 		
 		// we need the todo ubo part
 		// how do we get it without compiling it.
 
 		//console.log(todoUboDef)
-		todo.todoUbo = new painter.Ubo(this.$todoUboDef)
+		todo.todoUbo = new painter.Ubo(todoUboDef)//this.$todoUboDef)
 		todo.view = this
 		return todo
 	}
@@ -460,6 +452,9 @@ module.exports = class View extends require('base/class'){
 		}
 
 		var todo = this.todo
+		this.todo.xsScroll = this.$x + painter.x
+		this.todo.ysScroll = this.$y + painter.y
+
 		// lets set some globals
 		var todoUbo = todo.todoUbo
 		todoUbo.mat4(painter.nameId('thisDOTviewPosition'), this.viewPosition)
@@ -583,14 +578,14 @@ module.exports = class View extends require('base/class'){
 
 		// lets set up a clipping rect IF we know the size
 		turtle._turtleClip = [-50000,-50000,50000,50000]
-		
+
 		//turtle._pickId = 0
 		//this.$pickId = 0
 
 		this.beginTurtle()
 
-		this.turtle.$xAbs = this.turtle.wx
-		this.turtle.$yAbs = this.turtle.wy
+		//this.turtle.$xAbs = this.turtle.wx
+		//this.turtle.$yAbs = this.turtle.wy
 
 		if(this.clip && !isNaN(this.turtle.width) && !isNaN(this.turtle.height)){
 			this.viewClip = [0, 0, this.turtle.width, this.turtle.height]
@@ -605,118 +600,20 @@ module.exports = class View extends require('base/class'){
 		var ot = this.endTurtle()
 		// walk it
 		turtle.walk(ot)
-		// write coordinates to view
+
+		// store computed coordinates
 		this.$x = turtle._x
 		this.$y = turtle._y
 		this.$w = turtle._w
 		this.$h = turtle._h
+		this.$vw = turtle.x2
+		this.$vh = turtle.y2
 
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
 		}
-		/*
-		// store the draw width and height for layout if needed
-		var tw = this.$wDraw = turtle._w
-		var th = this.$hDraw = turtle._h
-		var tx2 = turtle.x2
-		var ty2 = turtle.y2
-		
-		this.$x2Old = tx2
-		this.$y2Old = ty2
 
-		var addHor, addVer
-		// lets compute if we need scrollbars
-		if(this.xOverflow === 'scroll' || this.yOverflow === 'scroll'){
-			if(ty2 > th){
-				tw -= this.$scrollBarSize, addVer = true
-				if(tx2 > tw) th -= this.$scrollBarSize, addHor=true // add vert scrollbar
-			}
-			else if(tx2 > tw){
-				th -= this.$scrollBarSize, addHor = true
-				if(ty2 > th) tw -= this.$scrollBarSize, addVer = true
-			}
-		}
-
-		// these things go away?..
-		/*
-		// draw dependent layouts (content sized views)
-		if(typeof this.w === "number" && isNaN(this.w)){
-			if(this.app.$drawDepLayoutStep === 0){
-				this.app.$drawDepLayoutNext = true
-				this.$drawDepLayout = true
-			}
-			this.$wDraw = tx2 === -Infinity?0:tx2
-			if(addVer) this.$wDraw += this.$scrollBarSize
-		}
-
-		if(typeof this.h === "number" && isNaN(this.h) ){
-			if(this.app.$drawDepLayoutStep === 0){
-				this.app.$drawDepLayoutNext = true
-				this.$drawDepLayout = true
-			}
-			//this.app.$drawDependentLayout = true
-			//this.$drawDependentLayout = true
-			this.$hDraw = ty2 === -Infinity?0:ty2
-			if(addHor) this.$hDraw += this.$scrollBarSize
-		}
-
-		// view heights for scrolling on the todo
-		this.todo.scrollMask = 0
-		this.todo.xTotal = tx2
-		this.todo.xView = tw
-		this.todo.yTotal = ty2
-		this.todo.yView = th
-		this.todo.scrollMomentum = 0.92
-		this.todo.scrollToSpeed = 0.5
-		this.todo.xsScroll = this.$xAbs + painter.x
-		this.todo.ysScroll = this.$yAbs + painter.y
-		this.todo.scrollMinSize = this.$scrollBarMinSize
-
-		// clear out unused stamps
-		for(let i = this.$pickId+1;this.$stamps[i];i++){
-			this.$stamps[i] = null
-		}
-
-		this.$pickId = this.$scrollPickIds
-		if(this.xOverflow === 'scroll'){
-			if(addHor){//th < this.$hDraw){
-				this.$xScroll = this.drawScrollBar({
-					moveScroll:0,
-					vertical:false,
-					scrollMinSize:this.$scrollBarMinSize,
-					x:0,
-					y:this.$hDraw - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
-					w:tw,
-					h:this.$scrollBarSize,// / painter.pixelRatio,
-					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-				})
-				this.todo.xScrollId = this.$xScroll.$stampId
-				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
-			}
-			else if(todo.xScroll > 0){
-				todo.scrollTo(0,undefined)
-			}
-		}
-		if(this.yOverflow === 'scroll'){
-			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
-
-				this.$yScroll = this.drawScrollBar({
-					moveScroll:0,
-					vertical:true,
-					scrollMinSize:this.$scrollBarMinSize,
-					x:this.$wDraw - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
-					y:0,
-					w:this.$scrollBarSize,// / painter.pixelRatio,
-					h:th,
-					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-				})
-				this.todo.yScrollId = this.$yScroll.$stampId
-				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
-			}
-			else if(todo.yScroll > 0){
-				todo.scrollTo(undefined,0)
-			}
-		}*/
+		this.$drawScrollBars(turtle._w, turtle._h, turtle.x2, turtle.y2)
 
 		// if we are a surface, end the pass and draw it to ourselves
 		/*
@@ -758,6 +655,83 @@ module.exports = class View extends require('base/class'){
 
 		// mark draw clean
 		//this.$drawClean = true
+	}
+
+	$drawScrollBars(wx, wy, vx, vy){
+		// store the draw width and height for layout if needed
+		var tw = wx//this.$wDraw = turtle._w
+		var th = wy//this.$hDraw = turtle._h
+		
+		this.$x2Old = vx
+		this.$y2Old = vy//ty2
+
+		var addHor, addVer
+		// lets compute if we need scrollbars
+		if(this.xOverflow === 'scroll' || this.yOverflow === 'scroll'){
+			if(vy > th){
+				tw -= this.$scrollBarSize, addVer = true
+				if(vx > tw) th -= this.$scrollBarSize, addHor=true // add vert scrollbar
+			}
+			else if(vx > tw){
+				th -= this.$scrollBarSize, addHor = true
+				if(vy > th) tw -= this.$scrollBarSize, addVer = true
+			}
+		}
+
+		// view heights for scrolling on the todo
+		this.todo.scrollMask = 0
+		this.todo.xTotal = vx
+		this.todo.xView = tw
+		this.todo.yTotal = vy
+		this.todo.yView = th
+		//console.log(vy, th)
+		this.todo.scrollMomentum = 0.92
+		this.todo.scrollToSpeed = 0.5
+		//this.todo.xsScroll = this.$xAbs + painter.x
+		//this.todo.ysScroll = this.$yAbs + painter.y
+		this.todo.scrollMinSize = this.$scrollBarMinSize
+
+		if(this.xOverflow === 'scroll'){
+			if(addHor){//th < this.$hDraw){
+				this.$xScroll = this.drawScrollBar({
+					id:'hscroll',
+					moveScroll:0,
+					vertical:false,
+					scrollMinSize:this.$scrollBarMinSize,
+					x:0,
+					y:wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
+					w:tw,
+					h:this.$scrollBarSize,// / painter.pixelRatio,
+					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
+				})
+				this.todo.xScrollId = this.$xScroll.$pickId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
+			}
+			else if(todo.xScroll > 0){
+				todo.scrollTo(0,undefined)
+			}
+		}
+		if(this.yOverflow === 'scroll'){
+			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
+
+				this.$yScroll = this.drawScrollBar({
+					id:'vscroll',
+					moveScroll:0,
+					vertical:true,
+					scrollMinSize:this.$scrollBarMinSize,
+					x:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
+					y:0,
+					w:this.$scrollBarSize,// / painter.pixelRatio,
+					h:th,
+					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
+				})
+				this.todo.yScrollId = this.$yScroll.$pickId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
+			}
+			else if(todo.yScroll > 0){
+				todo.scrollTo(undefined,0)
+			}
+		}		
 	}
 
 	scrollAtDraw(dx, dy, delta){

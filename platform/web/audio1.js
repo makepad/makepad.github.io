@@ -193,7 +193,7 @@ module.exports = class extends require('/platform/service'){
 	// lets spawn a flow
 	user_start(msg){
 		var flow = this.ids[msg.id]
-		console.log("STARTING", msg.id, this.ids)
+		//console.log("STARTING", msg.id, this.ids)
 
 		if(flow.started){
 			stopFlow(flow)

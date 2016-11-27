@@ -75,6 +75,7 @@ module.exports = class Stamp extends require('base/class'){
 				var stamp = this.ALLOCSTAMP(overload)
 				this.STYLESTAMP(stamp, overload)
 				stamp.drawStamp()
+				return stamp
 			}
 		}
 	}
