@@ -112,7 +112,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				module.worker.onError(this.exception)
 			}
 			else console.error(
-				dec.file+':'+realline+':'+realcol, error.type + ': '+ error.message
+				dec.path+':'+realline+':'+realcol, error.type + ': '+ error.message
 			)
 		}
 		if(!this.exception){
@@ -149,10 +149,11 @@ module.exports = class ShaderInfer extends require('base/class'){
 		return this.block(node.body)
 	}
 
-	BlockStatement(node){
+	BlockStatement(node, header){
 		var oi = this.indent
 		this.indent += '\t'
 		var ret = '{\n'
+		if(header) ret += header
 		ret += this.block(node.body)
 		this.indent = oi
 		ret += this.indent + '}'
@@ -883,16 +884,18 @@ module.exports = class ShaderInfer extends require('base/class'){
 		sub.ctxprefix = calleeinfer.prefix
 
 		let params = ast.body[0].params
+		//console.log(params[params.length-1])
 		let paramdef = ''
-		if(args.length !== params.length){
-			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
+		if(args.length > params.length){
 			throw this.SyntaxErr(node, "Called function with wrong number of args: "+args.length+" needed: "+params.length)
 		}
 
-		for(let i = 0; i < args.length; i++){
-			let arg = args[i]
+		for(var argIndex = 0; argIndex < args.length; argIndex++){
+			let arg = args[argIndex]
 			let arginfer = arg.infer
-			let name = params[i].name
+			let param = params[argIndex]
+			let name = param.type === 'AssignmentPattern'? param.left.name: param.name
+	
 			if(arginfer.kind === 'value'){
 				subfunction.scope[name] = {
 					kind:'value',
@@ -911,21 +914,39 @@ module.exports = class ShaderInfer extends require('base/class'){
 				}
 			}
 		}
-		// fill default args
-		//for(;i<params.length;i++){
 
-		//}
+		// fill default args
+		var header = ''
+		for(;argIndex<params.length;argIndex++){
+			var param = params[argIndex]
+			if(param.type !== 'AssignmentPattern'){
+				throw this.SyntaxErr(node, "Argument not passed in "+param.name)				
+			}
+			let right = param.right
+			let left = param.left
+			var initStr = this[right.type](right)
+			let rightType = right.infer.type
+			let name = left.name
+			header += rightType.name +' '+name+' = '+initStr +';\n'
+			subfunction.scope[name] = {
+				kind:'value',
+				lvalue:true,
+				type:rightType,
+				scope:true
+			}
+		}
 		// any params left? 
 
 		// alright lets run the function body.
 		let fnbody = ast.body[0].body
-		let body = sub[fnbody.type](fnbody)
+		let body = sub[fnbody.type](fnbody, header)
 
 		for(let i = 0; i < args.length; i++){
 			// write the args on the scope
 			let arg = args[i]
 			let arginfer = arg.infer
-			let name = params[i].name
+			let param = params[i]
+			let name = param.type === 'AssignmentPattern'? param.left.name: param.name
 			if(arginfer.kind === 'value'){
 				if(paramdef) paramdef += ', '
 				if(subfunction.inout[name]){

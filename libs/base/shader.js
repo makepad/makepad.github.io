@@ -269,6 +269,11 @@ module.exports = class Shader extends require('base/compiler'){
 		return 0
 	}
 	
+	//
+	//
+	// Simple vector API
+	//
+	//
 		
 	antialias(p) {
 		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
@@ -280,13 +285,12 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	
 	// 2D canvas api for shader
-	viewport(pos) {$
+	viewport(pos = this.mesh.xy * vec2(this.w, this.h)) {$
 		this.pos = pos
 		this.result = vec4(0.)
 		this._oldShape = 
 		this.shape = 1e+20
 		this.blur = 0.00001
-		
 		this._aa = this.antialias(pos)
 		this._scale = 1.
 	}
@@ -295,13 +299,13 @@ module.exports = class Shader extends require('base/compiler'){
 		this.pos -= vec2(x, y)
 	}
 	
-	rotate(a, x, y) {$
+	rotate(a, x = 0., y = 0.) {$
 		var ca = cos( - a), sa = sin( - a)
 		var p = this.pos - vec2(x, y)
 		this.pos = vec2(p.x * ca - p.y * sa, p.x * sa + p.y * ca) + vec2(x, y)
 	}
 	
-	scale(f, x, y) {$
+	scale(f, x = 0., y = 0.) {$
 		this._scale *= f
 		this.pos = (this.pos - vec2(x, y)) * f + vec2(x, y)
 	}
@@ -344,14 +348,14 @@ module.exports = class Shader extends require('base/compiler'){
 		return this.result
 	}
 	
-	glowKeep(color, width, displace) {$
+	glowKeep(color, width, displace = 0.) {$
 		var f = this._calcBlur(abs(this.shape+displace) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = vec4(source.rgb * f, 0.) + dest
 	}
 	
-	glow(color, width, displace) {$
+	glow(color, width, displace = 0.) {$
 		this.glowKeep(color, width, displace)
 		this._oldShape = this.shape = 1e+20
 		return this.result
@@ -369,6 +373,10 @@ module.exports = class Shader extends require('base/compiler'){
 		this._oldShape = this.shape = max( - this.field, this._oldShape)
 	}
 	
+	invert(){
+		this._oldShape = this.shape = max(-this.field, this._oldShape)
+	}
+
 	gloop(k) {
 		var h = clamp(.5 + .5 * (this._oldShape - this.field) / k, 0., 1.)
 		this._oldShape = this.shape = mix(this._oldShape, this.field, h) - k * h * (1.0 - h)

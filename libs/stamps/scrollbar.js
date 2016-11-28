@@ -24,8 +24,6 @@ module.exports = require('base/stamp').extend({
 	props: {
 		vertical:0.,
 		moveScroll:0.,
-		//borderRadius:4,
-		//scrollMinSize:30
 	},
 	cursor:'default',
 	tools: {
@@ -51,15 +49,11 @@ module.exports = require('base/stamp').extend({
 				}
 				else{
 					this.x += .5///this.pixelRatio
-					var vy = this.viewSpace.y / this.viewSpace.w
+					var ry = this.viewSpace.y / this.viewSpace.w
 					this.scrollMinSize = 30.
-					var ry =  max(this.scrollMinSize/this.viewSpace.y, vy)
+					var vy =  max(this.scrollMinSize/this.viewSpace.y, ry)
 					this.handleSize = vy
 					this.handlePos = (1.-vy) * (this.viewScroll.y / this.viewSpace.w) / (1.-ry)
-					//this.bgColor='red'
-					//this.handlePos = 0.5
-					//this.handleSize = 0.5
-				
 				}
 			},
 			pixelStyle:function(){},
@@ -70,8 +64,6 @@ module.exports = require('base/stamp').extend({
 				this.box(0., 0., this.w, this.h, this.borderRadius)
 				this.fill(this.bgColor)
 
-				//return this.result
-				//this.handlePos = 0.
 				if(this.vertical < 0.5){
 					this.box(this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
 				}

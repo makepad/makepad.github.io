@@ -505,7 +505,7 @@ module.exports = class App extends require('base/view'){
 		turtle._w = turtle.width = this._w
 		turtle._h = turtle.height = this._h
 
-		this.$redrawView()
+		this.draw()
 		this.$recomputeMatrix()
 	}
 }

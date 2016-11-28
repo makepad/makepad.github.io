@@ -52,25 +52,7 @@ module.exports = class View extends require('base/class'){
 			if(!this.hasOwnProperty('_verbs')) this._verbs = this._verbs?Object.create(this._verbs):{}
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
-		/*
-		this.$todoUboDef = {
-			thisDOTtodoId:{type:{slots:1,name:'float'}},
-			thisDOTviewInverse:{type:{slots:16,name:'mat4'}},
-			thisDOTviewPosition:{type:{slots:16,name:'mat4'}},
-			thisDOTviewScroll:{type:{slots:2,name:'vec2'}},
-			thisDOTviewSpace:{type:{slots:4,name:'vec4'}}
-		}
 
-		this.$painterUboDef = {
-			thisDOTcamPosition:{type:{slots:16,name:'mat4'}},
-			thisDOTcamProjection:{type:{slots:16,name:'mat4'}},
-			thisDOTfingerInfo:{type:{slots:16,name:'mat4'}},
-			thisDOTpixelRatio:{type:{slots:16,name:'float'}},
-			thisDOTtime:{type:{slots:16,name:'float'}},
-			thisDOTvertexPostMatrix:{type:{slots:16,name:'mat4'}},
-			thisDOTworkerId:{type:{slots:16,name:'float'}},
-		}*/
-		
 		this.tools = {
 			ScrollBar: require('stamps/scrollbar'),
 			Debug:require('shaders/quad'),
@@ -108,10 +90,6 @@ module.exports = class View extends require('base/class'){
 		this._onVisible = 8
 
 		this.$scrollBarSize = 8
-		this.$scrollBarMinSize = 30
-		this.$scrollBarRadius = 2
-		this.$scrollPickIds = 65000
-	
 		this.onFlag4 = this.redraw
 
 		this.verbs = {
@@ -122,25 +100,19 @@ module.exports = class View extends require('base/class'){
 
 				var view = this.$views[id]
 				if(!view){
-					view = new this.NAME(overload, this.app)
-					view.parent = this
-					view.app = this.app
+					view = new this.NAME(this, overload)
 				}
-				else{ // copy props
-					for(var key in overload){
-						view[key] = overload[key]
-					}
-				}
-				// add it to our todo
-				this.todo.addChildTodo(view.todo)
+				else if(view.constructor !== this.NAME) throw new Error('View id collision detected' + id)
+
 				// draw it here
-				view.$redrawView()
+				view.draw(this, overload)
 			}
 		}
 	}
 
-	constructor(overload, app){
+	constructor(owner, overload){
 		super()
+		var app = owner && owner.app
 		this.app = app
 		this.todo = this.$createTodo()
 		// hook it
@@ -166,13 +138,27 @@ module.exports = class View extends require('base/class'){
 		this.$pickIds = {}
 		this.$pickId = 1
 		this.view = this
-
-		this.todo.viewId = this.id
+		
+		this.$dirty = true
 
 		if(overload){
 			for(let key in overload){
-				this['_'+key] = overload[key]
+				let value = overload[key]
+				if(this.__lookupSetter__(key)){
+					this['_'+key] = value
+				}
+				else this[key] = value
 			}
+		}
+		if(owner){
+			var id = this.id
+			if(id === undefined) throw new Error('Please pass owner-unique id to view')
+			if(owner.$views[id]){
+				throw new Error('Owner already has view with id '+this.id)
+			}
+			owner.$views[id] = this
+
+			this.todo.viewId = id
 		}
 	}
 	
@@ -204,15 +190,214 @@ module.exports = class View extends require('base/class'){
 		}
 	}
 
-	bindProp(propname, subname, subprop){
-		Object.defineProperty(this, propname, {
-			get:function(){
-				
-			},
-			set:function(){
-				
+	draw(parent, overload){
+		if(parent){
+			parent.todo.addChildTodo(this.todo)
+			this.parent = parent
+			for(let key in overload){
+				let value = overload[key]
+				if(this.__lookupSetter__(key)){
+					this['_'+key] = value
+				}
+				else this[key] = value
 			}
-		})
+		}
+
+		this._time = this.app._time
+		this._frameId = this.app._frameId
+
+		var todo = this.todo
+		if(!todo) return // init failed
+
+		var todoUbo = todo.todoUbo
+
+		var turtle = this.turtle = this.parent?this.parent.turtle:this.appTurtle
+		
+		if(!this.$dirty && 
+			this.$width === turtle.width &&  
+			this.$height === turtle.height){
+			return
+		}
+
+		this.$width = turtle.width
+		this.$height = turtle.height
+
+		todo.clearTodo()
+
+		if(!this.visible) return
+		
+		if(this.$scrollAtDraw){
+			todo.scrollSet(this.$scrollAtDraw.x, this.$scrollAtDraw.y)
+			this.$scrollAtDraw = undefined
+		}
+		
+		if(this.app == this){
+			this.painterUbo.mat4(painter.nameId('thisDOTcamPosition'), this.camPosition)
+			this.painterUbo.mat4(painter.nameId('thisDOTcamProjection'), this.camProjection)
+			todo.clearColor(0.2, 0.2, 0.2, 1)
+		}
+
+		// we need to render to a texture
+		/*
+		if(this.surface){
+			// set up a surface and start a pass
+			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
+			todo = this.todo
+			todoUbo = todo.todoUbo
+			todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
+			todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
+			//!TODO SOLVE THIS LATER, for a surface this changes
+			//todoUbo.mat4(painter.nameId('thisDOTcamPosition'),identityMat4)
+			//todoUbo.mat4(painter.nameId('thisDOTcamProjection'),pass.projection)
+			todo.clearColor(0., 0., 0., 1)
+		}*/
+
+		if(this.parent){ // push us into the displacement list
+			this.parent.$writeList.push(this,-1,-1)
+		}
+
+		// clear our write list
+		this.$writeList.length = 0
+
+		// set input props
+		turtle._margin = this._margin
+		turtle._padding = this._padding
+		turtle._align = this._align
+		turtle._down = this._down
+		turtle._wrap = this._wrap
+		turtle._x = this._x
+		turtle._y = this._y
+		turtle._w = this._w
+		turtle._h = this._h
+
+		this.$turtleStack.len = 0
+
+		// lets set up a clipping rect IF we know the size
+		turtle._turtleClip = [-50000,-50000,50000,50000]
+			
+		this.beginTurtle()
+		var nt = this.turtle
+
+		nt.$xAbs = turtle.wx + nt.margin[3]
+		nt.$yAbs = turtle.wy + nt.margin[0]
+
+		if(this.clip && !isNaN(this.turtle.width) && !isNaN(this.turtle.height)){
+			this.viewClip = [0, 0, this.turtle.width, this.turtle.height]
+		}
+		else this.viewClip = [-50000,-50000,50000,50000]
+
+		if(this.onDraw){
+			this.onFlag = 4
+			this.onDraw()
+			this.onFlag = 0
+		}
+
+		this.endTurtle()
+
+		turtle.walk(nt)
+
+		// store computed absolute coordinates
+		this.$x = turtle._x// + turtle.$xAbs
+		this.$y = turtle._y// + turtle.$yAbs
+		this.$w = turtle._w
+		this.$h = turtle._h
+		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
+		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
+
+		if(this.$turtleStack.len !== 0){
+			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
+		}
+
+		this.$drawScrollBars(this.$w, this.$h, this.$vw, this.$vh)
+
+		// if we are a surface, end the pass and draw it to ourselves
+		/*
+		if(this.surface){
+			this.endSurface()
+			// draw using 
+			this.drawSurface({
+				x:0,
+				y:0,
+				w:this.$w,
+				h:this.$h,
+				colorSampler: pass.color0,
+				pickSampler: pass.pick
+			})
+		}
+		*/
+		this.$dirty = false
+	}
+
+	$drawScrollBars(wx, wy, vx, vy){
+		// store the draw width and height for layout if needed
+		var tw = wx//this.$wDraw = turtle._w
+		var th = wy//this.$hDraw = turtle._h
+		
+		this.$x2Old = vx
+		this.$y2Old = vy//ty2
+		var xOverflow = this.xOverflow
+		var yOverflow = this.yOverflow
+		var addHor, addVer
+		// lets compute if we need scrollbars
+		if(vy > th){
+			addVer = true
+			if(xOverflow === 'scroll') tw -= this.$scrollBarSize
+			if(vx > tw) th -= this.$scrollBarSize, addHor=true // add vert scrollbar
+		}
+		else if(vx > tw){
+			addHor = true
+			if(yOverflow === 'scroll') th -= this.$scrollBarSize
+			if(vy > th) tw -= this.$scrollBarSize, addVer = true
+		}
+
+		// view heights for scrolling on the todo
+		var todo = this.todo
+
+		todo.scrollMask = 0
+		todo.xTotal = vx
+		todo.xView = tw
+		todo.yTotal = vy
+		todo.yView = th
+		todo.scrollMomentum = 0.92
+		todo.scrollToSpeed = 0.5
+		todo.scrollMinSize = this.ScrollBar.prototype.ScrollBar.prototype.scrollMinSize
+
+		if(xOverflow === 'scroll'){
+			if(addHor){//th < this.$hDraw){
+				this.$xScroll = this.drawScrollBar({
+					id:'hscroll',
+					moveScroll:0,
+					vertical:false,
+					x:0,
+					y:wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
+					w:tw,
+					h:this.$scrollBarSize,// / painter.pixelRatio,
+				})
+				this.todo.xScrollId = this.$xScroll.$pickId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
+			}
+			else if(todo.xScroll > 0){
+				todo.scrollTo(0,undefined)
+			}
+		}
+		if(yOverflow === 'scroll'){
+			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
+				this.$yScroll = this.drawScrollBar({
+					id:'vscroll',
+					moveScroll:0,
+					vertical:true,
+					x:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
+					y:0,
+					w:this.$scrollBarSize,// / painter.pixelRatio,
+					h:th,
+				})
+				this.todo.yScrollId = this.$yScroll.$pickId
+				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
+			}
+			else if(todo.yScroll > 0){
+				todo.scrollTo(undefined,0)
+			}
+		}		
 	}
 
 	$createTodo(){
@@ -220,10 +405,6 @@ module.exports = class View extends require('base/class'){
 
 		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
 		
-		// we need the todo ubo part
-		// how do we get it without compiling it.
-
-		//console.log(todoUboDef)
 		todo.todoUbo = new painter.Ubo(todoUboDef)//this.$todoUboDef)
 		todo.view = this
 		return todo
@@ -232,53 +413,44 @@ module.exports = class View extends require('base/class'){
 	findInstances(cons, set){
 		if(!set) set = []
 		if(this instanceof cons) set.push(this)
-		var children = this.children
-		if(children){
-			var childlen = children.length
-			for(let i = 0; i < childlen; i++){
-				var child = children[i]
-				child.findInstances(cons, set)
-			}
+		var $views = this.$views
+		for(let key in $views){
+			$views[key].findInstances(cons, set)
 		}
 		return set
 	}
 
 	// breadth first find child by name
 	find(id){
-		var children = this.children
-		if(children){
-			var childlen = children.length
-			if(id.constructor === RegExp){
-				for(let i = 0; i < childlen; i++){
-					var child = children[i]
-					if(child.id && child.id.match(id)) return child
-				}
+		var $views = this.$views
+		if(id.constructor === RegExp){
+			for(let key in $views)	{
+				if(key.match(id)) return $views[key]
 			}
-			else{
-				for(let i = 0; i < childlen; i++){
-					var child = children[i]
-					if(child.id === id) return child
-				}
+		}
+		else{
+			for(let key in $views)	{
+				if(key.id === id) return  $views[key]
 			}
-			for(let i = 0; i< childlen; i++){
-				var child = children[i]
-				var res = child.find(id)
-				if(res) return res
-			}
+		}
+		for(let key in $views)	{
+			let res = $views[key].find(id)
+			if(res) return res
 		}
 	}
 
 	// depth first find all
 	findAll(id, set){
+		var $views = this.$views
 		if(!set) set = []
 		if(id.constructor === RegExp){
 			if(this.id && this.id.match(id)) set.push(this)
 		}
 		else{
-			if(this.id === id) set.push(this)
+			if(this.id == id) set.push(this)
 		}
-		for(var key in this.$views)	{
-			var child = this.$views[key]
+		for(let key in $views)	{
+			let child = $views[key]
 			child.findAll(id, set)
 		}
 		return set
@@ -345,63 +517,6 @@ module.exports = class View extends require('base/class'){
 
 		return pass
 	}
-
-	/*
-	addNewChild(child, index){
-		if(index === undefined) index = this.children.length
-		this.children.splice(index, 0, child)
-		child.app = this.app
-		child.store = this.store
-		child.parent = this
-		this.app.$composeTree(child)
-		if(this.onAfterCompose) this.onAfterCompose()
-		//this.redraw()
-		this.relayout()
-		return index
-	}
-	
-	replaceNewChild(child, index){
-		var oldChild = this.children[index]
-		this.children[index] = child
-		child.app = this.app
-		child.store = this.store
-		child.parent = this
-		this.app.$composeTree(child)
-		this.relayout()
-		if(this.onAfterCompose) this.onAfterCompose()
-		return oldChild
-	}
-
-	replaceOldChild(child, index){
-		var oldChild = this.children[index] 
-		this.children[index] = child
-		child.app = this.app
-		child.store = this.store
-		child.parent = this
-		this.relayout()
-		if(this.onAfterCompose) this.onAfterCompose()
-		return oldChild
-	}
-
-	addOldChild(child, index){
-		if(index === undefined) index = this.children.length
-		this.children.splice(index, 0, child)
-		child.parent = this
-		this.relayout()
-	}
-
-	deleteChild(index){
-		var del = this.children.splice(index, 1)[0]
-		this.relayout()
-		return del
-	}
-
-	removeChild(index){
-		var del = this.children.splice(index, 1)[0]
-		this.relayout()
-		return del
-	}
-	*/
 	
 	endSurface(){
 		// stop the pass and restore our todo
@@ -411,21 +526,6 @@ module.exports = class View extends require('base/class'){
 	transferFingerMove(digit, pickId){
 		this.app.transferFingerMove(digit, this.todo.todoId, pickId)
 	}
-
-	/*
-	get viewGeom(){
-		return {
-			moveScroll:0.,
-			noBounds:1,
-			w:this.$w,
-			h:this.$h,
-			padding:this.drawPadding || this.padding
-		}
-	}
-
-	set viewGeom(v){
-		throw new Error('Dont call set on viewGeom')
-	}*/
 
 	scrollIntoView(x, y, w, h){
 		// we figure out the scroll-to we need
@@ -504,235 +604,6 @@ module.exports = class View extends require('base/class'){
 		return stamp
 	}
 
-	$redrawView(){
-		this._time = this.app._time
-		this._frameId = this.app._frameId
-
-		//this.$writeList.length = 0
-
-		// what if drawClean is true?....
-		// update the matrix?
-		// begin a new todo stack
-		var todo = this.todo
-		if(!todo) return // init failed
-
-		var todoUbo = todo.todoUbo
-
-		// alright so now we decide wether this todo needs updating
-		if(this.$drawClean) return
-
-		todo.clearTodo()
-		// if we are not visible...
-		if(!this.visible) return
-		
-		if(this.$scrollAtDraw){
-			todo.scrollSet(this.$scrollAtDraw.x, this.$scrollAtDraw.y)
-			this.$scrollAtDraw = undefined
-		}
-		
-		if(this.app == this){
-			this.painterUbo.mat4(painter.nameId('thisDOTcamPosition'), this.camPosition)
-			this.painterUbo.mat4(painter.nameId('thisDOTcamProjection'), this.camProjection)
-			todo.clearColor(0.2, 0.2, 0.2, 1)
-		}
-
-		// we need to render to a texture
-		/*
-		if(this.surface){
-			// set up a surface and start a pass
-			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
-			todo = this.todo
-			todoUbo = todo.todoUbo
-			todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
-			todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
-			//!TODO SOLVE THIS LATER, for a surface this changes
-			//todoUbo.mat4(painter.nameId('thisDOTcamPosition'),identityMat4)
-			//todoUbo.mat4(painter.nameId('thisDOTcamProjection'),pass.projection)
-			todo.clearColor(0., 0., 0., 1)
-		}*/
-
-		// store time info on todo
-		//todo.timeStart = this._time		
-		// our turtle is the parent
-
-		var turtle = this.turtle = this.parent?this.parent.turtle:this.appTurtle
-
-		if(this.parent){ // push us into the displacement list
-			this.parent.$writeList.push(this,-1,-1)
-		}
-
-		// clear our write list
-		this.$writeList.length = 0
-
-		// set input props
-		turtle._margin = this._margin
-		turtle._padding = this._padding
-		turtle._align = this._align
-		turtle._down = this._down
-		turtle._wrap = this._wrap
-		turtle._x = this._x
-		turtle._y = this._y
-		turtle._w = this._w
-		turtle._h = this._h
-		this.$turtleStack.len = 0
-
-		// lets set up a clipping rect IF we know the size
-		turtle._turtleClip = [-50000,-50000,50000,50000]
-
-		//turtle._pickId = 0
-		//this.$pickId = 0
-
-		this.beginTurtle()
-
-		//this.turtle.$xAbs = this.turtle.wx
-		//this.turtle.$yAbs = this.turtle.wy
-
-		if(this.clip && !isNaN(this.turtle.width) && !isNaN(this.turtle.height)){
-			this.viewClip = [0, 0, this.turtle.width, this.turtle.height]
-		}
-
-		if(this.onDraw){
-			this.onFlag = 4
-			this.onDraw()
-			this.onFlag = 0
-		}
-
-		var ot = this.endTurtle()
-		// walk it
-		turtle.walk(ot)
-
-		// store computed coordinates
-		this.$x = turtle._x
-		this.$y = turtle._y
-		this.$w = turtle._w
-		this.$h = turtle._h
-		this.$vw = turtle.x2
-		this.$vh = turtle.y2
-
-		if(this.$turtleStack.len !== 0){
-			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
-		}
-
-		this.$drawScrollBars(turtle._w, turtle._h, turtle.x2, turtle.y2)
-
-		// if we are a surface, end the pass and draw it to ourselves
-		/*
-		if(this.surface){
-			this.endSurface()
-			// draw using 
-			this.drawSurface({
-				x:0,
-				y:0,
-				w:this.$w,
-				h:this.$h,
-				colorSampler: pass.color0,
-				pickSampler: pass.pick
-			})
-		}
-		*/
-		/*
-		if(this.onOverlay){
-			// reset our matrices
-			//todo.mat4Global(painter.nameId('thisDOTviewPosition'), this.viewPosition)
-			//todo.mat4Global(painter.nameId('thisDOTviewInverse'),this.viewInverse)
-			this.beginTurtle()
-			this.turtle._x = 0
-			this.turtle._y = 0		
-			this.onFlag = 4
-			this.onOverlay()
-			this.onFlag = 0
-			this.endTurtle()
-
-			for(let i = this.$pickId+1;this.$stamps[i];i++){
-				this.$stamps[i] = null
-			}
-		}
-		*/
-
-		//if(this.onAfterDraw){
-		//	this.onAfterDraw()
-		//}
-
-		// mark draw clean
-		//this.$drawClean = true
-	}
-
-	$drawScrollBars(wx, wy, vx, vy){
-		// store the draw width and height for layout if needed
-		var tw = wx//this.$wDraw = turtle._w
-		var th = wy//this.$hDraw = turtle._h
-		
-		this.$x2Old = vx
-		this.$y2Old = vy//ty2
-
-		var addHor, addVer
-		// lets compute if we need scrollbars
-		if(this.xOverflow === 'scroll' || this.yOverflow === 'scroll'){
-			if(vy > th){
-				tw -= this.$scrollBarSize, addVer = true
-				if(vx > tw) th -= this.$scrollBarSize, addHor=true // add vert scrollbar
-			}
-			else if(vx > tw){
-				th -= this.$scrollBarSize, addHor = true
-				if(vy > th) tw -= this.$scrollBarSize, addVer = true
-			}
-		}
-
-		// view heights for scrolling on the todo
-		this.todo.scrollMask = 0
-		this.todo.xTotal = vx
-		this.todo.xView = tw
-		this.todo.yTotal = vy
-		this.todo.yView = th
-		//console.log(vy, th)
-		this.todo.scrollMomentum = 0.92
-		this.todo.scrollToSpeed = 0.5
-		//this.todo.xsScroll = this.$xAbs + painter.x
-		//this.todo.ysScroll = this.$yAbs + painter.y
-		this.todo.scrollMinSize = this.$scrollBarMinSize
-
-		if(this.xOverflow === 'scroll'){
-			if(addHor){//th < this.$hDraw){
-				this.$xScroll = this.drawScrollBar({
-					id:'hscroll',
-					moveScroll:0,
-					vertical:false,
-					scrollMinSize:this.$scrollBarMinSize,
-					x:0,
-					y:wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
-					w:tw,
-					h:this.$scrollBarSize,// / painter.pixelRatio,
-					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-				})
-				this.todo.xScrollId = this.$xScroll.$pickId
-				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
-			}
-			else if(todo.xScroll > 0){
-				todo.scrollTo(0,undefined)
-			}
-		}
-		if(this.yOverflow === 'scroll'){
-			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
-
-				this.$yScroll = this.drawScrollBar({
-					id:'vscroll',
-					moveScroll:0,
-					vertical:true,
-					scrollMinSize:this.$scrollBarMinSize,
-					x:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
-					y:0,
-					w:this.$scrollBarSize,// / painter.pixelRatio,
-					h:th,
-					borderRadius:this.$scrollBarRadius// / painter.pixelRatio
-				})
-				this.todo.yScrollId = this.$yScroll.$pickId
-				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
-			}
-			else if(todo.yScroll > 0){
-				todo.scrollTo(undefined,0)
-			}
-		}		
-	}
 
 	scrollAtDraw(dx, dy, delta){
 		this.$scrollAtDraw = {
@@ -767,10 +638,10 @@ module.exports = class View extends require('base/class'){
 		this.turtle.y2 = this.$y2Old
 	}
 
-	$drawCleanFalse(){
+	$dirtyTrue(){
 		var node = this
 		while(node){//}] && node.$drawClean){
-			node.$drawClean = false
+			node.$dirty = true
 			node = node.parent
 		}
 	}
@@ -778,7 +649,7 @@ module.exports = class View extends require('base/class'){
 	// how do we incrementally redraw?
 	redraw(){
 		//if(this.$drawClean){
-		this.$drawCleanFalse()
+		this.$dirtyTrue()
 		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){
 				this.$redrawViews()

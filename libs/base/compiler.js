@@ -696,7 +696,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		scope.$turtle = 'this.turtle'
 		scope.$proto = 'this.'+className+'.prototype\n'
-
+		code += indent+'if(!overload) overload = {}\n'
 		var mask = args[1] || 1
 		// overload or class
 		for(let key in styleProps){
@@ -710,7 +710,6 @@ module.exports = class Compiler extends require('base/class'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
 			}
 		}
-
 		return code
 	}
 
@@ -797,9 +796,9 @@ module.exports = class Compiler extends require('base/class'){
 		return code
 	}
 	
-	DUMPPROPS(instanceProps){
+	DUMPPROPS(args, indent, className, scope){
 		var code = ''
-		//var instanceProps = this.$compileInfo.instanceProps
+		var instanceProps = this.$compileInfo.instanceProps
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
 			var slots = prop.slots
@@ -908,7 +907,7 @@ module.exports = class Compiler extends require('base/class'){
 			var source = '$turtle._' + prop.name
 			if(!prop.config.mask){ // system values
 				if(key === 'thisDOTanimStart'){ // now?
-					source = '$view._time + $info.stateDelay[$stateId]'
+					source = '$view._time + ($info.stateDelay[$stateId] || 0)'
 				}
 				else if(key === 'thisDOTanimState'){ // decode state prop
 					source = '$stateId'
@@ -933,7 +932,9 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		last += '}'
 		code += last
-		//code += this.DUMPPROPS()
+		code += 'if($turtle._debug){\n'
+		code += this.DUMPPROPS()
+		code += '}'
 		return code
 	}
 }

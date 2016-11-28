@@ -117,7 +117,7 @@ module.exports = class Bg extends require('./quad'){
 			this.mesh.y = clamp(1. - this.borderRadius / this.h,0.,1.)
 		}
 
-		var pos = this.scrollAndClip(this.mesh.xy)
+		var pos = this.scrollAndClip(this.mesh.xy, vec2(0.))
 			
 		return vec4(pos , 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
 	}

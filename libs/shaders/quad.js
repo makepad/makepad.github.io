@@ -27,7 +27,7 @@ module.exports = class Quad extends require('base/shader'){
 			turtleClip:{value:[-50000,-50000,50000,50000]},
 			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 			moveScroll:{value:1.},
-
+			debug:{value:false},
 			color: {value:'red'},
 
 			mesh:{kind:'geometry', type:types.vec2},
