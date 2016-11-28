@@ -742,7 +742,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
-		code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
+		//code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
 		// set the vao
 		code += indent+'	$todo.vao($shader.$vao)\n'
 		// set uniforms
@@ -914,6 +914,9 @@ module.exports = class Compiler extends require('base/class'){
 				}
 				else if(key === 'thisDOTpickId'){ 
 					source = '$turtle._pickId'
+				}
+				else if(key === 'thisDOTorder'){ 
+					source = '$turtle._order'
 				}
 				else if(key === 'thisDOTanimNext'){
 					continue

@@ -40,7 +40,7 @@
 				function WrapFunction(){
 					var globnames = []
 					var globargs = []
-					for(let key in global){
+					for(var key in global){
 						globnames.push(key)							
 						globargs.push(global[key])
 					}
@@ -267,14 +267,12 @@
 
 		self.Function = function WrapFunction(){
 			var fnargs = []
-			var args = arguments
-			var len = arguments.length
 			var code = '"use strict"\nreturn function('
-			for(var i = 0; i < len - 1; i++){
+			for(var i =0; i < arguments.length - 1; i++){
 				if(i) code += ','
-				code += args[i]
+				code += arguments[i]
 			}
-			code += '){'+args[i]+'}'
+			code += '){'+arguments[i]+'}'
 			fnargs.push.apply(fnargs, forceMask)
 			fnargs.push(code)
 			return LocalFunction.apply(null, fnargs)()

@@ -14,6 +14,7 @@ module.exports = class Stamp extends require('base/class'){
 			y:NaN,
 			w:NaN,
 			h:NaN,
+			order:0,
 			padding:[0,0,0,0],
 			margin:[0,0,0,0],
 			align:[0,0],
@@ -194,10 +195,18 @@ module.exports = class Stamp extends require('base/class'){
 		turtle._h = this._h
 		this.beginTurtle()
 		this.turtle._pickId = this.$pickId
+		//var order = this.order
+		//this.turtle._order = order !== 0? order: view.$order++
 		this.onDraw()
 		var ot = this.endTurtle()
 		turtle.walk(ot)
+		this.$x = turtle._x
+		this.$y = turtle._y
+		this.$w = turtle._w
+		this.$h = turtle._h
 		this.$writeEnd = $writeList.length
+		// lets store things on the stamp
+		$writeList.push(this, -1, -1)
 	}
 
 	onCompileVerbs(){

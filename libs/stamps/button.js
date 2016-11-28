@@ -81,9 +81,7 @@ module.exports = class Button extends require('base/stamp'){
 			onClickStamp: undefined,
 			debug: 0
 		}
-		
-		this.inPlace = 1
-		
+				
 		this.tools = {
 			Bg: require('shaders/quad').extend({
 				borderRadius:4.,

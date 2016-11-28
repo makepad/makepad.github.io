@@ -61,10 +61,7 @@ module.exports = class Shader extends require('base/compiler'){
 		
 		// safety for infinite loops
 		this.propAllocLimit = 150000
-		
-		this.blending = [painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
-		this.constantColor = undefined
-		
+				
 		this.tweenTime = this.tweenAll
 		
 		this.verbs = {
@@ -84,7 +81,7 @@ module.exports = class Shader extends require('base/compiler'){
 				}
 			}
 		}
-
+		
 		
 	}
 	
@@ -373,10 +370,6 @@ module.exports = class Shader extends require('base/compiler'){
 		this._oldShape = this.shape = max( - this.field, this._oldShape)
 	}
 	
-	invert(){
-		this._oldShape = this.shape = max(-this.field, this._oldShape)
-	}
-
 	gloop(k) {
 		var h = clamp(.5 + .5 * (this._oldShape - this.field) / k, 0., 1.)
 		this._oldShape = this.shape = mix(this._oldShape, this.field, h) - k * h * (1.0 - h)

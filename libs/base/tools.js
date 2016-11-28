@@ -84,6 +84,7 @@ module.exports = class Tools extends require('base/class'){
 		//turtle.view = view
 		turtle.context = view
 		turtle._pickId = outer._pickId
+		turtle._order = outer._order
 		turtle.begin(outer, dump)
 		return turtle
 	}

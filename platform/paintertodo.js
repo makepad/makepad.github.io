@@ -193,6 +193,35 @@ module.exports = function painterTodo(proto){
 		gl.blendColor(f32[o+8], f32[o+9], f32[o+10], f32[o+11])
 	}
 
+	var depthFunc = proto.depthFunc = [
+		0, // off
+		0x200,//gl.NEVER
+		0x201,//gl.LESS
+		0x202,//gl.EQUAL
+		0x203,//gl.LEQUAL
+		0x204,//gl.GREATER
+		0x205,//gl.NOTEQUAL
+		0x206,//gl.GEQUAL
+		0x207 //gl.ALWAYS
+	]
+
+	todofn[42] = function depthTest(i32, f32, o){
+		var gl = this.gl
+		let depthFn = depthFunc[i32[o+2]]
+		if(depthFn === 0){
+			return gl.disable(gl.DEPTH_TEST)
+		}
+		gl.enable(gl.DEPTH_TEST)
+		gl.depthFunc(depthFn)
+		gl.depthMask(i32[o+3]?true:false)
+		//console.log(i32[o+3]?true:false)
+		var znear = f32[o+4]
+		var zfar = f32[o+5]
+		if(!isNaN(znear)){
+			gl.depthRange(znear, zfar)
+		}
+	}
+
 	// other flags
 	proto.textureFlags = {
 		FLIP_Y: 1<<0,

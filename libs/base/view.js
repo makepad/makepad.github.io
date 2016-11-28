@@ -108,6 +108,10 @@ module.exports = class View extends require('base/class'){
 				view.draw(this, overload)
 			}
 		}
+
+		this.blending = [painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
+		this.constantColor = undefined
+		this.depthFunction =  painter.GREATER
 	}
 
 	constructor(owner, overload){
@@ -221,9 +225,11 @@ module.exports = class View extends require('base/class'){
 
 		this.$width = turtle.width
 		this.$height = turtle.height
-
+		this.$order = 0.
 		todo.clearTodo()
 
+		todo.blending(this.blending, this.constantColor)
+		todo.depthTest(this.depthFunction, true)
 		if(!this.visible) return
 		
 		if(this.$scrollAtDraw){
@@ -593,14 +599,14 @@ module.exports = class View extends require('base/class'){
 			var l = group + classname
 			stamp.group = group
 			stamp.$shaders = this.$shaders[l]
-			if(!stamp.$shaders) $stamp.$shaders = (this.$shaders[l] = {})
+			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[l] = {})
 		}
 		else{
 			stamp.$shaders = this.$shaders[classname]
 			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[classname] = {})
 		}
 		stamp.turtle = turtle
-		//turtle._pickId = stamp.$pickId
+
 		return stamp
 	}
 

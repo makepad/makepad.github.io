@@ -16,7 +16,7 @@ module.exports = class extends require('/platform/service'){
 			this.args.y = 0
 			this.onRepaint = this.onRepaint.bind(this)
 			this.onScreenResize()
-			//this.runBootCache()
+			this.runBootCache()
 		}
 		else{
 			// ok we have a parent.
@@ -175,7 +175,7 @@ module.exports = class extends require('/platform/service'){
 				gl.drawArrays(gl.TRIANGLES,0,1)
 			}
 			// dont take too long
-			if(Date.now() - dt > 100){
+			if(Date.now() - dt > 1000){
 				this.runBootCache()
 				break
 			}

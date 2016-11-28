@@ -142,6 +142,15 @@ painter.FUNC_ADD = 2
 painter.MIN = 3
 painter.MAX = 4
 
+painter.NEVER = 0
+painter.LESS = 1
+painter.EQUAL = 2
+painter.LEQUAL = 3
+painter.GREATER = 4
+painter.NOTEQUAL = 5
+painter.GEQUAL = 6
+painter.ALWAYS = 7
+
 var todoIds = new IdAlloc()
 
 painter.Todo = class Todo extends require('base/class'){
@@ -458,6 +467,24 @@ painter.Todo = class Todo extends require('base/class'){
 			f32[o+11] = color[3]
 		}
 	}
+
+	
+	// array is src, fn, dest, alphasrc, alphafn, alphadest
+	depthTest (depthFunc, write, znear, zfar){
+
+		var o = (this.last = this.length)
+		if((this.length += 6) > this.allocated) this.resize()
+
+		var i32 = this.i32
+		var f32 = this.f32
+		i32[o+0] = 42
+		i32[o+1] = 4
+		i32[o+2] = depthFunc
+		i32[o+3] = write? 1: 0
+		f32[o+4] = znear
+		f32[o+5] = zfar
+	}
+
 	/*
 	function wrapFn(key, fn){
 		return function(){
