@@ -103,12 +103,12 @@ module.exports=class Tabs extends require('base/view'){
 							else{
 								this.clear(this.color)
 								if(this.lineL>.5){
-									this.box(0, 0., 2., this.h+2,1.)
+									this.box(0, 0., 4., this.h+2,1.)
 								}
 								if(this.lineR>.5){
-									this.box(this.w-2., 0., 2., this.h+2,1.)
+									this.box(this.w-4., 0., 4., this.h+2,1.)
 								}
-								this.fill('#7')
+								this.fill('#4')
 							}
 							return this.result
 						}
