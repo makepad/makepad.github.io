@@ -487,7 +487,7 @@ module.exports = class Compiler extends require('base/class'){
 		vertex += vfunc
 		vertex += '\nvoid main(){\n'
 		vertex += vpre
-		vertex += vtx.main.replace("\t$INITIALIZEVARIABLES",initvars)
+		vertex += vtx.main.replace("\t$INITIALIZEVARIABLES", initvars)
 		vertex += vpost
 		vertex += '}\n'
 
@@ -707,7 +707,7 @@ module.exports = class Compiler extends require('base/class'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || $proto._order || 0\n'
 			}
 			else if(name === 'state'){
-				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this._state\n'
 			}
 			else{
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'

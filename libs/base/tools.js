@@ -29,13 +29,19 @@ module.exports = class Tools extends require('base/class'){
 			var tools = this.tools
 			for(let key in tools){
 				var inherit = tools[key]
+				var base = this[key]
 				if(inherit && inherit.constructor === Object){ // subclass it
-					var base = this[key]
 					var cls = this[key] = base.extend(inherit)
 					// lets call the callback
 					this.$compileVerbs(key, cls)
 					continue
 				}
+				else if(base && base.constructor === Object && typeof inherit === 'function'){ // already has an object defined
+					var cls = this[key] = inherit.extend(base)
+					this.$compileVerbs(key, cls)
+					continue
+				}
+
 				// else replace it
 				this[key] = inherit
 				this.$compileVerbs(key, inherit)

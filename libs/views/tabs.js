@@ -8,10 +8,53 @@ module.exports=class Tabs extends require('base/view'){
 			Tab:require('base/stamp').extend({
 				props:{
 					selected:false,
-					line:true,
+					lineL:true,
+					lineR:true,
 					dx:0,
 					text:'tab',
 					index:0
+				},
+				states:{
+					default:{
+						duration:0.,
+						to:{
+							Text:{
+								dx:null,
+							},
+							Bg:{
+								dx:null,
+								color:'#3',
+								selected:0
+							}
+						}
+					},
+					selected:{
+						duration:0.5,
+						time:{fn:'ease',begin:0,end:10},
+						to:{
+							Text:{
+								dx:0,
+							},
+							Bg:{
+								color:'#5',
+								dx:0,
+								selected:1
+							}
+						}
+					},
+					selectedDrag:{
+						duration:0.,
+						to:{
+							Text:{
+								dx:null,
+							},
+							Bg:{
+								color:'#5',
+								dx:null,
+								selected:1
+							}
+						}
+					}					
 				},
 				tools:{
 					Bg:require('shaders/quad').extend({
@@ -19,7 +62,8 @@ module.exports=class Tabs extends require('base/view'){
 						color:'#4',
 						padding:[10,12,6,12],
 						selected:0.,
-						line:1.,
+						lineL:1.,
+						lineR:1,
 						pixel(){$
 							this.viewport()
 							if(this.selected>.5){
@@ -33,12 +77,14 @@ module.exports=class Tabs extends require('base/view'){
 								if(this.result.a<0.5) discard;
 							}
 							else{
-								this.clear('#3')
-								if(this.line>.5){
+								this.clear(this.color)
+								if(this.lineL>.5){
 									this.box(0, 0., 2., this.h+2,1.)
-									this.box(this.w-2., 0., 2., this.h+2,1.)
-									this.fill('#7')
 								}
+								if(this.lineR>.5){
+									this.box(this.w-2., 0., 2., this.h+2,1.)
+								}
+								this.fill('#7')
 							}
 							return this.result
 						}
@@ -54,6 +100,7 @@ module.exports=class Tabs extends require('base/view'){
 				},
 				onFingerUp(){
 					this.drag = false
+					this.redraw()
 				},
 				onFingerMove(e){
 					this.dx = this.dxStart + (e.x - this.xStart)
@@ -63,7 +110,8 @@ module.exports=class Tabs extends require('base/view'){
 					this.redraw()
 				},
 				onDraw(){
-					this.beginBg({dx:this.dx, selected:this.selected,line:this.line})
+					if(this.drag) this._state = 'selectedDrag'
+					this.beginBg({dx:this.dx,lineL:this.lineL,lineR:this.lineR})
 					this.drawText({dx:this.dx, text:this.text})
 					this.endBg()
 				}
@@ -75,6 +123,7 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onTabSelect(tabStamp){
+		this.tabs[this.selected].stamp.dx = 0
 		this.selected = tabStamp.index
 		this.redraw()
 	}
@@ -83,11 +132,13 @@ module.exports=class Tabs extends require('base/view'){
 		var tabs = this.tabs
 		if(tabStamp.dx > tabStamp.$w*0.5 && tabStamp.index < tabs.length - 1){
 			let old = tabs.splice(tabStamp.index, 1)[0]
+			old.stamp.dx += old.stamp.$x - tabs[tabStamp.index].stamp.$x
 			tabs.splice(tabStamp.index+1,0,old)
 			this.selected = tabStamp.index+1
 		}
 		else if(tabStamp.dx < -tabStamp.$w*0.5 && tabStamp.index > 0){
 			let old = tabs.splice(tabStamp.index, 1)[0]
+			old.stamp.dx += old.stamp.$x - tabs[tabStamp.index-1].stamp.$x
 			tabs.splice(tabStamp.index-1,0,old)
 			this.selected = tabStamp.index-1
 		}
@@ -98,11 +149,12 @@ module.exports=class Tabs extends require('base/view'){
 		let sel = this.selected
 		for(let tabs = this.tabs, i = 0 ; i < this.tabs.length; i++){
 			let tab = tabs[i]
-			this.drawTab({
+			tab.stamp = this.drawTab({
 				id:tab.tabName, // utilize some kind of unique id
 				order:sel === i?1:0,
-				selected:sel === i,
-				line:sel !== i+1,
+				state:sel === i?'selected':'default',
+				lineL:sel !== i-1,
+				lineR:sel !== i+1,
 				text:tab.tabName,
 				index:i
 			})

@@ -1,6 +1,48 @@
 module.exports = class Stamp extends require('base/class'){
 	//var types = require('types')
 	prototype(){
+
+		this.inheritable('states', function(){
+			// process stamp states. into shader states
+			var states = this.states
+
+			for(let stateName in states){
+				var state = states[stateName]
+				var stateTime = state.time
+				for(let frameName in state){
+					var frame = state[frameName]
+					if(frameName === 'time' || typeof frame !== 'object') continue // its a playback prop
+					var frameTime = frame.time
+					
+					for(let subName in frame){
+						var subFrame = frame[subName]
+						// ok lets create/modify a subFrame with playback props.
+						if(!this.hasOwnProperty(subName)) this[subName] = {}
+						var subObj = this[subName]
+
+						if(!subObj.hasOwnProperty('states')) subObj.states = {}
+						var subStates = subObj.states
+
+						// lets create the state
+						if(!subStates[stateName]) subStates[stateName] = {
+							duration:state.duration,
+							repeat:state.repeat,
+							bounce:state.bounce
+						}
+						var subState = subStates[stateName]
+						if(stateTime) subState.time = stateTime
+						
+						// alright lets create the keyframe
+						var outFrame = subState[frameName] = {}
+						if(frameTime) outFrame.time = frameTime
+						for(let prop in subFrame){
+							outFrame[prop] = subFrame[prop]
+						}
+					}
+				}
+			}
+		})
+
 		this.mixin(
 			require('base/props'),
 			require('base/tools')
@@ -29,46 +71,6 @@ module.exports = class Stamp extends require('base/class'){
 			for(let key in verbs) this._verbs[key] = verbs[key]
 		})
 
-		this.inheritable('states', function(){
-			// process stamp states. into shader states
-			var states = this.states
-			for(let stateName in states){
-				var state = states[stateName]
-				var stateTime = state.time
-				for(let frameName in state){
-					var frame = state[frameName]
-					if(frameName === 'time' || typeof frame !== 'object') continue // its a playback prop
-					var frameTime = frame.time
-					
-					for(let subName in frame){
-						var subFrame = frame[subName]
-						
-						// ok lets create/modify a subFrame with playback props.
-						if(!this.hasOwnProperty(subName)) this[subName] = {}
-						var subObj = this[subName]
-
-						if(!subObj.hasOwnProperty('states')) subObj.states = {}
-						var subStates = subObj.states
-
-						// lets create the state
-						if(!subStates[stateName]) subStates[stateName] = {
-							duration:state.duration,
-							repeat:state.repeat,
-							bounce:state.bounce
-						}
-						var subState = subStates[stateName]
-						if(stateTime) subState.time = stateTime
-						
-						// alright lets create the keyframe
-						var outFrame = subState[frameName] = {}
-						if(frameTime) outFrame.time = frameTime
-						for(let prop in subFrame){
-							outFrame[prop] = subFrame[prop]
-						}
-					}
-				}
-			}
-		})
 
 		this.verbs = {
 			draw: function(overload, click) {

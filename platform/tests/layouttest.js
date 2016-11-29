@@ -11,7 +11,7 @@ module.exports = class extends require('base/app'){
 
 	constructor(){
 		super()
-		/*		
+		
 		this.recFlow = new audio.Flow({ 
 			gain1: { 
 				to: 'output', 
@@ -23,7 +23,7 @@ module.exports = class extends require('base/app'){
 			} 
 		}) 
 		this.recFlow.start() 
-		*/
+		
 	}
 
 	onDraw(){
