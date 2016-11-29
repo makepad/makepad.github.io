@@ -195,6 +195,7 @@ module.exports = class Stamp extends require('base/class'){
 		turtle._h = this._h
 		this.beginTurtle()
 		this.turtle._pickId = this.$pickId
+		this.turtle._order = this._order
 		//var order = this.order
 		//this.turtle._order = order !== 0? order: view.$order++
 		this.onDraw()

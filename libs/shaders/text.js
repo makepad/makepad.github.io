@@ -12,6 +12,8 @@ module.exports = class Text extends require('base/shader'){
 			dx:0,
 			dy:0,
 
+			order:0,
+
 			color:'white',
 			outlineColor:'white',
 			shadowColor:[0,0,0,0.5],

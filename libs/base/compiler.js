@@ -703,7 +703,10 @@ module.exports = class Compiler extends require('base/class'){
 			var prop = styleProps[key]
 			if(!(prop.config.mask&mask)) continue
 			var name = prop.name
-			if(key === 'state'){
+			if(name === 'order'){
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || 0\n'
+			}
+			else if(name === 'state'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
 			}
 			else{
@@ -727,11 +730,12 @@ module.exports = class Compiler extends require('base/class'){
 		// define scope vars
 		scope.$view = 'this.view'
 		scope.$todo = '$view.todo'
-		scope.$shader = 'this.$shaders.'+className+' || this.$allocShader("'+className+'")' 
+		scope.$turtle = 'this.turtle'
+		scope.$shaderOrder = 'this.$shaders.'+className 
+		scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order] || this.$allocShader("'+className+'", $turtle._order)' 
 		scope.$props = '$shader.$props'
 		scope.$proto = 'this.' + className +'.prototype'
 		scope.$a = '$props.array'
-		scope.$turtle = 'this.turtle'
 
 		code += indent+'if($props.$frameId !== $view._frameId){\n' 
 		code += indent+'	$props.$frameId = $view._frameId\n'
@@ -740,6 +744,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
+		code += indent+'	$todo.beginOrder($turtle._order)\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
 		//code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
@@ -779,6 +784,7 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		// lets draw it
 		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
+		code += indent+'	$todo.endOrder()\n'
 		code += indent + '}\n'
 
 		code += indent + 'var $propsLength = $props.length\n\n'
@@ -873,21 +879,25 @@ module.exports = class Compiler extends require('base/class'){
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 
-		// define scope vars
-		if(!scope.$shader) scope.$shader = 'this.$shaders.'+className 
 		scope.$view = 'this.view'
-		scope.$props = '$shader.$props'
 		scope.$todo = '$view.todo'
 		scope.$proto = 'this.' + className +'.prototype'
 		scope.$info = '$proto.$compileInfo'
-		scope.$a = '$props.array'
 		
 		// start the writing process
 		var code = ''
-		if(source.indexOf('this.endTurtle') !== -1){
+		if(source.indexOf('this.endTurtle') !== -1){ // fetch from turtle
 			code += indent + 'var $turtle = this.turtle\n'
+			code += indent + 'var $shader = this.$shaders.'+className+'[$turtle._order]\n'
+			code += indent + 'var $props = $shader.$props\n'
+			code += indent + 'var $a = $props.array\n'
 		}
-		else scope.$turtle = 'this.turtle'
+		else{
+			scope.$turtle = 'this.turtle'
+			if(!scope.$shader) scope.$shader = 'this.$shaders.'+className+'[$turtle._order]\n'
+			scope.$props = '$shader.$props'
+			scope.$a = '$props.array'
+		}
 		
 		code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'
 		code += indent + '$props.dirty = true\n'

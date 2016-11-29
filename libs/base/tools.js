@@ -158,13 +158,14 @@ module.exports = class Tools extends require('base/class'){
 	}
 
 	// internal API used by canvas macros
-	$allocShader(classname){
+	$allocShader(classname, order){
 		var shaders = this.$shaders
 		var proto = new this[classname]()
 		
 		var info = proto.$compileInfo
+		var shaderOrder = shaders[classname] || (shaders[classname] = {})
 
-		var shader = shaders[classname] = new painter.Shader(info)
+		var shader = shaderOrder[order] = new painter.Shader(info)
 
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
 		var props = shader.$props = new painter.Mesh(info.propSlots)
@@ -198,11 +199,7 @@ module.exports = class Tools extends require('base/class'){
 		props.xOffset = xProp && xProp.offset
 		var yProp = info.instanceProps.thisDOTy 
 		props.yOffset = yProp && yProp.offset
-		//var wProp = info.instanceProps.thisDOTw
-		//props.wOffset = wProp && wProp.offset
-		//var hProp = info.instanceProps.thisDOTh
-		//props.hOffset = hProp && hProp.offset
-		//props.drawDiscard = this.view.drawDiscard || proto.drawDiscard
+
 		props.transferData = proto.transferData
 		return shader
 	}

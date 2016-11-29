@@ -41,6 +41,7 @@ module.exports = class View extends require('base/class'){
 			surface:false,
 			margin:[0,0,0,0],
 			padding:[0,0,0,0],
+			order:0,
 			// drawPadding:undefined,
 			align:[0,0],
 			down:0,
@@ -275,7 +276,7 @@ module.exports = class View extends require('base/class'){
 		turtle._y = this._y
 		turtle._w = this._w
 		turtle._h = this._h
-
+		turtle._order = 0
 		this.$turtleStack.len = 0
 
 		// lets set up a clipping rect IF we know the size
@@ -594,17 +595,9 @@ module.exports = class View extends require('base/class'){
 		}
 		stamp.$frameId = this._frameId
 
-		var group = args.group
-		if(group){
-			var l = group + classname
-			stamp.group = group
-			stamp.$shaders = this.$shaders[l]
-			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[l] = {})
-		}
-		else{
-			stamp.$shaders = this.$shaders[classname]
-			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[classname] = {})
-		}
+		stamp.$shaders = this.$shaders[classname]
+		if(!stamp.$shaders) stamp.$shaders = (this.$shaders[classname] = {})
+
 		stamp.turtle = turtle
 
 		return stamp

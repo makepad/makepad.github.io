@@ -153,6 +153,12 @@ painter.ALWAYS = 7
 
 var todoIds = new IdAlloc()
 
+function sortOrdering(a,b){
+	if(a.order > b.order) return 1
+	if(a.order < b.order) return -1
+	return 0
+}
+
 painter.Todo = class Todo extends require('base/class'){
 
 	prototype(){
@@ -181,7 +187,7 @@ painter.Todo = class Todo extends require('base/class'){
 		// the two datamappings
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
-		
+		this.ordering = []
 		this.xScroll = 0
 		this.yScroll = 0
 		this.timeMax = 0
@@ -210,6 +216,28 @@ painter.Todo = class Todo extends require('base/class'){
 		for(let key in this.deps){
 			deps.push(key)
 		}
+		
+		// lets sort our order in the todo buffer
+		var buffer = this.f32.buffer
+
+		// lets apply drawcall ordering
+		if(this.ordered>=0){
+			// copy it
+			var ordering = this.ordering
+			var i32 = this.i32
+			var o32 = new Int32Array(i32)
+			var o = this.ordered
+			ordering.sort(sortOrdering)
+			// rewrite drawcall order
+			for(let i = 0, l = ordering.length; i < l; i++){
+				var ord = ordering[i]
+				for(let c = ord.start, e = ord.end; c < e; c++){
+					o32[o++] = i32[c]
+				}
+			}
+			buffer = o32.buffer
+		}
+
 		return [{
 			fn:'updateTodo',
 			viewId:this.viewId,
@@ -218,7 +246,7 @@ painter.Todo = class Todo extends require('base/class'){
 			todoId:this.todoId,
 			uboId:this.todoUbo && this.todoUbo.uboId,
 
-			buffer:this.f32.buffer,
+			buffer:buffer,
 			length:this.length,
 			// animation related
 			//timeStart:this.timeStart,
@@ -287,6 +315,8 @@ painter.Todo = class Todo extends require('base/class'){
 		this.length = 0
 		this.deps = {}
 		this.children = []
+		this.ordering.length = 0
+		this.ordered = -1
 		this.last = -1
 		this.w = painter.w
 		this.h = painter.h
@@ -309,6 +339,24 @@ painter.Todo = class Todo extends require('base/class'){
 		todo.root = this.root
 		todo.parentId = this.todoId
 		todo.rootId = this.root.todoId
+	}
+
+	beginOrder(order){
+		if(order){
+			if(this.ordered<0) this.ordered = this.length
+		}
+		var ordering = this.ordering
+		if(ordering.length){ // make sure there are no holes
+			if(ordering[ordering.length - 1].end !== this.length){
+				ordering.length = 0
+			}
+		}
+		ordering.push({order:order,start:this.length})
+	}
+
+	endOrder(order){
+		var ordering = this.ordering
+		ordering[ordering.length - 1].end = this.length
 	}
 
 	useShader(shader){

@@ -9,6 +9,7 @@ module.exports=class Tabs extends require('base/view'){
 					selected:false,
 					line:true,
 					dx:0,
+					text:'tab'
 				},
 				tools:{
 					Bg:require('shaders/quad').extend({
@@ -30,7 +31,7 @@ module.exports=class Tabs extends require('base/view'){
 								if(this.result.a<0.5) discard;
 							}
 							else{
-								this.clear('#3')
+								//this.clear('#3')
 								if(this.line>.5){
 									this.box(this.w-2., 0., 2., this.h+2,1.)
 									this.fill('#7')
@@ -55,8 +56,9 @@ module.exports=class Tabs extends require('base/view'){
 					this.redraw()
 				},
 				onDraw(){
+					console.log()
 					this.beginBg({dx:this.dx, selected:this.selected,line:this.line})
-					this.drawText({dx:this.dx, text:'myfile.js'})
+					this.drawText({dx:this.dx, text:this.text})
 					this.endBg()
 				}
 			}),
@@ -67,12 +69,22 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onDraw(){
-		this.drawTab({id:1,line:false,text:'HI'})
-		this.turtle.wx -=15
-		this.drawTab({group:1,id:3,selected:true,text:'HI'})
-		this.turtle.wx -=15
-		this.drawTab({id:2,text:'HI'})
+		let sel = 0
+		for(let last, tabs = this.tabs, i = 0 ; i < this.tabs.length; i++){
+			let tab = tabs[i]
+			this.drawTab({
+				id:i,
+				order:sel === i?1:0,
+				selected:sel === i,
+				line:sel !== i+1,
+				text:tab.tabName
+			})
+			last = tab
+			this.turtle.wx -=5
+		}
+
 		this.lineBreak()
+
 		this.tabs[1].draw(this,{w:'100%',h:'100%'})
 	}
 }
