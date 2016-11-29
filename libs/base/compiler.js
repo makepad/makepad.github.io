@@ -704,7 +704,7 @@ module.exports = class Compiler extends require('base/class'){
 			if(!(prop.config.mask&mask)) continue
 			var name = prop.name
 			if(name === 'order'){
-				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || 0\n'
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || $proto._order || 0\n'
 			}
 			else if(name === 'state'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'

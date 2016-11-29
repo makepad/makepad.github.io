@@ -20,8 +20,7 @@ module.exports = class Stamp extends require('base/class'){
 			align:[0,0],
 			down:0,
 			cursor:undefined,
-			id:'',
-			group:''
+			id:''
 		}
 
 		this.inheritable('verbs', function(){

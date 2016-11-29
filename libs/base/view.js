@@ -41,7 +41,6 @@ module.exports = class View extends require('base/class'){
 			surface:false,
 			margin:[0,0,0,0],
 			padding:[0,0,0,0],
-			order:0,
 			// drawPadding:undefined,
 			align:[0,0],
 			down:0,
@@ -197,7 +196,6 @@ module.exports = class View extends require('base/class'){
 
 	draw(parent, overload){
 		if(parent){
-			parent.todo.addChildTodo(this.todo)
 			this.parent = parent
 			for(let key in overload){
 				let value = overload[key]
@@ -206,6 +204,9 @@ module.exports = class View extends require('base/class'){
 				}
 				else this[key] = value
 			}
+			parent.todo.beginOrder(this.order)
+			parent.todo.addChildTodo(this.todo)
+			parent.todo.endOrder()
 		}
 
 		this._time = this.app._time
@@ -226,7 +227,7 @@ module.exports = class View extends require('base/class'){
 
 		this.$width = turtle.width
 		this.$height = turtle.height
-		this.$order = 0.
+		this._order = 0.
 		todo.clearTodo()
 
 		todo.blending(this.blending, this.constantColor)
