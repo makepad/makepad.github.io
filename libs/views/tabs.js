@@ -28,15 +28,39 @@ module.exports=class Tabs extends require('base/view'){
 							}
 						}
 					},
+					sliding:{
+						duration:0.3,
+						time:{fn:'ease',begin:0,end:10},
+						from:{
+							Text:{
+								dx:null,
+							},
+							Bg:{
+								dx:null,
+								color:'#3',
+								selected:0
+							}
+						},
+						to:{
+							Text:{
+								dx:null,
+							},
+							Bg:{
+								dx:null,
+								color:'#3',
+								selected:0
+							}
+						}
+					},
 					selected:{
-						duration:0.5,
+						duration:0.3,
 						time:{fn:'ease',begin:0,end:10},
 						to:{
 							Text:{
 								dx:0,
 							},
 							Bg:{
-								color:'#5',
+								color:'#4',
 								dx:0,
 								selected:1
 							}
@@ -49,7 +73,7 @@ module.exports=class Tabs extends require('base/view'){
 								dx:null,
 							},
 							Bg:{
-								color:'#5',
+								color:'#4',
 								dx:null,
 								selected:1
 							}
@@ -94,25 +118,24 @@ module.exports=class Tabs extends require('base/view'){
 				},
 				onFingerDown(e){
 					this.view.onTabSelect(this)
-					this.drag = true
 					this.xStart = e.x
 					this.dxStart = this.dx
 				},
 				onFingerUp(){
-					this.drag = false
+					this.from_dx = undefined
+					this.xStart = -1
 					this.redraw()
 				},
 				onFingerMove(e){
 					this.dx = this.dxStart + (e.x - this.xStart)
+					this.setState('selectedDrag', false, {dx:this.dx})
 					this.view.onTabSlide(this)
-					// how do we detect if we are > halfway
-					// the next tab?
-					this.redraw()
 				},
 				onDraw(){
-					if(this.drag) this._state = 'selectedDrag'
-					this.beginBg({dx:this.dx,lineL:this.lineL,lineR:this.lineR})
-					this.drawText({dx:this.dx, text:this.text})
+					if(this.from_dx) this.state = 'sliding'
+					if(this.xStart>=0) this.state = 'selectedDrag'
+					this.beginBg({from_dx:this.from_dx,dx:this.dx,lineL:this.lineL,lineR:this.lineR})
+					this.drawText({from_dx:this.from_dx,dx:this.dx, text:this.text})
 					this.endBg()
 				}
 			}),
@@ -130,19 +153,30 @@ module.exports=class Tabs extends require('base/view'){
 
 	onTabSlide(tabStamp){ 
 		var tabs = this.tabs
-		if(tabStamp.dx > tabStamp.$w*0.5 && tabStamp.index < tabs.length - 1){
-			let old = tabs.splice(tabStamp.index, 1)[0]
-			old.stamp.dx += old.stamp.$x - tabs[tabStamp.index].stamp.$x
+		for(let i = 0; i <tabs.length;i++){
+			tabs[i].stamp.from_dx = 0
+		}
+		var index = tabStamp.index
+		if(tabStamp.dx > tabStamp.$w*0.5 && index < tabs.length - 1){
+			let old = tabs.splice(index, 1)[0]
+			let prev = tabs[index].stamp
+			let dx = old.stamp.$x - prev.$x
+			old.stamp.dx += dx
+			prev.from_dx = -dx
 			tabs.splice(tabStamp.index+1,0,old)
-			this.selected = tabStamp.index+1
+			this.selected = index+1
+			this.redraw()
 		}
-		else if(tabStamp.dx < -tabStamp.$w*0.5 && tabStamp.index > 0){
-			let old = tabs.splice(tabStamp.index, 1)[0]
-			old.stamp.dx += old.stamp.$x - tabs[tabStamp.index-1].stamp.$x
-			tabs.splice(tabStamp.index-1,0,old)
-			this.selected = tabStamp.index-1
+		else if(tabStamp.dx < -tabStamp.$w*0.5 && index > 0){
+			let old = tabs.splice(index, 1)[0]
+			let prev = tabs[index-1].stamp
+			let dx = old.stamp.$x - prev.$x
+			old.stamp.dx += dx
+			prev.from_dx = -dx
+			tabs.splice(index-1,0,old)
+			this.selected = index-1
+			this.redraw()
 		}
-		this.redraw()
 	}
 
 	onDraw(){
@@ -162,7 +196,6 @@ module.exports=class Tabs extends require('base/view'){
 		}
 
 		this.lineBreak()
-
 		this.tabs[sel].draw(this,{w:'100%',h:'100%'})
 	}
 }

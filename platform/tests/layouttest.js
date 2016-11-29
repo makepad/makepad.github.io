@@ -15,7 +15,7 @@ module.exports = class extends require('base/app'){
 		this.recFlow = new audio.Flow({ 
 			gain1: { 
 				to: 'output', 
-				gain:28.0, 
+				gain:1.0, 
 			}, 
 			input1: {
 				to: 'gain1',

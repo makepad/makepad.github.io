@@ -48,8 +48,8 @@ module.exports = class Stamp extends require('base/class'){
 			require('base/tools')
 		)
 		
-		this.onFlag0 = 1
-		this.onFlag1 = this.redraw
+		//this.onFlag0 = 1
+		//this.onFlag1 = this.redraw
 
 		this.props = {
 			x:NaN,
@@ -83,7 +83,7 @@ module.exports = class Stamp extends require('base/class'){
 	}
 
 	setState(state, queue, props){
-		this._state = state
+		this.state = state
 		// alright now what. now we need to change state on our range.
 		let view = this.view
 		let todo = view.todo
@@ -117,7 +117,9 @@ module.exports = class Stamp extends require('base/class'){
 					let prop = instanceProps['thisDOT'+key]
 					if(!prop) continue
 					if(prop.config.pack || prop.slots > 1) throw new Error("Implement propwrite for packed/props with more than 1 slot")
-					array[o + prop.offset] = props[key]
+					let off = prop.offset
+					if(prop.hasFrom) off += prop.slots
+					array[o + off] = props[key]
 				}
 
 				if(queue){ // alright. we have to mask in the next state.
@@ -173,7 +175,7 @@ module.exports = class Stamp extends require('base/class'){
 	STYLESTAMP(args, indent, className, scope){
 		var code = ''
 		var props = this._props
-		code += indent + 'var $v;if(($v=' + args[1] + '.state) !== undefined) '+args[0]+'._state = $v;\n'
+		code += indent + 'var $v;if(($v=' + args[1] + '.state) !== undefined) '+args[0]+'.state = $v;\n'
 		for(let key in props){
 			code += indent + 'var $v;if(($v=' + args[1] + '.' + key + ') !== undefined) '+args[0]+'._'+key+' = $v;\n'
 		}

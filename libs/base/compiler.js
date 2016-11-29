@@ -202,6 +202,10 @@ module.exports = class Compiler extends require('base/class'){
 					var next = frames[i]
 					var isFirst = i == 0
 					var value = next.value
+					if(duration === 0){
+						firstCode = nextCode = decodeKeyFrame(name, value, false)
+						break
+					}
 					if(last){
 						firstCode = 'mix('+decodeKeyFrame(name, value, isFirst)+','+firstCode+','
 						nextCode = 'mix('+decodeKeyFrame(name, value, false)+','+nextCode+','
@@ -689,6 +693,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!this.$compileInfo) return ''
 
 		var styleProps = this.$compileInfo.styleProps
+		var instanceProps = this.$compileInfo.instanceProps
 		if(!args) throw new Error('$STYLEPROPS doesnt have overload argument')
 
 		// lets make the vars
@@ -703,11 +708,16 @@ module.exports = class Compiler extends require('base/class'){
 			var prop = styleProps[key]
 			if(!(prop.config.mask&mask)) continue
 			var name = prop.name
+			var inst = instanceProps[key]
+
+			if(inst && inst.hasFrom){
+				code += indent +'$turtle._from_'+name+' = '+args[0]+'.from_'+name+';\n'
+			}
 			if(name === 'order'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || $proto._order || 0\n'
 			}
 			else if(name === 'state'){
-				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this._state\n'
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
 			}
 			else{
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
@@ -913,8 +923,8 @@ module.exports = class Compiler extends require('base/class'){
 		for(let key in instanceProps){
 			let prop = instanceProps[key]
 			if(!prop.slots) continue
-
-			var source = '$turtle._' + prop.name
+			let name = prop.name
+			var source = '$turtle._' + name
 			if(!prop.config.mask){ // system values
 				if(key === 'thisDOTanimStart'){ // now?
 					source = '$view._time + ($info.stateDelay[$stateId] || 0)'
@@ -932,12 +942,17 @@ module.exports = class Compiler extends require('base/class'){
 					continue
 				}
 				else{
-					source = args[0][prop.name]
+					source = args[0][name]
 					if(!source) throw new Error('Unknown key with mask 0 ' + key)
 				}
 			}
 			if(prop.hasFrom){ // initialize from from the write value if first write
 				last += packProp(indent, prop, 0, source)
+			}
+			if(prop.hasFrom){ // we need to check for from_ passed in
+				code += indent + 'if($turtle._from_'+name+' !== undefined){\n'
+				code += packProp(indent, prop, 0, '$turtle._from_'+name)
+				code += '}'
 			}
 			if(prop.hasTo){
 				code += packProp(indent, prop, prop.hasFrom?prop.slots:0, source)
