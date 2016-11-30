@@ -399,7 +399,7 @@ module.exports = class View extends require('base/class'){
 					moveScroll:0,
 					vertical:false,
 					x:0,
-					y:wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
+					y:'@0',//wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
 					w:tw,
 					h:this.$scrollBarSize,// / painter.pixelRatio,
 				})
@@ -416,7 +416,8 @@ module.exports = class View extends require('base/class'){
 					id:'vscroll',
 					moveScroll:0,
 					vertical:true,
-					x:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
+					x:'@0',
+					//dx:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
 					y:0,
 					w:this.$scrollBarSize,// / painter.pixelRatio,
 					h:th,
