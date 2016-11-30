@@ -3,7 +3,7 @@ module.exports=class Splitter extends require('base/view'){
 		this.name = 'Splitter'
 		//this.padding=15
 		this.barSize = 2
-		this.percent = true
+		this.locked = false
 		this.pos = 0.25
 		this.tools = {
 			Split:require('base/stamp').extend({
@@ -36,16 +36,36 @@ module.exports=class Splitter extends require('base/view'){
 						color:'#7'
 					}),
 					Lock:require('base/stamp').extend({
+						states:{
+							locked:{
+								duration:0.3,
+								time:{fn:'ease',begin:0,end:10},
+								to:{
+									Lock:{
+										isOpen:0.
+									}
+								}
+							},
+							unlocked:{
+								duration:0.3,
+								time:{fn:'ease',begin:0,end:10},
+								to:{
+									Lock:{
+										isOpen:1.
+									}
+								}
+							}
+						},
 						tools:{
 							Bg:require('shaders/rounded').extend({
 								color:'#7'
 							}),
 							Lock:require('shaders/quad').extend({
-								isLocked:0,
+								isOpen:0,
 								color:'#4',
 								pixel(){$
 									this.viewport()
-									var dx = (this.isLocked)*2.
+									var dx = (this.isOpen)*2.
 									this.rect(3.5+dx*0.5,6.,9.,7.)
 									this.shape+=.5
 									this.fill(this.color)
@@ -59,9 +79,13 @@ module.exports=class Splitter extends require('base/view'){
 								}
 							})
 						},
+						onFingerDown(){
+							this.setState(this.state==='locked'?'unlocked':'locked')
+							this.view.onLock(this.state==='locked')
+						},
 						onDraw(){
 							this.beginBg({w:'100%',h:'100%'})
-							this.drawLock({isLock:1.,color:'#4',w:100,h:100})
+							this.drawLock({color:'#4',w:100,h:100})
 							this.endBg()
 						}
 					}),
@@ -96,7 +120,8 @@ module.exports=class Splitter extends require('base/view'){
 						this.drawGrip({color:'#4',w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
-							this.drawLock({id:1,x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
+							console.log(this.view.locked?'locked':'unlocked')
+							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
 						}
 					}
 					else{
@@ -105,7 +130,7 @@ module.exports=class Splitter extends require('base/view'){
 						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
-							this.drawLock({id:1,y:'(turtle._h-turtle.height)*-.5',x:'25%', w:16, h:16})
+							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',y:'(turtle._h-turtle.height)*-.5',x:'25%', w:16, h:16})
 						}
 					}
 				}
@@ -113,6 +138,11 @@ module.exports=class Splitter extends require('base/view'){
 		}
 	}
 	
+	onLock(locked){
+		// switch between percentage and pixel mode
+		// pixel mode needs to pick a side
+	}
+
 	onStartDrag(){
 		this.setFocus()
 		this.start = this.pos
@@ -120,7 +150,7 @@ module.exports=class Splitter extends require('base/view'){
 
 	onMoveDrag(delta){
 		var total = this.vertical?this.$w:this.$h
-		if(this.percent){
+		if(!this.locked){
 			this.pos = (this.start*total-delta)/total
 		}
 		else{
@@ -131,9 +161,8 @@ module.exports=class Splitter extends require('base/view'){
 
 	onDraw(){
 		this.vertical = true
-		console.log(this.hasFocus)
 		if(this.vertical){
-			let pos = this.percent?this.turtle.width*this.pos:this.pos<0?this.turtle.width - this.pos:this.pos
+			let pos = (!this.locked)?this.turtle.width*this.pos:this.pos<0?this.turtle.width - this.pos:this.pos
 
 			this.panes[0].draw(this, {
 				order:1,
@@ -158,7 +187,7 @@ module.exports=class Splitter extends require('base/view'){
 			})
 		}
 		else{
-			let pos = this.percent?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
+			let pos = (!this.locked)?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
 			this.panes[0].draw(this, {
 				order:1,
 				down:1,

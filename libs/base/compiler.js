@@ -910,6 +910,7 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		
 		code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'
+		code += indent + 'if($turtle._state === "unlocked")console.log($stateId,$proto)\n'
 		code += indent + '$props.dirty = true\n'
 		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
 		// lets execute
