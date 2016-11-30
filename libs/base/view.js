@@ -128,7 +128,7 @@ module.exports = class View extends require('base/class'){
 		this.$writeList = []
 
 		this.$renderPasses = {}
-
+		this.$dirty_check = {}
 		// our matrix
 		this.viewPosition = mat4.create()
 		this.viewInverse = mat4.create()
@@ -194,6 +194,10 @@ module.exports = class View extends require('base/class'){
 		}
 	}
 
+	onFingerDown(){
+		this.setFocus()
+	}
+
 	draw(parent, overload){
 		if(parent){
 			this.parent = parent
@@ -219,14 +223,39 @@ module.exports = class View extends require('base/class'){
 
 		var turtle = this.turtle = this.parent?this.parent.turtle:this.appTurtle
 		
+		// set input props
+		turtle._margin = this._margin
+		turtle._padding = this._padding
+		turtle._align = this._align
+		turtle._down = this._down
+		turtle._wrap = this._wrap
+		turtle._x = this._x
+		turtle._y = this._y
+		turtle._w = this._w
+		turtle._h = this._h
+
+		// do a dirty check against turtle state to skip drawing
+		let $dirty = this.$dirty_check
 		if(!this.$dirty && 
-			this.$width === turtle.width &&  
-			this.$height === turtle.height){
+			$dirty.width === turtle.width &&  
+			$dirty.height === turtle.height &&
+			$dirty.w === this._w &&  
+			$dirty.h === this._h &&
+			$dirty.wx === turtle.wx &&
+			$dirty.wy === turtle.wy){
+			// lets just walk the turtle
+			turtle._w = this.$w
+			turtle._h = this.$h
+			turtle.walk()
 			return
 		}
+		$dirty.w = this._w
+		$dirty.h = this._h
+		$dirty.wx = turtle.wx
+		$dirty.wy = turtle.wy
+		$dirty.width = turtle.width
+		$dirty.height = turtle.height
 
-		this.$width = turtle.width
-		this.$height = turtle.height
 		this._order = 0.
 		todo.clearTodo()
 
@@ -267,30 +296,22 @@ module.exports = class View extends require('base/class'){
 		// clear our write list
 		this.$writeList.length = 0
 
-		// set input props
-		turtle._margin = this._margin
-		turtle._padding = this._padding
-		turtle._align = this._align
-		turtle._down = this._down
-		turtle._wrap = this._wrap
-		turtle._x = this._x
-		turtle._y = this._y
-		turtle._w = this._w
-		turtle._h = this._h
 		turtle._order = 0
+		turtle._turtleClip = [-50000,-50000,50000,50000]
+
 		this.$turtleStack.len = 0
 
-		// lets set up a clipping rect IF we know the size
-		turtle._turtleClip = [-50000,-50000,50000,50000]
-			
+		//console.log(this.turtle.wx)
 		this.beginTurtle()
 		var nt = this.turtle
 
-		nt.$xAbs = turtle.wx + nt.margin[3]
-		nt.$yAbs = turtle.wy + nt.margin[0]
+		// absolute coordinate?
+		nt.$xAbs = nt.ix + nt.margin[3]
+		nt.$yAbs = nt.iy + nt.margin[0]
 
 		if(this.clip && !isNaN(this.turtle.width) && !isNaN(this.turtle.height)){
-			this.viewClip = [0, 0, this.turtle.width, this.turtle.height]
+			let pad = nt.padding
+			this.viewClip = [pad[3], pad[0], this.turtle.width+pad[3], this.turtle.height+pad[0]]
 		}
 		else this.viewClip = [-50000,-50000,50000,50000]
 
@@ -301,14 +322,15 @@ module.exports = class View extends require('base/class'){
 		}
 
 		this.endTurtle()
+		// we need to walk the turtle.
+		this.$w = turtle._w
+		this.$h = turtle._h
 
 		turtle.walk(nt)
 
 		// store computed absolute coordinates
 		this.$x = turtle._x// + turtle.$xAbs
 		this.$y = turtle._y// + turtle.$yAbs
-		this.$w = turtle._w
-		this.$h = turtle._h
 		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
 		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
 
@@ -576,29 +598,31 @@ module.exports = class View extends require('base/class'){
 		}
 	}
 
-	$allocStamp(args, classname){
-		var turtle = this.turtle
+	$allocStamp(args, classname, context){
+		var turtle = context.turtle
 		var id = args.id
-		if(id === undefined) throw new Error("Please provide a locally unique id to a stamp")
+		if(id === undefined) throw new Error("Please provide a view unique id to a stamp")
 		var stamp = this.$stamps[id]
 		if(!stamp){
-			stamp = this.$stamps[id] = new this[classname]()
+			stamp = this.$stamps[id] = new context[classname]()
 			var pickId = this.$pickId++
 			this.$pickIds[pickId] = stamp
 			stamp.view = this
+			var name = context.$context?context.$context + '_' + classname:classname
+			stamp.$context = name
 			stamp.$pickId = pickId
+			stamp.$shaders = this.$shaders[name]
+			let ctxorder = context._order
+			if(ctxorder && !stamp._order) stamp._order = ctxorder
+			if(!stamp.$shaders) stamp.$shaders = (this.$shaders[name] = {})
 		}
-		else if(stamp.constructor !== this[classname]){
+		else if(stamp.constructor !== context[classname]){
 			console.error("Stamp ID reused for different class!")
 		}
 		else if(stamp.$frameId == this._frameId){
 			console.error("Please provide a unique id to each stamp")
 		}
 		stamp.$frameId = this._frameId
-
-		stamp.$shaders = this.$shaders[classname]
-		if(!stamp.$shaders) stamp.$shaders = (this.$shaders[classname] = {})
-
 		stamp.turtle = turtle
 
 		return stamp

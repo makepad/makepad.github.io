@@ -103,7 +103,7 @@ module.exports = class Button extends require('base/stamp'){
 				font:require('fonts/ubuntu_monospace_256.font')
 			}),
 			Icon: require('shaders/icon').extend({
-				font:require('fonts/fontawesome_low.font'),
+				//font:require('fonts/fontawesome_low.font'),
 			})
 		}
 	}

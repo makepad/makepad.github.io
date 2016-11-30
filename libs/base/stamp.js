@@ -169,7 +169,7 @@ module.exports = class Stamp extends require('base/class'){
 	}
 
 	ALLOCSTAMP(args, indent, className, scope){
-		return 'this.view.$allocStamp('+args[0]+', "'+className+'")\n'
+		return 'this.view.$allocStamp('+args[0]+', "'+className+'", this)\n'
 	}
 
 	STYLESTAMP(args, indent, className, scope){

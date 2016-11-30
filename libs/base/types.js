@@ -55,8 +55,24 @@ function Struct(fields, name){
 Struct.prototype = Object.create(Type.prototype)
 Struct.prototype.constructor = Struct
 
+function Enum(enumSet){
+	var enm = this
+	if(!(enm instanceof Enum)){
+		enm = Object.create(Enum.prototype)
+	}
+	enm.enum = enumSet
+	enm.name = 'float'
+	enm.slots = 1
+	enm.array = Float32Array
+	return enm
+}
+
+Enum.prototype = Object.create(Type.prototype)
+Enum.prototype.constructor = Enum
+
 types.Type = Type
 types.Struct = Struct
+types.Enum = Enum
 
 // generic types
 types.void = Type({

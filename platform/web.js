@@ -152,8 +152,9 @@
 				}, 2000)
 			}
 			req.addEventListener("error", function(){
-				console.error('Error loading '+localFile)
-				reject(resource)
+				//console.error('Error loading '+localFile)
+				//consoe.log('rejecting!')
+				//reject(resource)
 			})
 			req.responseType = isBinary?'arraybuffer':'text'
 			req.addEventListener("load", function(){
@@ -162,7 +163,7 @@
 					if(progressTimeout) clearTimeout(progressTimeout)
 				}
 				if(req.status !== 200){
-					return reject(resource)
+					return reject(req.status)
 				}
 				root.resourceCache[localFile] = req.response
 				resolve(req.response)

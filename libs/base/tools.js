@@ -36,6 +36,7 @@ module.exports = class Tools extends require('base/class'){
 					this.$compileVerbs(key, cls)
 					continue
 				}
+				// reversed (prop object below class)
 				else if(base && base.constructor === Object && typeof inherit === 'function'){ // already has an object defined
 					var cls = this[key] = inherit.extend(base)
 					this.$compileVerbs(key, cls)

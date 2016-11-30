@@ -92,7 +92,7 @@ module.exports=class Tabs extends require('base/view'){
 							this.viewport()
 							if(this.selected>.5){
 								this.box(6., 5., this.w-12., this.h, this.borderRadius)
-								this.rectangle(-10., 20., this.w+20., this.h)
+								this.rect(-10., 20., this.w+20., this.h)
 								this.box(-8., -10.5, 14., this.h+10., this.borderRadius)
 								this.subtract()
 								this.box(this.w-6., -10.5, 15., this.h+10., this.borderRadius)
@@ -134,8 +134,8 @@ module.exports=class Tabs extends require('base/view'){
 				onDraw(){
 					if(this.from_dx) this.state = 'sliding'
 					if(this.xStart>=0) this.state = 'selectedDrag'
-					this.beginBg({from_dx:this.from_dx,dx:this.dx,lineL:this.lineL,lineR:this.lineR})
-					this.drawText({from_dx:this.from_dx,dx:this.dx, text:this.text})
+					this.beginBg({from_dx:this.from_dx, dx:this.dx, lineL:this.lineL,lineR:this.lineR})
+					this.drawText({from_dx:this.from_dx, dx:this.dx, text:this.text})
 					this.endBg()
 				}
 			}),

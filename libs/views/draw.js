@@ -10,6 +10,7 @@ module.exports = class Draw extends require('base/view'){
 				font:require('fonts/ubuntu_medium_256.font')
 			}),
 			Icon:require('shaders/icon').extend({
+				font:require('fonts/fontawesome_low.font')
 			})
 		}
 	}

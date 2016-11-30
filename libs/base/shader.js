@@ -319,7 +319,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	fillKeep(color) {$
-		var f = this._calcBlur(this.shape+.5)
+		var f = this._calcBlur(this.shape)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)
@@ -332,15 +332,15 @@ module.exports = class Shader extends require('base/compiler'){
 		return this.result
 	}
 	
-	strokeKeep(color, width) {$
-		var f = this._calcBlur(abs(this.shape + width ) - width / this._scale)
+	strokeKeep(color, width, displace = 0.) {$
+		var f = this._calcBlur(abs(this.shape + displace) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = source * f + dest * (1. - source.a * f)
 	}
 	
-	stroke(color, width) {$
-		this.strokeKeep(color, width)
+	stroke(color, width, displace = 0.) {$
+		this.strokeKeep(color, width, displace)
 		this._oldShape = this.shape = 1e+20
 		return this.result
 	}
@@ -391,7 +391,7 @@ module.exports = class Shader extends require('base/compiler'){
 		this.shape = min(this.shape, this.field)
 	}
 	
-	rectangle(x, y, w, h) {$
+	rect(x, y, w, h) {$
 		var s = vec2(w, h) * .5
 		var d = abs(vec2(x, y) - this.pos + s) - s
 		var dm = min(d, vec2(0.))
@@ -409,8 +409,10 @@ module.exports = class Shader extends require('base/compiler'){
 		var p = vec2(x, y)
 		var pa = this.pos - this._lastPos.xy
 		var ba = p - this._lastPos
-		var h = clamp(dot(pa.xy, ba) / dot(ba, ba), 0., 1.)
-		this.field = length(pa.xy - ba * h) / this._scale
+		var h = clamp(dot(pa, ba) / dot(ba, ba), 0., 1.)
+		this.field = length(pa - ba * h) / this._scale
+		//this.shape = sin(this.mesh.x*this.field)*1.
+		//this.box(10,10,100,100)
 		this._oldShape = this.shape
 		this.shape = min(this.shape, this.field)
 		this._lastPos = p

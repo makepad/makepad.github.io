@@ -6,7 +6,7 @@ module.exports = require('base/stamp').extend({
 					to:{
 						ScrollBar:{
 							bgColor:'#0000',
-							handleColor:'#1'
+							handleColor:'#5'
 						}
 					}
 				},

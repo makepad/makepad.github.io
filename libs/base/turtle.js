@@ -23,8 +23,6 @@ module.exports = class Turtle extends require('base/class'){
 		',height:'+this.height+
 		',_x:'+this._x+
 		',_y:'+this._y+
-		//',ix:'+this.ix+
-		//',iy:'+this.iy+
 		',wx:'+this.wx+
 		',wy:'+this.wy)
 	}
@@ -210,13 +208,13 @@ module.exports = class Turtle extends require('base/class'){
 					if(nh > this.mh) this.mh = nh
 				}
 
-				if(!this._noBounds){
+				//if(!this._noBounds){
 					// check if it wont wrap
-					if(this.wy > this.y2) this.y2 = this.wy
-					// compute y bounds
-					var nx = this.wx + nh
-					if(nx > this.x2) this.x2 = nx
-				}
+				if(this.wy > this.y2) this.y2 = this.wy
+				// compute y bounds
+				var nx = this.wx + nh
+				if(nx > this.x2) this.x2 = nx
+				//}
 			}
 			else{ // walk horizontally
 				if(this.outer && (this.outer._wrap === 2 ||
@@ -245,19 +243,16 @@ module.exports = class Turtle extends require('base/class'){
 					if(nh > this.mh) this.mh = nh
 				}
 				// compute x bounds
-				if(!this._noBounds){
-					// check if it wont wrap
-					if(this.wx > this.x2) this.x2 = this.wx
-					// compute y bounds
-					var ny = this.wy + nh
-					if(ny > this.y2) this.y2 = ny
-				}
+				// check if it wont wrap
+				if(this.wx > this.x2) this.x2 = this.wx
+				// compute y bounds
+				var ny = this.wy + nh
+				if(ny > this.y2) this.y2 = ny
+
 			}
 		}
-		if(!this._noBounds){
-			if(this._x < this.x1) this.x1 = this._x
-			if(this._y < this.y1) this.y1 = this._y
-		}
+		if(this._x < this.x1) this.x1 = this._x
+		if(this._y < this.y1) this.y1 = this._y
 		// remove abs
 		this._x -= this.$xAbs
 		this._y -= this.$yAbs
@@ -278,15 +273,14 @@ module.exports = class Turtle extends require('base/class'){
 		var padding = this.padding
 		var outer = this.outer
 
-		if(isNaN(outer._w)){
-			if(this.x1 < outer.x1) outer.x1 = this.x1
-			if(this.x2 > outer.x2) outer.x2 = this.x2
-		}
-		if(isNaN(outer._h)){
-			if(this.y1 < outer.y1) outer.y1 = this.y1
-			if(this.y2 > outer.y2) outer.y2 = this.y2
-		}
-
+		//if(isNaN(outer._w)){
+		//	if(this.x1 < outer.x1) outer.x1 = this.x1
+		//	if(this.x2 > outer.x2) outer.x2 = this.x2
+		//}
+		//if(isNaN(outer._h)){
+		//	if(this.y1 < outer.y1) outer.y1 = this.y1
+		//	if(this.y2 > outer.y2) outer.y2 = this.y2
+		//}
 		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
 		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
 
@@ -332,7 +326,7 @@ module.exports = class Turtle extends require('base/class'){
 			if(str == pf) return this.sx + pf
 			var code = 'turtle.sx + '+ str
 				.replace(/\@/g, 'turtle.width - turtle._w -')
-				.replace(/\%/g, '*0.01*(turtle.width - turtle.wx) - turtle._margin[1] - turtle._margin[3]')
+				.replace(/\%/g, '*0.01*(turtle.width - (turtle.wx - turtle.sx) - turtle.$alignDx) - turtle._margin[1] - turtle._margin[3]')
 			cache = xcache[str] = new Function('turtle', 'return '+code)
 		}
 		var ret = cache.call(context,this)
@@ -346,7 +340,7 @@ module.exports = class Turtle extends require('base/class'){
 			if(str == pf) return this.sy + pf
 			var code = 'turtle.sy + '+  str
 				.replace(/\@/g, 'turtle.height - turtle._h -')
-				.replace(/\%/g, '*0.01*turtle.height - turtle._margin[0] - turtle._margin[2]')
+				.replace(/\%/g, '*0.01*(turtle.height - (turtle.wy-turtle.sy) - turtle.$alignDy)- turtle._margin[0] - turtle._margin[2]')
 			cache = ycache[str] = new Function('turtle', 'return '+code)
 		} 
 		return cache.call(context,this)

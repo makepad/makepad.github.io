@@ -38,7 +38,7 @@ root.downloadWithDeps = function(absUrl, parentUrl, singleLoad, resources, appPr
 		return Promise.all(deps)
 	}, 
 	function(error){
-		console.log("Error loading "+absUrl+" from "+parentUrl)
+		console.error("Error loading "+absUrl+" from "+parentUrl)
 		return Promise.reject(error)
 	})
 }
@@ -149,6 +149,8 @@ root.onInitApps = function(apps){
 			var worker = root.startWorker(loadServices, app.platform)
 			root.initWorker(worker, app.main, app.resources, undefined)
 		}
+	}, function(error){
+		//console.error("Error starting up")
 	})
 }
 

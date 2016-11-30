@@ -1,174 +1,186 @@
 module.exports=class Splitter extends require('base/view'){
 	prototype(){
 		this.name = 'Splitter'
-		this.props = {
-			vertical:true,
-			pos:.5,
-			mode:0,
-			lockedWidth:1,
-			unlockedWidth:3,
-			isLocked:false,
-			color:'red'
-		}
-		this.padDrawing = true,
-		this.padding = [0,0,0,0],
-		this.safety1 = 20,
-		this.safety2 = 24,
-		this.refSettings = 0,
-		this.doAnim = true,
+		//this.padding=15
+		this.barSize = 2
+		this.percent = true
+		this.pos = 0.25
 		this.tools = {
-			Split:require('tools/split').extend({
+			Split:require('base/stamp').extend({
+				props:{
+					vertical:0,
+				},
+				states:{
+					default:{
+						to:{
+							Bar:{color:'#2'},
+							GripBg:{color:'#2'},
+							Grip:{color:'#7'},
+						}
+					},
+					focus:{
+						to:{
+							Bar:{color:'#7'},
+							GripBg:{color:'#7'},
+							Grip:{color:'#4'},
+						}
+					}
+				},
+				tools:{
+					Bar:require('shaders/quad').extend({
+						color:'#7'
+					}),
+					GripBg:require('shaders/rounded').extend({
+						color:'#7'
+					}),
+					Lock:require('base/stamp').extend({
+						tools:{
+							Bg:require('shaders/rounded').extend({
+								color:'#7'
+							}),
+							Lock:require('shaders/quad').extend({
+								isLocked:0,
+								color:'#4',
+								pixel(){$
+									this.viewport()
+									var dx = (this.isLocked)*2.
+									this.rect(3.5+dx*0.5,6.,9.,7.)
+									this.shape+=.5
+									this.fill(this.color)
+									this.circle(8.-dx*1.5,6.5,3.5)
+									this.circle(8.-dx*1.5,6.5,1.5)
+									this.subtract()
+									this.rect(2.,7.5,8.,6.)
+									this.subtract()
+									this.fill(this.color)
+									return this.result
+								}
+							})
+						},
+						onDraw(){
+							this.beginBg({w:'100%',h:'100%'})
+							this.drawLock({isLock:1.,color:'#4',w:100,h:100})
+							this.endBg()
+						}
+					}),
+					Grip:require('shaders/quad').extend({
+						isLock:0,
+						color:'#4',
+						pixel(){$
+							this.viewport()
+							this.moveTo(6.25,5)
+							this.lineTo(6.25,11)
+							this.moveTo(9.75,5)
+							this.lineTo(9.75,11)
+							this.stroke(this.color,1.)
+							return this.result
+						}
+					})
+				},	
+				onFingerDown(){
+					this.view.onStartDrag()
+				},
+				onFingerMove(e){
+					this.view.onMoveDrag(this.vertical?e.xDown-e.xAbs:e.yDown-e.yAbs)						
+				},
+				onFingerUp(){
+
+				},
+				onDraw(){
+					this.drawBar({x:'0',y:'0',w:'100%',h:'100%'})
+					// the nub
+					if(this.vertical){
+						this.beginGripBg({x:'(turtle._w-turtle.width)*-.5',y:'75%', w:16, h:16})
+						this.drawGrip({color:'#4',w:'100%',h:'100%'})
+						this.endGripBg()
+						if(this.state === 'focus'){
+							this.drawLock({id:1,x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
+						}
+					}
+					else{
+						var turtle = this.turtle
+						this.beginGripBg({y:'(turtle._h-turtle.height)*-.5',x:'75%', w:16, h:16})
+						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
+						this.endGripBg()
+						if(this.state === 'focus'){
+							this.drawLock({id:1,y:'(turtle._h-turtle.height)*-.5',x:'25%', w:16, h:16})
+						}
+					}
+				}
 			})
 		}
 	}
+	
+	onStartDrag(){
+		this.setFocus()
+		this.start = this.pos
+	}
 
-	toggleSplitterSettings(show){
-		this.refSettings = show?1:0
-		this.doAnim = true
+	onMoveDrag(delta){
+		var total = this.vertical?this.$w:this.$h
+		if(this.percent){
+			this.pos = (this.start*total-delta)/total
+		}
+		else{
+			this.pos = start - delta
+		}
 		this.redraw()
 	}
 
-	onMode(e){
-		var pos
-		if(this.$wInside === undefined || this.$hInside === undefined) return
-		if(e.old === 1){
-			pos = this.pos
-		}
-		else if(e.old === 2){
-			pos  =  (this.vertical?this.$wInside:this.$hInside) - this.pos
-		}
-		else{
-			pos  =  this.pos * (this.vertical?this.$wInside:this.$hInside)
-		}
-		this.onSplitMove({xSplit:pos, ySplit:pos, fromMode:1})
-	}
-
-	onSplitMove(e){
-		//if(this.isLocked) return
-		var size = this.unlockedWidth
+	onDraw(){
+		this.vertical = true
+		console.log(this.hasFocus)
 		if(this.vertical){
-			if(this.mode == 1){ // pixel left align
-				this.pos = clamp(e.xSplit,this.safety1, this.$wInside - this.safety2)
-			}
-			else if(this.mode == 2){ // pixel right align
-				this.pos = this.$wInside - clamp(e.xSplit,this.safety1, this.$wInside - this.safety2)
-			}
-			else{ // horizontal percentage
-				this.pos = clamp(e.xSplit / this.$wInside, this.safety1 / this.$wInside,1 - this.safety2 / this.$wInside)
-			}
-		}
-		else{
-			if(this.mode == 1){ // pixel top
-				this.pos = clamp(e.ySplit,this.safety1, this.$hInside - this.safety2)
-			}
-			else if(this.mode == 2){ // pixel bottom
-				this.pos = this.$hInside - clamp(e.ySplit,this.safety1, this.$hInside - this.safety2) 
-			}
-			else{ // vertical percentage
-				this.pos = clamp(e.ySplit / this.$hInside, this.safety1 / this.$hInside,1 - this.safety2 / this.$hInside)
-			}
-		}
-		if(!e.fromMode && this.refSettings && this.mode){
-			this.mode = this.modeFromPos()
-		}
-		this.relayout()
-	}
+			let pos = this.percent?this.turtle.width*this.pos:this.pos<0?this.turtle.width - this.pos:this.pos
 
-	modeFromPos(){
-		var pos = this.getPos()
-		if(this.vertical){
-			if(pos<this.$hInside*.5) return 1
-			return 2
-		}
-		if(pos<this.$wInside*.5) return 1
-		return 2
-	}
+			this.panes[0].draw(this, {
+				order:1,
+				w:pos - this.barSize*.5,
+				h:'100%'
+			})
 
-	getPos(){
-		if(this.vertical){
-			return this.mode==1?this.pos:this.mode==2?this.$wInside-this.pos:this.pos * this.$wInside
-		}
-		else{
-			return this.mode==1?this.pos:this.mode==2?this.$hInside-this.pos:this.pos * this.$hInside
-		}
-	}
-
-	getSize(){
-		return this.isLocked?this.lockedWidth:this.unlockedWidth		
-	}
-
-	onSplitButtonClick(){
-		// lets check our state.
-		if(this.buttonClick.toggle&1){ // percentage
-			this.mode = 0
-		}
-		else{
-			this.mode = this.modeFromPos()
-		}
-		if(this.buttonClick.toggle&2){
-			this.isLocked = 1
-		}
-		else{
-			this.isLocked = 0
-		}
-	}
-
-	onOverlay(){
-		var pos = this.getPos()
-		var size = this.getSize()
-		this.buttonClick = {toggle:(this.isLocked?2:0)|(this.mode?0:1)}
-
-		if(this.vertical){
 			this.drawSplit({
-				vertical:1.,
-				state:(this.refSettings?'settings':'default')+(this.doAnim?'':'_noAnim'),
-				offset:this.padding[3],
-				x:''+pos-.5*size,
-				y:'0',
-				w:size,
-				h:'100%',
-				cursor: 'ew-resize',
-				buttonClick:this.buttonClick
+				id:0,
+				order:2,
+				cursor:'ew-resize',
+				state:this.hasFocus?'focus':'default',
+				vertical:1,
+				w:this.barSize,
+				h:'100%'
+			})			
+			
+			this.panes[1].draw(this, {
+				order:1,
+				w:this.turtle.width - pos - this.barSize*.5,
+				h:'100%'
 			})
 		}
 		else{
-			this.drawSplit({
-				vertical:0.,
-				state:(this.refSettings?'settings':'default')+(this.doAnim?'':'_noAnim'),
-				offset:this.padding[3],
-				x:'0',
-				y:''+pos-.5*size,
-				w:'100%',
-				h:size,
-				cursor: 'ns-resize',
-				buttonClick:this.buttonClick
+			let pos = this.percent?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
+			this.panes[0].draw(this, {
+				order:1,
+				down:1,
+				h:pos - this.barSize*.5,
+				w:'100%'
 			})
-		}
-		this.doAnim = false
-	}
 
-	onAfterCompose(){
-		var c0 = this.children[0]
-		var c1 = this.children[1]
-		if(this.vertical){
-			c0.x = '0'
-			c0.y = '0'
-			c0.w = 'this.parent.getPos()-0.5*this.parent.getSize()'
-			c0.h = '100%'
-			c1.x = 'this.parent.getPos()+0.5*this.parent.getSize()'
-			c1.y = '0'
-			c1.w = '100%-this.parent.getPos()-0.5*this.parent.getSize()'
-			c1.h = '100%'
-		}
-		else{
-			c0.x = '0'
-			c0.y = '0'
-			c0.w = '100%'
-			c0.h = 'this.parent.getPos()-0.5*this.parent.getSize()'
-			c1.x = '0'
-			c1.y = 'this.parent.getPos()+.5*this.parent.getSize()'
-			c1.w = '100%'
-			c1.h = '100%-this.parent.getPos()-.5*this.parent.getSize()'
+			this.drawSplit({
+				id:0,
+				down:1,
+				order:2,
+				vertical:0,
+				state:this.hasFocus?'focus':'default',
+				cursor:'ns-resize',
+				h:barSize,
+				w:'100%'
+			})			
+			
+			this.panes[1].draw(this, {
+				order:1,
+				down:1,
+				h:pos - this.barSize*.5,
+				w:'100%'
+			})
 		}
 	}
 }
