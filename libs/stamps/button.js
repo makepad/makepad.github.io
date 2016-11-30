@@ -94,7 +94,7 @@ module.exports = class Button extends require('base/stamp'){
 					this.box(0., 0., this.w, this.h, this.borderRadius)
 					this.shape += 3.
 					this.fillKeep(this.color)
-					this.strokeKeep(this.borderColor, this.borderWidth)
+					this.strokeKeep(this.borderColor, this.borderWidth, this.borderWidth)
 					this.blur = 2.
 					return this.glow(this.glowColor, this.glowSize*4.,this.borderWidth)
 				}

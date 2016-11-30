@@ -120,7 +120,6 @@ module.exports=class Splitter extends require('base/view'){
 						this.drawGrip({color:'#4',w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
-							console.log(this.view.locked?'locked':'unlocked')
 							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
 						}
 					}
