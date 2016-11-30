@@ -12,6 +12,8 @@ module.exports=class Splitter extends require('base/view'){
 				},
 				states:{
 					default:{
+						duration:.3,
+						time:{fn:'ease',begin:0,end:10},
 						to:{
 							Bar:{color:'#2'},
 							GripBg:{color:'#2'},
