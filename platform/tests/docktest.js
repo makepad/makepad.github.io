@@ -21,7 +21,7 @@ module.exports = class extends require('base/app'){
 					
 					for(var i =0; i < 300; i++){
 						this.drawButton({id:i,icon:'search'})
-						///this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
+						this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
 					}
 					this.endQuad()
 				}
