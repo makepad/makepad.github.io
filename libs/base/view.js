@@ -321,24 +321,27 @@ module.exports = class View extends require('base/class'){
 			this.onFlag = 0
 		}
 
-		this.endTurtle()
 		// we need to walk the turtle.
-		this.$w = turtle._w
-		this.$h = turtle._h
+		this.$w = nt.wBound()
+		this.$h = nt.hBound()
+		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
+		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
 
+		// draw our scrollbars
+		this.$drawScrollBars(this.$w, this.$h, this.$vw, this.$vh)
+
+		this.endTurtle()
+	
 		turtle.walk(nt)
 
 		// store computed absolute coordinates
 		this.$x = turtle._x// + turtle.$xAbs
 		this.$y = turtle._y// + turtle.$yAbs
-		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
-		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
 
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
 		}
 
-		this.$drawScrollBars(this.$w, this.$h, this.$vw, this.$vh)
 
 		// if we are a surface, end the pass and draw it to ourselves
 		/*
@@ -398,9 +401,9 @@ module.exports = class View extends require('base/class'){
 					id:'hscroll',
 					moveScroll:0,
 					vertical:false,
-					x:0,
-					y:'@0',//wy - this.$scrollBarSize,//-this.padding[0],// / painter.pixelRatio,
-					w:tw,
+					x:'0',
+					y:'@0',
+					w:'100%',
 					h:this.$scrollBarSize,// / painter.pixelRatio,
 				})
 				this.todo.xScrollId = this.$xScroll.$pickId
@@ -417,10 +420,9 @@ module.exports = class View extends require('base/class'){
 					moveScroll:0,
 					vertical:true,
 					x:'@0',
-					//dx:wx - this.$scrollBarSize,//-this.padding[3], /// painter.pixelRatio,
-					y:0,
+					y:'0',
 					w:this.$scrollBarSize,// / painter.pixelRatio,
-					h:th,
+					h:'100%',
 				})
 				this.todo.yScrollId = this.$yScroll.$pickId
 				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)

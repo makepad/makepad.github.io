@@ -268,22 +268,21 @@ module.exports = class Turtle extends require('base/class'){
 		this.mh = 0
 	}
 
+	wBound(){
+		let padding = this.padding
+		return  (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
+	}
+
+	hBound(){
+		let padding = this.padding
+		return (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
+	}
 
 	end(){
-		var padding = this.padding
 		var outer = this.outer
-
-		//if(isNaN(outer._w)){
-		//	if(this.x1 < outer.x1) outer.x1 = this.x1
-		//	if(this.x2 > outer.x2) outer.x2 = this.x2
-		//}
-		//if(isNaN(outer._h)){
-		//	if(this.y1 < outer.y1) outer.y1 = this.y1
-		//	if(this.y2 > outer.y2) outer.y2 = this.y2
-		//}
-		outer._w = (isNaN(this.width)?(this.x2 === -Infinity?NaN:(this.x2 - this.sx)):this.width) + padding[3] + padding[1]
-		outer._h = (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
-
+		// store our bounds
+		outer._w = this.wBound()
+		outer._h = this.hBound()
 		this.doAlign(true)
 	}
 

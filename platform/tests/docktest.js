@@ -16,7 +16,7 @@ module.exports = class extends require('base/app'){
 				onDraw(){
 					this.beginQuad({color:'#4',w:'100%'})
 					for(var i =0; i < 1000; i++){
-						this.drawRounded({margin:2,color:[sin(i),cos(i),sin(2*i),1],w:25,h:25, borderRadius:this.br})
+						this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
 					}
 					this.endQuad()
 				}
