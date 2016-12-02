@@ -208,13 +208,9 @@ module.exports = class Turtle extends require('base/class'){
 					if(nh > this.mh) this.mh = nh
 				}
 
-				//if(!this._noBounds){
-					// check if it wont wrap
 				if(this.wy > this.y2) this.y2 = this.wy
-				// compute y bounds
 				var nx = this.wx + nh
 				if(nx > this.x2) this.x2 = nx
-				//}
 			}
 			else{ // walk horizontally
 				if(this.outer && (this.outer._wrap === 2 ||
@@ -256,10 +252,6 @@ module.exports = class Turtle extends require('base/class'){
 		// remove abs
 		this._x -= this.$xAbs
 		this._y -= this.$yAbs
-		// alright lets do the per-item alignment.
-		// only if it changes or ends
-		// however what do we do when align-right ends?
-		// well we need to compute the 
 	}
 
 	lineBreak(){

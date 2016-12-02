@@ -43,6 +43,8 @@ module.exports = class Stamp extends require('base/class'){
 			}
 		})
 
+		this.wrapped = true
+
 		this.mixin(
 			require('base/props'),
 			require('base/tools')
@@ -182,28 +184,53 @@ module.exports = class Stamp extends require('base/class'){
 		return code
 	}
 
+	wrap(){
+		return {
+			margin:this._margin,
+			align:this._align,
+			down:this._down,
+			x:this._x,
+			y:this._y,
+			w:this._w,
+			h:this._h,
+		}
+	}
+
 	drawStamp(){
 		var view = this.view
 		var $writeList = view.$writeList
 		this.$writeStart = $writeList.length
+		
 		var turtle = this.turtle
-		turtle._margin = this._margin
-		turtle._padding = this._padding
-		turtle._align = this._align
-		turtle._down = this._down
-		turtle._wrap = this._wrap
-		turtle._x = this._x
-		turtle._y = this._y
-		turtle._w = this._w
-		turtle._h = this._h
-		this.beginTurtle()
-		this.turtle._pickId = this.$pickId
-		this.turtle._order = this._order
-		//var order = this.order
-		//this.turtle._order = order !== 0? order: view.$order++
-		this.onDraw()
-		var ot = this.endTurtle()
-		turtle.walk(ot)
+
+		if(!this.wrapped){
+			let pickId = turtle._pickId
+			let order = turtle._order
+			turtle._pickId = this.$pickId
+			turtle._order = this._order
+			this.onDraw()
+			turtle._pickId = pickId
+			turtle._order = order
+		}
+		else{
+			turtle._margin = this._margin
+			turtle._padding = this._padding
+			turtle._align = this._align
+			turtle._down = this._down
+			turtle._wrap = this._wrap
+			turtle._x = this._x
+			turtle._y = this._y
+			turtle._w = this._w
+			turtle._h = this._h
+			this.beginTurtle()
+			this.turtle._pickId = this.$pickId
+			this.turtle._order = this._order
+			//var order = this.order
+			//this.turtle._order = order !== 0? order: view.$order++
+			this.onDraw()
+			var ot = this.endTurtle()
+			turtle.walk(ot)
+		}
 		this.$x = turtle._x
 		this.$y = turtle._y
 		this.$w = turtle._w

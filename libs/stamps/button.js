@@ -81,7 +81,9 @@ module.exports = class Button extends require('base/stamp'){
 			onClickStamp: undefined,
 			debug: 0
 		}
-				
+			
+		this.wrapped = false
+
 		this.tools = {
 			Bg: require('shaders/quad').extend({
 				borderRadius:4.,
@@ -125,10 +127,7 @@ module.exports = class Button extends require('base/stamp'){
 	}
 
 	onDraw() {
-		this.beginBg({
-			w:'100%',
-			h:'100%'
-		})
+		this.beginBg(this.wrap())
 		
 		if(this.icon) {
 			this.drawIcon({

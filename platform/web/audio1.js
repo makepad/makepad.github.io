@@ -6,6 +6,7 @@ module.exports = class extends require('/platform/service'){
 		// lets create an audio context
 		this.parentAudio = this.parent && this.parent.services[this.name]
 		this.context = this.parentAudio && this.parentAudio.addChild(this) || new (window.AudioContext || window.webkitAudioContext)()
+
 		this.ids = {}
 		this.queue = []
 		this.children = []
@@ -92,7 +93,7 @@ module.exports = class extends require('/platform/service'){
 				if(code>=48 && code <=57) break
 			}
 
-			var type = name.slice(0,j)
+			var type =   name.slice(0,j)
 			var node
 
 			if(type === 'gain'){
@@ -108,16 +109,26 @@ module.exports = class extends require('/platform/service'){
 			}
 			else if(type === 'input'){
 				node = {config:conf, type:'input'}
-				getUserMedia.call(navigator, {audio:true}, function(flow, node, stream){
-					node.audioNode = this.context.createMediaStreamSource(stream)
-					// connect it lazily
-					node.stream = stream
-					var to = flow.nodes[node.config.to]
-					if(!to) console.log("input cannot connect to "+node.config.to)
-					else node.audioNode.connect(to.audioNode)
-				}.bind(this, flow, node), function(err){
-					// error opening input. todo . fix.
-				}.bind(this))
+
+				navigator.mediaDevices.enumerateDevices().then(function(flow, node, infos){
+					for(let i = 0; i < infos.length; i++){
+						let info = infos[i]
+						if(info.kind === 'audioinput' && info.label === node.config.device){
+							console.log(i, infos, info.label)
+							getUserMedia.call(navigator, {audio:{deviceId: {exact: info.deviceId}}}, function(flow, node, stream){
+								node.audioNode = this.context.createMediaStreamSource(stream)
+								console.log(node.audioNode)
+								// connect it lazily
+								node.stream = stream
+								var to = flow.nodes[node.config.to]
+								if(!to) console.log("input cannot connect to "+node.config.to)
+								else node.audioNode.connect(to.audioNode)
+							}.bind(this, flow, node), function(err){
+								// error opening input. todo . fix.
+							}.bind(this))
+						}
+					}
+				}.bind(this, flow, node))
 			}
 			else if(type === 'buffer'){
 				var bufsrc = this.context.createBufferSource()

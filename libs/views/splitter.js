@@ -1,10 +1,13 @@
+
 module.exports=class Splitter extends require('base/view'){
 	prototype(){
 		this.name = 'Splitter'
 		//this.padding=15
 		this.barSize = 2
-		this.locked = false
-		this.pos = 0.25
+		this.locked = true
+		this.vertical = true
+		this.safety = 10
+		this.pos = 50
 		this.tools = {
 			Split:require('base/stamp').extend({
 				props:{
@@ -137,32 +140,59 @@ module.exports=class Splitter extends require('base/view'){
 		}
 	}
 	
+	setCoord(v){
+		if(this.vertical){
+			if(this.locked){
+				if(v > 0.5*this.$splitWidth) this.pos = clamp(v -  this.$splitWidth , -this.$splitWidth, -this.safety)
+				else this.pos = clamp(v, this.safety, this.$splitWidth)
+			}
+			else{
+				this.pos = clamp( v, this.safety, this.$splitWidth - this.safety) / this.$splitWidth
+			}
+		}
+		else{
+			if(this.locked){
+				if(v > 0.5*this.$splitHeight) this.pos =  clamp(v -  this.$splitHeight , -this.$splitHeight, -this.safety)
+				else this.pos = clamp(v, this.safety, this.$splitHeight - this.safety)
+			}
+			else this.pos = clamp( v, this.safety, this.$splitHeight - this.safety) / this.$splitHeight
+		}
+	}
+
+	getCoord(){
+		if(this.vertical){
+			if(this.locked) return this.pos<0?this.$splitWidth + this.pos:this.pos
+			return this.$splitWidth * this.pos
+		}
+		else{
+			if(this.locked) return this.pos<0?this.$splitHeight + this.pos:this.pos
+			return this.$splitHeight * this.pos
+		}
+	}
+	
 	onLock(locked){
-		// switch between percentage and pixel mode
-		// pixel mode needs to pick a side
+		var v = this.getCoord()
+		this.locked = locked
+		this.setCoord(v)
 	}
 
 	onStartDrag(){
 		this.setFocus()
-		this.start = this.pos
+		this.start = this.getCoord()
 	}
 
 	onMoveDrag(delta){
-		var total = this.vertical?this.$w:this.$h
-		if(!this.locked){
-			this.pos = (this.start*total-delta)/total
-		}
-		else{
-			this.pos = start - delta
-		}
+		this.setCoord(this.start - delta)
 		this.redraw()
 	}
 
 	onDraw(){
-		this.vertical = true
+		this.$splitWidth = this.turtle.width
+		this.$splitHeight = this.turtle.height
+		
+		let pos = this.getCoord()
+		//this.vertical = true
 		if(this.vertical){
-			let pos = (!this.locked)?this.turtle.width*this.pos:this.pos<0?this.turtle.width - this.pos:this.pos
-
 			this.panes[0].draw(this, {
 				order:1,
 				w:pos - this.barSize*.5,
@@ -186,7 +216,7 @@ module.exports=class Splitter extends require('base/view'){
 			})
 		}
 		else{
-			let pos = (!this.locked)?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
+			//let pos = (!this.locked)?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
 			this.panes[0].draw(this, {
 				order:1,
 				down:1,

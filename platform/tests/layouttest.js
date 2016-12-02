@@ -19,7 +19,15 @@ module.exports = class extends require('base/app'){
 			}, 
 			input1: {
 				to: 'gain1',
-				device: 'Microphone' 
+				device: 'Mic1' 
+			},
+			input2: {
+				to: 'gain1',
+				device: 'Mic2' 
+			},
+			input3: {
+				to: 'gain1',
+				device: 'Mic3' 
 			} 
 		}) 
 		this.recFlow.start() 
