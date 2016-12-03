@@ -20,7 +20,6 @@ module.exports = class extends require('base/app'){
 						},
 						onDraw(){
 							this.beginQuad({color:'#4',w:'100%'})
-							
 							for(var i =0; i < 300; i++){
 								this.drawButton({id:i,icon:'search'})
 								this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
@@ -52,7 +51,7 @@ module.exports = class extends require('base/app'){
 			data: {
 				locked:true,
 				position:200,
-				vertical: true,
+				vertical: false,
 				pane1:{
 					selected:1,
 					tabs:[

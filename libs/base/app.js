@@ -506,6 +506,6 @@ module.exports = class App extends require('base/view'){
 		turtle._h = turtle.height = this._h
 
 		this.draw()
-		this.$recomputeMatrix()
+		this.$recomputeMatrix(0,0)
 	}
 }

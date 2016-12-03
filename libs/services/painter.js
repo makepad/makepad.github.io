@@ -592,8 +592,7 @@ var meshIds = new IdAlloc()
 painter.Mesh = class Mesh extends require('base/class'){
 
 	toMessage(){
-		
-		if(!this.dirty || !this.array){
+		if(!this.dirty || !this.array || this.meshId === undefined){
 			return null
 		}
 		this.dirty = false

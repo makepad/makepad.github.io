@@ -8,6 +8,10 @@ module.exports=class Tabs extends require('base/view'){
 		this.tools = {
 			Tab:require('stamps/tab').extend({
 			}),
+			Bg:require('shaders/bg').extend({
+				color:'#3337',
+				w:'100%'
+			})
 		}
 	}
 
@@ -53,8 +57,8 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onDraw(){
+		this.beginBg({})
 		let sel = this.selected
-		// console.log("MARK")
 		// for(let j = 0;j < this.tabs.length;j++){
 		//  	let tab = this.tabs[j]
 		//  	console.log(tab.tabTitle, tab.$tabStamp && tab.$tabStamp.text)
@@ -64,7 +68,7 @@ module.exports=class Tabs extends require('base/view'){
 			// console.log(sel === i?'selected':'default')
 			let stamp = tab.$tabStamp = this.drawTab({
 				id:tab.id, // utilize some kind of unique id
-				order:sel === i?1:0,
+				order:sel === i?2:1,
 				state:sel === i?'selected':'default',
 				lineL:sel !== i-1,
 				lineR:sel !== i+1,
@@ -83,9 +87,9 @@ module.exports=class Tabs extends require('base/view'){
 			}
 			this.turtle.wx -=5
 		}
-
+		this.endBg()
 		this.lineBreak()
 		var tab = this.tabs[sel]
-		if(tab) tab.draw(this,{w:'100%',h:'100%'})
+		if(tab) tab.draw(this,{w:'100%',h:'100#'})
 	}
 }

@@ -110,10 +110,13 @@ module.exports=class Splitter extends require('base/view'){
 						}
 					}),
 					Grip:require('shaders/quad').extend({
-						isLock:0,
+						vertical:0,
 						color:'#4',
 						pixel(){$
 							this.viewport()
+							if(this.vertical<0.5){
+								this.rotate(0.5*PI,7.8,8.)
+							}
 							this.moveTo(6.25,5)
 							this.lineTo(6.25,11)
 							this.moveTo(9.75,5)
@@ -137,7 +140,7 @@ module.exports=class Splitter extends require('base/view'){
 					// the nub
 					if(this.vertical){
 						this.beginGripBg({x:'(turtle._w-turtle.width)*-.5',y:'75%', w:16, h:16})
-						this.drawGrip({color:'#4',w:'100%',h:'100%'})
+						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
 							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
@@ -147,7 +150,7 @@ module.exports=class Splitter extends require('base/view'){
 					else{
 						var turtle = this.turtle
 						this.beginGripBg({y:'(turtle._h-turtle.height)*-.5',x:'75%', w:16, h:16})
-						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
+						this.drawGrip({color:'#4',vertical:0,w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
 							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',y:'(turtle._h-turtle.height)*-.5',x:'25%', w:16, h:16})
@@ -216,6 +219,7 @@ module.exports=class Splitter extends require('base/view'){
 		
 		let pos = this.getCoord()
 		this.setCoord(pos)
+
 		if(this.vertical){
 			this.panes[0].draw(this, {
 				order:1,
@@ -247,7 +251,6 @@ module.exports=class Splitter extends require('base/view'){
 				h:pos - this.barSize*.5,
 				w:'100%'
 			})
-
 			this.drawSplit({
 				id:0,
 				down:1,

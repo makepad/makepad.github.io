@@ -174,9 +174,10 @@ module.exports = class View extends require('base/class'){
 		this.destroyed = true
 
 		if(this.onDestroy) this.onDestroy()
-		var children = this.children
-		if(children) for(var i = 0; i < children.length; i++){
-			children[i].destroy()
+		// destroy child views
+		var $views = this.$views
+		for(let key in $views){
+			$views[key].destroy()
 		}
 		// clean out resources
 		var todo = this.todo
@@ -335,7 +336,7 @@ module.exports = class View extends require('base/class'){
 		}
 
 		this.$dirty = false
-		
+
 		if(this.onDraw){
 			this.onFlag = 4
 			this.onDraw()
@@ -356,8 +357,8 @@ module.exports = class View extends require('base/class'){
 		turtle.walk(nt)
 
 		// store computed absolute coordinates
-		this.$x = turtle._x// + turtle.$xAbs
-		this.$y = turtle._y// + turtle.$yAbs
+		this.$x = turtle._x + turtle.$xAbs
+		this.$y = turtle._y + turtle.$yAbs
 
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
@@ -601,10 +602,13 @@ module.exports = class View extends require('base/class'){
 		this.todo.scrollTo(sx, sy)
 	}
 
-	$recomputeMatrix(){
+	$recomputeMatrix(px, py){
 		var hw = this.$w * this.xCenter
 		var hh = this.$h * this.yCenter
-		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + this.$x, hh+this.$y, 0)
+		let x = this.$x - px
+		let y = this.$y - py
+
+		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + x, hh+y, 0)
 
 		if(this.parent){
 			mat4.multiply(this.viewTotal, this.parent.viewPosition, this.viewPosition)
@@ -627,7 +631,7 @@ module.exports = class View extends require('base/class'){
 		var todoIds = todo.todoIds
 		for(var i = 0, l = children.length; i < l; i++){
 			var view = todoIds[children[i]].view
-			view.$recomputeMatrix()
+			view.$recomputeMatrix(this.$x, this.$y)
 		}
 	}
 
