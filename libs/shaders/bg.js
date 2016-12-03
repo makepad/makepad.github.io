@@ -22,7 +22,7 @@ module.exports = class Bg extends require('./quad'){
 				this.WRITEPROPS()
 			},
 			begin:function(overload){
-				this.STYLEPROPS(overload, 2)
+				this.STYLEPROPS(overload, 3)
 				this.ALLOCDRAW(overload)
 				var t = this.turtle
 				t.shiftPadding(t._borderWidth)

@@ -11,38 +11,70 @@ module.exports = class extends require('base/app'){
 			}),
 			Button: require('stamps/button').extend({
 			}),
-			View:require('views/draw').extend({
-				xOverflow:'none',
+			Dock:require('views/dock').extend({
 				tools:{
-					Button:require('stamps/button')
+					View:require('views/draw').extend({
+						xOverflow:'none',
+						tools:{
+							Button:require('stamps/button')
+						},
+						onDraw(){
+							this.beginQuad({color:'#4',w:'100%'})
+							
+							for(var i =0; i < 300; i++){
+								this.drawButton({id:i,icon:'search'})
+								this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
+							}
+							this.endQuad()
+						}
+					})
 				},
-				onDraw(){
-					this.beginQuad({color:'#4',w:'100%'})
-					
-					for(var i =0; i < 300; i++){
-						this.drawButton({id:i,icon:'search'})
-						this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
-					}
-					this.endQuad()
-				}
 			})
 		}
 	}
 
 	constructor(){
 		super()
-		// lets make a new thing
-		var view1 = new this.View(this, {tabName:'myfile1.js',id:'v1', br:0})
-		var view2 = new this.View(this, {tabName:'myfile2.js',id:'v2', br:10})
-		var view3 = new this.View(this, {tabName:'myfile3.js',id:'v3', br:30})
-		this.tabs = new this.Tabs(this, {id:'t1',w:'100%',h:'100%',tabs:[view1,view2]})
-		this.splitter = new this.Splitter(this, {tabName:'myfile4.js',id:'s1', w:'100%',h:'100%',panes:[view3, this.tabs]})
+
+		this.dock = new this.Dock(this, {
+			w:'100%',
+			h:'100%',
+			deserializeView(node){
+				let type = node.type
+				if(type === 'Test') return new this.View(this,{
+					id:'View'+node.title,
+					tabTitle:node.title,
+					br:8*random(),
+					w:'100%',
+					h:'100%'
+				})
+			},
+			data: {
+				locked:true,
+				position:200,
+				vertical: true,
+				pane1:{
+					selected:1,
+					tabs:[
+						{type:'Test', title:'1'},
+						{type:'Test', title:'2'},
+						{type:'Test', title:'3'}
+					]
+				},
+				pane2:{
+					selected:0,
+					tabs:[
+						{type:'Test', title:'A'}
+					]
+				}
+			}
+		})
 	}
 
 	onDraw(){
 		//this.drawButton({id:2,text:'hi'})
 		//this.tabs.draw(this)
-		this.splitter.draw(this)
+		this.dock.draw(this)
 		//this.drawTabs({id:1,w:'100%',h:'100%',tabs:[this.myView,this.myView,this.myView,this.myView]})
 	}
 }

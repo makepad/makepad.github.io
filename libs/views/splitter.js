@@ -2,12 +2,11 @@
 module.exports=class Splitter extends require('base/view'){
 	prototype(){
 		this.name = 'Splitter'
-		//this.padding=15
 		this.barSize = 2
 		this.locked = true
 		this.vertical = true
 		this.safety = 10
-		this.pos = 50
+		this.position = 50
 		this.tools = {
 			Split:require('base/stamp').extend({
 				props:{
@@ -92,6 +91,24 @@ module.exports=class Splitter extends require('base/view'){
 							this.endBg()
 						}
 					}),
+					Flip:require('base/stamp').extend({
+						tools:{
+							Bg:require('shaders/rounded').extend({
+								color:'#7'
+							}),
+							Flip:require('shaders/rounded').extend({
+								color:'#4',
+							})
+						},
+						onFingerDown(){
+							this.view.onFlip()
+						},
+						onDraw(){
+							this.beginBg({w:'100%',h:'100%'})
+							this.drawFlip({color:'#4',align:[.5,.5],w:8,h:8,borderRadius:16})
+							this.endBg()
+						}
+					}),
 					Grip:require('shaders/quad').extend({
 						isLock:0,
 						color:'#4',
@@ -124,6 +141,7 @@ module.exports=class Splitter extends require('base/view'){
 						this.endGripBg()
 						if(this.state === 'focus'){
 							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',x:'(turtle._w-turtle.width)*-.5',y:'25%', w:16, h:16})
+							this.drawFlip({id:2,x:'(turtle._w-turtle.width)*-.5',y:'25%+16', w:16, h:16})
 						}
 					}
 					else{
@@ -133,6 +151,7 @@ module.exports=class Splitter extends require('base/view'){
 						this.endGripBg()
 						if(this.state === 'focus'){
 							this.drawLock({id:1,state:this.view.locked?'locked':'unlocked',y:'(turtle._h-turtle.height)*-.5',x:'25%', w:16, h:16})
+							this.drawFlip({id:2,y:'(turtle._h-turtle.height)*-.5',x:'25%+16', w:16, h:16})
 						}
 					}
 				}
@@ -143,31 +162,36 @@ module.exports=class Splitter extends require('base/view'){
 	setCoord(v){
 		if(this.vertical){
 			if(this.locked){
-				if(v > 0.5*this.$splitWidth) this.pos = clamp(v -  this.$splitWidth , -this.$splitWidth, -this.safety)
-				else this.pos = clamp(v, this.safety, this.$splitWidth)
+				if(v > 0.5*this.$splitWidth) this.position = clamp(v -  this.$splitWidth , -this.$splitWidth, -this.safety)
+				else this.position = clamp(v, this.safety, this.$splitWidth)
 			}
 			else{
-				this.pos = clamp( v, this.safety, this.$splitWidth - this.safety) / this.$splitWidth
+				this.position = clamp( v, this.safety, this.$splitWidth - this.safety) / this.$splitWidth
 			}
 		}
 		else{
 			if(this.locked){
-				if(v > 0.5*this.$splitHeight) this.pos =  clamp(v -  this.$splitHeight , -this.$splitHeight, -this.safety)
-				else this.pos = clamp(v, this.safety, this.$splitHeight - this.safety)
+				if(v > 0.5*this.$splitHeight) this.position =  clamp(v -  this.$splitHeight , -this.$splitHeight, -this.safety)
+				else this.position = clamp(v, this.safety, this.$splitHeight - this.safety)
 			}
-			else this.pos = clamp( v, this.safety, this.$splitHeight - this.safety) / this.$splitHeight
+			else this.position = clamp( v, this.safety, this.$splitHeight - this.safety) / this.$splitHeight
 		}
 	}
 
 	getCoord(){
 		if(this.vertical){
-			if(this.locked) return this.pos<0?this.$splitWidth + this.pos:this.pos
-			return this.$splitWidth * this.pos
+			if(this.locked) return this.position<0?this.$splitWidth + this.position:this.position
+			return this.$splitWidth * this.position
 		}
 		else{
-			if(this.locked) return this.pos<0?this.$splitHeight + this.pos:this.pos
-			return this.$splitHeight * this.pos
+			if(this.locked) return this.position<0?this.$splitHeight + this.position:this.position
+			return this.$splitHeight * this.position
 		}
+	}
+
+	onFlip(){
+		this.vertical = !this.vertical
+		this.redraw()
 	}
 	
 	onLock(locked){
@@ -191,32 +215,32 @@ module.exports=class Splitter extends require('base/view'){
 		this.$splitHeight = this.turtle.height
 		
 		let pos = this.getCoord()
-		//this.vertical = true
+		this.setCoord(pos)
 		if(this.vertical){
 			this.panes[0].draw(this, {
 				order:1,
+				down:0,
 				w:pos - this.barSize*.5,
 				h:'100%'
 			})
-
 			this.drawSplit({
 				id:0,
 				order:2,
+				down:0,
 				cursor:'ew-resize',
 				state:this.hasFocus?'focus':'default',
 				vertical:1,
 				w:this.barSize,
 				h:'100%'
 			})			
-			
 			this.panes[1].draw(this, {
 				order:1,
-				w:this.turtle.width - pos - this.barSize*.5,
+				down:0,
+				w:this.$splitWidth - pos - this.barSize*.5,
 				h:'100%'
 			})
 		}
 		else{
-			//let pos = (!this.locked)?this.turtle.height*this.pos:this.pos<0?this.turtle.height - this.pos:this.pos
 			this.panes[0].draw(this, {
 				order:1,
 				down:1,
@@ -231,14 +255,14 @@ module.exports=class Splitter extends require('base/view'){
 				vertical:0,
 				state:this.hasFocus?'focus':'default',
 				cursor:'ns-resize',
-				h:barSize,
+				h:this.barSize,
 				w:'100%'
 			})			
 			
 			this.panes[1].draw(this, {
 				order:1,
 				down:1,
-				h:pos - this.barSize*.5,
+				h:this.$splitHeight - pos - this.barSize*.5,
 				w:'100%'
 			})
 		}

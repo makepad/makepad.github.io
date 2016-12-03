@@ -851,6 +851,10 @@ function mathLib(g){
 	g.mix = function(a, b, f){
 		return a*(1. - f) + b * f
 	}
+	g.trace = function(...args){
+		console.error(...args)
+		return args[0]
+	}
 }
 
 //

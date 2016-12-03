@@ -23,7 +23,7 @@ module.exports = require('base/stamp').extend({
 	},
 	props: {
 		vertical:0.,
-		moveScroll:0.,
+		moveScroll:0.
 	},
 	cursor:'default',
 	tools: {
@@ -60,10 +60,8 @@ module.exports = require('base/stamp').extend({
 			pixel:function(){$
 				this.pixelStyle()
 				this.viewport(this.mesh.xy * vec2(this.w, this.h))
-				
-				this.box(0., 0., this.w, this.h, this.borderRadius)
-				this.fill(this.bgColor)
 
+				this.clear(this.bgColor)
 				if(this.vertical < 0.5){
 					this.box(this.w*this.handlePos, 0., this.handleSize*this.w, this.h, this.borderRadius)
 				}

@@ -90,13 +90,14 @@ module.exports = class View extends require('base/class'){
 		this._onVisible = 8
 
 		this.$scrollBarSize = 8
+		this.$scrollBarBg = '#0000'
 		this.onFlag4 = this.redraw
 
 		this.verbs = {
 			draw:function(overload){
 				//this.app.$viewTodoMap[this.todo.todoId] = this
 				var id = overload.id
-				if(id === undefined) throw new Error('Please provide a local unique ID for a view')
+				//if(id === undefined) throw new Error('Please provide a local unique ID for a view')
 
 				var view = this.$views[id]
 				if(!view){
@@ -116,6 +117,7 @@ module.exports = class View extends require('base/class'){
 
 	constructor(owner, overload){
 		super()
+		if(arguments.length !== 0 && arguments.length !== 2) throw new Error("Please pass (owner, {overload}) to a view constructor")
 		var app = owner && owner.app
 		this.app = app
 		this.todo = this.$createTodo()
@@ -142,7 +144,7 @@ module.exports = class View extends require('base/class'){
 		this.$pickIds = {}
 		this.$pickId = 1
 		this.view = this
-		
+		this.viewClip = [-50000,-50000,50000,50000]
 		this.$dirty = true
 
 		if(overload){
@@ -155,8 +157,9 @@ module.exports = class View extends require('base/class'){
 			}
 		}
 		if(owner){
+			this.owner = owner
 			var id = this.id
-			if(id === undefined) throw new Error('Please pass owner-unique id to view')
+			//if(id === undefined) throw new Error('Please pass owner-unique id to view')
 			if(owner.$views[id]){
 				throw new Error('Owner already has view with id '+this.id)
 			}
@@ -192,6 +195,10 @@ module.exports = class View extends require('base/class'){
 			if(pass.depth) pass.depth.destroyTexture()
 			pass.framebuffer.destroyFramebuffer()
 		}
+	}
+
+	onCompileVerbs(){
+		this.__initproto__()
 	}
 
 	onFingerDown(){
@@ -309,12 +316,26 @@ module.exports = class View extends require('base/class'){
 		nt.$xAbs = nt.ix + nt.margin[3]
 		nt.$yAbs = nt.iy + nt.margin[0]
 
-		if(this.clip && !isNaN(this.turtle.width) && !isNaN(this.turtle.height)){
-			let pad = nt.padding
-			this.viewClip = [pad[3], pad[0], this.turtle.width+pad[3], this.turtle.height+pad[0]]
-		}
-		else this.viewClip = [-50000,-50000,50000,50000]
+		var viewClip = this.viewClip
+		viewClip[0] = -50000
+		viewClip[1] = -50000
+		viewClip[2] = 50000
+		viewClip[3] = 50000
 
+		if(this.clip){
+			let pad = nt.padding
+			if(!isNaN(this.turtle.width)){
+				viewClip[0] = pad[3]
+				viewClip[2] = this.turtle.width+pad[3]
+			}
+			if(!isNaN(this.turtle.height)){
+				viewClip[1] = pad[0]
+				viewClip[3] = this.turtle.height+pad[0]
+			}
+		}
+
+		this.$dirty = false
+		
 		if(this.onDraw){
 			this.onFlag = 4
 			this.onDraw()
@@ -358,7 +379,7 @@ module.exports = class View extends require('base/class'){
 			})
 		}
 		*/
-		this.$dirty = false
+		
 	}
 
 	$drawScrollBars(wx, wy, vx, vy){
@@ -394,9 +415,11 @@ module.exports = class View extends require('base/class'){
 		todo.scrollMomentum = 0.92
 		todo.scrollToSpeed = 0.5
 		todo.scrollMinSize = this.ScrollBar.prototype.ScrollBar.prototype.scrollMinSize
-
+		let xScroll = todo.xScroll
+		let yScroll = todo.yScroll
 		if(xOverflow === 'scroll'){
 			if(addHor){//th < this.$hDraw){
+				this.lineBreak()
 				this.$xScroll = this.drawScrollBar({
 					id:'hscroll',
 					moveScroll:0,
@@ -412,6 +435,8 @@ module.exports = class View extends require('base/class'){
 			else if(todo.xScroll > 0){
 				todo.scrollTo(0,undefined)
 			}
+			// lets clamp our scroll positions
+			xScroll = clamp(xScroll,0,todo.xTotal - todo.xView)
 		}
 		if(yOverflow === 'scroll'){
 			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
@@ -430,8 +455,13 @@ module.exports = class View extends require('base/class'){
 			else if(todo.yScroll > 0){
 				todo.scrollTo(undefined,0)
 			}
-		}		
+			yScroll = clamp(yScroll,0,todo.yTotal - todo.yView)
+		}
+		if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
+			todo.scrollTo(xScroll, yScroll)
+		}
 	}
+
 
 	$createTodo(){
 		var todo = new painter.Todo()
@@ -474,7 +504,6 @@ module.exports = class View extends require('base/class'){
 
 	// depth first find all
 	findAll(id, set){
-		var $views = this.$views
 		if(!set) set = []
 		if(id.constructor === RegExp){
 			if(this.id && this.id.match(id)) set.push(this)
@@ -482,6 +511,7 @@ module.exports = class View extends require('base/class'){
 		else{
 			if(this.id == id) set.push(this)
 		}
+		var $views = this.$views
 		for(let key in $views)	{
 			let child = $views[key]
 			child.findAll(id, set)
@@ -556,18 +586,18 @@ module.exports = class View extends require('base/class'){
 		this.todo = this.$todoStack.pop()
 	}
 
-	transferFingerMove(digit, pickId){
-		this.app.transferFingerMove(digit, this.todo.todoId, pickId)
+	transferFingerMove(digit, stamp){
+		this.app.transferFingerMove(digit, this.todo.todoId, typeof stamp === 'object'?stamp.$pickId:stamp)
 	}
 
 	scrollIntoView(x, y, w, h){
 		// we figure out the scroll-to we need
 		var todo = this.todo
 		var sx = todo.xScroll, sy = todo.yScroll
-		if(x < todo.xScroll) sx = Math.max(0., x)
-		if(x+w > todo.xScroll + todo.xView) sx = Math.max(0.,Math.min(x + w - todo.xView, todo.xTotal - todo.xView))
-		if(y < todo.yScroll) sy = Math.max(0., y)
-		if(y+h > todo.yScroll + todo.yView) sy = Math.max(0.,Math.min(y + h - todo.yView, todo.yTotal - todo.yView))
+		if(x < todo.xScroll) sx = max(0., x)
+		if(x+w > todo.xScroll + todo.xView) sx = clamp(0.,x + w - todo.xView, todo.xTotal - todo.xView)
+		if(y < todo.yScroll) sy = max(0., y)
+		if(y+h > todo.yScroll + todo.yView) sy = clamp(0.,y + h - todo.yView, todo.yTotal - todo.yView)
 		this.todo.scrollTo(sx, sy)
 	}
 
@@ -679,8 +709,8 @@ module.exports = class View extends require('base/class'){
 		this.$dirtyTrue()
 		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){
-				this.$redrawViews()
 				this.redrawTimer = undefined
+				this.$redrawViews()
 			}.bind(this.app),0)
 		}
 		//}

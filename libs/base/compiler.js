@@ -70,7 +70,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		this.inheritable('states', function(){
 			var states = this.states
-			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(_states):{}
+			if(!this.hasOwnProperty('_states')) this._states = this._states?Object.create(this._states):{}
 			for(let key in states) this._states[key] = states[key]
 		})
 	}
