@@ -6,7 +6,7 @@ module.exports = class Quad extends require('base/shader'){
 	prototype(){
 		// special
 		this.props = {
-			visible: {value:1.0},
+			visible: 1.,
 
 			x: NaN,
 			y: NaN,
@@ -72,13 +72,13 @@ module.exports = class Quad extends require('base/shader'){
 		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll+this.dx, this.y - this.viewScroll.y*this.moveScroll+this.dy) + delta
 		var size = vec2(max(0.,this.w), max(0.,this.h))
 		
-		this.mesh.xy = (clamp(
-			this.mesh.xy * size + shift, 
+		meshxy = (clamp(
+			meshxy * size + shift, 
 			max(this.turtleClip.xy, this.viewClip.xy),
 			min(this.turtleClip.zw, this.viewClip.zw)
 		) - shift) / size
 	
-		return this.mesh.xy * size + shift
+		return meshxy * size + shift
 	}
 
 	vertex(){$

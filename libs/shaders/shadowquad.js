@@ -1,26 +1,12 @@
 var types = require('base/types')
 var painter = require('services/painter')
 
-module.exports = class ShadowQuad extends require('base/shader'){
+module.exports = class ShadowQuad extends require('shaders/quad'){
 
 	// special
 	prototype(){
 		this.props = {
-			visible: {noTween:true, value:1.0},
 
-			x: {noInPlace:1, value:NaN},
-			y: {noInPlace:1, value:NaN},
-			w: {noInPlace:1, value:NaN},
-			h: {noInPlace:1, value:NaN},
-			z: 0,
-
-			wrap: {styleLevel:2, value:1},
-			align: {styleLevel:1, value:[0,0]},
-			down: {styleLevel:1, value:0},
-			padding: {styleLevel:2, value:[0,0,0,0]},
-			margin: {styleLevel:1, value:[0,0,0,0]},
-
-			color: {pack:'float12', value:'gray'},
 			shadowColor: {pack:'float12', value:[0,0,0,0.5]},
 			shadowBlur: 0.0,
 			shadowSpread: 0.0,
@@ -29,74 +15,33 @@ module.exports = class ShadowQuad extends require('base/shader'){
 			mesh:{kind:'geometry', type:types.vec3},
 		}
 
-		this.mesh = new painter.Mesh(types.vec3).pushQuad(
-			0,0, 0,
-			1,0, 0,
-			0, 1, 0,
-			1, 1, 0
+		this.mesh = new painter.Mesh(types.vec3).push(
+			0,0,0,
+			0,1,0,
+			1,0,0,
+			1,1,0,
+			0,0,1,
+			0,1,1,
+			1,0,1,
+			1,1,1
 		)
-		.pushQuad(
-			0,0, 1,
-			1,0, 1,
-			0, 1, 1,
-			1, 1, 1
-		)
-
-		this.verbs = {
-			draw:function(overload){
-				this.$STYLEPROPS(overload, 1)
-				this.$ALLOCDRAW()
-				this.turtle.walk()
-				this.$WRITEPROPS()
-			},
-			begin:function(overload){
-				this.$STYLEPROPS(overload, 2)
-				this.$ALLOCDRAW()
-				this.beginTurtle()
-			},
-			end:function(){
-				var ot = this.endTurtle()
-				this.turtle.walk(ot)
-				this.$WRITEPROPS()
-			}
-		}	
-	}
-
-	vertexStyle(){
-	}
-
-	vertexPost(){
-	}
-
-	vertexPre(){$
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3,4,5,6,6,5,7)
 	}
 
 	vertex(){$
 		this.vertexPre()
 		this.vertexStyle()
 
-	
 		if (this.visible < 0.5) return vec4(0.0)
 
 		// compute the normal rect positions
-		var shift = vec2(this.x - this.viewScroll.x*this.moveScroll, this.y - this.viewScroll.y*this.moveScroll)
+		var delta = vec2(0.)
 		if(this.mesh.z < 0.5){
-			shift += this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshmz
+			delta = this.shadowOffset.xy + vec2(this.shadowSpread) * (this.mesh.xy *2. - 1.)//+ vec2(this.shadowBlur*0.25) * meshm
 		}
 
-		// lets clip it
-		var size = vec2(this.w, this.h)
-
-		this.mesh.xy = (clamp(
-			this.mesh.xy * size + shift, 
-			max(this.turtleClip.xy, this.viewClip.xy),
-			min(this.turtleClip.zw, this.viewClip.zw)
-		) - shift) / size
-
-		var pos = vec2(
-			this.mesh.x * this.w,
-			this.mesh.y * this.h
-		) + shift
+		var pos = this.scrollAndClip(this.mesh.xy, delta)
 
 		var adjust = 1.
 		if(this.mesh.z < 0.5){

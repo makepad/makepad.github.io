@@ -247,10 +247,11 @@ module.exports = class Tools extends require('base/class'){
 			var methodName = verbName + className
 			var thing = verbs[verbName]
 			
-			var cacheKey = sourceProto.$toolCacheKey
-			if(cacheKey){
-				var cache = fnCache[cacheKey+methodName]
+			var info = sourceProto.$compileInfo
+			if(info){
+				var cache = fnCache[info.cacheKey+methodName]
 				if(cache){
+					//console.log(cacheKey)
 					target[methodName] = cache
 					continue
 				}
@@ -306,8 +307,8 @@ module.exports = class Tools extends require('base/class'){
 			// create the function on target
 			target[methodName] = fnCache[code] || (fnCache[code] = new Function('return ' + code)())
 
-			if(cacheKey){ // store it
-				fnCache[cacheKey+methodName] = target[methodName]
+			if(info){ // store it
+				fnCache[info.cacheKey+methodName] = target[methodName]
 			}
 		}
 	}

@@ -67,65 +67,72 @@ function defineProp(key, value){
 	this[_key] = initvalue
 	var onthis = config.this
 
-
-	Object.defineProperty(this, key, {
-		configurable:true,
-		get:function(){
-			if(this.onFlag) this[_onkey] |= this.onFlag
-			return this[_key]
-		},
-		set:function set(value, event){
-			var old = this[_key]
-			this[_key] = value
-			var meta = value && value.__proxymeta__
-			//if(noconseq) return
-			if(!event && meta){
-				// set a listener on an object
-				// but make sure we add only one
-				var observers = meta.observers
-				var i = observers.length - 1
-				if(i>=0) for(; i >=0 ; i--){
-					let observer = observers[i]
-					if(observer.key === key && observer.pthis === this){
-						break
-					}
+	function set(value, event){
+		var old = this[_key]
+		this[_key] = value
+		var meta = value && value.__proxymeta__
+		//if(noconseq) return
+		if(!event && meta){
+			// set a listener on an object
+			// but make sure we add only one
+			var observers = meta.observers
+			var i = observers.length - 1
+			if(i>=0) for(; i >=0 ; i--){
+				let observer = observers[i]
+				if(observer.key === key && observer.pthis === this){
+					break
 				}
-				if(i<0){
-					var observe = (e)=>{
-						var value 
-						if(e.level === -1) value = e.changes[0].value // only change value when the self of the observe changes
-						else value = this[_key]
-						set.call(this, value, e)
-					}
-					observe.key = key
-					observe.pthis = this
-					observers.push(observe)
-					if(!this.$observers) this.$observers = []
-					this.$observers.push({list:observers, item:observe})
-				}
-				//console.log(value.__listeners__.length)
 			}
-			if(!config.change || old !== value){
-				var fn = this[onkey]
-				var flags = (this[_onkey] || this.onFlag0)&(config.mask||~0)
-				if(flags || fn){
-					if(!event) event = {}
-					event.key = key
-					event.old = old
-					event.value = value
-					var id = 1
-					var ret 
-					if(fn){
-						ret = fn.call(onthis?this[onthis]:this, event)
+			if(i<0){
+				var observe = (e)=>{
+					var value 
+					if(e.level === -1) value = e.changes[0].value // only change value when the self of the observe changes
+					else value = this[_key]
+					set.call(this, value, e)
+				}
+				observe.key = key
+				observe.pthis = this
+				observers.push(observe)
+				if(!this.$observers) this.$observers = []
+				this.$observers.push({list:observers, item:observe})
+			}
+			//console.log(value.__listeners__.length)
+		}
+		if(!config.change || old !== value){
+			var fn = this[onkey]
+			var flags = (this[_onkey] || this.onFlag0)&(config.mask||~0)
+			if(flags || fn){
+				if(!event) event = {}
+				event.key = key
+				event.old = old
+				event.value = value
+				var id = 1
+				var ret 
+				if(fn){
+					ret = fn.call(onthis?this[onthis]:this, event)
+				}
+				if(!ret) while(flags){
+					if(flags&1){
+						this['onFlag'+id](event)
 					}
-					if(!ret) while(flags){
-						if(flags&1){
-							this['onFlag'+id](event)
-						}
-						id = id<<1, flags = flags>>1
-					}
+					id = id<<1, flags = flags>>1
 				}
 			}
 		}
+	}
+
+	set._key = _key
+	set._onkey = _onkey
+	set.onkey = onkey
+	
+	function get(){
+		if(this.onFlag) this[_onkey] |= this.onFlag
+		return this[_key]
+	}
+
+	Object.defineProperty(this, key, {
+		configurable:true,
+		get:get,
+		set:set
 	})
 }

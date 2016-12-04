@@ -101,7 +101,7 @@ module.exports = class Compiler extends require('base/class'){
 
 	onCompileVerbs(){
 		this.__initproto__()
-		if(!this.$methodDeps){
+		if(!this.$compileInfo){
 			this.$compileShader()
 		}
 		else{
@@ -110,7 +110,7 @@ module.exports = class Compiler extends require('base/class'){
 			if(this.hasOwnProperty('$methodDeps')){
 				return // shaders are class things
 			}
-			var deps = this.$methodDeps
+			var deps = this.$compileInfo.methodDeps
 
 			if(this._states !== deps.states){
 				this.$compileShader()
@@ -524,9 +524,11 @@ module.exports = class Compiler extends require('base/class'){
 			return
 		}
 
-		this.$toolCacheKey = pixel+vertex
-
+		var deps = this.$methodDeps
+		
 		var info = this.$compileInfo = {
+			methodDeps: deps,
+			cacheKey: pixel+vertex,
 			stateDuration:stateDuration,
 			stateDelay:stateDelay,
 			stateIds:stateIds,
@@ -540,28 +542,28 @@ module.exports = class Compiler extends require('base/class'){
 			samplers:samplers,
 			vertex:vertex,
 			pixel:pixel,
-			propSlots:totalSlots,
-			interrupt:this.$generateAnimInterrupt(instanceProps)
+			propSlots:totalSlots
 		}
+		info.interrupt = this.$generateAnimInterrupt(instanceProps)
 		
 		if(this.dump) console.log(vertex,pixel)
 
 		// push our compilation up the protochain as far as we can
 		var proto = Object.getPrototypeOf(this)
-		var deps = this.$methodDeps
+		
 		while(proto){
 			for(let key in deps){
 				if(deps[key] !== proto[key]) return
 			}
 			// write it
 			proto.$compileInfo = info
-			proto.$methodDeps = deps
 			proto = Object.getPrototypeOf(proto)
 		}
 	}
 
 	$generateAnimInterrupt(instanceProps){
-		var cache = this.$interruptCache[this.$toolCacheKey]
+		var cachekey = this.$compileInfo.cachekey
+		var cache = this.$interruptCache[cachekey]
 		if(cache) return cache
 
 		// per state property tweening/animation values
@@ -685,7 +687,7 @@ module.exports = class Compiler extends require('base/class'){
 			code += '\t}\n'
 		}
 		code += '\tif(!animNext)break;\n\t}\n'
-		return this.$interruptCache[this.$toolCacheKey] = new Function("$a","$o","$t","$proto",code)
+		return this.$interruptCache[cachekey] = new Function("$a","$o","$t","$proto",code)
 	}
 
 	// $STYLEPROPS(overload, mask)

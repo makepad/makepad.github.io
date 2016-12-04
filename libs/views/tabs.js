@@ -82,6 +82,7 @@ module.exports=class Tabs extends require('base/view'){
 				// move our finger move to this one
 				stamp.xStart = move.xStart
 				stamp.yStart = move.yStart
+				stamp.dx = 0
 				stamp.dxStart = 0
 				this.transferFingerMove(move.digit, stamp.$pickId)
 			}

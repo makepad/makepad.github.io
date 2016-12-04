@@ -211,8 +211,10 @@ module.exports = class View extends require('base/class'){
 			this.parent = parent
 			for(let key in overload){
 				let value = overload[key]
-				if(this.__lookupSetter__(key)){
-					this['_'+key] = value
+				let set = this.__lookupSetter__(key)
+				if(set){
+					this[set._key] = value
+					if(this[set._onkey]&4) this.$dirty = true
 				}
 				else this[key] = value
 			}
@@ -494,7 +496,7 @@ module.exports = class View extends require('base/class'){
 		}
 		else{
 			for(let key in $views)	{
-				if(key.id === id) return  $views[key]
+				if(key === id) return  $views[key]
 			}
 		}
 		for(let key in $views)	{

@@ -6,6 +6,9 @@ module.exports = class extends require('base/app'){
 		this.tools = {
 			Button: require('stamps/button').extend({
 			}),
+			Bg:require('shaders/bg').extend({
+
+			})
 		}
 	}
 
@@ -35,6 +38,7 @@ module.exports = class extends require('base/app'){
 	}
 
 	onDraw(){
+		this.drawBg({borderRadius:8,w:100,h:100})
 		for(var i=0;i<1000;i++)
 		this.drawButton({id:i,icon:'search'})
 	}

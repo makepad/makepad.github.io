@@ -7,7 +7,6 @@ module.exports = class extends require('base/app'){
 			Tabs: require('views/tabs').extend({
 			}),
 			Splitter:require('views/splitter').extend({
-
 			}),
 			Button: require('stamps/button').extend({
 			}),
@@ -16,15 +15,24 @@ module.exports = class extends require('base/app'){
 					View:require('views/draw').extend({
 						xOverflow:'none',
 						tools:{
-							Button:require('stamps/button')
+							Button:require('stamps/button'),
+							Thing:require('shaders/bg')
 						},
 						onDraw(){
 							this.beginQuad({color:'#4',w:'100%'})
 							for(var i =0; i < 300; i++){
 								this.drawButton({id:i,icon:'search'})
-								this.drawRounded({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
+								this.drawBg2({margin:2,color:[sin(i),sin(i),sin(i),1],w:25,h:25, borderRadius:this.br})
 							}
 							this.endQuad()
+							/*
+							var A = this.drawBg.toString()
+							var B = this.drawBg2.toString().replace(/Bg2/g,'Bg')
+							let s,e1,e2
+							for(s = 0; A.charAt(s) === B.charAt(s);s++);
+							for(e1 = A.length-1, e2 = B.length-1; A.charAt(e1) === B.charAt(e2);e1--,e2--);
+							//console.log(A.slice(s,e1)+'\n-------\n'+B.slice(s,e2))
+						*/
 						}
 					})
 				},

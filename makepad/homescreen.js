@@ -1,10 +1,13 @@
 
 module.exports = class HomeScreen extends require('views/draw'){
+	baseStyle(style){
+		style.to = {
+			Bg:{
+				color:style.colors.bgNormal
+			}
+		}
+	}
 	prototype(){
-		this.mixin(require('./styles').HomeScreen,{
-			name:'HomeScreen',
-			overflow:'scroll'
-		})
 		this.texts = {
 			HomeSource:
 			'Welcome to MakePad! Makepad is a live code editor.\n'+
@@ -21,14 +24,10 @@ module.exports = class HomeScreen extends require('views/draw'){
 	}
 
 	onDraw(){
-		this.beginBg(this.viewGeom)
+		this.beginBg({w:'100%', h:'100%'})
 		this.drawText({
 			text:this.texts[this.name]
 		})
-		this.endBg(true)
-	}
-
-	onCompose(){
-		
+		this.endBg()
 	}
 }

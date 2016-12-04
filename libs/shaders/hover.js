@@ -1,20 +1,20 @@
-module.exports = class Hover extends require('tools/bg'){
+module.exports = class Hover extends require('shaders/bg'){
 
 	prototype(){
 		this.props = {
-			selected: {noTween:1, value:0},
+			selected: 0,
 
-			selectedColor: {noTween:1,pack:'float12', value:'red'},
-			selectedBorderColor: {noTween:1,pack:'float12', value:'yellow'},
-			selectedBorderRadius: {noTween:1,value:-1.},
-			selectedBorderWidth: {noTween:1,value:-1.},
+			selectedColor: 'red',
+			selectedBorderColor: 'yellow',
+			selectedBorderRadius: -1,
+			selectedBorderWidth: -1,
 
-			hoverColor: {noTween:1, pack:'float12', value:'blue'},
-			hoverBorderColor: {noTween:1, pack:'float12', value:'white'},
-			hoverBorderRadius: {noTween:1, value:-1.},
-			hoverBorderWidth: {noTween:1, value:-1.},
+			hoverColor: 'blue',
+			hoverBorderColor: 'white',
+			hoverBorderRadius: -1,
+			hoverBorderWidth: -1,
 
-			displace: {noTween:1, value:[0,0]},
+			displace: [0,0],
 		}
 	}
 

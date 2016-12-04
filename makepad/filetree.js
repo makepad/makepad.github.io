@@ -1,16 +1,13 @@
 module.exports = class FileTree extends require('base/view'){
 
-	defaultStyle(style){
+	baseStyle(style){
 		style.to = {
-			Bg:{
-				color:style.colors.bgTop
-			}
 		}
 	}
 
 	prototype() {
 		this.props = {
-			data: {inward: 'Tree', prop: 'data'}
+			data: []
 		}
 		this.tools = {
 			Tree: require('views/tree').extend({
@@ -18,23 +15,11 @@ module.exports = class FileTree extends require('base/view'){
 					this.parent.onNodeSelect(...args)
 				}
 			}),
-			ButtonBar: require('base/view').extend({
-				tools:{
-					Button: require('stamps/button').extend({
-				
-					}),
-					Bg:require('tools/bg').extend({
-						color:'#3'
-					})
-				},
-				onDraw(){
-					this.beginBg(this.viewGeom)
-					this.drawButton({icon: 'trash',align:[1,0]})
-					this.drawButton({icon: 'plus',align:[0,0]})
-					this.endBg(true)
-				}
+			Button: require('stamps/button').extend({
+			}),
+			Bg:require('shaders/bg').extend({
+				color:'#3'
 			})
-			
 		}
 		this.mixin({
 			name: 'FileTree'
@@ -53,20 +38,18 @@ module.exports = class FileTree extends require('base/view'){
 	}
 	
 	onDraw() {
-	}
-	
-	onCompose() {
-		return [
-			new this.ButtonBar({
-				name:'ButtonBar',
-				y:NaN,
-				h:38,
-				down:1,
-			}),
-			new this.Tree({
-				y:NaN,
-				name: 'Tree'
-			})
-		]
+		/*
+		this.drawBg({
+			x:0,
+			y:0,
+			w:'100%',
+			h:'100%',
+			color:'red'
+		})*/
+		this.drawTree({
+			data:this.data,
+			w:'100%',
+			h:'100%'
+		})
 	}
 }

@@ -1,7 +1,7 @@
 module.exports = class Tree extends require('base/view'){
 	
 	// default style sheet
-	defaultStyle(style) {
+	baseStyle(style) {
 		var c = style.colors, a = style.anims, f = style.fonts
 		style.to = {
 			
@@ -42,6 +42,7 @@ module.exports = class Tree extends require('base/view'){
 	}
 	
 	prototype() {
+		this.wrap = false
 		this.name = 'Tree'
 		this.props = {
 			data:[
@@ -55,10 +56,10 @@ module.exports = class Tree extends require('base/view'){
 		this.overflow = 'scroll'
 		
 		this.tools = {
-			Bg:require('tools/bg').extend({
+			Bg:require('shaders/bg').extend({
 				wrap:false,
 			}),
-			Cursor:require('tools/hover').extend({
+			Cursor:require('shaders/hover').extend({
 				wrap:false,
 				pickAlpha: - 1,
 				w:'100%-2'
@@ -67,7 +68,7 @@ module.exports = class Tree extends require('base/view'){
 			}),
 			Icon:require('shaders/icon').extend({
 			}),
-			TreeLine:require('tools/shadowquad').extend({
+			TreeLine:require('shaders/shadowquad').extend({
 				isLast:0,
 				isFirst:0,
 				isFolder:0,
@@ -86,8 +87,8 @@ module.exports = class Tree extends require('base/view'){
 				
 				vertexStyle:function() {},
 				pixel:function() {$
-					
-					this.viewport(vec2(this.w, this.h) * this.mesh.xy)
+
+					this.viewport()
 					
 					var hh = this.h + 4
 					if(this.isFirst > 0.5 && this.hasFolderButtons < 0.5) {
@@ -229,7 +230,7 @@ module.exports = class Tree extends require('base/view'){
 	
 	onDraw(debug) {
 		//alright so how are we going to select things
-		this.beginBg(this.viewGeom)
+		this.drawBg({moveScroll:0,x:'0',y:'0',w:'100%',h:'100%'})
 		this.pickMap = {}
 		this.pickId = 1
 		var p = this
@@ -306,8 +307,8 @@ module.exports = class Tree extends require('base/view'){
 				text:name
 			})
 			
-			this.endCursor(true)
-			this.turtle.lineBreak()
+			this.endCursor()
+			this.lineBreak()
 			if(node.folder) {
 				depth.push(i == len)
 				iterFolder(node, depth, closed ||  ! node.open)
@@ -315,6 +316,6 @@ module.exports = class Tree extends require('base/view'){
 			}
 		}
 		if(this.data && this.data.folder) iterFolder(this.data, [0], false)
-		this.endBg(true)
+		//this.endBg()
 	}
 }

@@ -203,7 +203,7 @@ module.exports=class Dock extends require('base/view'){
 				vertical:false,
 				locked:false,
 				position:info.isParent?0.25:0.5,
-				panes:[last,tabs]
+				panes:[tabs,last]
 			})
 		}
 		else if(info.part === 3){

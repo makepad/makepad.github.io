@@ -1,3 +1,4 @@
+new require('styles/dark')
 
 var storage = require('services/storage')
 var Worker = require('services/worker')
@@ -11,13 +12,28 @@ module.exports = class Makepad extends require('base/app'){
 	
 	prototype(){
 		this.tools = {
-			Dock: require('views/dock'),
-			Source: require('./makepad/source'),
-			Wave: require('./makepad/wave'),
+			Dock: require('views/dock').extend({
+				w:'100%',
+				h:'100%',
+				deserializeView(node){
+					let type = node.type
+					let typeCounter = this.owner.typeCounter
+					var num  = typeCounter[type]? ++typeCounter[type]: typeCounter[type]=1
+					return new this.owner[type](this,{
+						id:type+num,
+						tabTitle:node.title,
+						w:'100%',
+						h:'100%'
+					})
+				}
+			}),
+			//Source: require('./makepad/source'),
+			//Wave: require('./makepad/wave'),
+			//FileTree:require('base/view'),
 			FileTree: require('./makepad/filetree'),
 			HomeScreen: require('./makepad/homescreen'),
-			Settings: require('./makepad/settings'),
-			UserProcess: require('./makepad/userprocess')
+			//Settings: require('./makepad/settings'),
+			//UserProcess: require('./makepad/userprocess')
 		}
 		// set the styleclasscf4
 		this.style = require('./makepad/styles')
@@ -25,6 +41,40 @@ module.exports = class Makepad extends require('base/app'){
 
 	constructor() {
 		super()
+		this.typeCounter = {}
+		
+		this.dock = new this.Dock(this,{
+			data: {
+				locked:true,
+				position:125,
+				vertical: true,
+				pane1:{
+					selected:1,
+					tabs:[
+						{type:'HomeScreen', title:'*'},
+						{type:'FileTree', title:'Files'},
+					]
+				},
+				pane2:{
+					selected:0,
+					locked:true,
+					position:200,
+					vertical: true,
+					pane1:{
+						selected:0,
+						tabs:[
+							{type:'HomeScreen', title:'*'}
+						]
+					},
+					pane2:{
+						selected:0,
+						tabs:[
+							{type:'HomeScreen', title:'*'}
+						]
+					}
+				}
+			}
+		})
 
 		this.store.act("init", store=>{
 			store.projectTree = {}
@@ -53,6 +103,33 @@ module.exports = class Makepad extends require('base/app'){
 				}
 			}
 			// how about a datastore index? can we provide one?
+		})
+
+		// the setter of data makes it autobind to the store
+		this.find('FileTree1').data = this.store.projectTree
+
+		this.loadProject(projectFile).then(store=>{
+			
+			if(this.destroyed) return  // technically possible
+			
+			var resources = this.store.resourceMap
+			var proj = this.store.projectTree
+			var x = this.store.projectTree.open
+			
+			if(proj.open) {
+				for(var i = 0; i < proj.open.length; i++) {
+					var open = proj.open[i]
+					var resource = resources.get(module.buildPath(open, '/'))
+					this.addSourceTab(resource, open)
+				}
+			}
+			if(!module.worker.hasParent && proj.run) {
+				for(var i = 0; i < proj.run.length; i++) {
+					var run = proj.run[i]
+					var resource = resources.get(module.buildPath(run, '/'))
+					this.addProcessTab(resource, run)
+				}
+			}
 		})
 	}
 	
@@ -114,38 +191,6 @@ module.exports = class Makepad extends require('base/app'){
 		}, fail=>{}, true)
 	}
 	
-	onAfterCompose() {
-		// the setter of data makes it autobind to the store
-		this.find('FileTree').data = this.store.projectTree
-		
-		this.loadProject(projectFile).then(store=>{
-			
-			if(this.destroyed) return  // technically possible
-			
-			var resources = this.store.resourceMap
-			var proj = this.store.projectTree
-			var x = this.store.projectTree.open
-			
-			if(proj.open) {
-				for(var i = 0; i < proj.open.length; i++) {
-					var open = proj.open[i]
-					var resource = resources.get(module.buildPath(open, '/'))
-					this.addSourceTab(resource, open)
-				}
-			}
-			if(!module.worker.hasParent && proj.run) {
-				for(var i = 0; i < proj.run.length; i++) {
-					var run = proj.run[i]
-					var resource = resources.get(module.buildPath(run, '/'))
-					this.addProcessTab(resource, run)
-				}
-			}
-		})
-	}
-	
-	onAfterDraw() {
-		this.onAfterDraw = undefined
-	}
 	
 	findResourceDeps(resource, deps) {
 		var data = resource.trace || resource.data
@@ -219,6 +264,7 @@ module.exports = class Makepad extends require('base/app'){
 	}
 	
 	addSourceTab(resource) {
+		return
 		var path = resource.path
 		var ext = path.slice(path.lastIndexOf('.') + 1)
 		var type
@@ -253,6 +299,7 @@ module.exports = class Makepad extends require('base/app'){
 	}
 	
 	addProcessTab(resource) {
+		return
 		var old = this.find('Process' + resource.path)
 		if(old) {
 			var tabs = old.parent
@@ -282,61 +329,7 @@ module.exports = class Makepad extends require('base/app'){
 		this.processTabTitles()
 	}
 	
-	onCompose() {
-		
-		return [
-			new this.Dock({
-				classes: {
-					HomeScreen: this.HomeScreen,
-					Source: this.Source,
-					FileTree: this.FileTree,
-					Settings: this.Settings
-				},
-				data: {
-					mode: 1,
-					locked: false,
-					pos: 95,
-					vertical: true,
-					left: {
-						bottom: false,
-						tabs: [
-							{type: 'FileTree', tabText: 'Files', open: true, noCloseTab: true},
-							{type: 'Settings', tabText: '', tabIcon: 'gear', noCloseTab: true}
-						]
-					},
-					right: {
-						mode: 0,
-						vertical: true,
-						locked: false,
-						pos: 0.5,
-						left: {
-							bottom: false,
-							tabs: [
-								{type: 'HomeScreen', name: 'HomeSource', tabIcon: 'file-text', open: true, noCloseTab: true}
-							]
-						},
-						right: {
-							mode: 2,
-							vertical: false,
-							locked: false,
-							pos: 25,
-							left: {
-								bottom: false,
-								tabs: [
-									{type: 'HomeScreen', name: 'HomeProcess', tabIcon: 'youtube-play', open: true, noCloseTab: true}
-								]
-							},
-							right: {
-								bottom: true,
-								folded: true,
-								tabs: [
-									{type: 'HomeScreen', name: 'HomeLogs', tabIcon: 'align-justify', open: true, noCloseTab: true}
-								]
-							}
-						}
-					}
-				}
-			})
-		]
+	onDraw() {
+		this.dock.draw(this)
 	}
 }
