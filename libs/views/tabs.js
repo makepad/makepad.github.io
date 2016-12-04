@@ -31,6 +31,7 @@ module.exports=class Tabs extends require('base/view'){
 			let old = tabs.splice(index, 1)[0]
 			let prev = tabs[index].$tabStamp
 			let dx = old.$tabStamp.$x - prev.$x
+			old.$tabStamp.xStart -= dx
 			old.$tabStamp.dx += dx
 			prev.from_dx = -dx
 			tabs.splice(index+1,0,old)
@@ -41,6 +42,7 @@ module.exports=class Tabs extends require('base/view'){
 			let old = tabs.splice(index, 1)[0]
 			let prev = tabs[index-1].$tabStamp
 			let dx = old.$tabStamp.$x - prev.$x
+			old.$tabStamp.xStart -= dx
 			old.$tabStamp.dx += dx
 			prev.from_dx = -dx
 			tabs.splice(index-1,0,old)
