@@ -562,8 +562,8 @@ module.exports = class Compiler extends require('base/class'){
 	}
 
 	$generateAnimInterrupt(instanceProps){
-		var cachekey = this.$compileInfo.cachekey
-		var cache = this.$interruptCache[cachekey]
+		var cacheKey = this.$compileInfo.cacheKey
+		var cache = this.$interruptCache[cacheKey]
 		if(cache) return cache
 
 		// per state property tweening/animation values
@@ -687,7 +687,7 @@ module.exports = class Compiler extends require('base/class'){
 			code += '\t}\n'
 		}
 		code += '\tif(!animNext)break;\n\t}\n'
-		return this.$interruptCache[cachekey] = new Function("$a","$o","$t","$proto",code)
+		return this.$interruptCache[cacheKey] = new Function("$a","$o","$t","$proto",code)
 	}
 
 	// $STYLEPROPS(overload, mask)

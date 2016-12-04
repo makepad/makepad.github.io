@@ -39,6 +39,7 @@ module.exports=class Dock extends require('base/view'){
 					id:'Splitter'+(dock.splitterId++),
 					position:node.position,
 					vertical:node.vertical,
+					locked:node.locked,
 					debug:node.debug,
 					panes:[
 						deserialize(node.pane1),
@@ -110,6 +111,8 @@ module.exports=class Dock extends require('base/view'){
 		this.transferFingerMove(e.digit,0)
 		tab.redraw()
 		this.drag = drag
+		// this is not correct. this is a move event in the coordinate space of
+		// the tab bar, not the main bar
 		this.onFingerMove(e)
 		// tore off last tab. lets remove it and its splitter
 		if(tab.tabs.length === 0){
@@ -134,6 +137,7 @@ module.exports=class Dock extends require('base/view'){
 			index:tabs.selected = tabs.tabs.push(this.drag) - 1,
 			xStart: this.xStart,
 			yStart: this.yStart,
+
 			digit:this.dragDigit
 		}
 
@@ -252,9 +256,9 @@ module.exports=class Dock extends require('base/view'){
 					// check if we are tab dropzone
 					if(y < ty+tth){
 						// we could insert the tab and move back to tabdragging
+						//this.drawDrop({x:tx, y:ty, w:tw, h:tth })
 						this.onTabInsert(tabs)
 						break
-						//this.drawDrop({x:tx, y:ty, w:tw, h:tth })
 						//continue
 					}
 

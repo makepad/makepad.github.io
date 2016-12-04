@@ -62,12 +62,15 @@ module.exports = class Makepad extends require('base/app'){
 					vertical: true,
 					pane1:{
 						selected:0,
+						debug:"OTHERNAME",
 						tabs:[
-							{type:'HomeScreen', title:'*'}
+							{type:'HomeScreen', title:'*'},
+							{type:'HomeScreen', title:'HI'}
 						]
 					},
 					pane2:{
 						selected:0,
+						debug:"MYNAME",
 						tabs:[
 							{type:'HomeScreen', title:'*'}
 						]

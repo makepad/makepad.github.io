@@ -3,10 +3,10 @@ module.exports=class Splitter extends require('base/view'){
 	prototype(){
 		this.name = 'Splitter'
 		this.barSize = 2
-		this.locked = true
+		this.locked = false
 		this.vertical = true
 		this.safety = 10
-		this.position = 50
+		this.position = 0.5
 		this.tools = {
 			Split:require('base/stamp').extend({
 				props:{
@@ -130,7 +130,7 @@ module.exports=class Splitter extends require('base/view'){
 					this.view.onStartDrag()
 				},
 				onFingerMove(e){
-					this.view.onMoveDrag(this.vertical?e.xDown-e.xAbs:e.yDown-e.yAbs)						
+					this.view.onMoveDrag(this.vertical?e.xDown-e.x:e.yDown-e.y)						
 				},
 				onFingerUp(){
 
@@ -184,11 +184,11 @@ module.exports=class Splitter extends require('base/view'){
 	getCoord(){
 		if(this.vertical){
 			if(this.locked) return this.position<0?this.$splitWidth + this.position:this.position
-			return this.$splitWidth * this.position
+			return floor(this.$splitWidth * this.position)
 		}
 		else{
 			if(this.locked) return this.position<0?this.$splitHeight + this.position:this.position
-			return this.$splitHeight * this.position
+			return floor(this.$splitHeight * this.position)
 		}
 	}
 

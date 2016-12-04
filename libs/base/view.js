@@ -522,6 +522,15 @@ module.exports = class View extends require('base/class'){
 		return set
 	}
 
+	toLocal(msg, noScroll){
+		var xy = [0,0,0,0]
+		vec4.transformMat4(xy, [msg.x - painter.x, msg.y - painter.y, 0, 1.], view.viewInverse)
+		return {
+			x:xy[0] + noScroll?0:(view.todo.xScroll || 0),
+			y:xy[1] + noScroll?0:(view.todo.yScroll || 0)
+		}
+	}
+
 	onComposeDestroy(){
 		// remove entry
 		this.destroy()
