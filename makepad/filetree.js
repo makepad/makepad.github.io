@@ -55,7 +55,7 @@ module.exports = class FileTree extends require('base/view'){
 			icon:'exchange'
 		})
 		this.endBg()
-		//this.lineBreak()
+		this.lineBreak()
 		/*
 		this.drawBg({
 			//y:0,
