@@ -4,6 +4,7 @@ module.exports = class FileTree extends require('base/view'){
 		this.props = {
 			data: []
 		}
+		this.xOverflow='none'
 		this.yOverflow='none'
 		this.tools = {
 			Tree: require('views/tree').extend({

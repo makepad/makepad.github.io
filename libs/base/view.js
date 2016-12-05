@@ -3,6 +3,7 @@
 var painter = require('services/painter')
 var fingers = require('services/fingers')
 var mat4 = require('base/mat4')
+var vec4 = require('base/vec4')
 var types = require('base/types')
 
 var zeroMargin = [0,0,0,0]
@@ -525,10 +526,10 @@ module.exports = class View extends require('base/class'){
 
 	toLocal(msg, noScroll){
 		var xy = [0,0,0,0]
-		vec4.transformMat4(xy, [msg.x - painter.x, msg.y - painter.y, 0, 1.], view.viewInverse)
+		vec4.transformMat4(xy, [msg.x - painter.x, msg.y - painter.y, 0, 1.], this.viewInverse)
 		return {
-			x:xy[0] + noScroll?0:(view.todo.xScroll || 0),
-			y:xy[1] + noScroll?0:(view.todo.yScroll || 0)
+			x:xy[0] + (noScroll?0:(this.todo.xScroll || 0)),
+			y:xy[1] + (noScroll?0:(this.todo.yScroll || 0))
 		}
 	}
 

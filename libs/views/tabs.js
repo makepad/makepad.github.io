@@ -28,24 +28,25 @@ module.exports=class Tabs extends require('base/view'){
 			tabs[i].$tabStamp.from_dx = 0
 		}
 		var index = tabStamp.index
-		if(tabStamp.dx > tabStamp.$w*0.5 && index < tabs.length - 1){
+		// lets see if we are over 'half' the next one
+		let next = tabs[index+1]
+		let prev = tabs[index-1]
+		if(next && tabStamp.dx > next.$tabStamp.$w*0.5 && index < tabs.length - 1){
 			let old = tabs.splice(index, 1)[0]
-			let prev = tabs[index].$tabStamp
-			let dx = old.$tabStamp.$x - prev.$x
+			let dx = (old.$tabStamp.$x+old.$tabStamp.$w)-(next.$tabStamp.$x+next.$tabStamp.$w)//old.$tabStamp.$x - prev.$x
 			old.$tabStamp.xStart -= dx
 			old.$tabStamp.dx += dx
-			prev.from_dx = -dx
+			next.$tabStamp.from_dx = -dx
 			tabs.splice(index+1,0,old)
 			this.selected = index+1
 			this.redraw()
 		}
-		else if(tabStamp.dx < -tabStamp.$w*0.5 && index > 0){
+		else if(prev && tabStamp.dx < -prev.$tabStamp.$w*0.5 && index > 0){
 			let old = tabs.splice(index, 1)[0]
-			let prev = tabs[index-1].$tabStamp
-			let dx = old.$tabStamp.$x - prev.$x
+			let dx = old.$tabStamp.$x - prev.$tabStamp.$x
 			old.$tabStamp.xStart -= dx
 			old.$tabStamp.dx += dx
-			prev.from_dx = -dx
+			prev.$tabStamp.from_dx = -dx
 			tabs.splice(index-1,0,old)
 			this.selected = index-1
 			this.redraw()
@@ -85,6 +86,7 @@ module.exports=class Tabs extends require('base/view'){
 				// move our finger move to this one
 				stamp.xStart = move.xStart
 				stamp.yStart = move.yStart
+				stamp.start = stamp.toLocal({x:move.xStart,y:move.yStart})
 				stamp.dx = 0
 				stamp.dxStart = 0
 				this.transferFingerMove(move.digit, stamp.$pickId)

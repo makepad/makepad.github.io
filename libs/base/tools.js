@@ -237,7 +237,6 @@ module.exports = class Tools extends require('base/class'){
 	}
 
 	$moveWritten(start, dx, dy){
-		console.error("MOVING", dx, dy)
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len

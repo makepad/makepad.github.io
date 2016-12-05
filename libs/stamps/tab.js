@@ -114,6 +114,7 @@ module.exports = require('base/stamp').extend({
 		this.view.onTabSelect(this)
 		this.xStart = e.x
 		this.yStart = e.y
+		this.start = this.toLocal(e)
 		this.dxStart = this.dx
 	},
 	onFingerUp(){

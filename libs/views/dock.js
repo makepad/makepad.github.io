@@ -103,6 +103,7 @@ module.exports=class Dock extends require('base/view'){
 
 		var stamp = drag.$tabStamp
 		this.tabHeight = stamp.$h
+		this.start = stamp.start
 		this.xStart = stamp.xStart
 		this.yStart = stamp.yStart
 		tab.selected = min(tab.tabs.length-1,tab.selected)
@@ -137,7 +138,6 @@ module.exports=class Dock extends require('base/view'){
 			index:tabs.selected = tabs.tabs.push(this.drag) - 1,
 			xStart: this.xStart,
 			yStart: this.yStart,
-
 			digit:this.dragDigit
 		}
 
@@ -148,8 +148,8 @@ module.exports=class Dock extends require('base/view'){
 	onFingerMove(e){
 		// lets draw a tab as we drag it
 		if(this.drag){
-			this.xDrag = e.x - this.xStart
-			this.yDrag = e.y - this.yStart
+			this.xDrag = e.x - this.start.x
+			this.yDrag = e.y - this.start.y
 			this.redraw()
 		}
 	}
@@ -239,8 +239,8 @@ module.exports=class Dock extends require('base/view'){
 				let tabs = this.$views[key]
 				if(!(tabs instanceof this.Tabs)) continue
 				// check if we are over the dropzone
-				let x = clamp(this.xDrag+this.xStart,0,painter.w)
-				let y = clamp(this.yDrag+this.yStart,0,painter.h)
+				let x = clamp(this.xDrag+this.start.x,0,painter.w)
+				let y = clamp(this.yDrag+this.start.y,0,painter.h)
 				let tx = tabs.$x
 				let ty = tabs.$y
 				let tw = tabs.$w
