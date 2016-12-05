@@ -16,7 +16,7 @@ module.exports = function painterPaint(proto){
 			0,0,0,1
 		]
 		this.children = {}
-		this.frameSyncPromise = {}
+		//this.frameSyncPromise = {}
 	}
 
 	proto.addChild = function(child, fbId){
@@ -78,10 +78,10 @@ module.exports = function painterPaint(proto){
 	}
 
 	proto.onRepaint = function(){
-		for(let digit in this.frameSyncPromise){
-			this.frameSyncPromise[digit].resolve(true)
-		}
-		this.frameSyncPromise = {}
+		//for(let digit in this.frameSyncPromise){
+		//	this.frameSyncPromise[digit].resolve(true)
+		//}
+		//this.frameSyncPromise = {}
 		// flush any batched messages
 		this.worker.onAfterEntry()
 
@@ -96,12 +96,14 @@ module.exports = function painterPaint(proto){
 		// lets resolve pending mousepicks slash create digit windows	
 		for(let digit in this.pickPromises){
 			var pick = this.pickPromises[digit]
+			if(!pick) continue
 			var res = this.renderPickWindow(digit, pick.x, pick.y)
-			pick.resolve(res)
+			pick.callback(res)
 		}
 		// clear the pickPromises for next frame
 		this.pickPromises = {}
 		// flush any batched messages
+
 		this.worker.onAfterEntry()
 
 		// render the main scene
@@ -216,7 +218,7 @@ module.exports = function painterPaint(proto){
 		gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 		return pick
 	}
-
+/*
 	proto.frameSyncFinger = function(digit){
 		var oldSync = this.frameSyncPromise[digit]
 		if(oldSync) oldSync.resolve(false)
@@ -225,18 +227,19 @@ module.exports = function painterPaint(proto){
 		this.requestRepaint()
 		return sync.promise
 	}
-
-	proto.pickFinger = function(digit, x, y, immediate){
+*/
+	proto.pickFinger = function(digit, x, y, immediate, callback){
 		var pick = {}
 
-		pick.promise = new Promise(function(res, rej){pick.resolve = res, pick.reject = rej}, true)
+		pick.callback = callback//new Promise(function(res, rej){pick.resolve = res, pick.reject = rej}, true)
 		pick.x = x
 		pick.y = y
 
-		if(this.pickPromises[digit]) this.pickPromises[digit].resolve()
-		
+		if(this.pickPromises[digit]) this.pickPromises[digit].callback()
+		this.pickPromises[digit] = undefined
+
 		if(immediate){
-			pick.resolve(this.renderPickWindow(digit, pick.x, pick.y))
+			pick.callback(this.renderPickWindow(digit, pick.x, pick.y))
 		}
 		else{
 			this.pickPromises[digit] = pick
@@ -244,7 +247,7 @@ module.exports = function painterPaint(proto){
 
 		// mouse picks are done in request animation frame
 		this.requestRepaint()
-		return pick.promise
+		//return pick.promise
 	}
 
 	proto.renderPickDep = function(framebuffer){

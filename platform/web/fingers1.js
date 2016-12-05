@@ -182,7 +182,7 @@ module.exports = class extends require('/platform/service'){
 			let fm = this.messageFinger(f, 'onFingerDownNow')
 			this.batchMessage(fm)
 
-			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1).then(function(f, pick){
+			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1,function(f, pick){
 				if(!pick) return
 
 				f.dx = 0
@@ -244,7 +244,7 @@ module.exports = class extends require('/platform/service'){
 				this.batchMessage(fm)
 			}
 			else{
-				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
+				this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false, function(f, pick){
 					if(!pick) return
 					this.batchMessage(this.messageFinger(f, 'onFingerMove'))
 					this.batchMessage(this.messageFinger(f, 'onFingerDrag', pick))
@@ -256,7 +256,6 @@ module.exports = class extends require('/platform/service'){
 
 	onFingerUp(fingers){
 		if(!this.worker.services.painter1) return
-
 		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
@@ -296,14 +295,13 @@ module.exports = class extends require('/platform/service'){
 			this.tapMap[oldf.digit] = f
 			
 			this.worker.services.painter1.onFingerUp(fm)
-			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false).then(function(f, pick){
+			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, false, function(f, pick){
 				if(pick && f.workerId === pick.workerId &&
 					f.pickId === pick.pickId &&
 					f.todoId === pick.todoId){
 					f.samePick = true
 				}
 				else f.samePick = false
-
 				this.batchMessage(this.messageFinger(f, 'onFingerUp', pick))
 			}.bind(this, f))
 		
@@ -317,7 +315,7 @@ module.exports = class extends require('/platform/service'){
 		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
-			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
+			this.worker.services.painter1.pickFinger(0, f.x, f.y, false, function(f, pick){
 				if(!pick) return
 				f.pileupTime = Date.now()
 				var last = this.hoverMap[f.digit]
@@ -352,7 +350,7 @@ module.exports = class extends require('/platform/service'){
 		for(let i = 0; i < fingers.length; i++){
 			var f = fingers[i]
 
-			this.worker.services.painter1.pickFinger(0, f.x, f.y).then(function(f, pick){
+			this.worker.services.painter1.pickFinger(0, f.x, f.y, false, function(f, pick){
 				if(!pick) return
 				var fm = this.messageFinger(f, 'onFingerWheel', pick)
 				this.worker.services.painter1.onFingerWheel(fm)

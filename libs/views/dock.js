@@ -162,6 +162,16 @@ module.exports=class Dock extends require('base/view'){
 		if(!this.dropInfo) return
 		let info = this.dropInfo
 		this.dropinfo = undefined
+
+		if(info.part === 4){ // we just have to add the tab to the tabs
+			let tabs = info.tabs
+			tabs.selected = tabs.tabs.push(drag) - 1
+			tabs.redraw()
+			tabs.transferMove = {
+				index:tabs.selected 
+			}
+			return
+		}
 		// lets do stuff
 		// lets make a new tabs widget
 		let parent = info.tabs.parent
@@ -219,6 +229,7 @@ module.exports=class Dock extends require('base/view'){
 				panes:[last,tabs]
 			})
 		}
+
 		// write it
 		if(!isRoot){
 			parent.panes[lastIdx] = splitter
@@ -256,9 +267,11 @@ module.exports=class Dock extends require('base/view'){
 					// check if we are tab dropzone
 					if(y < ty+tth){
 						// we could insert the tab and move back to tabdragging
-						//this.drawDrop({x:tx, y:ty, w:tw, h:tth })
-						this.onTabInsert(tabs)
+						this.dropInfo = {tabs:tabs,part:4}
+						this.drawDrop({order:2,x:tx, y:ty, w:tw, h:tth })
 						break
+						//this.onTabInsert(tabs)
+						//break
 						//continue
 					}
 

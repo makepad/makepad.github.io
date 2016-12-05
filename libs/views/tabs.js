@@ -67,9 +67,11 @@ module.exports=class Tabs extends require('base/view'){
 		//  	let tab = this.tabs[j]
 		//  	console.log(tab.tabTitle, tab.$tabStamp && tab.$tabStamp.text)
 		// }
+		let move = this.transferMove
 		for(let tabs = this.tabs, i = 0 ; i < this.tabs.length; i++){
 			let tab = tabs[i]
 			// console.log(sel === i?'selected':'default')
+			
 			let stamp = tab.$tabStamp = this.drawTab({
 				id:tab.id, // utilize some kind of unique id
 				order:sel === i?2:1,
@@ -77,12 +79,16 @@ module.exports=class Tabs extends require('base/view'){
 				lineL:sel !== i-1,
 				lineR:sel !== i+1,
 				text:tab.tabTitle,
-				index:i
+				index:i,
+				dx:move && i === move.index?0:undefined,
+				from_dx:move && i === move.index?0:undefined
 			})
-			let move = this.transferMove
-			if(move && i === move.index){
+			
+			//if(move && i === move.index){
 
-				this.transferMove = undefined
+			///	this.transferMove = undefined
+				//stamp.dx = 0
+				/*
 				// move our finger move to this one
 				stamp.xStart = move.xStart
 				stamp.yStart = move.yStart
@@ -90,9 +96,12 @@ module.exports=class Tabs extends require('base/view'){
 				stamp.dx = 0
 				stamp.dxStart = 0
 				this.transferFingerMove(move.digit, stamp.$pickId)
-			}
+				*/
+			//}
 			this.turtle.wx -=5
 		}
+		this.transferMove = undefined
+
 		this.endBg()
 		this.lineBreak()
 		var tab = this.tabs[sel]

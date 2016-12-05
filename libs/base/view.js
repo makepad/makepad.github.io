@@ -722,7 +722,6 @@ module.exports = class View extends require('base/class'){
 
 	// how do we incrementally redraw?
 	redraw(){
-		//if(this.$drawClean){
 		this.$dirtyTrue()
 		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){
@@ -730,7 +729,6 @@ module.exports = class View extends require('base/class'){
 				this.$redrawViews()
 			}.bind(this.app),0)
 		}
-		//}
 	}
 
 	setFocus(){
