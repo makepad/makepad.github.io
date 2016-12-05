@@ -25,7 +25,31 @@ module.exports = class Tree extends require('base/view'){
 		}
 		
 		this.overflow = 'scroll'
-		
+		this.states = {
+			default:{
+				duration:0.3,
+				time:{fn:'ease',begin:0,end:10},
+				to:{
+					Text:{
+						x:null,
+						y:null,
+						fontSize:null
+					},
+					Cursor:{
+						x:null,
+						y:null,
+						w:null,
+						h:null
+					},
+					TreeLine:{
+						x:null,
+						y:null,
+						w:null,
+						h:null
+					}
+				}
+			}
+		}
 		this.tools = {
 			Bg:require('shaders/bg').extend({
 				wrap:false,
