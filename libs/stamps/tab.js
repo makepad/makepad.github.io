@@ -1,3 +1,4 @@
+let colors = module.style.colors
 module.exports = require('base/stamp').extend({
 	props:{
 		selected:false,
@@ -16,7 +17,7 @@ module.exports = require('base/stamp').extend({
 				},
 				Bg:{
 					dx:null,
-					color:'#3',
+					color:colors.bgTop,
 					selected:0
 				}
 			}
@@ -30,7 +31,7 @@ module.exports = require('base/stamp').extend({
 				},
 				Bg:{
 					dx:null,
-					color:'#3',
+					color:colors.bgTop,
 					selected:0
 				}
 			},
@@ -40,7 +41,7 @@ module.exports = require('base/stamp').extend({
 				},
 				Bg:{
 					dx:null,
-					color:'#3',
+					color:colors.bgTop,
 					selected:0
 				}
 			}
@@ -53,7 +54,7 @@ module.exports = require('base/stamp').extend({
 					dx:0,
 				},
 				Bg:{
-					color:'#4',
+					color:colors.bgNormal,
 					dx:0,
 					selected:1
 				}
@@ -66,7 +67,7 @@ module.exports = require('base/stamp').extend({
 					dx:null,
 				},
 				Bg:{
-					color:'#4',
+					color:colors.bgNormal,
 					dx:null,
 					selected:1
 				}
@@ -76,7 +77,7 @@ module.exports = require('base/stamp').extend({
 	tools:{
 		Bg:require('shaders/quad').extend({
 			borderRadius:4,
-			color:'#4',
+			color:colors.bgNormal,
 			padding:[10,12,6,12],
 			selected:0.,
 			lineL:1.,

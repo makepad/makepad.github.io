@@ -1,49 +1,20 @@
 module.exports = class Tree extends require('base/view'){
 	
 	// default style sheet
-	baseStyle(style) {
-		var c = style.colors, a = style.anims, f = style.fonts
-		style.to = {
-			
-			hasRootLine:false,
-			hasFolderButtons:false,
-			openWithText:true,
-			
-			folderTextColor:c.textNormal,
-			fileTextColor:c.textMed,
-			selectedTextColor:c.textHi,
-			
-			padding:[2, 0, 0, 2],
-			cursorMargin:[0, 0, 2, 1],
-			
-			fontSize:f.size,
-			
-			$tween:a.tween,
-			$duration:a.duration,
-			$ease:a.ease,
-			
-			Bg:{
-				color:c.bgNormal,
-			},
-			
-			TreeLine:{
-				lineColor:c.accentGray,
-				folderBase:c.textMed,
-				folderHighlight:c.textAccent,
-			},
-			
-			Cursor:{
-				displace:[0,  - 1],
-				color:c.bgNormal,
-				selectedColor:c.accentNormal,
-				hoverColor:c.accentGray,
-			}
-		}
-	}
 	
 	prototype() {
+		let colors = module.style.colors
+		let fonts = module.style.fonts
+		
 		this.wrap = false
 		this.name = 'Tree'
+		this.hasRootLine = false
+		this.hasFolderButtons = false
+		this.openWithText = true
+		this.padding = [0,0,0,2]
+		this.cursorMargin = [0,0,2,1]
+		this.fontSize = fonts.size
+
 		this.props = {
 			data:[
 				{name:'folder1', folder:[
@@ -58,9 +29,14 @@ module.exports = class Tree extends require('base/view'){
 		this.tools = {
 			Bg:require('shaders/bg').extend({
 				wrap:false,
+				color:colors.bgNormal
 			}),
 			Cursor:require('shaders/hover').extend({
 				wrap:false,
+				displace:[0,-1],
+				color:colors.bgNormal,
+				selectedColor:colors.accentNormal,
+				hoverColor:colors.accentGray,
 				pickAlpha: - 1,
 				w:'100%-2'
 			}),
@@ -81,13 +57,11 @@ module.exports = class Tree extends require('base/view'){
 				h:16,
 				
 				hasFolderButtons:{kind:'uniform', value:0},
-				lineColor:{kind:'uniform', value:'#2'},
-				folderBase:{kind:'uniform', value:'#7'},
-				folderHighlight:{kind:'uniform', value:'#8'},
-				
+				lineColor:{kind:'uniform', value:colors.accentGray},
+				folderBase:{kind:'uniform', value:colors.textMed},
+				folderHighlight:{kind:'uniform', value:colors.textAccent},
 				vertexStyle:function() {},
 				pixel:function() {$
-
 					this.viewport()
 					
 					var hh = this.h + 4
@@ -261,6 +235,7 @@ module.exports = class Tree extends require('base/view'){
 					isLast:j == dl && i === len,
 					isFolder:isFolder,
 					isSide:j < dl,
+					dump:1,
 					hasFolderButtons:this.hasFolderButtons,
 					isOpen:node.open?1:0,
 					h:closed?0:this.fontSize + 6

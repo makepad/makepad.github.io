@@ -1,5 +1,6 @@
 module.exports=class Tabs extends require('base/view'){
 	prototype(){
+		let colors = module.style.colors
 		this.name = 'Tabs'
 		this.xOverflow = 'none'
 		this.yOverflow = 'none'
@@ -9,7 +10,7 @@ module.exports=class Tabs extends require('base/view'){
 			Tab:require('stamps/tab').extend({
 			}),
 			Bg:require('shaders/bg').extend({
-				color:'#3337',
+				color:colors.bgTop,
 				w:'100%'
 			})
 		}

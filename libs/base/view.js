@@ -164,7 +164,7 @@ module.exports = class View extends require('base/class'){
 				throw new Error('Owner already has view with id '+this.id)
 			}
 			owner.$views[id] = this
-
+			this.store = owner.store
 			this.todo.viewId = id
 		}
 	}

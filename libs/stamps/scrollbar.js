@@ -1,22 +1,19 @@
+let colors = module.style.colors
 module.exports = require('base/stamp').extend({
-	baseStyle(style){
-		style.to = {
-			states:{
-				default:{
-					to:{
-						ScrollBar:{
-							bgColor:'#0000',
-							handleColor:'#5'
-						}
-					}
-				},
-				down:{
-					to:{
-						ScrollBar:{
-							bgColor:'#0000',
-							handleColor:style.colors.accentNormal
-						}
-					}
+	states:{
+		default:{
+			to:{
+				ScrollBar:{
+					bgColor:'#0000',
+					handleColor:'#5'
+				}
+			}
+		},
+		down:{
+			to:{
+				ScrollBar:{
+					bgColor:'#0000',
+					handleColor:colors.accentNormal
 				}
 			}
 		}

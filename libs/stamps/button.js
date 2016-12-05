@@ -1,77 +1,8 @@
 module.exports = class Button extends require('base/stamp'){
 	
-	baseStyle(style){
-		var c = style.colors
-		style.to = {
-			Text:{
-				color:c.textMed
-			},
-			Icon:{
-				color:c.textMed
-			},
-			Bg:{
-				padding:[5,15,5,15],
-				borderRadius:6.4,
-				borderWidth:1,
-				borderColor:c.textLo,
-				color:c.bgTop,
-			},
-			states:{ // animation!
-				default:{
-					to:{
-						Bg:{
-							color:c.bgTop,
-							glowSize:0,
-							borderColor:c.textLo
-						},
-						Icon:{
-							color:c.textMed
-						}
-					},
-					duration:0.8,
-					interrupt:false
-				},
-				over:{
-					to:{
-						Bg:{
-							color:c.bgTop,
-							borderColor:'white',
-							glowSize:1
-						},
-						Icon:{
-							color:'#c'
-						}
-					},
-					duration:0.05
-				},
-				down:{
-					0:{
-						Bg:{
-							borderColor:'white',
-							color:'#f',
-							glowSize:1
-						},
-						Icon:{
-							color:'#0'
-						}
-					},
-					to:{
-						Bg:{
-							borderColor:'white',
-							color:'#6',
-							glowSize:1
-						},
-						Icon:{
-							color:'#f'
-						}
-					},
-					duration:0.2
-				}
-			}
-		}
-	}
-
 	prototype() {
+		let colors = module.style.colors
+
 		this.props = {
 			text: '',
 			icon: '',
@@ -81,14 +12,69 @@ module.exports = class Button extends require('base/stamp'){
 			onClickStamp: undefined,
 			debug: 0
 		}
-			
+
+		this.states = { // animation!
+			default:{
+				to:{
+					Bg:{
+						color:colors.bgTop,
+						glowSize:0,
+						borderColor:colors.textLo
+					},
+					Icon:{
+						color:colors.textMed
+					}
+				},
+				duration:0.8,
+				interrupt:false
+			},
+			over:{
+				to:{
+					Bg:{
+						color:colors.bgTop,
+						borderColor:'white',
+						glowSize:1
+					},
+					Icon:{
+						color:'#c'
+					}
+				},
+				duration:0.05
+			},
+			down:{
+				0:{
+					Bg:{
+						borderColor:'white',
+						color:'#f',
+						glowSize:1
+					},
+					Icon:{
+						color:'#0'
+					}
+				},
+				to:{
+					Bg:{
+						borderColor:'white',
+						color:'#6',
+						glowSize:1
+					},
+					Icon:{
+						color:'#f'
+					}
+				},
+				duration:0.2
+			}
+		}
+
 		this.wrapped = false
 
 		this.tools = {
 			Bg: require('shaders/quad').extend({
-				borderRadius:4.,
-				borderWidth:1.,
-				borderColor:'red',
+				padding:[5,15,5,15],
+				borderRadius:6.4,
+				borderWidth:1,
+				borderColor:colors.textLo,
+				color:colors.bgTop,
 				glowColor:'#30f',
 				glowSize:0,
 				pixel(){$
@@ -102,9 +88,11 @@ module.exports = class Button extends require('base/stamp'){
 				}
 			}),
 			Text: require('shaders/text').extend({
+				color:colors.textMed,
 				font:require('fonts/ubuntu_monospace_256.font')
 			}),
 			Icon: require('shaders/icon').extend({
+				color:colors.textMed
 				//font:require('fonts/fontawesome_low.font'),
 			})
 		}

@@ -25,9 +25,9 @@ module.exports = class extends require('base/app'){
 	constructor(){
 		super()
 		// lets make a new thing
-		var view1 = new this.View(this, {tabName:'myfile1.js',id:'v1', br:0})
-		var view2 = new this.View(this, {tabName:'myfile2.js',id:'v2', br:10})
-		var view3 = new this.View(this, {tabName:'myfile3.js',id:'v3', br:30})
+		var view1 = new this.View(this, {tabTitle:'1.js',id:'v1', br:0})
+		var view2 = new this.View(this, {tabTitle:'12345.js',id:'v2', br:10})
+		var view3 = new this.View(this, {tabTitle:'1234567890.js',id:'v3', br:30})
 		this.tabs = new this.Tabs(this, {id:'t1',w:'100%',h:'100%',tabs:[view1,view2,view3]})
 	}
 

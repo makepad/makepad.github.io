@@ -447,9 +447,10 @@ function workerBoot(){
 		var module = modules[msg.main]
 		module.exports = {}
 		if(!module.factory) return console.log("Cannot boot factory "+msg.main, module)
+
 		var ret = module.factory.call(module.exports, workerRequire(msg.main, worker, modules, serviceArgs), module.exports, module)
 		if(ret !== undefined) module.exports = ret
-		if(worker.onRequire) worker.onRequire(module)
+		//if(worker.onRequire) worker.onRequire(module)
 		worker.clearAllTimers()
 
 		if(typeof module.exports === 'function'){
@@ -521,10 +522,14 @@ function workerRequire(absParent, worker, modules, args){
 		if(!module.exports){
 			module.exports = {}
 			if(!module.factory) throw new Error("Cannot require, no factory "+absPath+" from "+absParent)
-
-			var ret = module.factory.call(module.exports, workerRequire(absPath, worker, modules, args), module.exports, module)
-			if(ret !== undefined) module.exports = ret
-			if(worker.onRequire) worker.onRequire(module)
+			module.require = workerRequire(absPath, worker, modules, args)
+			if(worker.onRequire){
+				worker.onRequire(module)
+			}
+			else{
+				var ret = module.factory.call(module.exports, module.require,  module.exports, module)
+				if(ret !== undefined) module.exports = ret
+			}
 		}
 		if(typeof module.exports === 'function'){
 			Object.defineProperty(module.exports, '__module__', {value:module})

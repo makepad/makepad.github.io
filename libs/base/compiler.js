@@ -963,7 +963,7 @@ module.exports = class Compiler extends require('base/class'){
 		last += '}'
 		code += last
 		code += 'if($turtle._debug){\n'
-		code += this.DUMPPROPS()
+		code += this.DUMPPROPS(args, indent, className, scope, target, source)
 		code += '}'
 		return code
 	}

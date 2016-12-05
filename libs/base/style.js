@@ -35,6 +35,18 @@ module.exports = class Style extends require('base/class'){
 	}
 
 	processModule(m){
+		// we have to call the factory
+		// we can customize the 'style' class to this module
+		// in the query
+		let localStyle = Object.create(this)
+		localStyle.customize(m.path)
+
+		// call the factory
+		m.style = localStyle
+		let ret = m.factory.call(m.exports, m.require, m.exports, m)
+		if(ret !== undefined) m.exports = ret
+
+		// and what do we do with the subclassing?
 		var cls = m.exports
 		if(typeof cls !== 'function' || typeof cls.extend !== 'function') return
 		var proto = cls.prototype
@@ -42,24 +54,28 @@ module.exports = class Style extends require('base/class'){
 		var object = this.object = {}
 		this.changed = false
 
-		if(proto.baseStyle){
-			proto.baseStyle(this)
-		}
-		
 		// ok now lets walk our chain and apply module based queries
 		var chain = this.protoChain
 		for(let i =0; i < chain.length; i++){
 			var item = chain[i]
-			if(item.match) item.match.call(this, path)
+			if(item.inherit) item.inherit.call(this, path)
+			// add our style as a dependency to the module
 			var sub = item.constructor.__module__
 			if(sub) m.deps[sub.path] = sub
 		}
+
 		if(this.changed){ // inherit class
 			var final = Tools.protoProcess('', object, null, null, null, new WeakMap())
 			m.exports = cls.extend(final)
 		}
 	}
-	
+
+	customize(path){
+	}
+
+	inherit(){
+	}
+
 	set to(v){
 		this.changed = true
 		deepCopy(this.object, v)
@@ -74,7 +90,7 @@ function deepCopy(out, inp){
 	// we have to overlay object
 	for(var key in inp){
 		var value = inp[key]
-		if(typeof value === 'object' && value.constructor === Object){
+		if(value && typeof value === 'object' && value.constructor === Object){
 			if(!out[key]) out[key] = {}
 			deepCopy(out[key], value)
 		}

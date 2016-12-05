@@ -46,7 +46,7 @@ module.exports = class DarkStyle extends require('base/style'){
 		}
 	}
 
-	match(path){
+	inherit(path){
 		var style = this
 		// all Text things except icon get this font
 		if(path == '/libs/shaders/text.js') style.to = {
