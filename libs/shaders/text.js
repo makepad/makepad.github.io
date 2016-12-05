@@ -37,7 +37,7 @@ module.exports = class Text extends require('base/shader'){
 			wrapping:'line',
 			margin:[0,0,0,0],
 			//noBounds: {mask:0, value:0},
-
+			debug:{value:false},
 			text:'',
 
 			// character head/tail margin and advance

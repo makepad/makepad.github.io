@@ -1,14 +1,10 @@
 module.exports = class FileTree extends require('base/view'){
 
-	baseStyle(style){
-		style.to = {
-		}
-	}
-
 	prototype() {
 		this.props = {
 			data: []
 		}
+		this.yOverflow='none'
 		this.tools = {
 			Tree: require('views/tree').extend({
 				onNodeSelect: function(...args) {
@@ -17,8 +13,10 @@ module.exports = class FileTree extends require('base/view'){
 			}),
 			Button: require('stamps/button').extend({
 			}),
-			Bg:require('shaders/bg').extend({
-				color:'#3'
+			Bg:require('shaders/quad').extend({
+				w:'100%',
+				wrap:false,
+				color:module.style.colors.bgNormal
 			})
 		}
 		this.mixin({
@@ -38,18 +36,37 @@ module.exports = class FileTree extends require('base/view'){
 	}
 	
 	onDraw() {
+		this.beginBg({
+		})
+		
+		this.drawButton({
+			id:1,
+			icon:'search'
+		})
+
+		this.drawButton({
+			id:2,
+			icon:'copy'
+		})
+
+		this.drawButton({
+			id:3,
+			icon:'exchange'
+		})
+		this.endBg()
+		//this.lineBreak()
 		/*
 		this.drawBg({
-			x:0,
-			y:0,
+			//y:0,
 			w:'100%',
-			h:'100%',
+			h:'100#',
 			color:'red'
-		})*/
+		})
+		return*/
 		this.drawTree({
 			data:this.data,
 			w:'100%',
-			h:'100%'
+			h:'100#'
 		})
 	}
 }

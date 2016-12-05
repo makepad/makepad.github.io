@@ -142,7 +142,7 @@ module.exports = class Turtle extends require('base/class'){
 		}
 	}
 
-	walk(oldturtle){
+	walk(oldturtle, isView){
 		if(this.view.$inPlace) return
 
 		var align = this._align
@@ -193,7 +193,7 @@ module.exports = class Turtle extends require('base/class'){
 					this.mh = 0
 					// move the body of the wrapped thing
 					// but this changes our bounds randomly.
-					if(oldturtle){
+					if(oldturtle && !isView){
 						this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
 					}
 				}
@@ -224,8 +224,10 @@ module.exports = class Turtle extends require('base/class'){
 					this.mh = 0
 					// move the body of the wrapped thing
 					// but this changes our bounds randomly.
-					if(oldturtle){
-						this.view.$moveWritten(oldturtle.$writeStart, dx, dy)
+					if(oldturtle && !isView){
+						// ok so what if, we are a view. then we shouldnt move things
+						//console.log(oldturtle.view === this.view)
+						oldturtle.view.$moveWritten(oldturtle.$writeStart, dx, dy)
 					}
 				}
 				if(isNaNx){
@@ -270,11 +272,17 @@ module.exports = class Turtle extends require('base/class'){
 		return (isNaN(this.height)?(this.y2 === -Infinity?NaN:(this.y2 - this.sy)):this.height) + padding[0] + padding[2]
 	}
 
-	end(){
+	end(doBounds){
 		var outer = this.outer
 		// store our bounds
 		outer._w = this.wBound()
 		outer._h = this.hBound()
+		if(doBounds){
+			if(this.x1 < outer.x1) outer.x1 = this.x1
+			if(this.y1 < outer.y1) outer.y1 = this.y1
+			if(this.x2 > outer.x2) outer.x2 = this.x2
+			if(this.y2 > outer.y2) outer.y2 = this.y2
+		}
 		this.doAlign(true)
 	}
 

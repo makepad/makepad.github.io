@@ -243,7 +243,7 @@ module.exports = class View extends require('base/class'){
 		turtle._y = this._y
 		turtle._w = this._w
 		turtle._h = this._h
-
+		//console.log(turtle.$writeStart)
 		// do a dirty check against turtle state to skip drawing
 		let $dirty = this.$dirty_check
 		if(!this.$dirty && 
@@ -355,8 +355,9 @@ module.exports = class View extends require('base/class'){
 		this.$drawScrollBars(this.$w, this.$h, this.$vw, this.$vh)
 
 		this.endTurtle()
-	
-		turtle.walk(nt)
+		// here we walk the turtle, but somehow it moves the other crap
+
+		turtle.walk(nt, true)
 
 		// store computed absolute coordinates
 		this.$x = turtle._x + turtle.$xAbs

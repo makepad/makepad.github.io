@@ -40,6 +40,9 @@ module.exports = class extends require('base/app'){
 	onDraw(){
 		this.drawBg({borderRadius:8,w:100,h:100})
 		for(var i=0;i<1000;i++)
-		this.drawButton({id:i,icon:'search'})
+		this.drawButton({
+			id:i,
+			icon:'search'
+		})
 	}
 }

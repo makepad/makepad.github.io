@@ -71,7 +71,7 @@ module.exports = class Button extends require('base/stamp'){
 		this.tools = {
 			Bg: require('shaders/quad').extend({
 				padding:[5,15,5,15],
-				borderRadius:6.4,
+				borderRadius:6.,
 				borderWidth:1,
 				borderColor:colors.textLo,
 				color:colors.bgTop,
@@ -89,10 +89,12 @@ module.exports = class Button extends require('base/stamp'){
 			}),
 			Text: require('shaders/text').extend({
 				color:colors.textMed,
+				fontSize:10,
 				font:require('fonts/ubuntu_monospace_256.font')
 			}),
 			Icon: require('shaders/icon').extend({
-				color:colors.textMed
+				color:colors.textMed,
+				fontSize:10,
 				//font:require('fonts/fontawesome_low.font'),
 			})
 		}
@@ -116,7 +118,6 @@ module.exports = class Button extends require('base/stamp'){
 
 	onDraw() {
 		this.beginBg(this.wrap())
-		
 		if(this.icon) {
 			this.drawIcon({
 				text: this.lookupIcon[this.icon]

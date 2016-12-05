@@ -11,7 +11,6 @@ module.exports = class Tree extends require('base/view'){
 		this.hasRootLine = false
 		this.hasFolderButtons = false
 		this.openWithText = true
-		this.padding = [0,0,0,2]
 		this.cursorMargin = [0,0,2,1]
 		this.fontSize = fonts.size
 
@@ -45,14 +44,16 @@ module.exports = class Tree extends require('base/view'){
 						x:null,
 						y:null,
 						w:null,
-						h:null
+						h:null,
+						isOpen:null
 					}
 				}
 			}
 		}
 		this.tools = {
-			Bg:require('shaders/bg').extend({
+			Bg:require('shaders/quad').extend({
 				wrap:false,
+				padding:[0,0,0,2],
 				color:colors.bgNormal
 			}),
 			Cursor:require('shaders/hover').extend({
@@ -228,7 +229,7 @@ module.exports = class Tree extends require('base/view'){
 	
 	onDraw(debug) {
 		//alright so how are we going to select things
-		this.drawBg({moveScroll:0,x:'0',y:'0',w:'100%',h:'100%'})
+		this.beginBg({moveScroll:0,x:'0',y:'0',w:'100%',h:'100%'})
 		this.pickMap = {}
 		this.pickId = 1
 		var p = this
@@ -315,6 +316,6 @@ module.exports = class Tree extends require('base/view'){
 			}
 		}
 		if(this.data && this.data.folder) iterFolder(this.data, [0], false)
-		//this.endBg()
+		this.endBg(true)
 	}
 }

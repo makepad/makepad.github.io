@@ -217,10 +217,10 @@ module.exports = class Tools extends require('base/class'){
 		return turtle
 	}
 
-	endTurtle(){
+	endTurtle(doBounds){
 		// call end on a turtle and pop it off the stack
 		var view = this.view
-		this.turtle.end()
+		this.turtle.end(doBounds)
 		// pop the stack
 		view.$turtleStack.len--
 		// switch to outer
@@ -237,6 +237,7 @@ module.exports = class Tools extends require('base/class'){
 	}
 
 	$moveWritten(start, dx, dy){
+		console.error("MOVING", dx, dy)
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len
