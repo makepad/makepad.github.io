@@ -11,20 +11,30 @@ module.exports=class Splitter extends require('base/view'){
 			Split:require('base/stamp').extend({
 				props:{
 					vertical:0,
+					focus:0,
 				},
 				states:{
 					default:{
 						duration:.3,
 						time:{fn:'ease',begin:0,end:10},
 						to:{
-							Bar:{color:'#2'},
+							Bar:{color:'#2',glowColor:'#0000'},
 							GripBg:{color:'#2'},
 							Grip:{color:'#7'},
 						}
 					},
 					focus:{
 						to:{
-							Bar:{color:'#7'},
+							Bar:{color:'#b',glowColor:'#30f'},
+							GripBg:{color:'#7'},
+							Grip:{color:'#4'},
+						}
+					},
+					hover:{
+						duration:.3,
+						time:{fn:'ease',begin:0,end:10},
+						to:{
+							Bar:{color:'#c',glowColor:'#30f'},
 							GripBg:{color:'#7'},
 							Grip:{color:'#4'},
 						}
@@ -32,6 +42,19 @@ module.exports=class Splitter extends require('base/view'){
 				},
 				tools:{
 					Bar:require('shaders/quad').extend({
+						vertexStyle(){
+							this.x -=4.
+							this.w +=8.
+						},
+						pickAlpha:-1,
+						pixel(){
+							this.viewport()
+							this.rect(4.,0.,2.,this.h)
+							this.fillKeep(this.color)
+							this.blur = 4.
+							return this.glow(this.glowColor, 2.,0.)
+						},
+						glowColor:'#30f',
 						color:'#7'
 					}),
 					GripBg:require('shaders/rounded').extend({
@@ -127,13 +150,20 @@ module.exports=class Splitter extends require('base/view'){
 					})
 				},	
 				onFingerDown(){
+					
 					this.view.onStartDrag()
 				},
 				onFingerMove(e){
 					this.view.onMoveDrag(this.vertical?e.xDown-e.x:e.yDown-e.y)						
 				},
+				onFingerOver(e){
+					this.setState('hover')
+				},
+				onFingerOut(e){
+					this.setState(this.focus?'focus':'default')
+				},
 				onFingerUp(){
-
+					this.setState(this.focus?'focus':'default')
 				},
 				onDraw(){
 					this.drawBar({x:'0',y:'0',w:'100%',h:'100%'})
@@ -232,6 +262,7 @@ module.exports=class Splitter extends require('base/view'){
 				order:2,
 				down:0,
 				cursor:'ew-resize',
+				focus:this.hasFocus,
 				state:this.hasFocus?'focus':'default',
 				vertical:1,
 				w:this.barSize,
@@ -256,6 +287,7 @@ module.exports=class Splitter extends require('base/view'){
 				down:1,
 				order:2,
 				vertical:0,
+				focus:this.hasFocus,
 				state:this.hasFocus?'focus':'default',
 				cursor:'ns-resize',
 				h:this.barSize,

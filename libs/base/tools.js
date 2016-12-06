@@ -110,6 +110,9 @@ module.exports = class Tools extends require('base/class'){
 			let mesh = $writeList[i]
 			let start = $writeList[i+1]
 			let end = $writeList[i+2]
+
+			if(start === -1) continue
+
 			let proto = mesh.shaderProto
 			let info = proto.$compileInfo
 			let instanceProps = info.instanceProps

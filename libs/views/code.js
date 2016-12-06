@@ -21,6 +21,10 @@ module.exports = class Code extends require('views/edit'){
 
 		this.tools = { 
 			Bg:require('shaders/quad').extend({
+				moveScroll:0,
+				padding:[0,0,0,4],
+				w:'100%',
+				h:'100%',
 				color:colors.bgNormal
 			}),
 			Text: require('shaders/codetext').extend({ 
@@ -366,7 +370,7 @@ module.exports = class Code extends require('views/edit'){
 		if(!this._text)this._text = ''
 		this.beginBg() 
 		// ok lets parse the code
-		if(false){//this.$textClean) { 
+		if(this.$textClean) { 
 			this.reuseDrawSize() 
 			this.reuseBlock() 
 			this.reuseMarker() 

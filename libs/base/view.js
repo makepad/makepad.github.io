@@ -55,7 +55,9 @@ module.exports = class View extends require('base/class'){
 		})
 
 		this.tools = {
-			ScrollBar: require('stamps/scrollbar'),
+			ScrollBar: require('stamps/scrollbar').extend({
+				order:99
+			}),
 			Debug:require('shaders/quad'),
 			Surface:require('base/shader').extend({
 				props:{
@@ -359,6 +361,9 @@ module.exports = class View extends require('base/class'){
 		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
 		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
 
+		this.$xReuse = nt.x2
+		this.$yReuse = nt.y2
+
 		// draw our scrollbars
 		this.$drawScrollBars(this.$w, this.$h, this.$vw, this.$vh)
 
@@ -399,8 +404,6 @@ module.exports = class View extends require('base/class'){
 		var tw = wx//this.$wDraw = turtle._w
 		var th = wy//this.$hDraw = turtle._h
 		
-		this.$x2Old = vx
-		this.$y2Old = vy//ty2
 		var xOverflow = this.xOverflow
 		var yOverflow = this.yOverflow
 		var addHor, addVer
@@ -721,8 +724,8 @@ module.exports = class View extends require('base/class'){
 	}
 
 	reuseDrawSize(){
-		this.turtle.x2 = this.$x2Old
-		this.turtle.y2 = this.$y2Old
+		this.turtle.x2 = this.$xReuse
+		this.turtle.y2 = this.$yReuse
 	}
 
 	$dirtyTrue(){
