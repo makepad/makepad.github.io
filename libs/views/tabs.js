@@ -92,8 +92,9 @@ module.exports=class Tabs extends require('base/view'){
 				order:sel === i?2:1,
 				state:sel === i?'selected':'default',
 				lineL:i!==0 && sel !== i-1,
-				lineR: sel !== i+1,
+				lineR:sel !== i+1,
 				text:tab.tabTitle,
+				icon:tab.tabIcon,
 				index:i,
 				dx:move && i === move.index?0:undefined,
 				from_dx:move && i === move.index?0:undefined

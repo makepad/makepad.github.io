@@ -333,6 +333,13 @@ module.exports = class Wave extends require('views/draw'){
 		this.redraw() 
 	}
 
+	onClose(){
+		if(this.playFlow.running) { 
+			this.playFlow.stop() 
+		}
+		this.app.closeTab(this)
+	}
+
 	onDraw() { 
 		this.beginBg({moveScroll:0,w:'100%',h:'100%'})
 		this.beginGrid({ 
@@ -396,6 +403,14 @@ module.exports = class Wave extends require('views/draw'){
 		this.endGrid(true) 
 
 		this.beginBar()
+
+		this.drawButton({ 
+			id:'close',
+			align:[1,0],
+			icon: "close", 
+			onClick: this.onClose
+		}) 
+
 		this.drawButton({ 
 			id:'rec',
 			text: this.recFlow.running? "Stop": "Rec", 
@@ -431,6 +446,7 @@ module.exports = class Wave extends require('views/draw'){
 			text: "Norm", 
 			onClick: this.normalize
 		}) 
+
 		/*
 		this.drawSlider({ 
 			id:'slide',

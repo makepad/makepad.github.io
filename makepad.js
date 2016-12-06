@@ -22,6 +22,7 @@ module.exports = class Makepad extends require('base/app'){
 					return new this.owner[type](this,{
 						id:node.id?node.id:type+num,
 						tabTitle:node.title,
+						tabIcon:node.icon,
 						w:'100%',
 						h:'100%'
 					})
@@ -50,7 +51,7 @@ module.exports = class Makepad extends require('base/app'){
 				pane1:{
 					selected:1,
 					tabs:[
-						{type:'HomeScreen', title:'*'},
+						{type:'HomeScreen', icon:'gear'},
 						{type:'FileTree', title:'Files'},
 					]
 				},
@@ -62,13 +63,13 @@ module.exports = class Makepad extends require('base/app'){
 					pane1:{
 						selected:0,
 						tabs:[
-							{type:'HomeScreen', id:'HomeSource', title:'*'}
+							{type:'HomeScreen', id:'HomeSource', icon:'home'}
 						]
 					},
 					pane2:{
 						selected:0,
 						tabs:[
-							{type:'HomeScreen', id:'HomeProcess', title:'*'}
+							{type:'HomeScreen', id:'HomeProcess', icon:'home'}
 						]
 					}
 				}

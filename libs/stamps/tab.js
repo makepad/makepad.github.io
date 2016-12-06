@@ -5,7 +5,8 @@ module.exports = require('base/stamp').extend({
 		lineL:true,
 		lineR:true,
 		dx:0,
-		text:'tab',
+		text:'',
+		icon:'',
 		index:0
 	},
 	states:{
@@ -13,6 +14,9 @@ module.exports = require('base/stamp').extend({
 			duration:0.,
 			to:{
 				Text:{
+					dx:null,
+				},
+				Icon:{
 					dx:null,
 				},
 				Bg:{
@@ -29,6 +33,9 @@ module.exports = require('base/stamp').extend({
 				Text:{
 					dx:null,
 				},
+				Icon:{
+					dx:null,
+				},
 				Bg:{
 					dx:null,
 					color:colors.bgTop,
@@ -37,6 +44,9 @@ module.exports = require('base/stamp').extend({
 			},
 			to:{
 				Text:{
+					dx:null,
+				},
+				Icon:{
 					dx:null,
 				},
 				Bg:{
@@ -53,6 +63,9 @@ module.exports = require('base/stamp').extend({
 				Text:{
 					dx:0,
 				},
+				Icon:{
+					dx:0,
+				},
 				Bg:{
 					color:colors.bgNormal,
 					dx:0,
@@ -64,6 +77,9 @@ module.exports = require('base/stamp').extend({
 			duration:0.,
 			to:{
 				Text:{
+					dx:null,
+				},
+				Icon:{
 					dx:null,
 				},
 				Bg:{
@@ -108,6 +124,9 @@ module.exports = require('base/stamp').extend({
 			}
 		}),
 		Text:require('shaders/text').extend({
+		}),
+		Icon:require('shaders/icon').extend({
+			color:'#7'
 		})
 	},
 	onFingerDown(e){
@@ -131,7 +150,12 @@ module.exports = require('base/stamp').extend({
 		if(this.from_dx) this.state = 'sliding'
 		if(this.xStart>=0) this.state = 'selectedDrag'
 		this.beginBg({from_dx:this.from_dx, dx:this.dx, lineL:this.lineL,lineR:this.lineR})
-		this.drawText({from_dx:this.from_dx, dx:this.dx, text:this.text})
+		if(this.text){
+			this.drawText({from_dx:this.from_dx, dx:this.dx, text:this.text})
+		}
+		if(this.icon){
+			this.drawIcon({from_dx:this.from_dx, dx:this.dx, text:this.lookupIcon[this.icon]})
+		}
 		this.endBg()
 	}
 })
