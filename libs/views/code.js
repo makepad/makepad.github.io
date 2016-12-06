@@ -481,7 +481,7 @@ module.exports = class Code extends require('views/edit'){
 				*/
 				//if(this.onText) setImmediate(this.onText.bind(this))
 				//console.log(this)
-				//if(this.onParsed) setImmediate(this.onParsed.bind(this)) 
+				if(this.onParsed) setImmediate(this.onParsed.bind(this)) 
 			}
 			else { 
 				var ann = this.ann 

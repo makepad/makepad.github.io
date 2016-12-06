@@ -189,7 +189,7 @@ module.exports = class View extends require('base/class'){
 			pass.framebuffer.destroyFramebuffer()
 		}
 		// remove it
-		delete this.owner.$views[this.id]
+		if(this.owner) delete this.owner.$views[this.id]
 	}
 
 	onCompileVerbs(){
