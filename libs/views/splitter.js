@@ -53,7 +53,7 @@ module.exports=class Splitter extends require('base/view'){
 								this.w +=8.
 							}
 						},
-						pickAlpha:-1,
+						pickAlpha:0.25,
 						pixel(){
 							this.viewport()
 							if(this.vertical>0.5){

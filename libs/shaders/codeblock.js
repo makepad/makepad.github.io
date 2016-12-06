@@ -130,85 +130,16 @@ module.exports = class CodeBlock extends require('base/shader'){
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
-	blend(a, b, k){$
-	    var h = clamp(.5 + .5 * (b - a) / k, 0., 1.)
-	    return mix(b, a, h) - k * h * (1.0 - h)
-	}
-
 	pixel(){$
 		this.viewport(this.p)
 		this.box(4.,13.4,this.topSize.x - 6. - 5.,  this.topSize.y - 13.5, 1.)
 		this.box(this.topSize.x - 18., 0., 18., this.topSize.y - 0., this.borderRadius)
 		this.box(10, this.h - 2., 2., this.bottomSize.y - 10.,1.)
 		this.box(0., this.h2 - 2., this.bottomSize.x, this.h, this.borderRadius)
-		return this.fill(this.color)
-		//return 'red'
-		/*
-		// ok lets draw things
-		var p = this.p
+		this.shape *= this.open
+		return this.fillKeep(this.color)
+		//this.blur =2.
+		//return this.glow('#3',1.,1.)
 
-		var aa = this.antialias(p)
-
-		// mini view
-		if(this.fontSize < 6.){
-			//if(this.errorTime<0.5) return vec4(0.)
-			if(this.open < 0.5) return vec4(0.)
-			if(this.mesh.z > .5){
-				return mix(this.color, vec4(this.color.rgb,0.),this.mesh.x)
-			}
-			return mix(this.color, vec4(this.color.rgb,0.),this.mesh.y)
-		}
-
-		// background field
-		var lineRadius = 1.
-		
-		var topLine = this.boxDistance(
-			p, 
-			5., 
-			13.5, 
-			this.topSize.x - 6. - 5., 
-			this.topSize.y - 13.5, 
-			lineRadius
-		)
-
-		var topBlob = this.boxDistance(
-			p,
-			this.topSize.x - 18.,
-			0.,
-			18.,
-			this.topSize.y - 0.,
-			this.borderRadius
-		)
-
-		var leftLine = this.boxDistance(
-			p,
-			10,
-			this.h - 2.,
-			2.,
-			this.bottomSize.y - 10.,
-			lineRadius
-		)
-	
-		var bottomBlob = this.boxDistance(
-			p,
-			0.,
-			this.h2 - 2.,
-			this.bottomSize.x,
-			this.h,
-			this.borderRadius
-		)
-
-		var gloop = 4.
-	
-		var df = 1. - this.open 
-		topBlob += df * 14.
-		bottomBlob += df * 14.
-		topLine += pow(df, 4.) * abs(p.x)// - this.topSize.x)
-		leftLine += pow(df, 4.) * abs(p.y)// - this.bottomSize.y)
-		// blend the fields
-		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topLine,leftLine, .5), topBlob, gloop), bottomBlob, gloop)
-		// compute color
-		return this.colorBorderDistance(aa, dist, this.borderWidth, this.color, this.borderColor )
-		*/
 	}
 }

@@ -375,12 +375,8 @@ module.exports = class Code extends require('views/edit'){
 			this.reuseBlock() 
 			this.reuseMarker() 
 			this.reuseText() 
-			//this.orderErrorMarker() 
-			//this.orderSelection() 
 		}
 		else { 
-			//require('base/perf')
-			//require.perf()
 			this.$fastTextDelay = 0 
 			if(this.debugShow) { 
 				this.debugShow = false 

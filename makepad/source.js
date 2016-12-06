@@ -17,6 +17,13 @@ module.exports = class Source extends require('base/view'){
 		} 
 
 		this.tools = { 
+			Button: require('stamps/button').extend({
+			}),
+			Bg:require('shaders/quad').extend({
+				w:'100%',
+				wrap:false,
+				color:module.style.colors.bgNormal
+			}),
 			Code:class Code extends require('views/code'){ 
 				
 				prototype() { 
@@ -124,6 +131,22 @@ module.exports = class Source extends require('base/view'){
 	} 
 
 	onDraw(){
+		this.beginBg({
+		})
+		
+		this.drawButton({
+			id:1,
+			icon:'play',
+		})
+
+		this.drawButton({
+			id:2,
+			align:[1,0],
+			icon:'close'
+		})
+		this.endBg()
+		this.lineBreak()
+		
 		this.drawCode({
 			resource:this.resource
 		})
