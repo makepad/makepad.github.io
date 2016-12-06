@@ -42,14 +42,26 @@ module.exports=class Splitter extends require('base/view'){
 				},
 				tools:{
 					Bar:require('shaders/quad').extend({
+						vertical:0,
 						vertexStyle(){
-							this.x -=4.
-							this.w +=8.
+							if(this.vertical<0.5){
+								this.y -=4.
+								this.h +=8.
+							}
+							else{
+								this.x -=4.
+								this.w +=8.
+							}
 						},
 						pickAlpha:-1,
 						pixel(){
 							this.viewport()
-							this.rect(4.,0.,2.,this.h)
+							if(this.vertical>0.5){
+								this.rect(4.,0.,2.,this.h)
+							}
+							else{
+								this.rect(0.,4.,this.w,2.)
+							}
 							this.fillKeep(this.color)
 							this.blur = 4.
 							return this.glow(this.glowColor, 2.,0.)
@@ -166,9 +178,9 @@ module.exports=class Splitter extends require('base/view'){
 					this.setState(this.focus?'focus':'default')
 				},
 				onDraw(){
-					this.drawBar({x:'0',y:'0',w:'100%',h:'100%'})
 					// the nub
 					if(this.vertical){
+						this.drawBar({x:'0',y:'0',w:'100%',h:'100%',vertical:1})
 						this.beginGripBg({x:'(turtle._w-turtle.width)*-.5',y:'75%', w:16, h:16})
 						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
 						this.endGripBg()
@@ -178,7 +190,7 @@ module.exports=class Splitter extends require('base/view'){
 						}
 					}
 					else{
-						var turtle = this.turtle
+						this.drawBar({x:'0',y:'0',w:'100%',h:'100%',vertical:0})
 						this.beginGripBg({y:'(turtle._h-turtle.height)*-.5',x:'75%', w:16, h:16})
 						this.drawGrip({color:'#4',vertical:0,w:'100%',h:'100%'})
 						this.endGripBg()
