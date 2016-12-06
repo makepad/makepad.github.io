@@ -16,11 +16,18 @@ module.exports=class Tabs extends require('base/view'){
 		}
 	}
 
-	onTabSelect(tabStamp){
-		console.log(this.selected)
+	selectTabIndex(index){
 		this.tabs[this.selected].$tabStamp.dx = 0
-		this.selected = tabStamp.index
+		this.selected = index
 		this.redraw()
+	}
+
+	selectTab(tab){
+		this.selectTabIndex(this.tabs.indexOf(tab))
+	}
+
+	onTabSelect(tabStamp){
+		this.selectTabIndex(tabStamp.index)
 	}
 
 	onTabSlide(tabStamp, dy, e){ 
@@ -61,6 +68,13 @@ module.exports=class Tabs extends require('base/view'){
 		}
 	}
 
+	removeTab(tab){
+		let idx = this.tabs.indexOf(tab)
+		this.tabs.splice(idx,1)
+		this.selected = clamp(this.selected,0,this.tabs.length-1)
+		this.redraw()
+	}
+
 	onDraw(){
 		this.beginBg({wrap:false})
 		let sel = this.selected
@@ -77,8 +91,8 @@ module.exports=class Tabs extends require('base/view'){
 				id:tab.id, // utilize some kind of unique id
 				order:sel === i?2:1,
 				state:sel === i?'selected':'default',
-				lineL:sel !== i-1,
-				lineR:sel !== i+1,
+				lineL:i!==0 && sel !== i-1,
+				lineR: sel !== i+1,
 				text:tab.tabTitle,
 				index:i,
 				dx:move && i === move.index?0:undefined,

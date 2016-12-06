@@ -114,6 +114,7 @@ module.exports = class Button extends require('base/stamp'){
 
 	onFingerUp(e){
 		this.setState(e.samePick?'over':'default',true)
+		if(e.samePick && this.onClick) this.onClick.call(this.view, e)
 	}
 
 	onDraw() {

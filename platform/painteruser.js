@@ -153,6 +153,8 @@ module.exports = function painterUser(proto){
 		var fb = this.framebufferIds[msg.fbId] = {
 			glpfb: glpfb,
 			glfb: glfb,
+			fbId: msg.fbId,
+			uboId: prev && prev.uboId || undefined,
 			todoId: prev && prev.todoId || undefined,
 			attach: attach,
 			xStart: msg.xStart,

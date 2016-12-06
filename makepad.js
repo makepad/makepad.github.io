@@ -32,8 +32,8 @@ module.exports = class Makepad extends require('base/app'){
 			//FileTree:require('base/view'),
 			FileTree: require('./makepad/filetree'),
 			HomeScreen: require('./makepad/homescreen'),
+			UserProcess: require('./makepad/userprocess')
 			//Settings: require('./makepad/settings'),
-			//UserProcess: require('./makepad/userprocess')
 		}
 		// set the styleclasscf4
 		this.style = require('./makepad/styles')
@@ -46,7 +46,7 @@ module.exports = class Makepad extends require('base/app'){
 		this.dock = new this.Dock(this,{
 			data: {
 				locked:true,
-				position:125,
+				position:120,
 				vertical: true,
 				pane1:{
 					selected:1,
@@ -57,8 +57,8 @@ module.exports = class Makepad extends require('base/app'){
 				},
 				pane2:{
 					selected:0,
-					locked:true,
-					position:-100,
+					locked:false,
+					position:0.5,
 					vertical: true,
 					pane1:{
 						selected:0,
@@ -278,13 +278,12 @@ module.exports = class Makepad extends require('base/app'){
 			config = {}
 		}
 		
-		/*
 		var old = this.find('Source' + resource.path)
 		if(old) {
-			var tabs = old.parent
-			tabs.selectTab(tabs.children.indexOf(old))
+			old.parent.selectTab(old)
 			return 
-		}*/
+		}
+
 		// we need to find the tabs to put this sourcefile somehow.
 		let tabs = this.find('HomeSource').parent
 		var view = new Type(this.dock, {
@@ -295,7 +294,6 @@ module.exports = class Makepad extends require('base/app'){
 				this.app.processTabTitles()
 			}
 		})
-		console.log(view)
 		// select it
 		tabs.selected = tabs.tabs.push(view) - 1
 		tabs.redraw()
@@ -303,11 +301,10 @@ module.exports = class Makepad extends require('base/app'){
 	}
 	
 	addProcessTab(resource) {
-		return
+
 		var old = this.find('Process' + resource.path)
 		if(old) {
-			var tabs = old.parent
-			tabs.selectTab(tabs.children.indexOf(old))
+			old.parent.selectTab(old)
 			return 
 		}
 		
@@ -320,19 +317,24 @@ module.exports = class Makepad extends require('base/app'){
 		})
 		
 		var tabs = this.find('HomeProcess').parent
-		var idx = tabs.addNewChild(new this.UserProcess({
-			name: 'Process' + resource.path,
-			tabText: resource.path,
+		let view = new this.UserProcess(this.dock,{
+			id: 'Process' + resource.path,
+			tabTitle: resource.path,
 			resource: resource,
 			process: processList[processList.length - 1],
-			onCloseTab: function() {
-				this.app.processTabTitles()
-			}
-		}))
-		tabs.selectTab(idx)
-		this.processTabTitles()
+		})
+
+		tabs.selected = tabs.tabs.push(view) - 1
+		tabs.redraw()
 	}
 	
+	closeTab(tab){
+		// remove it
+		tab.parent.removeTab(tab)
+		// destroy it
+		tab.destroy()
+	}
+
 	onDraw() {
 		this.dock.draw(this)
 	}

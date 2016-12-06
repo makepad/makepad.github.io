@@ -71,8 +71,14 @@ module.exports = class View extends require('base/class'){
 					pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
 				},
 				mesh:new painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1),
-				drawTrace:1,
-				
+				verbs:{
+					draw:function(overload){
+						this.STYLEPROPS(overload, 1)
+						this.ALLOCDRAW(overload)
+						this.turtle.walk()
+						this.WRITEPROPS()
+					}
+				},
 				vertex(){$
 					var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
 					return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
@@ -98,17 +104,12 @@ module.exports = class View extends require('base/class'){
 
 		this.verbs = {
 			draw:function(overload){
-				//this.app.$viewTodoMap[this.todo.todoId] = this
 				var id = overload.id
-				//if(id === undefined) throw new Error('Please provide a local unique ID for a view')
-
 				var view = this.$views[id]
 				if(!view){
 					view = new this.NAME(this, overload)
 				}
 				else if(view.constructor !== this.NAME) throw new Error('View id collision detected' + id)
-
-				// draw it here
 				view.draw(this, overload)
 			}
 		}
@@ -203,6 +204,8 @@ module.exports = class View extends require('base/class'){
 			if(pass.depth) pass.depth.destroyTexture()
 			pass.framebuffer.destroyFramebuffer()
 		}
+		// remove it
+		delete this.owner.$views[this.id]
 	}
 
 	onCompileVerbs(){
@@ -295,19 +298,19 @@ module.exports = class View extends require('base/class'){
 		}
 
 		// we need to render to a texture
-		/*
+		
 		if(this.surface){
 			// set up a surface and start a pass
 			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
 			todo = this.todo
 			todoUbo = todo.todoUbo
-			todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
-			todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
+			//todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
+			//todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
 			//!TODO SOLVE THIS LATER, for a surface this changes
 			//todoUbo.mat4(painter.nameId('thisDOTcamPosition'),identityMat4)
 			//todoUbo.mat4(painter.nameId('thisDOTcamProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)
-		}*/
+		}
 
 		if(this.parent){ // push us into the displacement list
 			this.parent.$writeList.push(this,-1,-1)
@@ -380,23 +383,20 @@ module.exports = class View extends require('base/class'){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
 		}
 
-
 		// if we are a surface, end the pass and draw it to ourselves
-		/*
+		
 		if(this.surface){
 			this.endSurface()
 			// draw using 
 			this.drawSurface({
-				x:0,
-				y:0,
+				x:'0',
+				y:'0',
 				w:this.$w,
 				h:this.$h,
 				colorSampler: pass.color0,
 				pickSampler: pass.pick
 			})
 		}
-		*/
-		
 	}
 
 	$drawScrollBars(wx, wy, vx, vy){

@@ -44,9 +44,10 @@ module.exports = class Stamp extends require('base/class'){
 	}
 
 	toLocal(msg){
-		let out = this.view.toLocal(msg, true)
-		out.x -= this.$x
-		out.y -= this.$y
+		let view = this.view
+		let out = view.toLocal(msg, true)
+		out.x -= view.$x - this.$x
+		out.y -= view.$y -this.$y
 		if(this.moveScroll){
 			out.x += view.todo.xScroll || 0
 			out.y += view.todo.yScroll || 0

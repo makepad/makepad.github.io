@@ -6,14 +6,15 @@ module.exports = class DrawApp extends require('base/app'){
 
 	prototype(){
 		this.tools = {
-			Bg:require('tools/bg'),
-			Rect:require('shaders/rect'),
+			Bg:require('shaders/bg'),
+			Rounded:require('shaders/rounded'),
 			Quad:require('shaders/quad'),
-			Line:require('tools/line'),
+			Line:require('shaders/line'),
 			Text:require('shaders/text').extend({
 				font:require('fonts/ubuntu_medium_256.font')
 			}),
 			Icon:require('shaders/icon').extend({
+				font:require('fonts/fontawesome_low.font')
 			})
 		}
 	}

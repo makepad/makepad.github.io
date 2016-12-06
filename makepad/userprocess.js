@@ -3,13 +3,10 @@ const Worker = require('services/worker')
 module.exports = class UserProcess extends require('views/draw'){
 
 	prototype(){
+		this.surface = true
 		this.props = {
 			resource:null
 		}
-		this.mixin(require('./styles').UserProcess,{
-			name:'Probes',
-			surface:true
-		})
 	}
 
 	onRemove(){
@@ -24,8 +21,8 @@ module.exports = class UserProcess extends require('views/draw'){
 		// it changes! lets reload?..
 	}
 
-	onAfterDraw() { 
-		this.onAfterDraw = undefined 
+	onDraw() { 
+		this.onDraw = undefined 
 		this.startWorker()
 	} 
 
@@ -52,6 +49,7 @@ module.exports = class UserProcess extends require('views/draw'){
 	}
 
 	startWorker(){
+
 		this.worker = new Worker(null, {
 			parentFbId: this.$renderPasses.surface.framebuffer.fbId 
 		})

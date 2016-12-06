@@ -6,7 +6,6 @@ module.exports = function painterUbos(proto){
 	proto.setPainterUbo = function(framebuffer, pick){
 		var ubo = this.uboIds[framebuffer.uboId]
 		var nameIds = this.nameIds
-
 		this.mat4Ubo(ubo, nameIds.thisDOTfingerInfo, this.fingerInfo)
 		this.floatUbo(ubo, nameIds.thisDOTtime, this.repaintTime)
 		this.floatUbo(ubo, nameIds.thisDOTpixelRatio, this.args.pixelRatio)

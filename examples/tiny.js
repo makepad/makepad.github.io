@@ -1,13 +1,11 @@
-var p = require('services/painter')
+new require('styles/dark')
 module.exports = class extends require('base/drawapp'){ //top
-	
 	prototype() {
 		this.tools = {
-			Grid:require('shaders/grid'),
 			Quad:{
 				pixel:function() {$
 					
-					this.viewport(this.mesh.xy * vec2(this.w, this.h))
+					this.viewport()
 					this.circle(50., 50., 20.)
 					this.circle(50. + 20, 80., 30.)
 					this.gloop(30.)
@@ -38,6 +36,6 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
-		this.drawQuad(this.viewGeom)
+		this.drawQuad({w:'100%',h:'100%'})
 	}
 }

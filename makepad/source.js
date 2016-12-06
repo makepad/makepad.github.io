@@ -16,7 +16,7 @@ module.exports = class Source extends require('base/view'){
 			resource:null,
 		} 
 
-		this.tools = { 
+		this.tools = {
 			Button: require('stamps/button').extend({
 			}),
 			Bg:require('shaders/quad').extend({
@@ -130,19 +130,29 @@ module.exports = class Source extends require('base/view'){
 		}
 	} 
 
+	onPlay(){
+		// lets add a process tab for our js file
+	}
+
+	onClose(){
+		this.app.closeTab(this)
+	}
+
 	onDraw(){
 		this.beginBg({
 		})
 		
 		this.drawButton({
-			id:1,
+			id:'play',
 			icon:'play',
+			onClick:this.onPlay
 		})
 
 		this.drawButton({
-			id:2,
+			id:'close',
 			align:[1,0],
-			icon:'close'
+			icon:'close',
+			onClick:this.onClose
 		})
 		this.endBg()
 		this.lineBreak()
