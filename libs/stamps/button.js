@@ -70,8 +70,8 @@ module.exports = class Button extends require('base/stamp'){
 
 		this.tools = {
 			Bg: require('shaders/quad').extend({
-				padding:[5,15,5,15],
-				borderRadius:6.,
+				padding:[6,14,6,14],
+				borderRadius:6.5,
 				borderWidth:1,
 				borderColor:colors.textLo,
 				color:colors.bgTop,
