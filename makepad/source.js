@@ -132,7 +132,7 @@ module.exports = class Source extends require('base/view'){
 	} 
 
 	onPlay(){
-		// lets add a process tab for our js file
+		this.app.addProcessTab(this.resource)
 	}
 
 	onClose(){

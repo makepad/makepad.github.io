@@ -243,7 +243,7 @@ module.exports = class Makepad extends require('base/app'){
 						var text = name + (tab.resource.dirty? "*": "") + '-' + rest
 						if(tab.tabTitle !== text) {
 							tab.tabTitle = text
-							//tab.parent.redraw()
+							if(tab.parent)tab.parent.redraw()
 						}
 					}
 				}
@@ -255,7 +255,7 @@ module.exports = class Makepad extends require('base/app'){
 					var text = name + (tab.resource.dirty? "*": "")
 					if(tab.tabTitle !== text) {
 						tab.tabTitle = text
-						//tab.parent.redraw()
+						if(tab.parent)tab.parent.redraw()
 					}
 				}
 			}
@@ -296,7 +296,7 @@ module.exports = class Makepad extends require('base/app'){
 		// select it
 		tabs.selected = tabs.tabs.push(view) - 1
 		tabs.redraw()
-		//this.processTabTitles()
+		this.processTabTitles()
 	}
 	
 	addProcessTab(resource) {
@@ -325,6 +325,7 @@ module.exports = class Makepad extends require('base/app'){
 
 		tabs.selected = tabs.tabs.push(view) - 1
 		tabs.redraw()
+		this.processTabTitles()
 	}
 	
 	closeTab(tab){
