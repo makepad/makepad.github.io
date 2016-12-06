@@ -54,12 +54,12 @@ module.exports = class Tree extends require('base/view'){
 			Bg:require('shaders/quad').extend({
 				wrap:false,
 				padding:[0,0,0,2],
-				color:colors.bgNormal
+				color:colors.bgHi
 			}),
 			Cursor:require('shaders/hover').extend({
 				wrap:false,
 				displace:[0,-1],
-				color:colors.bgNormal,
+				color:colors.bgHi,
 				selectedColor:colors.accentNormal,
 				hoverColor:colors.accentGray,
 				pickAlpha: - 1,

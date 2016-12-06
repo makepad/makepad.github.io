@@ -17,6 +17,7 @@ module.exports = class DarkStyle extends require('base/style'){
 			accentGray:'Grey700',
 			bgTop:'Grey900',
 			bgNormal:'Grey850',
+			bgHi:'Grey800',
 			textNormal:'Grey300',
 			textAccent:'Grey400',
 			textMed:'Grey500',
