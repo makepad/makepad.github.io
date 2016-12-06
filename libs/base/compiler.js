@@ -744,9 +744,9 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$todo = '$view.todo'
 		scope.$turtle = 'this.turtle'
 		scope.$shaderOrder = 'this.$shaders.'+className 
-		scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order] || this.$allocShader("'+className+'", $turtle._order)' 
-		scope.$props = '$shader.$props'
 		scope.$proto = 'this.' + className +'.prototype'
+		scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
+		scope.$props = '$shader.$props'
 		scope.$a = '$props.array'
 
 		code += indent+'if($props.$frameId !== $view._frameId){\n' 
@@ -756,7 +756,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'	$props.length = 0\n'
 		code += indent+'	$props.dirty = true\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
-		code += indent+'	$todo.beginOrder($turtle._order)\n'
+		code += indent+'	$todo.beginOrder($turtle._order|| $proto.order)\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
 		//code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
@@ -858,16 +858,18 @@ module.exports = class Compiler extends require('base/class'){
 	}*/
 
 	PROPLEN(args, indent, className, scope){
-		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
-		return '$props.length'
+		scope.$proto = 'this.' + className +'.prototype'
+		if(!scope.$props) scope.$props = 'this.$shaders.'+className+' && this.$shaders.'+className+'[$proto.order].$props'
+		return '$props && $props.length'
 	}
 
 	PROP(args, indent, className, scope){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-
-		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
+		
+		scope.$proto = 'this.' + className +'.prototype'
+		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'[$proto.order].$props'
 		if(!scope.$a) scope.$a = '$props.array'
 		
 		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
@@ -927,7 +929,7 @@ module.exports = class Compiler extends require('base/class'){
 			if(!prop.slots) continue
 			let name = prop.name
 			var source = '$turtle._' + name
-			if(!prop.config.mask){ // system values
+			if(typeof args[0] === 'object' && name in args[0] || !prop.config.mask){ // system values
 				if(key === 'thisDOTanimStart'){ // now?
 					source = '$view._time + ($info.stateDelay[$stateId] || 0)'
 				}

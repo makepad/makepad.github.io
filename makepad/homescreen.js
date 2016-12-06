@@ -1,13 +1,11 @@
 
 module.exports = class HomeScreen extends require('views/draw'){
-	baseStyle(style){
-		style.to = {
-			Bg:{
-				color:style.colors.bgNormal
-			}
-		}
-	}
+
 	prototype(){
+		let colors = module.style.colors
+		this.Bg = {
+			color:colors.bgNormal
+		}
 		this.texts = {
 			HomeSource:
 			'Welcome to MakePad! Makepad is a live code editor.\n'+

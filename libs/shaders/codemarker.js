@@ -67,11 +67,13 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 		this.x = this.x1
 		this.w = this.x4 - this.x1
 
-		this.errorTime = 1.-this.animateUniform(this.errorAnim)
+		//this.errorTime = 1.-this.animateUniform(this.errorAnim)
 	}
 		
 
 	pixel(){$
+		return 'red'
+		/*
 		var p = this.mesh.xy * vec2(this.w, this.h)
 
 		var aa = this.antialias(p)
@@ -93,5 +95,6 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 
 		var final = this.colorBorderDistance(aa, bgDist, this.borderWidth, this.bgColor, this.borderColor)
 		return mix(this.opColor, final, clamp(opDist * aa + 1., 0., 1.))
+		*/
 	}
 }

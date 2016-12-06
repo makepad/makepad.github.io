@@ -2,36 +2,6 @@ var painter = require('services/painter')
 
 module.exports = class Edit extends require('base/view'){
 
-	defaultStyle(style){
-		var c = style.colors
-		style.to = {
-			Bg:{
-				borderRadius:0,
-				padding:2,
-				color:c.codeBg
-			},
-			Text:{
-				font:require('fonts/ubuntu_medium_256.font'),
-				fontSize:24,
-				color:'#ccc',
-			},
-			Selection:{
-				bgColor:c.textSelect,
-				fieldPush:0.8,
-				borderWidth:0,//0.25,
-				gloop:6,
-				borderRadius:3,
-				borderColor:'#458',
-			},
-			Cursor:{
-				duration:0.0,
-				ease:[1,100,0,0],
-				tween:2,
-				color:'#fff',
-			}
-		}
-	}
-
 	prototype(){
 
 		this.pageSize = 70
@@ -47,15 +17,29 @@ module.exports = class Edit extends require('base/view'){
 		// Shaders
 		//
 		//
+		let colors = module.style.colors
 		this.tools = {
-			Bg:require('tools/bg').extend({
+			Bg:require('shaders/bg').extend({
+				borderRadius:0,
+				padding:2,
+				color:colors.codeBg
 			}),
 			Text:require('shaders/text').extend({
+				font:require('fonts/ubuntu_medium_256.font'),
+				fontSize:24,
+				order:3,
+				color:'#ccc',
 				drawDiscard:'y'
 			}),
-			Selection:require('tools/selection').extend({
+			Selection:require('shaders/selection').extend({
+				bgColor:colors.textSelect,
+				fieldPush:0.8,
+				order:1,
+				gloopiness:6,
+				borderRadius:3,
+				borderColor:'#458',
 				drawDiscard:'y',
-				vertexStyle:function(){
+				vertexStyle:function(){$
 					if(this.w<0.001) return
 					var dx = 2.
 					var dy = 0.75
@@ -69,16 +53,21 @@ module.exports = class Edit extends require('base/view'){
 					this.h += 2.*dy
 				}
 			}),
-			Cursor:require('shaders/rect').extend({
-				vertexStyle:function(){
+			Cursor:require('shaders/shadowquad').extend({
+				duration:0.0,
+				ease:[1,100,0,0],
+				tween:2,
+				order:4,
+				color:'#fff',
+				vertexStyle:function(){$
 					
-					var time = this.normalTween
-					var v = sin(time*PI)
-					this.y -= v*2.
-					this.h += v*4.
-					this.x -= v
-					this.w += v*1.
-					this.shadowOffset = vec2(-v,v)*4.
+					//var time = this.normalTween
+					//var v = sin(time*PI)
+					//this.y -= v*2.
+					//this.h += v*4.
+					//this.x -= v
+					//this.w += v*1.
+					//this.shadowOffset = vec2(-v,v)*4.
 				}
 			})
 		}
@@ -235,7 +224,6 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	offsetFromPos(x, y){
-
 		var t = this.$seekPosText(x, y)
 
 		if(t === -1) t = 0
@@ -568,7 +556,7 @@ module.exports = class Edit extends require('base/view'){
 	
 	onFingerDown(f){
 		this.$lastKeyPress = undefined
-		if(f.digit!== 1 || f.button !== 1  || f.pickId >= this.$scrollPickIds) return
+		if(f.digit!== 1 || f.button !== 1  || this.isScrollBar(f.pickId)) return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
 
 		this.setFocus()
@@ -585,8 +573,9 @@ module.exports = class Edit extends require('base/view'){
 		}
 
 		var touchdy = 0//f.touch?-20:0
-
-		this.fingerCursor.moveTo(f.x, f.y + touchdy, f.shift)
+		let lf = this.toLocal(f, true)
+		
+		this.fingerCursor.moveTo(lf.x, lf.y + touchdy, f.shift)
 		var tapDiv = f.touch? 4: 3
 		var tapStart = f.touch? 2: 1
 		if(f.tapCount % tapDiv === tapStart+0){ // select word under finger
@@ -604,14 +593,14 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	onFingerMove(f){
-		if(f.digit!== 1 || f.button !== 1 || f.pickId >= this.$scrollPickIds || (!f.touch && !this.fingerCursor))return
+		if(f.digit!== 1 || f.button !== 1 || this.isScrollBar(f.pickId) || (!f.touch && !this.fingerCursor))return
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount < 1){
 			return
 		}
 		this.fingerCursor.byFinger = true
-
-		this.fingerCursor.moveTo(f.x, f.y+touchdy, true)
+		let lf = this.toLocal(f)
+		this.fingerCursor.moveTo(lf.x, lf.y+touchdy, true)
 
 		var tapDiv = f.touch?4:3, tapStart = f.touch?2:1
 		if(f.tapCount%tapDiv === tapStart+0){
@@ -635,12 +624,13 @@ module.exports = class Edit extends require('base/view'){
 
 	onFingerUp(f){
 		this.$lastKeyPress = undefined
-		if(f.digit!== 1 || f.button !== 1 || f.pickId >=this.$scrollPickIds|| (!f.touch && !this.fingerCursor))return
+		if(f.digit!== 1 || f.button !== 1 || this.isScrollBar(f.pickId) || (!f.touch && !this.fingerCursor))return
 		this.fingerCursor = undefined
 		var touchdy = 0//f.touch?-20:0
 		if(f.touch && f.tapCount === 1){// && this.cs.cursors[0].hasSelection()){
 			var cursor = this.cs.clearCursors()
-			cursor.moveTo(f.x, f.y+touchdy, false)
+			let lf = this.toLocal(f)
+			cursor.moveTo(lf.x, lf.y+touchdy, false)
 			this.app.setTextInputFocus(true)
 		}
 		//this.redraw()
@@ -1026,13 +1016,16 @@ class CursorSet extends require('base/class'){
 			return function(){
 				this.delta = 0
 				var cursors = this.cursors
+				let dirty = false
 				for(let i = 0; i < cursors.length; i++){
 					var cursor = cursors[i]
+					let start = cursor.start, end = cursor.end, max = cursor.max
 					cursor.start += this.delta
 					cursor.end += this.delta
 					cursor[key].apply(cursor, arguments)
+					if(start !== cursor.start || end !== cursor.end || max !== cursor.max) dirty = true
 				}
-				this.updateSet()
+				if(dirty)this.updateSet()
 			}
 		}
 

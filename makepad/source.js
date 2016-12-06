@@ -21,6 +21,8 @@ module.exports = class Source extends require('base/view'){
 				
 				prototype() { 
 					this.drawPadding = [0, 0, 0, 4] 
+					this.w = '100%'
+					this.h = '100#'
 					this.wrap = true 
 					this.padding = [0, 0, 0, 0] 
 					this.props = { 
@@ -120,6 +122,12 @@ module.exports = class Source extends require('base/view'){
 			},
 		}
 	} 
+
+	onDraw(){
+		this.drawCode({
+			resource:this.resource
+		})
+	}
 	
 	onResource(e){
 	}

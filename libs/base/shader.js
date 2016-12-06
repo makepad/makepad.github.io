@@ -33,9 +33,10 @@ module.exports = class Shader extends require('base/compiler'){
 		
 			state:{value:'default'},
 
-			// clipping and scrolling
-			moveScroll:{value:1.},
-			turtleClip:{value:[-50000, -50000, 50000, 50000]},
+			// clipping ordering and scrolling
+			order:0,
+			moveScroll:1,
+			turtleClip:[-50000, -50000, 50000, 50000],
 		}
 		
 		this.defines = {
@@ -68,13 +69,17 @@ module.exports = class Shader extends require('base/compiler'){
 			length:function() {
 				return this.PROPLEN()
 			},
-			order:function(overload) {
-				this.ALLOCDRAW(overload, 0)
-			},
+			//order:function(overload) {
+			//	this.ALLOCDRAW(overload, 0)
+			//	return $props
+			//},
 			reuse:function(overload) {
+				this.ALLOCDRAW(overload, 0)
+				//return $props
+				// alright so. now what.
 				// make sure we are drawn
-				this.orderNAME(overload)
-				var $props = this.$shaders.NAME.$props
+				//var $props = this.orderNAME(overload)
+				//var $props = this.$shaders.NAME.$props
 				if($props.oldLength !== undefined) {
 					$props.length = $props.oldLength
 					$props.dirty = false

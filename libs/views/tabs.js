@@ -61,7 +61,7 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onDraw(){
-		this.beginBg({})
+		this.beginBg({wrap:false})
 		let sel = this.selected
 		// for(let j = 0;j < this.tabs.length;j++){
 		//  	let tab = this.tabs[j]

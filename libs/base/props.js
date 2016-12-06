@@ -113,7 +113,8 @@ function defineProp(key, value){
 				}
 				if(!ret) while(flags){
 					if(flags&1){
-						this['onFlag'+id](event)
+						let cb = this['onFlag'+id]
+						if(cb)cb.call(this,event)
 					}
 					id = id<<1, flags = flags>>1
 				}

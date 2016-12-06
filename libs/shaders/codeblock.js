@@ -41,8 +41,9 @@ module.exports = class CodeBlock extends require('base/shader'){
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(x, y, w, h, w2, h2, indent, pickId, style){
-				this.$ALLOCDRAW(1)
-				this.$WRITEPROPS({
+				/*
+				this.ALLOCDRAW({},1)
+				this.WRITEPROPS({
 					visible:1,
 					delay:0.,
 					fontSize:this.$fastTextFontSize,
@@ -60,7 +61,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 					borderRadius: style.borderRadius,
 					color: style.color,
 					borderColor: style.borderColor
-				})
+				})*/
 			},
 		}
 
@@ -138,7 +139,8 @@ module.exports = class CodeBlock extends require('base/shader'){
 	}
 
 	pixel(){$
-
+		return 'red'
+		/*
 		// ok lets draw things
 		var p = this.p
 
@@ -204,5 +206,6 @@ module.exports = class CodeBlock extends require('base/shader'){
 		var dist = this.blendDistance(this.blendDistance(this.blendDistance(topLine,leftLine, .5), topBlob, gloop), bottomBlob, gloop)
 		// compute color
 		return this.colorBorderDistance(aa, dist, this.borderWidth, this.color, this.borderColor )
+		*/
 	}
 }

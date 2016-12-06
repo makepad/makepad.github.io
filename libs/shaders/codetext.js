@@ -9,7 +9,7 @@ module.exports = class CodeText extends require('shaders/text'){
 			//visible:{kind:'uniform',noTween:1, value:1.},
 			x:NaN,
 			y:NaN,
-			color:{pack:'float12', value:'black'},
+			color:{value:'black'},
 			fontSize:12,
 			boldness:0, 
 			unicode:{mask:0, value:0},
@@ -25,25 +25,20 @@ module.exports = class CodeText extends require('shaders/text'){
 
 			// make these uniforms now
 			turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
-			tween: {kind:'uniform', value:0.},
-			ease: {kind:'uniform', value:[0,10,1.0,1.0]},
-			duration: {kind:'uniform', value:0.3},
-			delay: {styleLevel:1, value:0.},
 			moveScroll:{kind:'uniform', value:1.}
 		}
-	
-		this.$
-
+		this.$noWriteList = true
 		this.verbs = {
 			$setTweenStart:function(o, v){
-				this.$PROP[o, 'tweenStart'] = v
+				//this.PROP[o, 'tweenStart'] = v
 			},
 			fast:function(txt, style, ihead, itail){
 				var out = this.$fastNAMEOutput			
 				var len = txt.length - 1
 				var turtle = this.turtle
 
-				this.$ALLOCDRAW(null, len + 1)
+				this.ALLOCDRAW(null, len + 1)
+
 				this.$fastTextWritten += len+1
 
 				var margin = style.margin
@@ -51,21 +46,23 @@ module.exports = class CodeText extends require('shaders/text'){
 				var glyphs = $proto.font.fontmap.glyphs
 
 				var fontSize = this.$fastNAMEFontSize
-				var posx = turtle.wx
-				var posy = turtle.wy
+				var xabs = turtle.$xAbs
+				var yabs = turtle.$yAbs
+				var posx = turtle.wx// - turtle.$xAbs
+				var posy = turtle.wy// - turtle.$yAbs
+
 				var nh = fontSize * lineSpacing
-				
 				var base = out._text.length 
 				out._text += txt
-				var sx = turtle.sx
-				
+				var sx = turtle.sx// - turtle.$xAbs
+
 				if(this.$fastNAMEAnnotate){
 					out.ann.push(txt, style, ihead, itail, fontSize, sx)
 				}
 
-				var changeOffset = this.$fastNAMEOffset
-				var changeStart = this.$fastNAMEStart
-				var changeDelta = this.$fastNAMEDelta
+				//var changeOffset = this.$fastNAMEOffset
+				//var changeStart = this.$fastNAMEStart
+				//var changeDelta = this.$fastNAMEDelta
 
 				var advance = 0
 				var head = ihead!==undefined? ihead: style.head, tail = 0
@@ -103,13 +100,16 @@ module.exports = class CodeText extends require('shaders/text'){
 
 					if(i ===len) tail = itail!==undefined?itail:style.tail
 					var advance = g.advance
-
-					this.$WRITEPROPS({
+					//$turtle._debug = 1
+					this.WRITEPROPS({
 						//$tweenDelta:tweenDelta,
-						x:posx,
-						y:posy,
+						dx:0,
+						dy:0,
+						x:posx-xabs,
+						y:posy-yabs,
 						color: color,
 						fontSize:fontSize,
+						italic:0,
 						//italic:style.italic,
 						boldness:boldness, 
 						unicode:unicode,
@@ -136,7 +136,7 @@ module.exports = class CodeText extends require('shaders/text'){
 						turtle.mh = 0
 						if(posx>turtle.x2) turtle.x2 = posx
 						// lets output indenting
-						posx = turtle.sx, posy += nh
+						posx = sx, posy += nh
 						turtle.wy += nh
 					}
 					else turtle.mh = nh
@@ -145,16 +145,17 @@ module.exports = class CodeText extends require('shaders/text'){
 				if(posy>turtle.y2) turtle.y2 = posy
 				turtle.wx = posx// + margin[1]* fontSize
 			}
+
 		}
 
-		this.mesh = new painter.Mesh(types.vec3).pushQuad(
+		this.mesh = new painter.Mesh(types.vec3).push(
 			0,0, 1,
-			1,0, 1,
-			0, 1, 1,
+			0,1, 1,
+			1, 0, 1,
 			1, 1, 1
 		)
-		
-		this.noInterrupt = 1
+		this.indices = new painter.Mesh(types.uint16)
+		this.indices.push(0,1,2,2,1,3)
 	}
 
 	pixel(){$
@@ -167,10 +168,6 @@ module.exports = class CodeText extends require('shaders/text'){
 
 		field = this._field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
 
-
-		if(this.mesh.z < 0.5){
-			return this.drawShadow(field)
-		}
 		return this.drawField(field)
 	}
 }

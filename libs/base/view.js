@@ -8,7 +8,7 @@ var types = require('base/types')
 
 var zeroMargin = [0,0,0,0]
 var identityMat4 = mat4.create()
-
+var debug = 0
 module.exports = class View extends require('base/class'){
 
 	prototype(){
@@ -147,16 +147,19 @@ module.exports = class View extends require('base/class'){
 		this.view = this
 		this.viewClip = [-50000,-50000,50000,50000]
 		this.$dirty = true
-
+		this.onFlag4 = undefined
 		if(overload){
 			for(let key in overload){
 				let value = overload[key]
-				if(this.__lookupSetter__(key)){
-					this['_'+key] = value
-				}
-				else this[key] = value
+				//if(this.__lookupSetter__(key)){
+				//	this['_'+key] = value
+				//}
+				//else 
+
+				this[key] = value
 			}
 		}
+		this.onFlag4 = this.redraw
 		if(owner){
 			this.owner = owner
 			var id = this.id
@@ -168,6 +171,7 @@ module.exports = class View extends require('base/class'){
 			this.store = owner.store
 			this.todo.viewId = id
 		}
+		this.initialized = true
 	}
 	
 	destroy(){
@@ -210,15 +214,18 @@ module.exports = class View extends require('base/class'){
 	draw(parent, overload){
 		if(parent){
 			this.parent = parent
+			this.onFlag4 = undefined
 			for(let key in overload){
 				let value = overload[key]
-				let set = this.__lookupSetter__(key)
-				if(set){
-					this[set._key] = value
-					if(this[set._onkey]&4) this.$dirty = true
-				}
-				else this[key] = value
+				//let set = this.__lookupSetter__(key)
+				//if(set){
+				//	this[set._key] = value
+				//	if(this[set._onkey]&4) this.$dirty = true
+				//}
+				//else
+				this[key] = value
 			}
+			this.onFlag4 = this.redraw
 			parent.todo.beginOrder(this.order)
 			parent.todo.addChildTodo(this.todo)
 			parent.todo.endOrder()
@@ -316,7 +323,7 @@ module.exports = class View extends require('base/class'){
 		this.beginTurtle()
 		var nt = this.turtle
 
-		// absolute coordinate?
+		// absolute coordinate? so we write relative
 		nt.$xAbs = nt.ix + nt.margin[3]
 		nt.$yAbs = nt.iy + nt.margin[0]
 
@@ -441,7 +448,7 @@ module.exports = class View extends require('base/class'){
 				todo.scrollTo(0,undefined)
 			}
 			// lets clamp our scroll positions
-			xScroll = clamp(xScroll,0,todo.xTotal - todo.xView)
+			xScroll = clamp(xScroll,0,max(0,todo.xTotal - todo.xView))
 		}
 		if(yOverflow === 'scroll'){
 			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
@@ -460,11 +467,17 @@ module.exports = class View extends require('base/class'){
 			else if(todo.yScroll > 0){
 				todo.scrollTo(undefined,0)
 			}
-			yScroll = clamp(yScroll,0,todo.yTotal - todo.yView)
+			yScroll = clamp(yScroll,0,max(0,todo.yTotal - todo.yView))
 		}
 		if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
 			todo.scrollTo(xScroll, yScroll)
 		}
+	}
+
+	isScrollBar(pickId){
+		if(this.$xScroll && this.$xScroll.$pickId === pickId) return true
+		if(this.$yScroll && this.$yScroll.$pickId === pickId) return true
+		return false
 	}
 
 
@@ -722,6 +735,7 @@ module.exports = class View extends require('base/class'){
 
 	// how do we incrementally redraw?
 	redraw(){
+		//if(debug++<100)console.error("REDRAW")
 		this.$dirtyTrue()
 		if(this.app && !this.app.redrawTimer){
 			this.app.redrawTimer = setImmediate(function(){

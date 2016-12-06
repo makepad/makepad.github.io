@@ -20,14 +20,14 @@ module.exports = class Makepad extends require('base/app'){
 					let typeCounter = this.owner.typeCounter
 					var num  = typeCounter[type]? ++typeCounter[type]: typeCounter[type]=1
 					return new this.owner[type](this,{
-						id:type+num,
+						id:node.id?node.id:type+num,
 						tabTitle:node.title,
 						w:'100%',
 						h:'100%'
 					})
 				}
 			}),
-			//Source: require('./makepad/source'),
+			Source: require('./makepad/source'),
 			//Wave: require('./makepad/wave'),
 			//FileTree:require('base/view'),
 			FileTree: require('./makepad/filetree'),
@@ -58,21 +58,18 @@ module.exports = class Makepad extends require('base/app'){
 				pane2:{
 					selected:0,
 					locked:true,
-					position:200,
+					position:-100,
 					vertical: true,
 					pane1:{
 						selected:0,
-						debug:"OTHERNAME",
 						tabs:[
-							{type:'HomeScreen', title:'*'},
-							{type:'HomeScreen', title:'HI'}
+							{type:'HomeScreen', id:'HomeSource', title:'*'}
 						]
 					},
 					pane2:{
 						selected:0,
-						debug:"MYNAME",
 						tabs:[
-							{type:'HomeScreen', title:'*'}
+							{type:'HomeScreen', id:'HomeProcess', title:'*'}
 						]
 					}
 				}
@@ -245,9 +242,9 @@ module.exports = class Makepad extends require('base/app'){
 						var path = tab.resource.path
 						var rest = path.slice(1, path.lastIndexOf('/'))
 						var text = name + (tab.resource.dirty? "*": "") + '-' + rest
-						if(tab.tabText !== text) {
-							tab.tabText = text
-							tab.parent.redraw()
+						if(tab.tabTitle !== text) {
+							tab.tabTitle = text
+							//tab.parent.redraw()
 						}
 					}
 				}
@@ -257,9 +254,9 @@ module.exports = class Makepad extends require('base/app'){
 				for(var i = 0; i < tabs.length; i++) {
 					var tab = tabs[i]
 					var text = name + (tab.resource.dirty? "*": "")
-					if(tab.tabText !== text) {
-						tab.tabText = text
-						tab.parent.redraw()
+					if(tab.tabTitle !== text) {
+						tab.tabTitle = text
+						//tab.parent.redraw()
 					}
 				}
 			}
@@ -267,38 +264,42 @@ module.exports = class Makepad extends require('base/app'){
 	}
 	
 	addSourceTab(resource) {
-		return
+
 		var path = resource.path
 		var ext = path.slice(path.lastIndexOf('.') + 1)
-		var type
+		var Type
 		var config
 		if(ext === 'js') {
-			type = this.Source
+			Type = this.Source
 			config = {}
 		}
 		if(ext === 'wav') {
-			type = this.Wave
+			Type = this.Wave
 			config = {}
 		}
 		
+		/*
 		var old = this.find('Source' + resource.path)
 		if(old) {
 			var tabs = old.parent
 			tabs.selectTab(tabs.children.indexOf(old))
 			return 
-		}
-		var tabs = this.find('HomeSource').parent
-		var editor = new type(config, {
-			name: 'Source' + resource.path,
-			tabText: resource.path,
+		}*/
+		// we need to find the tabs to put this sourcefile somehow.
+		let tabs = this.find('HomeSource').parent
+		var view = new Type(this.dock, {
+			id:'Source' + resource.path,
+			tabTitle: resource.path,
 			resource: resource,
 			onCloseTab: function() {
 				this.app.processTabTitles()
 			}
 		})
-		var idx = tabs.addNewChild(editor)
-		tabs.selectTab(idx)
-		this.processTabTitles()
+		console.log(view)
+		// select it
+		tabs.selected = tabs.tabs.push(view) - 1
+		tabs.redraw()
+		//this.processTabTitles()
 	}
 	
 	addProcessTab(resource) {

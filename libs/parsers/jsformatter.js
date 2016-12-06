@@ -22,7 +22,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.$fastTextLines = [0]
 		this.$fastTextAnnotate = true
 		this.scope = Object.create(this.defaultScope)
-
 		// run the AST formatter
 		this[this.ast.type](this.ast, null)
 	}
@@ -47,7 +46,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.indent++
 		this.currentIndent += this.indentSize * this.$fastTextFontSize 
 
-		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
+		this.turtle.sx = this.turtle.$xAbs + this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
 			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
@@ -67,7 +66,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	indentOut(delta){
 		this.indent--
 		this.currentIndent -= this.indentSize * this.$fastTextFontSize
-		this.turtle.sx = this.currentIndent//this.indent * this.indentSize + this.padding[3]
+		this.turtle.sx = this.turtle.$xAbs + this.currentIndent//this.indent * this.indentSize + this.padding[3]
 		// check if our last newline needs reindenting
 		if(this.lastIsNewline()){
 			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]

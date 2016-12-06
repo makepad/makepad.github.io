@@ -2,199 +2,6 @@ var parser = require('parsers/js')
 var storage = require('services/storage') 
 
 module.exports = class Code extends require('views/edit'){ 
-	
-	defaultStyle(style){
-		super.defaultStyle(style)
-		
-		var c = style.colors
-
-		style.to = {
-			animating:{
-				ease:style.anims.ease,
-				duration:0.,
-				tween:style.anims.tween,
-			},
-			Text$animating:{
-			},
-			Block$animating:{
-				borderRadius: 2.5,
-			},
-			Marker$animating:{
-			},
-			ErrorMarker:{
-				bgColor: '#522', 
-				opMargin: 1, 
-			},
-			styles:{
-				$boldness: 0., 
-				$color: '#fff', 
-				$italic: 0, 
-				$head: 0, 
-				$tail: 0, 
-
-				NewText: { 
-					$color: '#ccc' 
-				},
-
-				curly:{},
-				block:{
-					$borderWidth: 1, 
-					$borderRadius: 3.75, 
-					open:{open:1},
-					close:{open:0}
-				},
-				Class:{
-					$color:c.codeClass,
-					class:{},
-					extends:{},
-					super:{},
-					new:{},
-					this:{},
-					curly$curly:{},
-					method:{},
-					static:{},
-					getset:{},
-					block$block:{}
-				},
-				Object:{
-					$color:c.codeObject,
-					curly:{},
-					colon:{},
-					key:{alignLeft:0,alignRight:0.5},
-					block$block:{},
-					commaOpen:{$tail:0.},
-					commaClose:{$tail:0.5},
-					dot:{},
-					bracket:{},
-					member:{}
-				},
-				Array:{
-					$color:c.codeObject,
-					commaOpen:{$tail:0.},
-					commaClose:{$tail:0.5},
-					block$block:{},
-					bracket:{}
-				},
-				Function:{
-					$color:c.codeFunction,
-					function:{},
-					curly:{},
-					block$block:{},
-					comma:{$tail:0.5},
-					return:{},
-					yield:{},
-					parenLeft:{},
-					parenRight:{$tail:0.5},
-					arrow:{}
-				},
-				Call:{
-					$color:c.codeCall,
-					paren:{},
-					commaOpen:{},
-					commaClosed:{$tail:0.5}
-				},
-				If:{
-					$color:c.codeIf,
-					if:{},
-					else:{},
-					parenLeft:{},
-					parenRight:{$tail:0.5},
-					curly:{},
-					block$block:{},
-					switch:{},
-					case:{},
-					caseColon:{}
-				},
-				For:{
-					$color:c.codeLoop,
-					for:{},
-					in:{},
-					of:{},
-					do:{},
-					while:{},
-					semi:{},
-					parenLeft:{},
-					parenRight:{},
-					curly:{},
-					block$block:{},
-					break:{},
-					continue:{}
-				},
-				Exception:{
-					$color:c.codeException,
-					throw:{},
-					try:{},
-					catch:{},
-					parenLeft:{},
-					parenRight:{},
-					finally:{},
-					curly:{},
-					block$block:{}
-				},
-				Value:{
-					regexp: {
-						$color:c.codeString
-					}, 
-					object: {
-						$color:c.codeObject
-					},
-					num:{
-						$color:c.codeNumber
-					},
-					boolean:{
-						$color:c.codeBoolean
-					},
-					string:{
-						$color:c.codeString
-					},
-				},
-				Comment: { 
-					$boldness: 0.1, 
-					$color: c.codeComment, 
-					$isComment: 1, 
-					side: {$head: 0.5}, 
-					above: {}, 
-					top: {$head: 0.5}, 
-					bottom: {$head: 0.}, 
-					around: {} 
-				}, 
-				Operator:{
-					$color:c.codeOperator,
-					default:{$head:0.5,$tail:0.5},
-					'=':{$head:0.5,$tail:0.5},
-					'?:':{},
-					'@':{},
-					'#':{},
-					'...':{}
-				},
-				OperatorNL$Operator:{},
-				Parens:{
-					$color:c.codeParen,
-					left:{},
-					right:{},
-					comma:{}
-				},
-				Keyword:{
-					varComma:{$color:c.codeVar, $tail:0.5},
-					var:{$color:c.codeVar, $boldness:0.4},
-					const:{$color:c.codeConst, $boldness:0.2},
-					let:{$color:c.codeLet, $boldness:0.2}
-				},
-				Id:{
-					arg:{$color:c.codeFunction, closure:{}},
-					var:{$color:c.codeVar, closure:{}},
-					const:{$color:c.codeConst, closure:{}},
-					let:{$color:c.codeLet, closure:{}},
-					glsl$const:{},
-					magic$const:{},
-					fn$const:{},
-					class$const:{},
-					unknown:{$color:c.codeUnknown},
-					global:{$color:c.codeGlobal, $boldness:0.2, closure:{}}
-				}
-			} 
-		}
-	}
 
 	// mixin the formatter
 	prototype() { 
@@ -209,13 +16,18 @@ module.exports = class Code extends require('views/edit'){
 		this.props = {
 			errors:undefined
 		}
+		
+		let colors = module.style.colors
 
 		this.tools = { 
-			
-			Text: require('tools/codetext').extend({ 
+			Bg:require('shaders/quad').extend({
+				color:colors.bgNormal
+			}),
+			Text: require('shaders/codetext').extend({ 
 				font: require('fonts/ubuntu_monospace_256.font'), 
+				order:3,
 			}), 
-			Block: require('tools/codeblock').extend({ 
+			Block: require('shaders/codeblock').extend({ 
 				
 				pickAlpha: 0., 
 				vertexStyle: function() {$ 
@@ -235,7 +47,7 @@ module.exports = class Code extends require('views/edit'){
 					this.borderColor = this.color 
 				} 
 			}), 
-			Marker: require('tools/codemarker').extend({ 
+			Marker: require('shaders/codemarker').extend({ 
 				vertexStyle: function() {$ 
 					this.opColor = this.bgColor * 1.1 
 					this.borderColor = this.bgColor 
@@ -248,7 +60,7 @@ module.exports = class Code extends require('views/edit'){
 					this.borderRadius -= this.level 
 				} 
 			}), 			
-			ErrorMarker: require('tools/codemarker').extend({ 
+			ErrorMarker: require('shaders/codemarker').extend({ 
 				vertexStyle: function() {$ 
 					//this.errorTime = max(0., .1 - this.errorTime) 
 					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
@@ -260,6 +72,175 @@ module.exports = class Code extends require('views/edit'){
 			})
 		} 
 		
+		this.styles = {
+			$boldness: 0., 
+			$color: '#fff', 
+			$italic: 0, 
+			$head: 0, 
+			$tail: 0, 
+
+			NewText: { 
+				$color: '#ccc' 
+			},
+
+			curly:{},
+			block:{
+				$borderWidth: 1, 
+				$borderRadius: 3.75, 
+				open:{open:1},
+				close:{open:0}
+			},
+			Class:{
+				$color:colors.codeClass,
+				class:{},
+				extends:{},
+				super:{},
+				new:{},
+				this:{},
+				curly$curly:{},
+				method:{},
+				static:{},
+				getset:{},
+				block$block:{}
+			},
+			Object:{
+				$color:colors.codeObject,
+				curly:{},
+				colon:{},
+				key:{alignLeft:0,alignRight:0.5},
+				block$block:{},
+				commaOpen:{$tail:0.},
+				commaClose:{$tail:0.5},
+				dot:{},
+				bracket:{},
+				member:{}
+			},
+			Array:{
+				$color:colors.codeObject,
+				commaOpen:{$tail:0.},
+				commaClose:{$tail:0.5},
+				block$block:{},
+				bracket:{}
+			},
+			Function:{
+				$color:colors.codeFunction,
+				function:{},
+				curly:{},
+				block$block:{},
+				comma:{$tail:0.5},
+				return:{},
+				yield:{},
+				parenLeft:{},
+				parenRight:{$tail:0.5},
+				arrow:{}
+			},
+			Call:{
+				$color:colors.codeCall,
+				paren:{},
+				commaOpen:{},
+				commaClosed:{$tail:0.5}
+			},
+			If:{
+				$color:colors.codeIf,
+				if:{},
+				else:{},
+				parenLeft:{},
+				parenRight:{$tail:0.5},
+				curly:{},
+				block$block:{},
+				switch:{},
+				case:{},
+				caseColon:{}
+			},
+			For:{
+				$color:colors.codeLoop,
+				for:{},
+				in:{},
+				of:{},
+				do:{},
+				while:{},
+				semi:{},
+				parenLeft:{},
+				parenRight:{},
+				curly:{},
+				block$block:{},
+				break:{},
+				continue:{}
+			},
+			Exception:{
+				$color:colors.codeException,
+				throw:{},
+				try:{},
+				catch:{},
+				parenLeft:{},
+				parenRight:{},
+				finally:{},
+				curly:{},
+				block$block:{}
+			},
+			Value:{
+				regexp: {
+					$color:colors.codeString
+				}, 
+				object: {
+					$color:colors.codeObject
+				},
+				num:{
+					$color:colors.codeNumber
+				},
+				boolean:{
+					$color:colors.codeBoolean
+				},
+				string:{
+					$color:colors.codeString
+				},
+			},
+			Comment: { 
+				$boldness: 0.1, 
+				$color: colors.codeComment, 
+				$isComment: 1, 
+				side: {$head: 0.5}, 
+				above: {}, 
+				top: {$head: 0.5}, 
+				bottom: {$head: 0.}, 
+				around: {} 
+			}, 
+			Operator:{
+				$color:colors.codeOperator,
+				default:{$head:0.5,$tail:0.5},
+				'=':{$head:0.5,$tail:0.5},
+				'?:':{},
+				'@':{},
+				'#':{},
+				'...':{}
+			},
+			OperatorNL$Operator:{},
+			Parens:{
+				$color:colors.codeParen,
+				left:{},
+				right:{},
+				comma:{}
+			},
+			Keyword:{
+				varComma:{$color:colors.codeVar, $tail:0.5},
+				var:{$color:colors.codeVar, $boldness:0.4},
+				const:{$color:colors.codeConst, $boldness:0.2},
+				let:{$color:colors.codeLet, $boldness:0.2}
+			},
+			Id:{
+				arg:{$color:colors.codeFunction, closure:{}},
+				var:{$color:colors.codeVar, closure:{}},
+				const:{$color:colors.codeConst, closure:{}},
+				let:{$color:colors.codeLet, closure:{}},
+				glsl$const:{},
+				magic$const:{},
+				fn$const:{},
+				class$const:{},
+				unknown:{$color:colors.codeUnknown},
+				global:{$color:colors.codeGlobal, $boldness:0.2, closure:{}}
+			}
+		} 
+
 		this.defaultScope = { 
 			console: 'global', 
 			eval: 'global', 
@@ -383,15 +364,15 @@ module.exports = class Code extends require('views/edit'){
 
 	onDraw() { 
 		if(!this._text)this._text = ''
-		this.beginBg(this.viewGeom) 
+		this.beginBg() 
 		// ok lets parse the code
-		if(this.$textClean) { 
+		if(false){//this.$textClean) { 
 			this.reuseDrawSize() 
 			this.reuseBlock() 
 			this.reuseMarker() 
-			this.orderErrorMarker() 
-			this.orderSelection() 
 			this.reuseText() 
+			//this.orderErrorMarker() 
+			//this.orderSelection() 
 		}
 		else { 
 			//require('base/perf')
@@ -429,24 +410,25 @@ module.exports = class Code extends require('views/edit'){
 						] 
 					} 
 				} */
-				this.orderBlock() 
-				this.orderMarker() 
+				//this.orderBlock() 
+				//this.orderMarker() 
 				this.reuseErrorMarker() 
-				this.orderSelection() 
-				this.orderText() 
+				//this.orderSelection() 
+				//this.orderText() 
 				
 				var oldtext = this._text 
 				this.oldText = oldtext 
 				// first we format the code
 				if(this.onBeginFormatAST) this.onBeginFormatAST() 
-				
+				//this.drawBg({w:100,h:100,color:'purple'})
+
 				this.formatJS(this.indentSize, this.ast) 
 
 				if(this.onEndFormatAST) this.onEndFormatAST() 
 				//for(let ann = this.ann, i = 0, len = ann.length, step = ann.step; i < len; i+=step){
 				//	console.log("STARTX", ann[i+5], ann[i])
 				//}
-				
+				//console.log('formattin')
 				// make undo operation for reformat
 				var newtext = this._text
 				var oldlen = oldtext.length 
@@ -462,24 +444,24 @@ module.exports = class Code extends require('views/edit'){
 				
 				this.wasNoopChange = false 
 				
-				if(start !== newlen) { 
+				if(start !== newlen) {
 					// this gets tacked onto the undo with the same group
 					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext) 
 					this.addUndoDelete(start, newlen) 
 					// lets check what we did
 					var oldrem = oldtext.slice(start, oldend) 
 					var newins = newtext.slice(start, newend) 
-					
+					/*
 					if((oldrem === ' ' || oldrem === ';') && newins === '') { 
 						var lengthText = this.lengthText() 
 						this.wasNoopChange = true 
 						for(var i = 0; i < lengthText; i++) this.$setTweenStartText(i, 0) 
-					} 
+					} */
 				} 
 				
 				this.cs.scanChange(start, oldtext, newtext) 
 				this.cs.clampCursor(0, newlen) 
-				
+				/*
 				// overwrite tweenstarts when blocks are different
 				// so we dont get jarring blocks
 				var lengthBlock = this.lengthBlock() 
@@ -496,8 +478,10 @@ module.exports = class Code extends require('views/edit'){
 						this.$setTweenStartMarker(i, 0) 
 					} 
 				} 
+				*/
 				//if(this.onText) setImmediate(this.onText.bind(this))
-				if(this.onParsed) setImmediate(this.onParsed.bind(this)) 
+				//console.log(this)
+				//if(this.onParsed) setImmediate(this.onParsed.bind(this)) 
 			}
 			else { 
 				var ann = this.ann 
@@ -513,8 +497,8 @@ module.exports = class Code extends require('views/edit'){
 				
 				this.reuseBlock() 
 				this.reuseMarker() 
-				this.orderSelection() 
-				this.orderErrorMarker() 
+				//this.orderSelection() 
+				//this.orderErrorMarker() 
 				
 				this.$fastTextAnnotate = false 
 				
@@ -617,8 +601,8 @@ module.exports = class Code extends require('views/edit'){
 					) 
 				} 
 				this.drawCursor({ 
-					x: t.x - 1, 
-					y: t.y, 
+					x: this.turtle.$xAbs + t.x - 1, 
+					y: this.turtle.$yAbs + t.y, 
 					w: 2, 
 					h: t.h 
 				}) 

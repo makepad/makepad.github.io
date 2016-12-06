@@ -12,8 +12,6 @@ module.exports = class Text extends require('base/shader'){
 			dx:0,
 			dy:0,
 
-			order:0,
-
 			color:'white',
 			outlineColor:'white',
 			shadowColor:[0,0,0,0.5],
@@ -117,13 +115,13 @@ module.exports = class Text extends require('base/shader'){
 					if(y<ty) return -1
 					if(y >= ty &&  x <= tx + xw && y <= ty + fs * lineSpacing){
 						if(x > tx + xw * 0.5){
-							if(ty !== this.$PROP(i+1, 'y')) return i
+							if(ty !== this.PROP(i+1, 'y')) return i
 							return i + 1
 						}
 						return i
 					}
 				}
-				if(this.$PROP(i-1, 'advance') < 0 && y <= ty + fs * lineSpacing) return len - 1
+				if(this.PROP(i-1, 'advance') < 0 && y <= ty + fs * lineSpacing) return len - 1
 				return len
 			},
 			$boundRects:function(start, end){
@@ -156,9 +154,10 @@ module.exports = class Text extends require('base/shader'){
 				}
 				return boxes
 			},
+			/*
 			$resetBuffer:function(){
 				this.PROPLEN = 0
-			},
+			},*/
 			draw:function(overload){
 				var turtle = this.turtle
 

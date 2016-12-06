@@ -17,7 +17,6 @@ module.exports = class Quad extends require('base/shader'){
 			z: 0,
 			dx:0,
 			dy:0,
-			order:0,
 			down: {value:0},
 			align: {value:[undefined,undefined]},
 			margin: {value:[0,0,0,0]},
