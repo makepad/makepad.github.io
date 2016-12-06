@@ -573,7 +573,7 @@ module.exports = class Edit extends require('base/view'){
 		}
 
 		var touchdy = 0//f.touch?-20:0
-		let lf = this.toLocal(f, true)
+		let lf = this.toLocal(f)
 		
 		this.fingerCursor.moveTo(lf.x, lf.y + touchdy, f.shift)
 		var tapDiv = f.touch? 4: 3
