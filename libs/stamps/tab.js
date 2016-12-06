@@ -97,10 +97,10 @@ module.exports = require('base/stamp').extend({
 				else{
 					this.clear(this.color)
 					if(this.lineL>.5){
-						this.box(0, 0., 4., this.h+2,1.)
+						this.box(0, 0., 3., this.h+2,1.)
 					}
 					if(this.lineR>.5){
-						this.box(this.w-4., 0., 4., this.h+2,1.)
+						this.box(this.w-3., 0., 3., this.h+2,1.)
 					}
 					this.fill('#4')
 				}

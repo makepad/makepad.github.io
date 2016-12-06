@@ -14,11 +14,11 @@ module.exports = class Slider extends require('base/stamp'){
 		this.dragOffset = -1
 		this.inPlace = 1
 		this.tools = {
-			Bg:require('shaders/rect').extend({
+			Bg:require('shaders/quad').extend({
 				color:'gray',
 				padding:5
 			}),
-			Knob:require('shaders/rect').extend({
+			Knob:require('shaders/quad').extend({
 				color:'white',
 				vertical:{noTween:1,value:0.},
 				pos:{noTween:1,value:0.},
@@ -138,7 +138,7 @@ module.exports = class Slider extends require('base/stamp'){
 	}
 
 	onDraw(){
-		this.beginBg(this)
+		this.beginBg(this.wrap())
 		this.innerPadding = this.turtle.padding
 		var pos = (this.value - this.range[0])/(this.range[1]-this.range[0])
 		if(this.vertical){

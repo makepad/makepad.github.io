@@ -28,7 +28,7 @@ module.exports = class Makepad extends require('base/app'){
 				}
 			}),
 			Source: require('./makepad/source'),
-			//Wave: require('./makepad/wave'),
+			Wave: require('./makepad/wave'),
 			FileTree: require('./makepad/filetree'),
 			HomeScreen: require('./makepad/homescreen'),
 			UserProcess: require('./makepad/userprocess')

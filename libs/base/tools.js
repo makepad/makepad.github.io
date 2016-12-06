@@ -8,6 +8,7 @@ function defineToolInheritable(proto, key){
 		var base = Object.getPrototypeOf(this)[key]
 		if(!base) return
 		var cls
+		//console.log(key, inherit)
 		if(inherit && inherit.constructor === Object){ 
 			// write it back
 			cls = this[key] = base.extend(inherit)
@@ -75,20 +76,21 @@ module.exports = class Tools extends require('base/class'){
 					var cls = this[key] = base.extend(inherit)
 					// lets call the callback
 					this.$compileVerbs(key, cls)
-					continue
 				}
 				// reversed (prop object below class)
 				else if(base && base.constructor === Object && typeof inherit === 'function'){ // already has an object defined
 					var cls = this[key] = inherit.extend(base)
 					this.$compileVerbs(key, cls)
-					continue
 				}
-
-				// else replace it
-				this[key] = inherit
-				this.$compileVerbs(key, inherit)
-				// make it inheritable
-				defineToolInheritable(this, key)
+				else{
+					// else replace it
+					this[key] = inherit
+					this.$compileVerbs(key, inherit)
+				}
+				if(!this.inheritable(key)){
+					// make it inheritable
+					defineToolInheritable(this, key)
+				}
 			}	
 		})
 

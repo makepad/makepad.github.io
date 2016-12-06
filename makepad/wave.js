@@ -7,6 +7,7 @@ module.exports = class Wave extends require('views/draw'){
 	
 	prototype() { 
 		
+		this.yOverflow = 'none'
 		this.props = { 
 			zoom: 200., 
 			selStart: 0, 
@@ -15,20 +16,27 @@ module.exports = class Wave extends require('views/draw'){
 			zoomScroll: 0, 
 			resource:undefined
 		} 
+		let colors = module.style.colors
 		this.tools = {
+			Bar:require('shaders/quad').extend({
+				w:'100%',
+				wrap:false,
+				color:colors.bgNormal,
+				moveScroll:0,
+			}),
 			Bg:{
-				color:'#1'
+				color:colors.bgHi
 			},
 			Slider: require('stamps/slider').extend({ 
-				Bg: {moveScroll: 0},
+				Bg: {moveScroll: 0,test:2},
 				Knob: {moveScroll: 0}
 			}), 
 			Button: require('stamps/button').extend({ 
-				Bg: {moveScroll: 0}, 
+				Bg: {moveScroll: 0,test:1}, 
 				Text: {moveScroll: 0} 
-			}), 
-			Rect: { 
-				color: '#07c7' 
+			}),  
+			Rounded: { 
+				color: 'Purple700'
 			}, 
 			Quad: {color: 'red'}, 
 			Grid: require('shaders/grid') 
@@ -101,20 +109,23 @@ module.exports = class Wave extends require('views/draw'){
 	} 
 	
 	onFingerWheel(e) { 
+		let l = this.toLocal(e)
 		var z = this.zoom * (1 + e.yWheel / 1500) 
-		this.setZoom(z, e.x) 
+		this.setZoom(z, l.x) 
 	} 
 	
 	onFingerDown(e) { 
+		let l = this.toLocal(e)
 		this.setFocus()
 		if(e.pickId) return  
 		this.selEnd = 
-		this.selStart = clamp(this.xToTime(e.x), 0, this.samples) 
+		this.selStart = clamp(this.xToTime(l.x), 0, this.samples) 
 	} 
 	
 	onFingerMove(e) { 
 		if(e.pickId) return  
-		let end = this.selEnd = clamp(this.xToTime(e.x), 0, this.samples) 
+		let l = this.toLocal(e)
+		let end = this.selEnd = clamp(this.xToTime(l.x), 0, this.samples) 
 		if(end < this.selStart) this.selEnd = this.selStart+100, this.selStart = end 
 		// lets scroll into view
 		this.scrollIntoView(this.selEnd	/ this.zoom,0,0,0)
@@ -323,17 +334,17 @@ module.exports = class Wave extends require('views/draw'){
 	}
 
 	onDraw() { 
-		this.beginBg(this.viewGeom)
+		this.beginBg({moveScroll:0,w:'100%',h:'100%'})
 		this.beginGrid({ 
-			x: 0, 
-			y: 60, 
+			x: '0', 
+			y: '80', 
 			zoom: this.zoom, 
 			w: this.samples / this.zoom, 
 			h: 200 
 		}) 
 		//console.log(10000/this.zoom)
-		this.drawRect({ 
-			x: (this.selStart) / this.zoom, 
+		this.drawRounded({ 
+			x: (this.selStart) / this.zoom+ this.turtle.$xAbs, 
 			w: (this.selEnd - this.selStart) / this.zoom, 
 			h: '100%' 
 		}) 
@@ -368,8 +379,8 @@ module.exports = class Wave extends require('views/draw'){
 					if(v > maxv) maxv = v 
 					if(!(t++ % smod) && t / scale > xmin) { 
 						this.drawQuad({ 
-							color: t > this.selStart && t < this.selEnd? '#7cff': '#26cf', 
-							x: t / scale, 
+							color: t > this.selStart && t < this.selEnd? '#ccc': '#ccc', 
+							x: t / scale + this.turtle.$xAbs, 
 							y: minv * height * .5 + this.turtle.sy + 0.5 * height, 
 							w: 1, ///painter.pixelRatio,//t / scale,
 							h: (maxv - minv) * height * .5 + 1. //+300
@@ -384,35 +395,45 @@ module.exports = class Wave extends require('views/draw'){
 		} 
 		this.endGrid(true) 
 
+		this.beginBar()
 		this.drawButton({ 
+			id:'rec',
 			text: this.recFlow.running? "Stop": "Rec", 
 			onClick: this.rec
 		}) 
 		this.drawButton({ 
+			id:'play',
 			text: this.playFlow.running? "Stop": "Play", 
 			onClick: this.play
 		}) 
 		this.drawButton({ 
+			id:'cut',
 			text: "Cut", 
 			onClick: this.cut
 		}) 
 		this.drawButton({ 
+			id:'undo',
 			text: "Undo", 
 			onClick: this.undo
 		}) 
 		this.drawButton({ 
+			id:'redo',
 			text: "Redo", 
 			onClick: this.redo
 		}) 
 		this.drawButton({ 
+			id:'fade',
 			text: "Fade", 
 			onClick: this.fade
 		}) 
 		this.drawButton({ 
+			id:'norm',
 			text: "Norm", 
 			onClick: this.normalize
 		}) 
+		/*
 		this.drawSlider({ 
+			id:'slide',
 			onValue: e=>{ 
 				this.setZoom(e.value, this.todo.xScroll) 
 				this.redraw() 
@@ -424,7 +445,8 @@ module.exports = class Wave extends require('views/draw'){
 			range: this.zoomRange, 
 			w: 100, 
 			h: 36 
-		}) 
+		}) */
+		this.endBar()
 		// lets draw the scope 
 		if(this.scopeData) { 
 			this.beginGrid({ 
