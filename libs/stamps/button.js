@@ -9,6 +9,7 @@ module.exports = class Button extends require('base/stamp'){
 			id:'',
 			index: 0,
 			onClick: undefined,
+			margin:[5,0,5,0],
 			onClickStamp: undefined,
 			debug: 0
 		}

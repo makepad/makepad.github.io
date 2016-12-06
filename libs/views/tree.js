@@ -53,7 +53,7 @@ module.exports = class Tree extends require('base/view'){
 		this.tools = {
 			Bg:require('shaders/quad').extend({
 				wrap:false,
-				padding:[0,0,0,2],
+				padding:[6,0,0,9],
 				color:colors.bgHi
 			}),
 			Cursor:require('shaders/hover').extend({

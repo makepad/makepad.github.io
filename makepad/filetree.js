@@ -16,6 +16,7 @@ module.exports = class FileTree extends require('base/view'){
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
+				padding:[0,0,0,5],
 				wrap:false,
 				color:module.style.colors.bgNormal
 			})
