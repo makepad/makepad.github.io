@@ -33,7 +33,8 @@ module.exports = class Wave extends require('views/draw'){
 			}), 
 			Button: require('stamps/button').extend({ 
 				Bg: {moveScroll: 0,test:1}, 
-				Text: {moveScroll: 0} 
+				Text: {moveScroll: 0},
+				Icon: {moveScroll: 0} 
 			}),  
 			Rounded: { 
 				color: 'Purple700'
@@ -406,6 +407,7 @@ module.exports = class Wave extends require('views/draw'){
 
 		this.drawButton({ 
 			id:'close',
+			order:2,
 			align:[1,0],
 			icon: "close", 
 			onClick: this.onClose
