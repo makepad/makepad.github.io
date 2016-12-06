@@ -58,31 +58,15 @@ module.exports = class View extends require('base/class'){
 				order:99
 			}),
 			Debug:require('shaders/quad'),
-			Pass:require('base/shader').extend({
+			Pass:require('shaders/quad').extend({
 				props:{
-					x: NaN,
-					y: NaN,
-					w: NaN,
-					h: NaN,
-					z: 0,
-					mesh:{kind:'geometry', type:types.vec2},
 					colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
 					pickSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST}
 				},
-				mesh:new painter.Mesh(types.vec2).pushQuad(0, 0, 1, 0, 0, 1, 1, 1),
 				verbs:{
-					draw:function(overload){
-						this.STYLEPROPS(overload, 1)
-						this.ALLOCDRAW(overload)
-						this.turtle.walk()
-						this.WRITEPROPS()
-					}
+					begin:null,
+					end:null,					
 				},
-				vertex(){$
-					var pos = vec2(this.mesh.x * this.w, this.mesh.y * this.h) + vec2(this.x, this.y)
-					return vec4(pos, 0., 1.0) * this.viewPosition * this.camPosition * this.camProjection
-				},
-
 				pixelMain(){$
 					if(this.workerId < 0.){
 						gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
@@ -102,6 +86,7 @@ module.exports = class View extends require('base/class'){
 		this.onFlag4 = this.redraw
 
 		this.verbs = {
+
 			draw:function(overload){
 				var id = overload.id
 				var view = this.$views[id]

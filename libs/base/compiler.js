@@ -128,7 +128,9 @@ module.exports = class Compiler extends require('base/class'){
 
 	$compileShader(){
 		this.$methodDeps = {
-			states:this._states
+			states:this._states,
+			pixelMain:this.pixelMain,
+			vertexMain:this.vertexMain
 		}
 
 		// compile shaders

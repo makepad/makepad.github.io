@@ -31,22 +31,31 @@ module.exports = class UserProcess extends require('views/draw'){
 		// it changes! lets reload?..
 	}
 
+	onClose(){
+		if(this.worker){
+			this.worker.onPingTimeout = undefined
+			this.worker.terminate()
+			this.worker = undefined
+		}
+		this.app.closeTab(this)
+	}
+
 	onDraw() { 
 		this.beginBg({
 		})
 		this.drawButton({
 			id:2,
-			//align:[1,0],
 			icon:'arrows-alt'
 		})
 		this.drawButton({
 			id:3,
 			align:[1,0],
+			onClick:this.onClose,
 			icon:'close'
 		})
 		this.endBg()
 		this.lineBreak()
-
+		
 		let pass = this.beginPass({
 			id:'surface',
 			w:'100%',
@@ -56,12 +65,12 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.endPass()
 
 		this.drawPass({
+			align:[0,0],
 			w:'100%',
 			h:'100#',
 			colorSampler: pass.color0,
 			pickSampler: pass.pick
 		})
-
 		if(!this.worker) this.startWorker(pass)
 	} 
 

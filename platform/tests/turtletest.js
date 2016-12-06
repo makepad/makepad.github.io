@@ -1,3 +1,4 @@
+new require('styles/dark')
 
 return require('base/app').extend({
 
@@ -26,6 +27,16 @@ return require('base/app').extend({
 		})
 		// alignment how. left, right top bottom, center
 		// stack = x*1000+y
+		this.beginBg({color:'green', align:[0,1], w:100,padding:0})
+		this.drawButton({id:1,align:[1,1],text:'hi'})
+		this.endBg()
+		/*
+		this.beginBg({color:'green', align:[1,1], w:30, h:30,padding:5})
+		this.drawBg({color:'orange',w:5,h:5,align:[1,0]})
+		this.drawBg({color:'orange',w:5,h:5,align:[1,0]})
+		this.endBg()
+		*/
+		/*
 		this.drawBg({color:'yellow',x:'@0',y:'@0',w:5,h:5})	
 		this.beginBg({color:'green', x:'@0', y:'@0', w:30, h:30,padding:5})
 		this.drawBg({color:'orange',w:5,h:5,align:[1,0]})
@@ -33,15 +44,18 @@ return require('base/app').extend({
 		this.endBg()
 
 		this.drawBg({align:[1,0],w:50,h:50,color:'orange',padding:5})
+		
 		this.beginBg({color:'purple', w:30, h:30,padding:5,align:[1.,0]})
 		this.drawBg({color:'orange',w:5,h:5,align:[1,0]})
 		this.drawBg({color:'orange',w:5,h:5,align:[1,0]})
 		this.endBg()
+		
 		this.drawBg({align:[0,0],w:50,h:50,color:'blue',padding:5})
+		
 		this.beginBg({color:'#7777', w:'100%',h:30,padding:5,align:[0.,0.]})
 		this.drawBg({color:'green',w:5,h:5})
 		this.drawBg({color:'green',w:5,h:5,align:[1,0]})
-		this.endBg()
+		this.endBg()*/
 
 		//this.drawButton({text:'A', align:[1,0]})
 		//this.drawButton({text:'B', align:[0,0]})

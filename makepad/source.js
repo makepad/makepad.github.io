@@ -157,7 +157,6 @@ module.exports = class Source extends require('base/view'){
 		})
 		this.endBg()
 		this.lineBreak()
-		
 		this.drawCode({
 			resource:this.resource
 		})

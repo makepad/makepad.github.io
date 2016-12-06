@@ -124,7 +124,7 @@ exports.onRequire = function(args, absParent, buildPath){
 				if(this.pingTimer) throw new Error("Ping already in progress")
 				this.pingStart = Date.now()
 				this.pingTimer = setTimeout(function(){
-					this.onPingTimeout()
+					if(this.onPingTimeout) this.onPingTimeout()
 				}.bind(this), timeout)
 
 				this.pingTimeout = timeout

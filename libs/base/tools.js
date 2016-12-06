@@ -369,8 +369,6 @@ module.exports = class Tools extends require('base/class'){
 		var verbs = sourceProto._verbs
 		var target = this
 
-		if(className === 'Tabs2') console.log("COMPILING VERBS", sourceProto.onCompileVerbs)
-
 		for(let verbName in verbs){
 			var methodName = verbName + className
 			var thing = verbs[verbName]
@@ -386,7 +384,7 @@ module.exports = class Tools extends require('base/class'){
 			}
 
 			if(typeof thing !== 'function'){
-				target[methodName] = thing
+				if(thing) target[methodName] = thing
 				continue
 			}
 			var code = thing.toString().replace(comment1Rx,'').replace(comment2Rx,'')
