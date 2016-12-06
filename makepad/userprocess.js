@@ -3,9 +3,18 @@ const Worker = require('services/worker')
 module.exports = class UserProcess extends require('views/draw'){
 
 	prototype(){
-		this.surface = true
+		//this.surface = true
 		this.props = {
 			resource:null
+		}
+		this.tools = {
+			Button: require('stamps/button').extend({
+			}),
+			Bg:require('shaders/quad').extend({
+				w:'100%',
+				wrap:false,
+				color:module.style.colors.bgNormal
+			})
 		}
 	}
 
@@ -22,8 +31,37 @@ module.exports = class UserProcess extends require('views/draw'){
 	}
 
 	onDraw() { 
-		this.onDraw = undefined 
-		this.startWorker()
+		this.beginBg({
+		})
+		this.drawButton({
+			id:2,
+			//align:[1,0],
+			icon:'arrows-alt'
+		})
+		this.drawButton({
+			id:3,
+			align:[1,0],
+			icon:'close'
+		})
+		this.endBg()
+		this.lineBreak()
+
+		let pass = this.beginPass({
+			id:'surface',
+			w:'100%',
+			h:'100#',
+			pick:true
+		})
+		this.endPass()
+
+		this.drawPass({
+			w:'100%',
+			h:'100#',
+			colorSampler: pass.color0,
+			pickSampler: pass.pick
+		})
+
+		if(!this.worker) this.startWorker(pass)
 	} 
 
 	reloadWorker(){
@@ -48,10 +86,9 @@ module.exports = class UserProcess extends require('views/draw'){
 		) 
 	}
 
-	startWorker(){
-
+	startWorker(pass){
 		this.worker = new Worker(null, {
-			parentFbId: this.$renderPasses.surface.framebuffer.fbId 
+			parentFbId: pass.framebuffer.fbId 
 		})
 		
 		// OK so lets compose all deps

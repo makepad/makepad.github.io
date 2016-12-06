@@ -39,7 +39,6 @@ module.exports = class View extends require('base/class'){
 			time:0,
 			hasFocus:false,
 			frameId:0,
-			surface:false,
 			margin:[0,0,0,0],
 			padding:[0,0,0,0],
 			// drawPadding:undefined,
@@ -59,7 +58,7 @@ module.exports = class View extends require('base/class'){
 				order:99
 			}),
 			Debug:require('shaders/quad'),
-			Surface:require('base/shader').extend({
+			Pass:require('base/shader').extend({
 				props:{
 					x: NaN,
 					y: NaN,
@@ -298,10 +297,10 @@ module.exports = class View extends require('base/class'){
 		}
 
 		// we need to render to a texture
-		
+		/*
 		if(this.surface){
 			// set up a surface and start a pass
-			var pass = this.beginSurface('surface', this.$w, this.$h, painter.pixelRatio, true)
+			var pass = this.beginPass('surface', this.$w, this.$h, painter.pixelRatio, true)
 			todo = this.todo
 			todoUbo = todo.todoUbo
 			//todoUbo.mat4(painter.nameId('thisDOTviewPosition'),identityMat4)
@@ -310,7 +309,7 @@ module.exports = class View extends require('base/class'){
 			//todoUbo.mat4(painter.nameId('thisDOTcamPosition'),identityMat4)
 			//todoUbo.mat4(painter.nameId('thisDOTcamProjection'),pass.projection)
 			todo.clearColor(0., 0., 0., 1)
-		}
+		}*/
 
 		if(this.parent){ // push us into the displacement list
 			this.parent.$writeList.push(this,-1,-1)
@@ -384,11 +383,11 @@ module.exports = class View extends require('base/class'){
 		}
 
 		// if we are a surface, end the pass and draw it to ourselves
-		
+		/*
 		if(this.surface){
-			this.endSurface()
+			this.endPass()
 			// draw using 
-			this.drawSurface({
+			this.drawPass({
 				x:'0',
 				y:'0',
 				w:this.$w,
@@ -396,7 +395,7 @@ module.exports = class View extends require('base/class'){
 				colorSampler: pass.color0,
 				pickSampler: pass.pick
 			})
-		}
+		}*/
 	}
 
 	$drawScrollBars(wx, wy, vx, vy){
@@ -487,7 +486,7 @@ module.exports = class View extends require('base/class'){
 	$createTodo(){
 		var todo = new painter.Todo()
 
-		var todoUboDef = this.Surface.prototype.$compileInfo.uboDefs.todo
+		var todoUboDef = this.Pass.prototype.$compileInfo.uboDefs.todo
 		
 		todo.todoUbo = new painter.Ubo(todoUboDef)//this.$todoUboDef)
 		todo.view = this
@@ -554,23 +553,37 @@ module.exports = class View extends require('base/class'){
 		this.destroy()
 	}
 
-	beginSurface(name, w, h, pixelRatio, hasPick, hasZBuf, colorType){
+	beginPass(options){
+		let w = options.w
+		let h = options.h
+
+		if(typeof w === 'string'){
+			this.turtle._margin = zeroMargin
+			w = this.turtle.evalw(w, this)
+		}
+		if(typeof h === 'string'){
+			this.turtle._margin = zeroMargin
+			h = this.turtle.evalh(h, this)
+		}
 		if(w === undefined) w = this.$w
 		if(h === undefined) h = this.$h
 		if(isNaN(w)) w = 1
 		if(isNaN(h)) h = 1
-
+		let pixelRatio = options.pixelRatio || painter.pixelRatio
+		
 		var sw = w * pixelRatio
 		var sh = h * pixelRatio
 
+		let id = options.id
 		// and the todo is forked out
-		var pass = this.$renderPasses[name] 
+		var pass = this.$renderPasses[id] 
 
 		if(!pass){ // initialize the buffers for the pass
-			pass = this.$renderPasses[name] = {}
-			pass.color0 = new painter.Texture(painter.RGBA, colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
-			if(hasPick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
-			if(hasZBuf) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, 0, 0)
+			console.log("IIT")
+			pass = this.$renderPasses[id] = {}
+			pass.color0 = new painter.Texture(painter.RGBA, options.colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
+			if(options.pick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
+			if(options.depth) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, 0, 0)
 			pass.framebuffer = new painter.Framebuffer(sw, sh,{
 				color0:pass.color0,
 				pick:pass.pick,
@@ -611,7 +624,7 @@ module.exports = class View extends require('base/class'){
 		return pass
 	}
 	
-	endSurface(){
+	endPass(){
 		// stop the pass and restore our todo
 		this.todo = this.$todoStack.pop()
 	}
