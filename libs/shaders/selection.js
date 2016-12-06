@@ -22,8 +22,8 @@ module.exports = class Selection extends require('shaders/quad'){
 			fast:function(x,y,w,h,xp,wp,xn,wn){
 				this.ALLOCDRAW(null,1)
 				this.WRITEPROPS({
-					x:x,
-					y:y,
+					x:x + this.turtle.$xAbs,
+					y:y+ this.turtle.$yAbs,
 					w:w,
 					h:h,
 					xp:xp,

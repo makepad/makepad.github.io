@@ -252,8 +252,8 @@ module.exports = class Turtle extends require('base/class'){
 		if(this._x < this.x1) this.x1 = this._x
 		if(this._y < this.y1) this.y1 = this._y
 		// remove abs
-		this._x -= this.$xAbs
-		this._y -= this.$yAbs
+		//this._x -= this.$xAbs
+		//this._y -= this.$yAbs
 	}
 
 	lineBreak(){

@@ -41,8 +41,8 @@ module.exports = class CodeBlock extends require('base/shader'){
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(x, y, w, h, w2, h2, indent, pickId, style){
-				/*
-				this.ALLOCDRAW({},1)
+				
+				this.ALLOCDRAW(null,1)
 				this.WRITEPROPS({
 					visible:1,
 					delay:0.,
@@ -61,7 +61,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 					borderRadius: style.borderRadius,
 					color: style.color,
 					borderColor: style.borderColor
-				})*/
+				})
 			},
 		}
 
@@ -127,9 +127,6 @@ module.exports = class CodeBlock extends require('base/shader'){
 		else{
 			this.pickId = 0.
 		}
-
-		//this.errorTime = this.animateUniform(this.errorAnim)
-
 		return pos * this.viewPosition * this.camPosition * this.camProjection
 	}
 
@@ -139,7 +136,13 @@ module.exports = class CodeBlock extends require('base/shader'){
 	}
 
 	pixel(){$
-		return 'red'
+		this.viewport(this.p)
+		this.box(4.,13.4,this.topSize.x - 6. - 5.,  this.topSize.y - 13.5, 1.)
+		this.box(this.topSize.x - 18., 0., 18., this.topSize.y - 0., this.borderRadius)
+		this.box(10, this.h - 2., 2., this.bottomSize.y - 10.,1.)
+		this.box(0., this.h2 - 2., this.bottomSize.x, this.h, this.borderRadius)
+		return this.fill(this.color)
+		//return 'red'
 		/*
 		// ok lets draw things
 		var p = this.p

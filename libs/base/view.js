@@ -373,8 +373,8 @@ module.exports = class View extends require('base/class'){
 		turtle.walk(nt, true)
 
 		// store computed absolute coordinates
-		this.$x = turtle._x + turtle.$xAbs
-		this.$y = turtle._y + turtle.$yAbs
+		this.$x = turtle._x //+ turtle.$xAbs
+		this.$y = turtle._y //+ turtle.$yAbs
 
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)

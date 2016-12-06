@@ -46,8 +46,8 @@ module.exports = class CodeText extends require('shaders/text'){
 				var glyphs = $proto.font.fontmap.glyphs
 
 				var fontSize = this.$fastNAMEFontSize
-				var xabs = turtle.$xAbs
-				var yabs = turtle.$yAbs
+				//var xabs = turtle.$xAbs
+				//var yabs = turtle.$yAbs
 				var posx = turtle.wx// - turtle.$xAbs
 				var posy = turtle.wy// - turtle.$yAbs
 
@@ -105,8 +105,8 @@ module.exports = class CodeText extends require('shaders/text'){
 						//$tweenDelta:tweenDelta,
 						dx:0,
 						dy:0,
-						x:posx-xabs,
-						y:posy-yabs,
+						x:posx,
+						y:posy,
 						color: color,
 						fontSize:fontSize,
 						italic:0,

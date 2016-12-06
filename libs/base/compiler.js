@@ -950,6 +950,13 @@ module.exports = class Compiler extends require('base/class'){
 					if(!source) throw new Error('Unknown key with mask 0 ' + key)
 				}
 			}
+			if(key === 'thisDOTx'){
+				source += '- $turtle.$xAbs'
+			}
+			else if(key === 'thisDOTy'){
+				source += '- $turtle.$yAbs'
+			}
+
 			if(prop.hasFrom){ // initialize from from the write value if first write
 				last += packProp(indent, prop, 0, source)
 			}

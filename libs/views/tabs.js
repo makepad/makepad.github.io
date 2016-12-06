@@ -17,6 +17,7 @@ module.exports=class Tabs extends require('base/view'){
 	}
 
 	onTabSelect(tabStamp){
+		console.log(this.selected)
 		this.tabs[this.selected].$tabStamp.dx = 0
 		this.selected = tabStamp.index
 		this.redraw()
