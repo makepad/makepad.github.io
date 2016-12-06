@@ -18,7 +18,7 @@ module.exports = class Button extends require('base/stamp'){
 			default:{
 				to:{
 					Bg:{
-						color:colors.bgTop,
+						color:colors.bgNormal,
 						glowSize:0,
 						borderColor:colors.textLo
 					},
