@@ -77,6 +77,8 @@ module.exports = function painterScroll(proto){
 		var args = this.args
 		var o = (f.digit - 1.) * 4
 
+		console.log('DOWN',fingerInfo[o + 2], fingerInfo[o+3])
+
 		fingerInfo[o + 0] = f.x - args.x
 		fingerInfo[o + 1] = f.y - args.y
 		fingerInfo[o + 2] = f.workerId * 256 + f.todoId
@@ -171,7 +173,6 @@ module.exports = function painterScroll(proto){
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		this.requestRepaint()
-
 		var o = (f.digit-1) * 4
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
@@ -192,10 +193,12 @@ module.exports = function painterScroll(proto){
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		var o = (f.digit-1) * 4
+		
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
 		fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
 		fingerInfo[o+3] = f.pickId
+
 		this.requestRepaint()
 	}
 

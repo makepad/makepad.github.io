@@ -268,8 +268,12 @@ module.exports = class Tools extends require('base/class'){
 		this.turtle._pickId = pickId
 	}
 
-	addPickId(){
+	allocPickId(){
 		return this.turtle._pickId = ++this.$pickId
+	}
+
+	clearPickIds(){
+		this.$pickId = 1
 	}
 
 	// destroy framebuffers

@@ -231,7 +231,7 @@ module.exports = class Tree extends require('base/view'){
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0,x:'0',y:'0',w:'100%',h:'100%'})
 		this.pickMap = {}
-		this.pickId = 1
+		this.clearPickIds()
 		var p = this
 		
 		var iterFolder = (node, depth, closed) =>{
@@ -245,8 +245,8 @@ module.exports = class Tree extends require('base/view'){
 		
 		var drawNode = (name, node, i, len, depth, closed) =>{
 			//var node=nodes[i]
-			var treePick = this.addPickId()
-			var textPick = this.addPickId()
+			var treePick = this.allocPickId()
+			var textPick = this.allocPickId()
 			this.pickMap[treePick] = {node:node, type:'tree'}
 			this.pickMap[textPick] = {node:node, type:'text'}
 			this.setPickId(textPick)
