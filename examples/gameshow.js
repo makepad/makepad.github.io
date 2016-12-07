@@ -6,7 +6,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				props:{text:'HI'},
 				tools:{
 					Bg:require('shaders/quad').extend({
-						padding:100,
+						padding:130,
 						pixel:function() {$
 							this.viewport(this.mesh.xy)
 							this.translate(.5, .5)
@@ -14,7 +14,7 @@ module.exports = class extends require('base/drawapp'){ //top
 							let p = this.pos
 							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 6 + this.time * 4))
 							this.fillKeep('orange')
-							this.strokeKeep('white', .02)
+							this.strokeKeep('#700', .02)
 							this.shape += 0.04
 							this.strokeKeep('red', .03)
 							this.blur = 0.2
@@ -26,15 +26,17 @@ module.exports = class extends require('base/drawapp'){ //top
 						fontSize:32,
 						align:[0.5, 0.5],
 						boldness:3.,
-						outlineWidth:0.04,
+						outlineWidth:0.0,
 						shadowColor:'red',
 						shadowOffset:[1., 1],
+						dy: - 4.1,
+						lineSpacing:0.9,
 						outlineColor:'black',
 						vertexPos:function(pos) {
 							//return pos
 							this.pos = pos
 							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .5)
-							this.scale((abs(sin(this.time)) + 1.5), cen.x, cen.y)
+							this.scale((abs(sin(this.time)) * 0.8 + 1.5), cen.x, cen.y)
 							this.rotate(abs(sin(this.time)) * .5, cen.x, cen.y)
 							return this.pos
 						},
