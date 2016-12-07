@@ -342,7 +342,7 @@ module.exports = class Text extends require('base/shader'){
 			return mix(this.color, borderfinal, clamp(inner, 0., 1.))
 		}
 		var a = smoothstep(.75,-.75, field)
-		return this.color.rgba*a//vec4(this.color.rgb*a, a*this.color.a)
+		return this.color.rgba*a*this.color.a//vec4(this.color.rgb*a, a*this.color.a)
 	}
 
 	drawShadow(field){
@@ -362,7 +362,7 @@ module.exports = class Text extends require('base/shader'){
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)
 		}
-		return this.premulAlpha(this.drawField(field))
+		return (this.drawField(field))
 	}
 
 	onCompileVerbs(){
