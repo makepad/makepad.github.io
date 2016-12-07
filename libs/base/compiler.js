@@ -747,9 +747,13 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$turtle = 'this.turtle'
 		scope.$shaderOrder = 'this.$shaders.'+className 
 		scope.$proto = 'this.' + className +'.prototype'
-		scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
-		scope.$props = '$shader.$props'
-		scope.$a = '$props.array'
+		//scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
+		//scope.$props = '$shader.$props'
+		//scope.$a = '$props.array'
+		code += indent+'var $shaderOrder = this.$shaders.'+className +'\n'
+		code += indent+'var $shader = $shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)\n'
+		code += indent+'var $props = $shader.$props\n'
+		code += indent+'var $a = $props.array\n'
 
 		code += indent+'if($props.$frameId !== $view._frameId){\n' 
 		code += indent+'	$props.$frameId = $view._frameId\n'
@@ -904,15 +908,15 @@ module.exports = class Compiler extends require('base/class'){
 		var code = ''
 		if(source.indexOf('this.endTurtle') !== -1){ // fetch from turtle
 			code += indent + 'var $turtle = this.turtle\n'
-			code += indent + 'var $shader = this.$shaders.'+className+'[$turtle._order]\n'
+			code += indent + 'var $shader = this.$shaders.'+className+'[$turtle._order || $proto.order]\n'
 			code += indent + 'var $props = $shader.$props\n'
 			code += indent + 'var $a = $props.array\n'
 		}
-		else{
+		else{ // we should have alloc props get them for us
 			scope.$turtle = 'this.turtle'
-			if(!scope.$shader) scope.$shader = 'this.$shaders.'+className+'[$turtle._order]\n'
-			scope.$props = '$shader.$props'
-			scope.$a = '$props.array'
+			//if(!scope.$shader) scope.$shader = 'this.$shaders.'+className+'[$turtle._order]\n'
+			//scope.$props = '$shader.$props'
+			//scope.$a = '$props.array'
 		}
 		
 		code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'

@@ -39,13 +39,14 @@ module.exports = class Quad extends require('base/shader'){
 		this.indices.push(0,1,2,2,1,3)
 
 		this.verbs = {
-			draw:function(overload){
+			draw:function(overload){ 
 				this.STYLEPROPS(overload, 1)
 				this.ALLOCDRAW(overload)
 				this.turtle.walk()
 				this.WRITEPROPS()
 			},
 			begin:function(overload){
+				if(overload && overload.debug) debugger
 				this.STYLEPROPS(overload, 3)
 				this.ALLOCDRAW(overload)
 				this.beginTurtle()

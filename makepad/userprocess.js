@@ -163,8 +163,11 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.worker.onError = e => {
 			// we haz error, update the process
 			this.store.act("addRuntimeError",store=>{
+
+				//throw "WHAT"
 				var rt = this.process.runtimeErrors
 				var logs = this.process.logs
+
 				logs.push(e)
 				if(logs.length > 10000){
 					logs.unshift()

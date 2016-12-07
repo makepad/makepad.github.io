@@ -7,6 +7,14 @@ module.exports = class Source extends require('base/view'){
 		super(...args)
 
 		this.probes = []
+
+		// listen on the resource
+
+	}
+
+	onResource(e){
+		if(!this.app.store.anyChanges(e, 3, 'runtimeErrors', null) && 
+			!this.app.store.anyChanges(e, 0, 'parseErrors', null)) return
 	}
 
 	prototype() { 
@@ -25,9 +33,27 @@ module.exports = class Source extends require('base/view'){
 				wrap:false,
 				color:module.style.colors.bgNormal
 			}),
+			ErrorBg:require('shaders/quad').extend({
+				w:'100%',
+				pickAlpha:1,
+				padding:[15,0,15,15],
+				order:5,
+				color:'#000b'
+			}),
+			ErrorIcon:require('shaders/icon').extend({
+				color:'red',
+				margin:[0,5,0,0],
+				order:6,
+			}),
+			ErrorText:require('shaders/text').extend({
+				pickAlpha:1,
+				color:'white',
+				order:7,
+			}),
 			Code:class Code extends require('views/code'){ 
 				
 				prototype() { 
+					this.order = 3
 					this.drawPadding = [0, 0, 0, 4] 
 					this.w = '100%'
 					this.h = '100#'
@@ -157,12 +183,84 @@ module.exports = class Source extends require('base/view'){
 		})
 		this.endBg()
 		this.lineBreak()
+
+		// lets draw some errors!
+		this.beginErrorBg({
+			//debug:1,
+			//x:this.turtle.wx,
+			y:this.turtle.wy
+		})
+
+		var parseErrors = this.resource.parseErrors
+
+		var errors = []
+
+		if(parseErrors.length){
+			parseErrors.forEach(e=>{
+				//var error = {name:e.message,error:e,icon:'exclamation-circle',folder:[]}
+				
+				this.drawErrorIcon({
+					text:this.lookupErrorIcon['exclamation-triangle']
+				})
+				this.drawErrorText({
+					text:e.message
+				})
+				//console.log(error)
+				//tree.folder.push(error)
+				//errors.push(e.pos)
+			})
+		}
+		else{
+			var runtimeErrors = []
+			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
+
+			var resPath = this.resource.path
+			runtimeErrors.forEach((e,i)=>{
+				/*
+				var oldf = old.folder && old.folder[i]
+				// push a marker
+				if(!e.path || e.path === resPath){
+				if(this.resource.trace){ // we need to use the traceMap
+						var pos = this.resource.traceLines[e.line-1]
+						errors.push(pos - 1)
+					}
+					else{ // else we need to use .. what exactly
+
+					}
+				}*/
+
+				this.drawErrorIcon({
+					text:this.lookupErrorIcon['exclamation-circle']
+				})
+				this.drawErrorText({
+					text:e.message
+				})
+
+				//var error = {name:e.message + (e.count>1?':x'+e.count:''), path:e.path, error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
+
+				//console.log(error)
+				/*
+				tree.folder.push(error)
+				if(e.stack) e.stack.forEach(m=>{
+					if(m.path === resPath){
+						if(this.resource.trace){ // we need to use the traceMap
+							var pos = this.resource.traceLines[m.line-1]
+							errors.push(pos - 1)
+						}
+					}
+					error.folder.push({
+						path:m.path,
+						name:m.method+'()'+' - '+m.path+':'+m.line
+					})
+				})
+				*/
+			})
+		}
+		this.endErrorBg()
 		this.drawCode({
+			order:2,
 			resource:this.resource
 		})
-	}
-	
-	onResource(e){
 	}
 }
 

@@ -549,17 +549,20 @@ class Store extends require('base/class'){
 
 		store.locked = false
 		var changes = store.changes = []
-		try{
+		//try{
 			actor(this)
-		}
-		finally{
+		//}
+		//catch(e){
+		//	console.log("WHATTHEFUCK")
+		//}
+		//finally{
 			// process changes to this if we are running proxyFallback
 			if(proxyFallbackInit){
 				proxyFallbackInit(meta.object, this)
 			}
 			store.locked = true
 			return processChanges(name, changes, store, debug)
-		}
+		//}
 	}
 }
 // process all changes

@@ -312,7 +312,8 @@ module.exports = class Makepad extends require('base/app'){
 		this.store.act("addProcess", store=>{
 			processList.push({
 				path: resource.path,
-				runtimeErrors: []
+				runtimeErrors: [],
+				logs:[]
 			})
 		})
 		

@@ -564,7 +564,6 @@ module.exports = class View extends require('base/class'){
 		var pass = this.$renderPasses[id] 
 
 		if(!pass){ // initialize the buffers for the pass
-			console.log("IIT")
 			pass = this.$renderPasses[id] = {}
 			pass.color0 = new painter.Texture(painter.RGBA, options.colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
 			if(options.pick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
