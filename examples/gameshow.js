@@ -36,7 +36,7 @@ module.exports = class extends require('base/drawapp'){ //top
 						vertexPos:function(pos) {
 							//return pos
 							this.pos = pos
-							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .5)
+							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .53)
 							this.scale((abs(sin(this.time)) * 0.8 + 1.5), cen.x, cen.y)
 							this.rotate(abs(sin(this.time)) * .5, cen.x, cen.y)
 							return this.pos
