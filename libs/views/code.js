@@ -25,7 +25,7 @@ module.exports = class Code extends require('views/edit'){
 				padding:[0,0,0,4],
 				w:'100%',
 				h:'100%',
-				color:colors.bgNormal
+				color:colors.codeBg
 			}),
 			Text: require('shaders/codetext').extend({ 
 				font: require('fonts/ubuntu_monospace_256.font'), 

@@ -160,7 +160,8 @@ module.exports = class CodeText extends require('shaders/text'){
 
 	pixel(){$
 		this.viewport(this.mesh.xy)
-		this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
+		this.textShape()
+		//this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
 		//if(this.mesh.z < 0.5){
 		//	this.blur = this.shadowBlur
 		//	return this.fill(this.shadowColor)

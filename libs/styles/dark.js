@@ -23,7 +23,7 @@ module.exports = class DarkStyle extends require('base/style'){
 			textMed:'Grey500',
 			textHi:'Grey300',
 			textLo:'Grey700',
-			codeBg:'Grey850',
+			codeBg:'Grey900',
 			codeClass:'Pink300',
 			codeObject:'Indigo200',
 			codeParen:'BlueGrey400',

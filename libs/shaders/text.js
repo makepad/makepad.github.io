@@ -353,10 +353,16 @@ module.exports = class Text extends require('base/shader'){
 		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
 		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
 	}*/
+	
+	textShape(){
+		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.35)-.04
+		this._oldShape = this.shape
+		this.shape = min(this.shape, this.field)
+	}
 
 	pixel(){$
 		this.viewport(this.mesh.xy)
-		this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
+		this.textShape() 
 		if(this.mesh.z < 0.5){
 			this.blur = this.shadowBlur
 			return this.fill(this.shadowColor)

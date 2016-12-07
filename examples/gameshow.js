@@ -12,10 +12,10 @@ module.exports = class extends require('base/drawapp'){ //top
 							this.translate(.5, .5)
 							this.circle(0., 0., .35) //+sin(this.time*8))
 							let p = this.pos
-							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 6 + this.time * 4))
+							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 8 + this.time * 8))
 							this.fillKeep('orange')
-							this.strokeKeep('#700', .02)
-							this.shape += 0.04
+							this.strokeKeep('#44ffff', .02)
+							this.shape += 0.08
 							this.strokeKeep('red', .03)
 							this.blur = 0.2
 							this.glow('white', 0.1)
