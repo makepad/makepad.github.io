@@ -26,19 +26,23 @@ module.exports = class extends require('base/drawapp'){ //top
 						fontSize:32,
 						align:[0.5, 0.5],
 						boldness:3.,
-						outlineWidth:0.0,
+						outlineWidth:0.015,
 						shadowColor:'#0009',
 						shadowBlur:0.01,
 						shadowOffset:[2., 2],
 						dy: - 4.1,
 						lineSpacing:0.9,
 						outlineColor:'black',
+						vertexStyle:function() {
+							let b = this.bouncy = abs(sin(this.time))
+							this.shadowOffset = vec2(b * 10, b * 10)
+						},
 						vertexPos:function(pos) {
 							//return pos
 							this.pos = pos
 							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .53)
-							this.scale((abs(sin(this.time)) * 0.8 + 1.5), cen.x, cen.y)
-							this.rotate(abs(sin(this.time)) * .5, cen.x, cen.y)
+							this.scale((this.bouncy * 0.8 + 1.5), cen.x, cen.y)
+							this.rotate(this.bouncy * .5, cen.x, cen.y)
 							return this.pos
 						},
 					}),
@@ -55,6 +59,6 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	onDraw() {
 		for(var i = 0;i < 1;i ++ )
-		this.drawSplash({id:i, text:'   NEVERMIND\nTHE BUZZWORDS!'})
+		this.drawSplash({id:i, text:'PWEE'})
 	}
 }
