@@ -55,11 +55,34 @@ module.exports = class Source extends require('base/view'){
 			ErrorIcon:require('shaders/icon').extend({
 				color:'red',
 				margin:[0,5,0,0],
+				states:{
+					default:{
+						duration:.5,
+						time:{fn:'ease',begin:30,end:0},
+						from:{
+							color:'#f000'
+						},
+						to:{
+							color:'red'
+						}
+					},
+				},
 				order:6,
 			}),
 			ErrorText:require('shaders/text').extend({
 				pickAlpha:1,
-				color:'white',
+				states:{
+					default:{
+						duration:.5,
+						time:{fn:'ease',begin:30,end:0},
+						from:{
+							color:'#fff0'
+						},
+						to:{
+							color:'white'
+						}
+					},
+				},
 				order:7,
 			}),
 			Code:class Code extends require('views/code'){ 
@@ -210,7 +233,6 @@ module.exports = class Source extends require('base/view'){
 		if(parseErrors.length){
 			parseErrors.forEach(e=>{
 				//var error = {name:e.message,error:e,icon:'exclamation-circle',folder:[]}
-				
 				this.drawErrorIcon({
 					text:this.lookupErrorIcon['exclamation-triangle']
 				})
