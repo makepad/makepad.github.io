@@ -26,7 +26,7 @@ module.exports = class extends require('base/drawapp'){ //top
 						fontSize:32,
 						align:[0.5, 0.5],
 						boldness:3.,
-						outlineWidth:0.015,
+						outlineWidth:0.02,
 						shadowColor:'#0009',
 						shadowBlur:0.01,
 						shadowOffset:[2., 2],
@@ -42,7 +42,7 @@ module.exports = class extends require('base/drawapp'){ //top
 							this.pos = pos
 							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .53)
 							this.scale((this.bouncy * 0.8 + 1.5), cen.x, cen.y)
-							this.rotate(this.bouncy * .5, cen.x, cen.y)
+							this.rotate(this.bouncy * .25, cen.x, cen.y)
 							return this.pos
 						},
 					}),
@@ -59,6 +59,6 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	onDraw() {
 		for(var i = 0;i < 1;i ++ )
-		this.drawSplash({id:i, text:'PWEE'})
+		this.drawSplash({id:i, text:'   NEVERMIND\nTHE BUZZWORDS!'})
 	}
 }
