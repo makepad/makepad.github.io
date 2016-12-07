@@ -217,6 +217,7 @@ module.exports = class Source extends require('base/view'){
 				this.drawErrorText({
 					text:e.message
 				})
+				this.lineBreak()
 				//console.log(error)
 				//tree.folder.push(error)
 				//errors.push(e.pos)
@@ -247,6 +248,7 @@ module.exports = class Source extends require('base/view'){
 				this.drawErrorText({
 					text:e.message
 				})
+				this.lineBreak()
 
 				//var error = {name:e.message + (e.count>1?':x'+e.count:''), path:e.path, error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 
