@@ -15,25 +15,10 @@ module.exports = class extends require('base/drawapp'){ //top
 							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 6 + this.time * 4))
 							this.fillKeep('orange')
 							this.strokeKeep('white', .02)
-							this.shape += 0.03
-							this.strokeKeep('red', .02)
-							//this.rectangle(0.,0.,100.,100.)
-							//this.fill('blue')
-							
-							//this.circle(70.,60.,30.)
-							//this.fill('#f0fc')
-							
-							//this.box(50.,50.,50.,50.,10.)
-							//this.fill('#f')
-							//this.rotate(this.time,50,75)
-							//this.moveTo(100,100)
-							//this.lineTo(50,50)
-							//this.lineTo(50,150)
-							//this.closePath()
-							//this.strokeKeep('#f00',5.)
-							//this.blur=18.
-							//this.glow('#f00',15.)
-							
+							this.shape += 0.04
+							this.strokeKeep('red', .03)
+							this.blur = 0.2
+							this.glow('white', 0.1)
 							return this.result
 						}
 					}),
@@ -43,7 +28,7 @@ module.exports = class extends require('base/drawapp'){ //top
 						boldness:3.,
 						outlineWidth:0.04,
 						shadowColor:'red',
-						shadowOffset:[1, 1],
+						shadowOffset:[1., 1],
 						outlineColor:'black',
 						vertexPos:function(pos) {
 							//return pos
