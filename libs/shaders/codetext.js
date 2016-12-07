@@ -159,6 +159,18 @@ module.exports = class CodeText extends require('shaders/text'){
 	}
 
 	pixel(){$
+		this.viewport(this.mesh.xy)
+		this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
+		//if(this.mesh.z < 0.5){
+		//	this.blur = this.shadowBlur
+		//	return this.fill(this.shadowColor)
+		//}
+		this.fillKeep(this.color)
+		if(this.outlineWidth>0.){
+			this.stroke(this.outlineColor,this.outlineWidth)
+		}
+		return this.result
+		/*
 		//if(this.unicode == 10.) return 'red'
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.010) / adjust * 1.4 
@@ -168,6 +180,6 @@ module.exports = class CodeText extends require('shaders/text'){
 
 		field = this._field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
 
-		return this.drawField(field)
+		return this.drawField(field)*/
 	}
 }

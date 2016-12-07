@@ -41,17 +41,19 @@ module.exports = class extends require('base/drawapp'){ //top
 						fontSize:32,
 						align:[0.5, 0.5],
 						boldness:3.,
-						outlineWidth:2,
+						outlineWidth:0.04,
+						shadowColor:'red',
+						shadowOffset:[1, 1],
 						outlineColor:'black',
 						vertexPos:function(pos) {
 							//return pos
 							this.pos = pos
 							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .5)
-							this.scale((abs(sin(this.time)) + .75), cen.x, cen.y)
-							this.rotate(sin(this.time) * .5, cen.x, cen.y)
+							this.scale((abs(sin(this.time)) + 1.5), cen.x, cen.y)
+							this.rotate(abs(sin(this.time)) * .5, cen.x, cen.y)
 							return this.pos
 						},
-						pixel:function() {
+						pixel2:function() {
 							this.viewport(this.mesh.xy)
 							var field = ((.75 - texture2D(this.fontSampler, this.textureCoords.xy).r) * 0.5)
 							//this.shape=1-sin(this.mesh.x*10.)*10

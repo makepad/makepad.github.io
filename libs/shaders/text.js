@@ -333,7 +333,7 @@ module.exports = class Text extends require('base/shader'){
 
 		return vec4(this.vertexPos(pos),0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
-
+	/*
 	drawField(field){$
 		if(field > 1. + this.outlineWidth){
 			discard
@@ -352,28 +352,15 @@ module.exports = class Text extends require('base/shader'){
 	drawShadow(field){
 		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
 		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
-	}
+	}*/
 
 	pixel(){$
-		/*
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
-		this._field = field
-
-		this.pixelStyle()
-
-		field = this._field - this.boldness
-
-		if(this.mesh.z < 0.5){
-			return this.drawShadow(field)
-		}
-		return (this.drawField(field))*/
-
 		this.viewport(this.mesh.xy)
 		this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
-		//this.shape=1-sin(this.mesh.x*10.)*10
-		//this.shape-=0.1
-		//this.rect(0.,0.,1.,1.)
+		if(this.mesh.z < 0.5){
+			this.blur = this.shadowBlur
+			return this.fill(this.shadowColor)
+		}
 		this.fillKeep(this.color)
 		if(this.outlineWidth>0.){
 			this.stroke(this.outlineColor,this.outlineWidth)
