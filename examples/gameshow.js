@@ -27,8 +27,9 @@ module.exports = class extends require('base/drawapp'){ //top
 						align:[0.5, 0.5],
 						boldness:3.,
 						outlineWidth:0.0,
-						shadowColor:'red',
-						shadowOffset:[1., 1],
+						shadowColor:'#0009',
+						shadowBlur:0.01,
+						shadowOffset:[2., 2],
 						dy: - 4.1,
 						lineSpacing:0.9,
 						outlineColor:'black',
@@ -40,17 +41,6 @@ module.exports = class extends require('base/drawapp'){ //top
 							this.rotate(abs(sin(this.time)) * .5, cen.x, cen.y)
 							return this.pos
 						},
-						pixel2:function() {
-							this.viewport(this.mesh.xy)
-							var field = ((.75 - texture2D(this.fontSampler, this.textureCoords.xy).r) * 0.5)
-							//this.shape=1-sin(this.mesh.x*10.)*10
-							this.shape = field
-							this.shape -= 0.1
-							//this.rect(0.,0.,1.,1.)
-							this.fillKeep('white')
-							this.stroke('black', 0.06)
-							return this.result
-						}
 					}),
 				},
 				onDraw:function() {
