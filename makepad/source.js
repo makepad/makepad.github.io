@@ -36,6 +36,18 @@ module.exports = class Source extends require('base/view'){
 			ErrorBg:require('shaders/quad').extend({
 				w:'100%',
 				pickAlpha:1,
+				states:{
+					default:{
+						duration:.5,
+						time:{fn:'ease',begin:30,end:0},
+						from:{
+							color:'#0000'
+						},
+						to:{
+							color:'#000b'
+						}
+					},
+				},
 				padding:[15,0,15,15],
 				order:5,
 				color:'#000b'
