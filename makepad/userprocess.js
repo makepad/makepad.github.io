@@ -184,7 +184,7 @@ module.exports = class UserProcess extends require('views/draw'){
 				if(rt.length>1){
 					if(rt.length<=2){
 						this.process.runtimeErrors.push({
-							message:'Too many errors', stack:[]
+							message:'Too many errors', stack:[], count:0
 						})
 					}
 					return

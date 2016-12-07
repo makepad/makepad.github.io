@@ -266,6 +266,10 @@ module.exports = class Text extends require('base/shader'){
 		//this.field += sin(this.mesh.y*10.)*3.*cos(this.mesh.x*10.)*3.
 	}
 
+	vertexPos(pos){$
+		return pos
+	}
+
 	vertex(){$
 		this.visible = 1.0
 
@@ -327,7 +331,7 @@ module.exports = class Text extends require('base/shader'){
 			this.mesh.xy
 		)
 
-		return vec4(pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
+		return vec4(this.vertexPos(pos),0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
 
 	drawField(field){$
@@ -351,6 +355,7 @@ module.exports = class Text extends require('base/shader'){
 	}
 
 	pixel(){$
+		/*
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
 		this._field = field
@@ -362,7 +367,18 @@ module.exports = class Text extends require('base/shader'){
 		if(this.mesh.z < 0.5){
 			return this.drawShadow(field)
 		}
-		return (this.drawField(field))
+		return (this.drawField(field))*/
+
+		this.viewport(this.mesh.xy)
+		this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
+		//this.shape=1-sin(this.mesh.x*10.)*10
+		//this.shape-=0.1
+		//this.rect(0.,0.,1.,1.)
+		this.fillKeep(this.color)
+		if(this.outlineWidth>0.){
+			this.stroke(this.outlineColor,this.outlineWidth)
+		}
+		return this.result
 	}
 
 	onCompileVerbs(){

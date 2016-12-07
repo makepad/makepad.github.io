@@ -27,7 +27,7 @@ module.exports = class Quad extends require('base/shader'){
 			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 			moveScroll:{value:1.},
 			debug:{value:false},
-			color: {value:'red'},
+			color: {value:'#5'},
 
 			mesh:{kind:'geometry', type:types.vec2},
 		}
