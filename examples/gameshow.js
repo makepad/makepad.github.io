@@ -113,7 +113,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		})
 		
 		this.players = [
-			{name:"Player1", ctrl:0, buzzer:2, button:1, sound:0, score:0},
+			{name:"Chrissy", ctrl:0, buzzer:2, button:1, sound:0, score:0},
 			{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0},
 			{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0},
 			{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0}
@@ -218,20 +218,6 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		else {
 			
-			this.drawText({
-				fontSize:50,
-				align:[0.5, 0],
-				text:this.questions[this.page - 1].h
-			})
-			this.lineBreak()
-			this.turtle.wy += 40
-			this.drawText({
-				fontSize:32,
-				text:this.questions[this.page - 1].q
-			})
-			
-			
-			
 			for(let i = 0;i < this.players.length;i ++ ){
 				let player = this.players[i]
 				this.beginBg({
@@ -255,6 +241,22 @@ module.exports = class extends require('base/drawapp'){ //top
 				
 				this.endBg()
 			}
+			this.drawText({
+				fontSize:50,
+				margin:[0, 0, 0, 40],
+				align:[0., 0],
+				text:this.questions[this.page - 1].h
+			})
+			this.lineBreak()
+			this.turtle.wy += 40
+			this.drawText({
+				fontSize:32,
+				margin:[0, 0, 0, 40],
+				text:this.questions[this.page - 1].q
+			})
+			
+			
+			
 			// draw players points
 			let winner = this.players[this.winner]
 			if(winner) {
