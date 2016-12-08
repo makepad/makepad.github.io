@@ -68,12 +68,15 @@ module.exports = class extends require('base/drawapp'){ //top
 	constructor() {
 		super()
 		audio.reset()
+		
+		this.coinUp = new audio.Flow({buffer1:{data:require('/examples/cash.wav', wav.parse)}})
+		this.coinDown = new audio.Flow({buffer1:{data:require('/examples/cow.wav', wav.parse)}})
 		this.snds = [
 			new audio.Flow({buffer1:{data:require('/examples/horn.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/baby.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/bicycle.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/chicken.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/cow.wav', wav.parse)}})
+			
 		]
 		
 		var flen = .1 * 44100
@@ -187,9 +190,11 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 	}
 	
-	playerScoreUp(index) {
+	playerScore(index, add) {
+		if(add > 0) this.coinUp.play()
+		else this.coinDown.play()
 		let player = this.players[index]
-		if(player) player.score ++ 
+		if(player) player.score += add
 		this.redraw()
 	}
 	
@@ -202,7 +207,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.lightsOff()
 		if(e.name.indexOf('num') === 0) {
 			console.log(e.name, e.name.slice(2))
-			this.playerScoreUp(parseInt(e.name.slice(3)) - 1)
+			this.playerScore(parseInt(e.name.slice(3)) - 1, e.shift? - 1:1)
 		}
 		if(e.name === 'leftArrow') {
 			this.page = max(0, this.page - 1)
@@ -256,8 +261,6 @@ module.exports = class extends require('base/drawapp'){ //top
 				margin:[0, 0, 0, 40],
 				text:this.questions[this.page - 1].q
 			})
-			
-			
 			
 			// draw players points
 			let winner = this.players[this.winner]
