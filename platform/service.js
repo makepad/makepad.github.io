@@ -29,7 +29,7 @@ module.exports = class Service{
 	onMessage(msg){
 		var name = 'user_' + msg.fn
 		if(!this[name]){
-			return console.log("User method "+name+' not found')
+			return console.log("User method "+name+' not found', this)
 		}
 		this[name](msg)
 	}

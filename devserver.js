@@ -4,7 +4,7 @@ var Http = require('http')
 var Fs = require('fs')
 var Url = require('url')
 var Os = require('os')
-
+var NodeWebSocket = require('./devwebsocket')
 var server_port = 2001
 var server_interface = '0.0.0.0'
 
@@ -174,6 +174,15 @@ try{
 catch(x){
 	var server = Http.createServer(requestHandler)
 }
+
+if(process.argv.length === 3){
+	var hostModule = require(process.argv[2])
+}
+
+server.on('upgrade', function(request, socket, header){
+	var sock = new NodeWebSocket(request, socket, header)
+	if(hostModule) hostModule(sock)
+})
 
 server.listen(server_port, server_interface, function(err){
 	if (err) {

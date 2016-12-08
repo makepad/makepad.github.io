@@ -7,7 +7,9 @@ var loadServices = [
 	"painter1",
 	"storage1",
 	"worker1",
-	"audio1"
+	"audio1",
+	"gamepad1",
+	"socket1"
 //	"dropfiles1",
 ]
 
@@ -479,7 +481,7 @@ function workerBoot(){
 //
 
 function workerRequire(absParent, worker, modules, args){
-	return function require(path){
+	return function require(path, loader){
 		if(path && path.constructor === RegExp){
 			var ret = {}
 			for(var key in modules){
@@ -533,6 +535,9 @@ function workerRequire(absParent, worker, modules, args){
 		}
 		if(typeof module.exports === 'function'){
 			Object.defineProperty(module.exports, '__module__', {value:module})
+		}
+		else if(loader && module.exports instanceof ArrayBuffer){
+			module.exports = loader(module.exports)
 		}
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent)

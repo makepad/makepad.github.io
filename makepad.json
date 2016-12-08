@@ -83,7 +83,9 @@
 				{"name":"storage.js"},
 				{"name":"dropfiles.js"},
 				{"name":"midi.js"},
-				{"name":"debug.js"}
+				{"name":"debug.js"},
+				{"name":"gamepad.js"},
+				{"name":"socket.js"}
 			]},
 			{"name":"parsers","folder":[
 				{"name":"font.js"},
@@ -111,6 +113,13 @@
 		]},
 		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
+			{"name":"baby.wav"},
+			{"name":"bicycle.wav"},
+			{"name":"cash.wav"},
+			{"name":"chicken.wav"},
+			{"name":"cow.wav"},
+			{"name":"fart.wav"},
+			{"name":"horn.wav"},
 			{"name":"sample1.wav"},
 			{"name":"sample2.wav"},
 			{"name":"windtree.js"},

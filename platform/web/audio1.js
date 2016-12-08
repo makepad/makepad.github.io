@@ -114,15 +114,22 @@ module.exports = class extends require('/platform/service'){
 					for(let i = 0; i < infos.length; i++){
 						let info = infos[i]
 						if(info.kind === 'audioinput' && info.label === node.config.device){
-							console.log(i, infos, info.label)
 							getUserMedia.call(navigator, {audio:{deviceId: {exact: info.deviceId}}}, function(flow, node, stream){
 								node.audioNode = this.context.createMediaStreamSource(stream)
-								console.log(node.audioNode)
+								//console.log(node.audioNode)
 								// connect it lazily
 								node.stream = stream
 								var to = flow.nodes[node.config.to]
 								if(!to) console.log("input cannot connect to "+node.config.to)
-								else node.audioNode.connect(to.audioNode)
+								else{
+									try{
+										node.audioNode.connect(to.audioNode)
+									}
+									catch(e){
+										 console.log("input "+node.config.device+" cannot connect to "+node.config.to)
+									}
+								}
+
 							}.bind(this, flow, node), function(err){
 								// error opening input. todo . fix.
 							}.bind(this))
@@ -134,11 +141,19 @@ module.exports = class extends require('/platform/service'){
 				var bufsrc = this.context.createBufferSource()
 				node = {
 					config:conf, 
-					start:conf.start, 
+					start:conf.start || 0, 
 					type:'buffer', 
 					audioNode:bufsrc
 				}
+
+				// unwrap loaded wav file
 				var data = conf.data
+				if(data.data){
+					if(!conf.rate) conf.rate = data.rate
+					data = data.data
+				}
+				if(!conf.rate) conf.rate = 44100
+				// load it up into a buffer
 				if(data && data.length && data[0].length){
 					// lets copy the data into an audiobuffer
 					var buffer = this.context.createBuffer(data.length, data[0].length, Math.max(Math.min(conf.rate,192000),3000))
@@ -162,6 +177,10 @@ module.exports = class extends require('/platform/service'){
 			else if(type === 'oscillator'){
 
 			}
+			else if(type === 'delay'){
+				node = {config:conf, type:'gain', audioNode:this.context.createDelay()}
+				if(conf.delayTime !== undefined) node.audioNode.delayTime.value = conf.delayTime
+			}
 
 			nodes[name] = node
 		}
@@ -181,13 +200,26 @@ module.exports = class extends require('/platform/service'){
 				audioNode[key].value = value
 			}
 
-			if(config.to === 'output'){
+			if(config.to === undefined || config.to === 'output'){
 				audioNode.connect(this.context.destination)
 			}
 			else{
-				var to = nodes[config.to]
+				var toStr = config.to
+				var idx = toStr.indexOf('.')
+				var prop = null
+				if(idx !== -1){
+					var prop = toStr.slice(idx+1)
+					toStr = toStr.slice(0,idx)
+				}
+				var to = nodes[toStr]
 				if(!to) console.log(name + " cannot connect to "+config.to)
-				else audioNode.connect(to.audioNode)
+				else{
+					if(prop){
+						//console.log("CONNECT TO", audioNode, to.audioNode, prop)
+						audioNode.connect(to.audioNode[prop])
+					}
+					else audioNode.connect(to.audioNode)
+				}
 			}
 		}
 		// we need to start the nodes we are supposed to start

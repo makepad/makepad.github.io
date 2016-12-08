@@ -355,7 +355,7 @@ module.exports = class Text extends require('base/shader'){
 	}*/
 	
 	textShape(){
-		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.35)-.04
+		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
 		this._oldShape = this.shape
 		this.shape = min(this.shape, this.field)
 	}
