@@ -218,6 +218,11 @@ module.exports = class Code extends require('views/edit'){
 				'#':{},
 				'...':{}
 			},
+			Template:{
+				$color:colors.codeString,
+				template:{},
+				expression:{$color:colors.codeOperator}
+			},
 			OperatorNL$Operator:{},
 			Parens:{
 				$color:colors.codeParen,

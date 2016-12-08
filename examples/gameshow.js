@@ -2,6 +2,160 @@ new require('styles/dark')
 let audio = require('services/audio')
 let socket = require('services/socket')
 let wav = require('parsers/wav')
+
+class Base{
+	constructor() {}
+}
+
+class Example extends Base{
+	constructor() {
+		super()
+		// only available AFTER super!
+		this.prop = 10
+	}
+	
+	method() {
+		super.method()
+	}
+	
+	get prop() {
+		return 10
+	}
+	
+	set prop(v) {
+		this._prop = v
+	}
+	
+	static stMethod() {
+		//exists as:
+		Example.stMethod()
+	}
+	
+	syntax(...rest) {
+		const t = 20
+		t = 30 //exception
+		// let scope bound
+		for(let i = 0;i < 10;i ++ ){
+			
+		}
+		// splatting array into arguments
+		callSomething(...rest)
+		
+		// destructuring
+		var c = {key:1}
+		var {key:varName} = c
+		var [a] = c
+	}
+	
+	arrow() {
+		// short notation
+		[1, 2, 3].map(value=>value + 10)
+		
+		let longer = (a, b, c) =>{
+			this.prop = 10
+			return 10
+		}
+	}
+	
+	promises() {
+		
+		let prom = new Promise(resolve, reject=>{
+			asyncOp(result=>{
+				resolve('my value')
+			})
+		})
+		
+		prom.then(result=>{
+			return otherProm()
+		}, error=>{
+			
+		}).then(next=>{
+			// return of otherProm
+		})
+		
+		//  use of all
+		let promises = []
+		Promise.all(promises).then(results=>{
+			
+		})
+		
+	}
+	
+	iterators() {
+		let a = [1, 2, 3]
+		for(let i of a){
+			// 1,2,3
+		}
+	}
+	
+	generators() {
+		
+		function *gen() {
+			yield 1
+			let t = yield 2 //t=10
+			yield *[3, 4, 5]
+		}
+		// direct use:
+		var iter = gen()
+		iter.next().value
+		iter.next(10).value
+		//or
+		for(let i of gen()){
+			// i = 1, 2 
+		}
+		
+		// use with promises
+		function *async() {
+			yield asyncOp1()
+			yield asyncOp2()
+			yield asyncOp3()
+		}
+		asyncStepper(async())
+		
+	}
+	
+	literals() {
+		// normal templates
+		let prop = 10
+		// tagged templates
+		function tag(strings, ...values) {
+			return 'processed'
+		}
+		var a = `text${prop}text`
+		var b = tag`template${value}text`
+		var c = 'normal'
+	}
+	
+	modules() {
+		module.exports = test
+		// export test
+		
+		const prop = require('module').prop
+		// import prop from "module"
+	
+	// import {a,b} from "module"
+	// import * as obj from "module"
+	}
+	
+	WeakMap() {
+		let someObj = {}
+		var wm = new WeakMap()
+		wm.set(someObj, "data")
+		wm.get(someObj)
+		
+		var ws = new WeakSet()
+		ws.add(someObj)
+		
+		var m = new Map()
+		m.set("key", value)
+		
+		var s = new Set()
+		s.add("uniquekey")
+		s.has("uniquekey") === true
+	}
+	
+}
+
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
 		this.props = {
@@ -70,13 +224,14 @@ module.exports = class extends require('base/drawapp'){ //top
 		audio.reset()
 		
 		this.coinUp = new audio.Flow({buffer1:{data:require('/examples/cash.wav', wav.parse)}})
-		this.coinDown = new audio.Flow({buffer1:{data:require('/examples/cow.wav', wav.parse)}})
+		this.coinDown = new audio.Flow({buffer1:{data:require('/examples/sad.wav', wav.parse)}})
 		this.snds = [
 			new audio.Flow({buffer1:{data:require('/examples/horn.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/baby.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/bicycle.wav', wav.parse)}}),
 			new audio.Flow({buffer1:{data:require('/examples/chicken.wav', wav.parse)}}),
-			
+			new audio.Flow({buffer1:{data:require('/examples/fart.wav', wav.parse)}}),
+			new audio.Flow({buffer1:{data:require('/examples/cow.wav', wav.parse)}}),
 		]
 		
 		var flen = .1 * 44100
@@ -116,28 +271,44 @@ module.exports = class extends require('base/drawapp'){ //top
 			}
 		})
 		
-		this.players = [
-			{name:"Player1", ctrl:0, buzzer:2, button:1, sound:0, score:0, color:'#c33'},
-			{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0, color:'#3c3'},
-			{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0, color:'#33c'},
-			{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0, color:'#cc3'}
+		this.teams = [
+			{name:"Team1", color:'#7', players:[
+				{name:"Player1", ctrl:0, buzzer:2, button:1, sound:0, score:0, color:'#c33'},
+				{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0, color:'#3c3'},
+				{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0, color:'#33c'},
+			]},
+			{name:"Team2", color:'#6', players:[
+				{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0, color:'#cc3'},
+				{name:"Player5", ctrl:0, buzzer:2, button:0, sound:4, score:0, color:'#3cc'},
+				{name:"Player6", ctrl:0, buzzer:2, button:4, sound:5, score:0, color:'#c3c'}
+			]}
 		]
 		
 		this.questions = [
-			{h:"Syntax", q:"Why is null an object"},
-			{h:"Promises", q:"What is christmas tree\nprogramming?"},
-			{h:"Promises", q:"Why do promises\neat exceptions?"},
-			{h:"Generators", q:"What happens if you combine\na generator and a promise?"},
-			{h:"Generators", q:"What do generators generate?"},
-			{h:"Iterators", q:"Enact iterators with your team"},
-			{h:"Iterators", q:"Why are iterators a protocol?"},
-			{h:"Arrow functions", q:"Say lambda 5 times real fast"},
-			{h:"Arrow functions", q:"What is this?"},
 			{h:"Classes", q:"Explain prototypes\nin 2 sentences"},
 			{h:"Classes", q:"Are classes prototypes?"},
+			{h:"Classes", q:"Examples"},
+			{h:"Syntax", q:"What is hoisting?"},
+			{h:"Syntax", q:"...what?"},
+			{h:"Syntax", q:"Examples"},
+			{h:"Arrow functions", q:"Say lambda 5 times real fast"},
+			{h:"Arrow functions", q:"What is this?"},
+			{h:"Arrow functions", q:"Examples"},
+			{h:"Promises", q:"What is christmas tree\nprogramming?"},
+			{h:"Promises", q:"Why do promises\neat exceptions?"},
+			{h:"Promises", q:"Examples"},
+			{h:"Iterators", q:"Enact iterators with your team"},
+			{h:"Iterators", q:"Examples"},
+			{h:"Generators", q:"What happens if you combine\na generator and a promise?"},
+			{h:"Generators", q:"What do generators generate?"},
+			{h:"Generators", q:"Examples"},
 			{h:"Template literals", q:"Whats literal about\na template literal?"},
 			{h:"Template literals", q:"Whats the next biggest\nuse of the backtick"},
+			{h:"Template literals", q:"Examples"},
 			{h:"Modules", q:"What does static analysis mean"},
+			{h:"Modules", q:"Examples"},
+			{h:"WeakMaps", q:"Whats weak about this map"},
+			{h:"WeakMaps", q:"Examples"},
 			{h:"Final Score", q:""},
 		]
 		
@@ -145,31 +316,31 @@ module.exports = class extends require('base/drawapp'){ //top
 		//socket.postMessage({controller:0,buzzer:0,led:true})
 		this.show = ""
 		
-		this.winner =  - 1
+		this.winner = null
 		
 		socket.onMessage = msg=>{
 			if( ! msg.state) return
+			console.log(msg)
 			// fix player selector based on buzzer
-			for(let i = 0;i < this.players.length;i ++ ){
-				let player = this.players[i]
-				if(player.ctrl == msg.controller && player.buzzer == msg.buzzer && player.button == msg.button) {
-					this.playerWin(i)
-					break
+			for(let t = 0;t < this.teams.length;t ++ ){
+				let team = this.teams[t]
+				for(let i = 0;i < team.players.length;i ++ ){
+					let player = team.players[i]
+					if(player.ctrl == msg.controller && player.buzzer == msg.buzzer && player.button == msg.button) {
+						this.playerWin(player)
+						break
+					}
 				}
 			}
-			
 		}
 		
 		this.page = 0
 	}
 	
-	playerWin(id) {
-		if(this.winner !==  - 1) return
+	playerWin(player) {
+		if(this.winner !== null) return
 		
-		this.winner = id
-		
-		let player = this.players[this.winner]
-		
+		this.winner = player
 		this.snds[player.sound].play()
 		
 		socket.postMessage({
@@ -180,34 +351,36 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	lightsOff() {
-		this.winner =  - 1
-		for(let i = 0;i < 4;i ++ ){
+		this.winner = null
+		for(let i = 0;i < 8;i ++ ){
 			socket.postMessage({
-				controller:0,
-				buzzer:i,
+				controller:floor(i / 4),
+				buzzer:i & 3,
 				led:false
 			})
 		}
 	}
 	
-	playerScore(index, add) {
+	playerScore(player, add) {
 		if(add > 0) this.coinUp.play()
 		else this.coinDown.play()
-		let player = this.players[index]
 		if(player) player.score += add
 		this.redraw()
 	}
 	
 	onKeyDown(e) {
 		
-		var fake = {q:0, w:1, e:2, r:3}
+		var fake = {q:[0, 0], w:[0, 1], e:[0, 2], r:[1, 0], t:[1, 1], y:[1, 2]}
 		if(fake[e.name] !== undefined) {
-			return this.playerWin(fake[e.name])
+			let id = fake[e.name]
+			return this.playerWin(this.teams[id[0]].players[id[1]])
 		}
 		this.lightsOff()
 		if(e.name.indexOf('num') === 0) {
-			console.log(e.name, e.name.slice(2))
-			this.playerScore(parseInt(e.name.slice(3)) - 1, e.shift? - 1:1)
+			let id = parseInt(e.name.slice(3)) - 1
+			let team = this.teams[floor(id / 3)]
+			let player = team && team.players[id % 3]
+			if(player) this.playerScore(player, e.shift? - 1:1)
 		}
 		if(e.name === 'leftArrow') {
 			this.page = max(0, this.page - 1)
@@ -219,24 +392,19 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	onDraw() {
 		//for(var i=0;i<1;i++)
-		if(this.page == 0) {
-			this.drawSplash({id:0, text:'Never mind the\n   Buzzwords'})
-			this.drawText({
-				color:'#7',
-				margin:[0, 0, 0, 10],
-				fontSize:16,
-				text:"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
-			})
-		}
-		else {
-			
-			for(let i = 0;i < this.players.length;i ++ ){
-				let player = this.players[i]
+		let team = 0
+		for(let t = 0;t < this.teams.length;t ++ ){
+			let total = 0
+			let team = this.teams[t]
+			for(let i = 0;i < team.players.length;i ++ ){
+				let player = team.players[i]
+				total += player.score
 				this.beginBg({
-					align:[0., 1],
+					align:[t, 1],
 					color:player.color,
-					margin:5,
-					padding:15,
+					down:1,
+					margin:2,
+					padding:7,
 					w:'200'
 				})
 				this.drawText({
@@ -254,6 +422,41 @@ module.exports = class extends require('base/drawapp'){ //top
 				
 				this.endBg()
 			}
+			this.beginBg({
+				align:[t, 1],
+				down:1,
+				color:team.color,
+				margin:2,
+				padding:7,
+				w:'200'
+			})
+			this.drawText({
+				align:[1, 0],
+				fontSize:20,
+				order:1,
+				text:'' + total
+			})
+			this.drawText({
+				fontSize:20,
+				align:[0, 0],
+				order:1,
+				text:team.name
+			})
+			
+			this.endBg()
+		}
+		
+		if(this.page == 0) {
+			this.drawSplash({id:0, text:'Never mind the\n   Buzzwords'})
+			this.drawText({
+				color:'#7',
+				margin:[0, 0, 0, 10],
+				fontSize:16,
+				text:"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
+			})
+		}
+		else {
+			
 			this.drawText({
 				fontSize:50,
 				margin:[0, 0, 0, 40],
@@ -268,11 +471,11 @@ module.exports = class extends require('base/drawapp'){ //top
 				text:this.questions[this.page - 1].q
 			})
 			
-			// draw players points
-			let winner = this.players[this.winner]
-			if(winner) {
-				this.drawSplash({id:1, x:100, y:120, color:winner.color, text:winner.name})
-			}
+		
+		}
+		// draw players points
+		if(this.winner) {
+			this.drawSplash({id:1, x:100, y:120, color:this.winner.color, text:this.winner.name})
 		}
 		//this.drawSplash({id:0,text:'hi'+this.show})
 	}

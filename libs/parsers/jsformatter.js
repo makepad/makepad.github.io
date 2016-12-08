@@ -673,8 +673,13 @@ module.exports = class JSFormatter extends require('base/class'){
 		var id = node.id
 		if(id){
 			this.scope[name] = 'fn'
-			this.trace += 'function '+id.name
+			this.trace += 'function '
 			this.fastText('function ', this.styles.Function.function)
+			if(node.generator){
+				this.trace += '*'
+				this.fastText('*', this.styles.Id.fn)
+			}
+			this.trace += id.name
 			this.fastText(id.name, this.styles.Id.fn)
 		}
 		else{
@@ -713,6 +718,7 @@ module.exports = class JSFormatter extends require('base/class'){
                 if(param.type === 'RestElement'){
                     this.scope[param.argument.name] = 'arg'
                 }
+                console.log(param.type)
 				this[param.type](param)
 			}
 			if(i < paramslen){
@@ -1136,6 +1142,10 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(arg){
 			this.trace += 'yield '
 			this.fastText('yield ', this.styles.Function.yield)
+			if(node.delegate){
+				this.trace += '*'
+				this.fastText('*', this.styles.Function.yield)
+			}
 			this[arg.type](arg, node)
 		}
 		else{
@@ -1228,8 +1238,26 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//ObjectPattern:{properties:3},
 	ObjectPattern(node){
-		logNonexisting(node)
+		this.ObjectExpression(node)
 	}
+
+
+	//ObjectPattern:{properties:3},
+	ArrayPattern(node){
+		this.ArrayExpression(node)
+	}
+
+	// AssignmentPattern
+	AssignmentPattern(node){
+		var left = node.left
+		var right = node.right
+		this[left.type](left)
+		this.fastText('=', this.styles.Operator['='])
+		this.trace += '='
+		this[right.type](right)
+		console.log(node)
+	}
+
 
 	//ArrowFunctionExpression:{params:2, expression:0, body:1},
 	ArrowFunctionExpression(node){
@@ -1329,7 +1357,11 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//TaggedTemplateExpression:{tag:1, quasi:1},
 	TaggedTemplateExpression(node){
-		logNonexisting(node)
+		let tag = node.tag
+		this[tag.type](tag)
+		let quasi = node.quasi
+		this[quasi.type](quasi)
+	//	logNonexisting(node)
 	}
 
 	//TemplateElement:{tail:0, value:0},
@@ -1339,7 +1371,26 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	//TemplateLiteral:{expressions:2, quasis:2},
 	TemplateLiteral(node){
-		logNonexisting(node)
+		let expr = node.expressions
+		let quasis = node.quasis
+		let qlen = quasis.length - 1
+		this.trace += '`'
+		this.fastText('`', this.styles.Template.template)
+		for(let i = 0; i <= qlen; i++){
+			let raw = quasis[i].value.raw
+			this.trace += raw
+			this.fastText(raw, this.styles.Template.template)
+			if(i !== qlen){
+				this.trace += '${'
+				this.fastText('${', this.styles.Template.expression)
+				let exp = expr[i]
+				this[exp.type](exp)
+				this.trace += '}'
+				this.fastText('}', this.styles.Template.expression)
+			}
+		}
+		this.trace += '`'
+		this.fastText('`', this.styles.Template.template)
 	}
 
 	//ClassDeclaration:{id:1,superClass:1},
@@ -1397,6 +1448,12 @@ module.exports = class JSFormatter extends require('base/class'){
         if(node.static){
             this.trace += 'static '
             this.fastText('static ', this.styles.Class.static)
+        }
+    	let kind = node.kind 
+        if(kind === 'get' || kind === 'set'){
+        	let write = kind + ' '
+            this.trace += write
+            this.fastText(write, this.styles.Class.static)
         }
         this.FunctionDeclaration(value, name)
 	}
