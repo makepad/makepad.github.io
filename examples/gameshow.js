@@ -221,6 +221,12 @@ module.exports = class extends require('base/drawapp'){ //top
 		//for(var i=0;i<1;i++)
 		if(this.page == 0) {
 			this.drawSplash({id:0, text:'Never mind the\n   Buzzwords'})
+			this.drawText({
+				color:'#7',
+				margin:[0, 0, 0, 10],
+				fontSize:16,
+				text:"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
+			})
 		}
 		else {
 			
