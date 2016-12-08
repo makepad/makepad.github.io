@@ -14,13 +14,14 @@ module.exports = class extends require('base/drawapp'){ //top
 				tools:{
 					Bg:require('shaders/quad').extend({
 						padding:130,
+						fillColor:'orange',
 						pixel:function() {$
 							this.viewport(this.mesh.xy)
 							this.translate(.5, .5)
 							this.circle(0., 0., .35) //+sin(this.time*8))
 							let p = this.pos
 							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 8 + this.time * 8))
-							this.fillKeep('orange')
+							this.fillKeep(this.fillColor)
 							this.strokeKeep('#44ffff', .02)
 							this.shape += 0.08
 							this.strokeKeep('red', .03)
@@ -55,7 +56,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					}),
 				},
 				onDraw:function() {
-					this.beginBg()
+					this.beginBg({fillColor:this.color})
 					this.drawText({text:this.text})
 					this.endBg()
 				}
@@ -113,10 +114,10 @@ module.exports = class extends require('base/drawapp'){ //top
 		})
 		
 		this.players = [
-			{name:"Chrissy", ctrl:0, buzzer:2, button:1, sound:0, score:0},
-			{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0},
-			{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0},
-			{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0}
+			{name:"Player1", ctrl:0, buzzer:2, button:1, sound:0, score:0, color:'#c33'},
+			{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0, color:'#3c3'},
+			{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0, color:'#33c'},
+			{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0, color:'#cc3'}
 		]
 		
 		this.questions = [
@@ -222,6 +223,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				let player = this.players[i]
 				this.beginBg({
 					align:[0., 1],
+					color:player.color,
 					margin:5,
 					padding:15,
 					w:'200'
@@ -260,7 +262,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			// draw players points
 			let winner = this.players[this.winner]
 			if(winner) {
-				this.drawSplash({id:1, x:100, y:120, text:winner.name})
+				this.drawSplash({id:1, x:100, y:120, color:winner.color, text:winner.name})
 			}
 		}
 		//this.drawSplash({id:0,text:'hi'+this.show})
