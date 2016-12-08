@@ -156,7 +156,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			
 		}
 		
-		this.page = 1
+		this.page = 0
 	}
 	
 	playerWin(id) {
