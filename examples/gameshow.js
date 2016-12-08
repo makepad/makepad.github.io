@@ -145,7 +145,6 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		socket.onMessage = msg=>{
 			if( ! msg.state) return
-			console.log(msg)
 			// fix player selector based on buzzer
 			for(let i = 0;i < this.players.length;i ++ ){
 				let player = this.players[i]
@@ -210,7 +209,6 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(e.name === 'rightArrow') {
 			this.page = min(this.questions.length, this.page + 1)
 		}
-		console.log(e)
 	}
 	
 	onDraw() {
