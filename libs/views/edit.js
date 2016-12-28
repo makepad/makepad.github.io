@@ -177,7 +177,6 @@ module.exports = class Edit extends require('base/view'){
 
 	cursorRect(offset, loop){
 		var rd = this.$readOffsetText(offset)
-		
 		if(!rd){
 			if(loop){
 				return {}
@@ -190,8 +189,6 @@ module.exports = class Edit extends require('base/view'){
 				return {
 					lineSpacing: ls,
 					fontSize:fs,
-					tail:0,
-					head:0,
 					advance:0,
 					x:0,
 					y:0 + this.cursorTrim * fs,
@@ -205,7 +202,7 @@ module.exports = class Edit extends require('base/view'){
 				cr.x = 0
 			}
 			else{
-				cr.x += (cr.head + cr.tail + cr.advance) * cr.fontSize
+				cr.x += (cr.advance) * cr.fontSize
 			}
 			cr.advance = 0
 			return cr
@@ -214,8 +211,6 @@ module.exports = class Edit extends require('base/view'){
 		return {
 			lineSpacing: rd.lineSpacing,
 			fontSize:rd.fontSize,
-			tail:rd.tail,
-			head:rd.head,
 			advance:rd.advance,
 			x:rd.x, //+ t.fontSize * t.x1,
 			y:rd.y + this.cursorTrim * rd.fontSize,
@@ -229,6 +224,10 @@ module.exports = class Edit extends require('base/view'){
 		if(t === -1) t = 0
 		else if(t === -2) t = this.textLength()
 		return t
+	}
+	
+	scanBackSpaceRange(start){
+		return start - 1
 	}
 
 	textLength(){
@@ -759,7 +758,7 @@ class Cursor extends require('base/class'){
 	}
 
 	insertText(text){
-			var lo = this.lo(), hi = this.hi()
+		var lo = this.lo(), hi = this.hi()
 
 		this.editor.addUndoInsert(lo, hi)
 		this.editor.removeText(lo, hi)
@@ -768,8 +767,11 @@ class Cursor extends require('base/class'){
 		var len = text.length
 		if(len){
 			
-			len = this.editor.insertText(lo, text)
-			
+			let ins = this.editor.insertText(lo, text)
+			if(ins){
+				len = ins.len
+				lo += ins.move
+			}
 			this.cursorSet.delta += len
 			this.editor.addUndoDelete(lo, lo +len)
 		}
@@ -819,9 +821,13 @@ class Cursor extends require('base/class'){
 	backSpace(){
 		if(this.start !== this.end) return this.deleteRange()
 		if(this.start === 0) return
-		var prev = this.end - 1
+		var prev = this.end
+		// lets scan for the right start eating all gen whitespace
+		prev = this.editor.scanBackSpaceRange(prev)
+
 		this.editor.addUndoInsert(prev, this.end)
 		prev += this.editor.removeText(prev, this.end)
+
 		this.cursorSet.delta -= 1
 		this.editor.forkRedo()
 		this.start = this.end = prev
@@ -853,119 +859,43 @@ class Cursor extends require('base/class'){
 		this.end = clamp(this.end, mi, ma)
 	}
 
-	scanChange(pos, oldText, newText){
+	scanChange(oldText, newText){
+		//return
 		if(this.start !== this.end) return
-		if(pos < this.end){
-
-			// attempt #5001
-			var p1 = oldText.charCodeAt(this.end)
-			var p2 = oldText.charCodeAt(this.end+1)
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
-					break
-				}
+		//if(pos < this.end){
+		let pos = this.end
+		// attempt #5001
+		var p1 = oldText.charCodeAt(this.end)
+		var p2 = oldText.charCodeAt(this.end+1)
+		// find the closest 2 character or 1 character match
+		for(var i = pos+1; i > 0; i--){
+			if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
+				break
 			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
-					break
-				}
-			}
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j
-			/*
-			var d = 0
-			var oc1
-			if(this.editor.wasNewlineChange){
-				oc1 = oldText.charCodeAt(this.end)
-				d = 2
-			}
-			else{
-				oc1 = oldText.charCodeAt(this.end)
-				// find something better than a newline to hold on to
-				if(!this.editor.wasNoopChange){
-					var ocm1 = oldText.charCodeAt(this.end-1)
-					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
-					// cant reverse these, find another way
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
-				}
-			}
-
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === oc1){
-					i+=d
-					break
-				}
-			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === oc1){
-					j+=d
-					break
-				}
-			}
-			var arr = oldText.split('')
-			var s= ''
-			for(let k =0; k < arr.length;k++){
-				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
-			}
-
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j*/
 		}
+		for(var j = pos-1; j < newText.length; j++){
+			if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
+				break
+			}
+		}
+		for(var k = pos+1; k > 0; k--){
+			if(newText.charCodeAt(i) === p1){
+				break
+			}
+		}
+		for(var l = pos-1; l < newText.length; l++){
+			if(newText.charCodeAt(l) === p1){
+				break
+			}
+		}
+
+		function minAbs(a,b){
+			if(abs(a)<abs(b)) return a
+			return b
+		}
+	
+		this.start = this.end = pos-minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l)
 	}
-	/*
-	scanChange(pos, oldText, newText){
-		if(this.start !== this.end) return
-		if(pos < this.end){
-
-			// scan for the closest position for the cursor
-			
-			var d = 0
-			var oc1
-			if(this.editor.wasNewlineChange){
-				oc1 = oldText.charCodeAt(this.end)
-				d = 2
-			}
-			else{
-				oc1 = oldText.charCodeAt(this.end)
-				// find something better than a newline to hold on to
-				if(!this.editor.wasNoopChange){
-					var ocm1 = oldText.charCodeAt(this.end-1)
-					if(ocm1 === 32) oc1 = oldText.charCodeAt(this.end - 2),d = +1
-					// cant reverse these, find another way
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end-1), d = 1
-					if(oc1 === 10) oc1 =  oldText.charCodeAt(this.end+1), d = -1
-				}
-			}
-
-			for(var i = pos+1; i > 0; i--){
-				if(newText.charCodeAt(i) === oc1){
-					i+=d
-					break
-				}
-			}
-			for(var j = pos-1; j < newText.length; j++){
-				if(newText.charCodeAt(j) === oc1){
-					j+=d
-					break
-				}
-			}
-			var arr = oldText.split('')
-			var s= ''
-			for(let k =0; k < arr.length;k++){
-				s+= k+':'+arr[k]+' - '+arr[k].charCodeAt(0)+'\n'
-			}
-
-			if(Math.abs(pos-i) < Math.abs(pos-j)){
-				this.start = this.end = i
-			}
-			else this.start = this.end =j
-		}
-	}*/
 
 	invalidateMax(){
 		this.max = -1

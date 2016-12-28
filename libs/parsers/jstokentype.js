@@ -95,7 +95,13 @@ var types = exports.types = {
 	modulo: binop("%", 10),
 	star: binop("*", 10),
 	slash: binop("/", 10),
-	starstar: new TokenType("**", {beforeExpr: true})
+	starstar: new TokenType("**", {beforeExpr: true}),
+	// whitespace token types
+	space: new TokenType(" "),
+	tab: new TokenType("\t"),
+	lineComment: new TokenType("//"),
+	blockComment: new TokenType("/*"),
+	newline: new TokenType("\n")
 }
 
 // Map keyword names to token types.

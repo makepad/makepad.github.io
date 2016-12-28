@@ -334,13 +334,13 @@ module.exports = class View extends require('base/class'){
 			}
 		}
 
-		this.$dirty = false
-
 		if(this.onDraw){
 			this.onFlag = 4
 			this.onDraw()
 			this.onFlag = 0
 		}
+		
+		this.$dirty = false
 
 		// we need to walk the turtle.
 		this.$w = nt.wBound()
@@ -725,22 +725,20 @@ module.exports = class View extends require('base/class'){
 		this.turtle.y2 = this.$yReuse
 	}
 
-	$dirtyTrue(){
+	// how do we incrementally redraw?
+	redraw(force){
+		//if(debug++<100)console.error("REDRAW")
 		var node = this
-		while(node){//}] && node.$drawClean){
+		while(node){
 			node.$dirty = true
 			node = node.parent
 		}
-	}
-
-	// how do we incrementally redraw?
-	redraw(){
-		//if(debug++<100)console.error("REDRAW")
-		this.$dirtyTrue()
-		if(this.app && !this.app.redrawTimer){
+		let app = this.app
+		if(app && !app.redrawTimer && (app.redrawTimer === undefined || force)){
 			this.app.redrawTimer = setImmediate(function(){
-				this.redrawTimer = undefined
+				this.redrawTimer = null
 				this.$redrawViews()
+				if(this.redrawTimer === null) this.redrawTimer = undefined
 			}.bind(this.app),0)
 		}
 	}

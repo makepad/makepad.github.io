@@ -73,15 +73,20 @@ module.exports = class Shader extends require('base/compiler'){
 			//	this.ALLOCDRAW(overload, 0)
 			//	return $props
 			//},
-			reuse:function(overload) {
+			reuse:function(overload, length) {
 				this.ALLOCDRAW(overload, 0)
 				//return $props
 				// alright so. now what.
 				// make sure we are drawn
 				//var $props = this.orderNAME(overload)
 				//var $props = this.$shaders.NAME.$props
-				if($props.oldLength !== undefined) {
+				if(length!== undefined){
+					$props.oldLength = 
+					$props.length = length
+				}
+				else if($props.oldLength !== undefined) {
 					$props.length = $props.oldLength
+					$props.oldLength = undefined
 					$props.dirty = false
 				}
 			}

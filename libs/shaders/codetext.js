@@ -29,80 +29,44 @@ module.exports = class CodeText extends require('shaders/text'){
 		}
 		this.$noWriteList = true
 		this.verbs = {
-			$setTweenStart:function(o, v){
-				//this.PROP[o, 'tweenStart'] = v
-			},
-			fast:function(txt, style, ihead, itail){
-				var out = this.$fastNAMEOutput			
+			write:function(txt, style){ // just write plain text
+				let chunks = this.$fastNAMEChunks
+				let styles = this.$fastNAMEStyles
+				chunks.push(txt)
+				styles.push(style)
+				//debugger
+				//$turtle._debug = 1
 				var len = txt.length - 1
 				var turtle = this.turtle
+				var fontSize = this.$fastNAMEFontSize
 
-				this.ALLOCDRAW(null, len + 1)
-
-				this.$fastTextWritten += len+1
-
-				var margin = style.margin
 				var lineSpacing = $proto.lineSpacing
 				var glyphs = $proto.font.fontmap.glyphs
 
-				var fontSize = this.$fastNAMEFontSize
-				//var xabs = turtle.$xAbs
-				//var yabs = turtle.$yAbs
-				var posx = turtle.wx// - turtle.$xAbs
-				var posy = turtle.wy// - turtle.$yAbs
+				var spaceAdvance = glyphs[32].advance
+				var tabAdvance = glyphs[9].advance
+
+				var posx = turtle.wx
+				var posy = turtle.wy
 
 				var nh = fontSize * lineSpacing
-				var base = out._text.length 
-				out._text += txt
-				var sx = turtle.sx// - turtle.$xAbs
+				var sx = turtle.sx
 
-				if(this.$fastNAMEAnnotate){
-					out.ann.push(txt, style, ihead, itail, fontSize, sx)
-				}
+				// allocate enough space
+				let need = len+1
 
-				//var changeOffset = this.$fastNAMEOffset
-				//var changeStart = this.$fastNAMEStart
-				//var changeDelta = this.$fastNAMEDelta
-
-				var advance = 0
-				var head = ihead!==undefined? ihead: style.head, tail = 0
-
-				/*
-				var tweenDelta
-				if(base >= changeOffset){
-					tweenDelta = -changeDelta
-				}
-				else{
-					tweenDelta = 0
-				}
-				if(base >= changeStart){
-					turtle._delay = this.$fastNAMEDelay
-				}
-				else{
-					turtle._delay = -100000
-				}*/
+				this.ALLOCDRAW(null, need)
 
 				var color = style.color
 				var boldness = style.boldness
 				for(let i = 0; i <= len; i++){
 					var unicode = txt.charCodeAt(i)
-					var basei = base + i
-					/*
-					if(basei === changeOffset){
-						tweenDelta = -changeDelta
-					}
-					if(basei === changeStart){
-						turtle._delay = this.$fastNAMEDelay
-					}*/
 
 					var g = glyphs[unicode] || glyphs[63]
-					//var d = displace[unicode] || displace[0]
 
-					if(i ===len) tail = itail!==undefined?itail:style.tail
 					var advance = g.advance
-					//$turtle._debug = 1
 					this.WRITEPROPS({
-						//$tweenDelta:tweenDelta,
+						visible:1,
 						dx:0,
 						dy:0,
 						x:posx,
@@ -110,12 +74,9 @@ module.exports = class CodeText extends require('shaders/text'){
 						color: color,
 						fontSize:fontSize,
 						italic:0,
-						//italic:style.italic,
 						boldness:boldness, 
 						unicode:unicode,
-						head:head,
 						advance:advance,
-						tail:tail,
 						tx1: g.tx1,
 						ty1: g.ty1,
 						tx2: g.tx2,
@@ -127,25 +88,162 @@ module.exports = class CodeText extends require('shaders/text'){
 						unicode: unicode
 					})
 
-					posx += (head + advance + tail) * fontSize
+					posx += advance * fontSize
 
-					head = 0
-					
 					if(unicode === 10 || unicode ===13){
-						this.$fastNAMELines.push(this.$fastNAMEWritten)
 						turtle.mh = 0
 						if(posx>turtle.x2) turtle.x2 = posx
-						// lets output indenting
+						// lets output indenting array items
 						posx = sx, posy += nh
 						turtle.wy += nh
 					}
 					else turtle.mh = nh
 				}
+				
 				posy += nh
-				if(posy>turtle.y2) turtle.y2 = posy
+				if(posy>turtle.y2) turtle.y2 = posy				
 				turtle.wx = posx// + margin[1]* fontSize
-			}
+			},
+			// function with support for handling whitespace
+			fast:function(txt, style, ihead, itail){
+				//debugger
+				//$turtle._debug = 1
+				var len = txt.length - 1
+				var turtle = this.turtle
+				var indent = this.$fastNAMEIndent
+				let chunks = this.$fastNAMEChunks
+				let styles = this.$fastNAMEStyles
+				var fontSize = this.$fastNAMEFontSize
 
+				var lineSpacing = $proto.lineSpacing
+				var glyphs = $proto.font.fontmap.glyphs
+
+				var spaceAdvance = glyphs[32].advance
+				var tabAdvance = glyphs[9].advance 
+
+				var posx = turtle.wx
+				var posy = turtle.wy
+
+				var nh = fontSize * lineSpacing
+				var sx = turtle.sx
+
+				var head = ihead!==undefined? ihead: style.head
+				var tail = itail!==undefined? itail: style.tail
+
+				// allocate enough space
+				let need = (len + 1) * (indent+1) + head + tail
+				this.ALLOCDRAW(null, need)
+				
+				let first = txt.charCodeAt(0)
+
+				if(first !== 10 && first !== 13){
+					for(let i = 0; i < head; i++){
+						// write spaces
+						let o = $turtle.$propOffset++
+						this.PROP[o, 'visible'] = 0
+						this.PROP[o, 'x'] = posx
+						this.PROP[o, 'y'] = posy
+						this.PROP[o, 'fontSize'] = fontSize
+						this.PROP[o, 'advance'] = spaceAdvance
+						posx += spaceAdvance * fontSize
+						chunks.push(' ')
+						styles.push(this.$fastTextWhitespace)
+					}
+				}
+
+				// output the text
+				let chunk = chunks.push(txt) - 1
+				let start = 0
+				styles.push(style)
+
+				var color = style.color
+				var boldness = style.boldness
+
+				for(let i = 0; i <= len; i++){
+					var unicode = txt.charCodeAt(i)
+
+					var g = glyphs[unicode] || glyphs[63]
+
+					var advance = g.advance
+									
+					this.WRITEPROPS({
+						visible:1,
+						dx:0,
+						dy:0,
+						x:posx,
+						y:posy,
+						color: color,
+						fontSize:fontSize,
+						italic:0,
+						boldness:boldness, 
+						unicode:unicode,
+						advance:advance,
+						tx1: g.tx1,
+						ty1: g.ty1,
+						tx2: g.tx2,
+						ty2: g.ty2,
+						x1: g.x1,// + d.x,
+						y1: g.y1,// + d.y,
+						x2: g.x2,// + d.x,
+						y2: g.y2,// + d.y,
+						unicode: unicode
+					})
+
+					posx += advance * fontSize
+
+					if(unicode === 10 || unicode ===13){
+						// slice previous chunk upto our current newline
+						if(i !== len){
+							chunks[chunk] = txt.slice(start, i+1)
+							start = i+1
+						}
+
+						turtle.mh = 0
+						if(posx>turtle.x2) turtle.x2 = posx
+						// lets output indenting array items
+						posx = sx, posy += nh
+						turtle.wy += nh
+
+						for(let i = 0; i < indent; i++){
+							let o = $turtle.$propOffset++
+							this.PROP[o, 'visible'] = 0
+							this.PROP[o, 'x'] = posx
+							this.PROP[o, 'y'] = posy
+							this.PROP[o, 'fontSize'] = fontSize
+							this.PROP[o, 'advance'] = tabAdvance
+							posx += tabAdvance * fontSize
+							chunks.push('\t')
+							styles.push(this.$fastTextWhitespace)
+						}
+						// output next chunk from txt
+						if(i !== len){
+							chunk = chunks.push(txt.slice(start))-1
+							styles.push(style)
+						}
+					}
+					else turtle.mh = nh
+				}
+				
+				// write tail
+				for(let i = 0; i < tail; i++){
+					let o = $turtle.$propOffset++
+					this.PROP[o, 'visible'] = 0
+					this.PROP[o, 'x'] = posx
+					this.PROP[o, 'y'] = posy
+					this.PROP[o, 'fontSize'] = fontSize
+					this.PROP[o, 'advance'] = spaceAdvance
+					posx += spaceAdvance * fontSize
+					chunks.push(' ')
+					styles.push(this.$fastTextWhitespace)
+					//out._text += ' '
+				}
+
+				posy += nh
+				if(posy>turtle.y2) turtle.y2 = posy				
+				turtle.wx = posx// + margin[1]* fontSize
+				// correct length to actual used data
+				this.LENCORRECT()
+			}
 		}
 
 		this.mesh = new painter.Mesh(types.vec3).push(
@@ -159,28 +257,22 @@ module.exports = class CodeText extends require('shaders/text'){
 	}
 
 	pixel(){$
-		this.viewport(this.mesh.xy)
-		this.textShape()
-		//this.shape = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
-		//if(this.mesh.z < 0.5){
-		//	this.blur = this.shadowBlur
-		//	return this.fill(this.shadowColor)
-		//}
-		this.fillKeep(this.color)
-		if(this.outlineWidth>0.){
-			this.stroke(this.outlineColor,this.outlineWidth)
-		}
-		return this.result
-		/*
-		//if(this.unicode == 10.) return 'red'
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * 0.010) / adjust * 1.4 
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
 		this._field = field
+
+		if(this.unicode == 9.){
+			this.viewport(this.ppos)
+			this.moveTo(5.,0.)
+			this.lineTo(5.,this.psize.y)
+			return this.stroke('#4',1.)
+			//return 'red'
+		}
 
 		this.pixelStyle()
 
-		field = this._field - this.boldness - clamp(this.pixelRatio-1.,0.,1.)*0.1
+		field = this._field - this.boldness
 
-		return this.drawField(field)*/
+		return this.drawField(field)
 	}
 }

@@ -5,13 +5,15 @@ module.exports = class Code extends require('views/edit'){
 
 	// mixin the formatter
 	prototype() { 
-		this.mixin(require('parsers/jsformatter')) 
+		this.mixin(require('parsers/jsastformat')) 
+		this.mixin(require('parsers/jstokenformat')) 
 		
-		this.allowOperatorSpaces = 0 
-		this.overflow = 'scroll' 
-		this.padding = [0, 0, 0, 4] 
-		this.$fastTextFontSize = 12 
-		this._onText |= 32 
+		this.allowOperatorSpaces = 0
+		this.overflow = 'scroll'
+		this.padding = [0, 0, 0, 4]
+		this.$fastTextFontSize = 12
+		this.$fastTextIndent = 0
+		this._onText |= 32
 		this.serializeIndent = '\t'
 		this.props = {
 			errors:undefined
@@ -19,7 +21,7 @@ module.exports = class Code extends require('views/edit'){
 		
 		let colors = module.style.colors
 
-		this.tools = { 
+		this.tools = {
 			Bg:require('shaders/quad').extend({
 				moveScroll:0,
 				padding:[0,0,0,4],
@@ -27,45 +29,44 @@ module.exports = class Code extends require('views/edit'){
 				h:'100%',
 				color:colors.codeBg
 			}),
-			Text: require('shaders/codetext').extend({ 
-				font: require('fonts/ubuntu_monospace_256.font'), 
+			Text: require('shaders/codetext').extend({
+				font: require('fonts/ubuntu_monospace_256.font'),
 				order:3,
 			}), 
-			Block: require('shaders/codeblock').extend({ 
-				
-				pickAlpha: 0., 
-				vertexStyle: function() {$ 
-					this.x -= (6. / 12.) * this.fontSize 
-					this.w += 3. 
-					this.w += 10. 
-					this.h2 += 2. 
-					var pos = vec2() 
-					if(this.isFingerOver(pos) > 0) { 
-						this.color.rgb += vec3(0.2) 
+			Block: require('shaders/codeblock').extend({
+				pickAlpha: 0.,
+				vertexStyle: function() {$
+					this.x -= (6. / 12.) * this.fontSize
+					this.w += 3.
+					this.w += 10.
+					this.h2 += 2.
+					var pos = vec2()
+					if(this.isFingerOver(pos) > 0) {
+						this.color.rgb += vec3(0.2)
 					}
-					else { 
-						this.color.a *= .25 
+					else {
+						this.color.a *= .25
 					} 
 					// lets figure out a hover anim here?
-					this.color.rgb += vec3(this.indent * 0.05) 
-					this.borderColor = this.color 
+					this.color.rgb += vec3(this.indent * 0.05)
+					this.borderColor = this.color
 				} 
 			}), 
-			Marker: require('shaders/codemarker').extend({ 
-				vertexStyle: function() {$ 
-					this.opColor = this.bgColor * 1.1 
-					this.borderColor = this.bgColor 
-					this.x -= 2. 
-					this.x2 += 2. 
-					this.x3 += 2. 
-					this.w += 4. 
-					this.y += this.level * 1. 
-					this.h -= this.level * 2. 
-					this.borderRadius -= this.level 
-				} 
+			Marker: require('shaders/codemarker').extend({
+				vertexStyle: function() {$
+					this.opColor = this.bgColor * 1.1
+					this.borderColor = this.bgColor
+					this.x -= 2.
+					this.x2 += 2.
+					this.x3 += 2.
+					this.w += 4.
+					this.y += this.level * 1.
+					this.h -= this.level * 2.
+					this.borderRadius -= this.level
+				}
 			}), 			
-			ErrorMarker: require('shaders/codemarker').extend({ 
-				vertexStyle: function() {$ 
+			ErrorMarker: require('shaders/codemarker').extend({
+				vertexStyle: function() {$
 					//this.errorTime = max(0., .1 - this.errorTime) 
 					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
 					this.x2 -= 2. 
@@ -77,22 +78,32 @@ module.exports = class Code extends require('views/edit'){
 		} 
 		
 		this.styles = {
-			$boldness: 0., 
-			$color: '#fff', 
-			$italic: 0, 
-			$head: 0, 
-			$tail: 0, 
-
-			NewText: { 
-				$color: '#ccc' 
+			$boldness: 0.,
+			$color: '#fff',
+			$italic: 0,
+			$head: 0,
+			$tail: 0,
+			NewText: {
+				$color: '#ccc'
 			},
-
+			whitespace:{},
 			curly:{},
 			block:{
-				$borderWidth: 1, 
+				$borderWidth: 1,
 				$borderRadius: 3.75, 
 				open:{open:1},
 				close:{open:0}
+			},
+			Tokenized:{
+				paren:{
+					$color:"#ccc"
+				},
+				curly:{
+					$color:"#ccc"
+				},
+				bracket:{
+					$color:"#ccc"
+				}
 			},
 			Class:{
 				$color:colors.codeClass,
@@ -111,10 +122,10 @@ module.exports = class Code extends require('views/edit'){
 				$color:colors.codeObject,
 				curly:{},
 				colon:{},
-				key:{alignLeft:0,alignRight:0.5},
+				key:{alignLeft:0,alignRight:1.},
 				block$block:{},
 				commaOpen:{$tail:0.},
-				commaClose:{$tail:0.5},
+				commaClose:{$tail:1},
 				dot:{},
 				bracket:{},
 				member:{}
@@ -122,7 +133,7 @@ module.exports = class Code extends require('views/edit'){
 			Array:{
 				$color:colors.codeObject,
 				commaOpen:{$tail:0.},
-				commaClose:{$tail:0.5},
+				commaClose:{$tail:1},
 				block$block:{},
 				bracket:{}
 			},
@@ -131,25 +142,25 @@ module.exports = class Code extends require('views/edit'){
 				function:{},
 				curly:{},
 				block$block:{},
-				comma:{$tail:0.5},
+				comma:{$tail:1},
 				return:{},
 				yield:{},
 				parenLeft:{},
-				parenRight:{$tail:0.5},
+				parenRight:{$tail:1},
 				arrow:{}
 			},
 			Call:{
 				$color:colors.codeCall,
 				paren:{},
 				commaOpen:{},
-				commaClosed:{$tail:0.5}
+				commaClosed:{$tail:1}
 			},
 			If:{
 				$color:colors.codeIf,
 				if:{},
 				else:{},
 				parenLeft:{},
-				parenRight:{$tail:0.5},
+				parenRight:{$tail:1},
 				curly:{},
 				block$block:{},
 				switch:{},
@@ -199,20 +210,20 @@ module.exports = class Code extends require('views/edit'){
 					$color:colors.codeString
 				},
 			},
-			Comment: { 
-				$boldness: 0.1, 
-				$color: colors.codeComment, 
+			Comment: {
+				$boldness: 0.1,
+				$color: colors.codeComment,
 				$isComment: 1, 
-				side: {$head: 0.5}, 
-				above: {}, 
-				top: {$head: 0.5}, 
-				bottom: {$head: 0.}, 
-				around: {} 
+				side: {$head: 1},
+				above: {},
+				top: {$head: 1},
+				bottom: {$head: 0.},
+				around: {}
 			}, 
 			Operator:{
 				$color:colors.codeOperator,
-				default:{$head:0.5,$tail:0.5},
-				'=':{$head:0.5,$tail:0.5},
+				default:{$head:1, $tail:1},
+				'=':{$head:1, $tail:1},
 				'?:':{},
 				'@':{},
 				'#':{},
@@ -231,7 +242,7 @@ module.exports = class Code extends require('views/edit'){
 				comma:{}
 			},
 			Keyword:{
-				varComma:{$color:colors.codeVar, $tail:0.5},
+				varComma:{$color:colors.codeVar, $tail:1},
 				var:{$color:colors.codeVar, $boldness:0.4},
 				const:{$color:colors.codeConst, $boldness:0.2},
 				let:{$color:colors.codeLet, $boldness:0.2}
@@ -246,6 +257,7 @@ module.exports = class Code extends require('views/edit'){
 				fn$const:{},
 				class$const:{},
 				unknown:{$color:colors.codeUnknown},
+				tokException:{$color:colors.codeTokException},
 				global:{$color:colors.codeGlobal, $boldness:0.2, closure:{}}
 			}
 		} 
@@ -340,16 +352,17 @@ module.exports = class Code extends require('views/edit'){
 			mix: 'global', 
 			arguments: 'const' 
 		} 
+
+
 	} 
 	
 	constructor(...args) { 
 		super(...args) 
-		this.$fastTextOutput = this 
-		this.ann = [] 
-		this.ann.step = 6 
-		this.oldText = '' 
+
+		//this.oldText = '' 
 		this.$textClean = false 
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3 
+		this.$fastTextWhitespace = this.styles.whitespace
 	} 
 	
 	parseText() { 
@@ -371,81 +384,54 @@ module.exports = class Code extends require('views/edit'){
 		} 
 	} 
 
+	onClearErrors(){
+	}
+
 	onDraw() { 
 		if(!this._text)this._text = ''
 		this.beginBg() 
 		// ok lets parse the code
 		if(this.$textClean) { 
-			this.reuseDrawSize() 
-			this.reuseBlock() 
-			this.reuseMarker() 
-			this.reuseText() 
+			this.reuseDrawSize()
+			this.reuseBlock()
+			this.reuseMarker()
+			this.reuseText()
 		}
-		else { 
+		else {
 			this.$fastTextDelay = 0 
-			if(this.debugShow) { 
-				this.debugShow = false 
-				//this.error = {} 
-			}
-			else if(this.$textClean === false) { 
-				this.parseText() 
-			} 
+
+			this.parseText()
 			
 			this.pickIdCounter = 1 
 			this.pickIds = [0] 
 			this.$textClean = true 
 			
-			if(this.ast) { 
-				/*
-				if(!this.errorAnim || this.errorAnim[1] === .5) { 
-					if(!this.errorAnim || this._time - this.errorAnim[0] < .5) { 
-						this.errorAnim = [ 
-							this._time, 
-							0., 
-							1., 
-							1. 
-						] 
-					}
-					else { 
-						this.errorAnim = [ 
-							this._time, 
-							0.2, 
-							0., 
-							1. 
-						] 
-					} 
-				} */
-				//this.orderBlock() 
-				//this.orderMarker() 
-				this.reuseErrorMarker() 
-				//this.orderSelection() 
-				//this.orderText() 
-				
-				var oldtext = this._text 
-				this.oldText = oldtext 
+			if(this.ast) {
+				this.reuseErrorMarker()
+	
 				// first we format the code
-				if(this.onBeginFormatAST) this.onBeginFormatAST() 
-				//this.drawBg({w:100,h:100,color:'purple'})
+				if(this.onBeginFormatAST) this.onBeginFormatAST()
 
-				this.formatJS(this.indentSize, this.ast) 
+				this.jsASTFormat(this.indentSize, this.ast)
 
-				if(this.onEndFormatAST) this.onEndFormatAST() 
-				//for(let ann = this.ann, i = 0, len = ann.length, step = ann.step; i < len; i+=step){
-				//	console.log("STARTX", ann[i+5], ann[i])
-				//}
-				//console.log('formattin')
-				// make undo operation for reformat
+				var oldtext = this._text 
+				this._text = this.$fastTextChunks.join('')
+
+				if(this.onEndFormatAST) this.onEndFormatAST()
+
+				//console.log(JSON.stringify(this.$fastTextChunks))
+				// deal with the autoformatter 
 				var newtext = this._text
-				var oldlen = oldtext.length 
-				var newlen = newtext.length 
-				for(var start = 0; start < oldlen && start < newlen; start++) { 
-					if(oldtext.charCodeAt(start) !== newtext.charCodeAt(start)) break 
+				var oldlen = oldtext.length
+				var newlen = newtext.length
+				for(var start = 0; start < oldlen && start < newlen; start++) {
+					if(oldtext.charCodeAt(start) !== newtext.charCodeAt(start)) break
 				} 
-				for(var oldend = oldlen - 1,newend = newlen - 1; oldend > start && newend > start; oldend--, newend--) { 
+				for(var oldend = oldlen - 1, newend = newlen - 1; oldend > start && newend > start; oldend--, newend--) { 
 					if(oldtext.charCodeAt(oldend) !== newtext.charCodeAt(newend)) { 
-						break 
+						break
 					} 
-				} 
+				}
 				
 				this.wasNoopChange = false 
 				
@@ -456,98 +442,20 @@ module.exports = class Code extends require('views/edit'){
 					// lets check what we did
 					var oldrem = oldtext.slice(start, oldend) 
 					var newins = newtext.slice(start, newend) 
-					/*
-					if((oldrem === ' ' || oldrem === ';') && newins === '') { 
-						var lengthText = this.lengthText() 
-						this.wasNoopChange = true 
-						for(var i = 0; i < lengthText; i++) this.$setTweenStartText(i, 0) 
-					} */
-				} 
+				}
 				
-				this.cs.scanChange(start, oldtext, newtext) 
+				this.cs.scanChange(oldtext, newtext) 
 				this.cs.clampCursor(0, newlen) 
-				/*
-				// overwrite tweenstarts when blocks are different
-				// so we dont get jarring blocks
-				var lengthBlock = this.lengthBlock() 
-				if(this.$lengthBlock !== lengthBlock) { 
-					this.$lengthBlock = lengthBlock 
-					for(var i = 0; i < lengthBlock; i++) { 
-						this.$setTweenStartBlock(i, 0) 
-					} 
-				} 
-				var lengthMarker = this.lengthMarker() 
-				if(this.$lengthMarker !== lengthMarker) { 
-					this.$lengthMarker = lengthMarker 
-					for(var i = 0; i < lengthMarker; i++) { 
-						this.$setTweenStartMarker(i, 0) 
-					} 
-				} 
-				*/
-				//if(this.onText) setImmediate(this.onText.bind(this))
-				//console.log(this)
-				if(this.onParsed) setImmediate(this.onParsed.bind(this)) 
+				
+				if(this.onParsed) setImmediate(this.onParsed.bind(this))
 			}
-			else { 
-				var ann = this.ann 
-				/*
-				if(!this.errorAnim || this.errorAnim[3] === 1) { 
-					this.errorAnim = [ 
-						this._time + .7, 
-						.5, 
-						1., 
-						0. 
-					] 
-				} */
-				
-				this.reuseBlock() 
-				this.reuseMarker() 
-				//this.orderSelection() 
-				//this.orderErrorMarker() 
-				
-				this.$fastTextAnnotate = false 
-				
-				if(!ann.length && this._text) { 
-					var txt = this._text 
-					this._text = '' 
-					this.fastText(txt, this.styles.Id.unknown, 0) 
-				}
-				else { 
-					this._text = '' 
-					for(var i = 0,len = ann.length,step = ann.step; i < len; i += step) { 
-						this.$fastTextFontSize = ann[i + 4] 
-						var dx = ann[i + 5] 
-						this.turtle.sx = abs(dx) 
-						var text = ann[i] 
-						this.fastText(text, ann[i + 1], ann[i + 2], ann[i + 3]) 
-						var last = text.charCodeAt(text.length - 1) 
-						if(dx < 0 && (last === 10 || last === 13)) { 
-							this.turtle.wx = this.turtle.sx = abs(ann[i + 11]) 
-						} 
-					} 
-					// lets do a paren match analysis using indent and make a nicer error
-					if(this.parseError.message === 'Unexpected token') { 
-						var pos = this.indentFindParenErrorPos() 
-						if(pos >= 0) { 
-							this.parseError.message = 'Matching ({[ error' 
-							var lines = this._text.slice(0,pos).split('\n')
-							var line = 0, column = 0
-							if(lines.length){
-								line = lines.length - 1
-								column = lines[lines.length - 1].length -1
-							}
-							this._text.split('\n')
-							this.parseError.line = line
-							this.parseError.column = column 
-						} 
-					}
-					if(this.onParseError) this.onParseError(this.parseError) 
-				}
-				// lets draw the error
-				//this.drawErrorText({ 
-				//	errorAnim: this.errorAnim, 
-				//	text: this.error.msg 
-				//}) 
+			else {
+
+				//var ann = this.ann
+				this.reuseBlock(null, 0)
+				this.reuseMarker()
+				this.jsTokenFormat(this._text)
+
 			} 
 			//require('base/perf')
 
@@ -580,16 +488,16 @@ module.exports = class Code extends require('views/edit'){
 			}
 		}
 
-		if(this.hasFocus) { 			
+		if(this.hasFocus) {
 
 			var cursors = this.cs.cursors 
-			for(var i = 0; i < cursors.length; i++) { 
+			for(var i = 0; i < cursors.length; i++) {
 				var cursor = cursors[i] 
-				var t = this.cursorRect(cursor.end) 
+				var t = this.cursorRect(cursor.end)
 				if(cursor.max < 0) cursor.max = t.x 
 				
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi()) 
-				
+
 				for(var j = 0; j < boxes.length; j++) { 
 					var box = boxes[j] 
 					var pbox = boxes[j - 1] 
@@ -623,53 +531,58 @@ module.exports = class Code extends require('views/edit'){
 		this.redraw() 
 	} 
 	
-
-	indentFindParenErrorPos() { 
-		var ann = this.ann 
-		var stack = [] 
-		var close = {'{': '}', '(': ')', '[': ']'} 
-		var pos = 0 
-		for(var i = 0,l = ann.length,step = ann.step; i < l; i += step) { 
-			var txt = ann[i] 
-			var sx = ann[i + 5] 
-			if(txt === '{' || txt === '[' || txt === '(') stack.push(txt, sx, pos) 
-			if(txt === '}' || txt === ']' || txt === ')') { 
-				var opos = stack.pop() 
-				var osx = stack.pop() 
-				var otxt = stack.pop() 
+	indentFindParenErrorPos() {
+		return -1
+		/*
+		var ann = this.ann
+		var stack = []
+		var close = {
+			'{': '}',
+			'(': ')',
+			'[': ']'
+		}
+		var pos = 0
+		for(var i = 0,l = ann.length,step = ann.step; i < l; i += step) {
+			var txt = ann[i]
+			var sx = ann[i + 5]
+			if(txt === '{' || txt === '[' || txt === '(') stack.push(txt, sx, pos)
+			if(txt === '}' || txt === ']' || txt === ')') {
+				var opos = stack.pop()
+				var osx = stack.pop()
+				var otxt = stack.pop()
 				if(sx !== osx) { // indent change
-					if(sx > osx) { 
-						return pos + 1 
+					if(sx > osx) {
+						return pos + 1
 					}
-					else { 
-						return opos + 1 
-					} 
-				} 
-				if(close[otxt] !== txt) { 
-					return opos + 1 
-				} 
-			} 
-			pos += txt.length 
-		} 
-		return -1 
+					else {
+						return opos + 1
+					}
+				}
+				if(close[otxt] !== txt) {
+					return opos + 1
+				}
+			}
+			pos += txt.length
+		}
+		return -1*/ 
 	} 
 	
-	onKeySingleQuote(k) { 
-		if(!k.meta) return true 
-		storage.save("/debug.json", JSON.stringify({step: this.ann.step, ann: this.ann})) 
-	} 
+	onKeySingleQuote(k) {
+		if(!k.meta) return true
+		storage.save("/debug.json", JSON.stringify({step: this.ann.step, ann: this.ann}))
+	}
 	
-	onKeySemiColon(k) { 
-		if(!k.meta) return true 
-		storage.load("/debug.json").then(result=>{ 
-			this.parseError = {} 
-			var res = JSON.parse(result) 
-			this.ann = res.ann 
-			this.ann.step = res.step 
-			this.$textClean = false 
-			this.ast = undefined 
-			this.debugShow = true 
-			this.redraw() 
+	onKeySemiColon(k) {
+		if(!k.meta) return true
+		storage.load("/debug.json").then(result=>{
+			this.parseError = {}
+			var res = JSON.parse(result)
+			this.ann = res.ann
+			this.ann.step = res.step
+			this.$textClean = false
+			this.ast = undefined
+			this.debugShow = true
+			this.redraw()
 		}) 
 	} 
 	
@@ -711,11 +624,33 @@ module.exports = class Code extends require('views/edit'){
 		return super.onFingerDown(f) 
 	} 
 	
+	currentIndent(offset){
+		let prev = 0
+		let text = this._text
+		for(let i = offset; i >=0; i--){
+			let char = text.charCodeAt(i)
+			if(i !== offset && (char === 10 || char === 13)) break
+			if(char === 9) prev ++
+			else prev = 0 
+		}
+		let seek = false
+		let next = 0
+		for(let i = offset; i < text.length; i++){
+			let char = text.charCodeAt(i)
+			if(seek){
+				if(char === 9) next ++
+				else break
+			}
+			if(char === 10 || char === 13) seek = true
+		}
+		return max(prev, next)
+	}
+
 	insertText(offset, text, isUndo) { 
 		
-		var char = this._text.charAt(offset) 
-		
-		var prev = this._text.charAt(offset - 1) 
+		var char = this._text.charAt(offset)
+		var move = 0
+		var prev = this._text.charAt(offset - 1)
 		
 		if(!isUndo) { 
 			if(text === "'" && char === "'") return 0 
@@ -723,7 +658,14 @@ module.exports = class Code extends require('views/edit'){
 			if(text === '}' && char === '}') return 0 
 			if(text === ']' && char === ']') return 0 
 			if(text === ')' && char === ')') return 0 
-			if(text === '\n' && prev === '{' && char === '}') text = '\n\n' 
+			if(text === '\n' && (prev === '{' && char === '}'||prev==='[' && char === ']'||prev==='('&&char===')')){
+				text = '\n'
+				let depth = this.currentIndent(offset)
+				text += Array(depth+2).join('\t')
+				move += depth + 1
+				text += '\n'
+				text += Array(depth+1).join('\t')
+			}
 			if(text === '{' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char !== '}')) text = '{}' 
 			if(text === '[' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ']') text = '[]' 
 			if(text === '(' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ')') text = '()' 
@@ -731,14 +673,17 @@ module.exports = class Code extends require('views/edit'){
 			if(text === '"' && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== '"' && prev !== '"') text = '""' 
 			if(text === "'" && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== "'" && prev !== "'") text = "''" 
 		} 
-		
-		this.$fastTextDelta += text.length 
-		this.$fastTextOffset = offset 
-		this.$fastTextStart = offset + text.length 
-		
-		if(text === '\n') this.wasNewlineChange = 1
-		else this.wasNewlineChange = 0 
-		
+
+		if(text === '\n'){
+			text = '\n'
+			//TODO figure out if(x){<\n>\n}
+			let depth = this.currentIndent(offset)
+			text += Array(depth+1).join('\t')
+			move += depth
+			this.wasNewlineChange = 1
+		}
+		else this.wasNewlineChange = 0
+
 		if(this.wasNewlineChange && this._text.charAt(offset) !== '\n' && this._text.charAt(offset + 1) !== '\n') { 
 			this.wasFirstNewlineChange = 1 
 		}
@@ -747,77 +692,51 @@ module.exports = class Code extends require('views/edit'){
 		this.$textClean = false 
 		this.inputDirty = true
 		this._text = this._text.slice(0, offset) + text + this._text.slice(offset) 
-		
-		// alright lets find the insertion spot in ann
-		var ann = this.ann 
-		// process insert into annotated array
-		var pos = 0 
-		for(var i = 0,len = ann.length,step = ann.step; i < len; i += step) { 
-			var txt = ann[i] 
-			pos += txt.length 
-			if(offset <= pos) { 
-				var idx = offset - (pos - txt.length) 
-				if(ann[i + 1] === this.styles.Id.unknown) { 
-					ann[i] = txt.slice(0, idx) + text + txt.slice(idx) 
-				}
-				else { 
-					ann[i] = txt.slice(0, idx) 
-					// lets choose a style
-					ann.splice(i + step, 0, text, this.styles.Id.unknown, ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5], txt.slice(idx), ann[i + 1], ann[i + 2], ann[i + 3], ann[i + 4], ann[i + 5]) 
-				} 
-				break 
-			} 
-		} 
+
 		this.redraw() 
-		return text.length 
+		return {
+			len:text.length,
+			move:move
+		}
 	} 
-	
-	serializeWithFormatting() { 
-		var ann = this.ann 
-		var s = '' 
-		var fs = this.$fastTextFontSize 
-		var padLeft //= this.drawPadding && this.drawPadding[3] || this.padding[3] 
-		var sx = 0 
-		for(var i = 0,len = ann.length,step = ann.step; i < len; i += step) { 
-			var txt = ann[i] 
-			var style = ann[i + 1] 
-			var probeId = style.probeId
-			if(probeId !== undefined){
-				if(txt === '@'){
-					s += 'module.probe('+probeId+','
+
+	scanBackSpaceRange(start){
+		// alright. what do we do.
+		var chunks = this.$fastTextChunks 
+		var styles = this.$fastTextStyles
+		var pos = 0 
+		for(var i = 0, len = chunks.length; i < len; i ++) { 
+			var txt = chunks[i] 
+			pos += txt.length
+			if(start < pos) {
+				var idx = start - (pos - txt.length)
+				if(idx === 0){ // we are at the beginning
+					let delta = 1
+
+					if(styles[i] !== this.$fastTextWhitespace)i--
+					// lets scan through generated whitespace
+					for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){
+						delta += chunks[i].length
+					}
+					return start - delta
 				}
-				else if(txt === '#'){
-					s += 'module.log('+probeId+','
-				}
-				else s += ')'
-				continue
-			}
-			var dx = ann[i + 5] 
-			var sx = abs(dx) 
-			if(i===0) padLeft = sx
-			if(txt.indexOf('\n') !== -1) { 
-				var first = txt.charCodeAt(0)
-				if(first !== 10 && first !== 13 && style.head > 0.) s += ' '
-				var last = txt.charCodeAt(txt.length - 1) 
-				if(dx < 0 && (last === 10 || last === 13)) { 
-					sx = abs(ann[i + 11]) 
-				} 
-				var indent = Array(1 + Math.ceil((sx  - padLeft) / (this.indentSize * fs))).join(this.serializeIndent) 
-				//console.log(sx, padLeft, Math.ceil((sx  - padLeft) / (this.indentSize * fs)))
-				var out = txt.split('\n')
-				for(var j = 0; j < out.length - 1; j++) { 
-					s += out[j] + '\n' + indent 
-				} 
-				s += out[j] 
-			}
-			else{
-				if(style.head > 0.) s += ' ' 
-				s += txt 
-				if(style.tail > 0.) s += ' ' 
-			}
-		} 
-		return s 
-	} 
+				break
+			} 
+		}
+
+		return start - 1
+	}
+
+	dump(){
+		var chunks = this.$fastTextChunks 
+		var styles = this.$fastTextStyles
+		let i = 0
+		let str = ''
+		for(let i = 0; i < chunks.length; i++){
+			str += JSON.stringify(chunks[i])+' ' + (styles[i]?styles[i].name:'0')+'\n'
+		}
+		console.log(str)
+	}
 	
 	removeText(start, end, isUndo) { 
 		this.inputDirty = true
@@ -825,23 +744,23 @@ module.exports = class Code extends require('views/edit'){
 		var delta = 0 
 		this.wasNewlineChange = 0 
 		var text = this._text 
-		
-		if(!isUndo) { 
-			if(end === start + 1) { 
+		//console.log("REMOVE", isUndo, start, end)
+		if(!isUndo) {
+			if(end === start + 1) {  // its a single character
 				var delchar = text.slice(start, end) 
 				if(delchar === '\n') { 
 					// check if we removed a singleton newline
 					if(text.charAt(start - 1) !== '\n' && 
-						text.charAt(end) !== '\n') { 
+						text.charAt(end) !== '\n') {
 						this.wasFirstNewlineChange = true 
 					}
-					else this.wasFirstNewlineChange = false 
-					this.wasNewlineChange = true 
+					else this.wasFirstNewlineChange = false
+					this.wasNewlineChange = true
 					if(text.charAt(start - 1) === '{' && text.charAt(end) === '\n' && text.charAt(end + 1) === '}') end++
 					else if(text.charAt(start - 1) === ',' && (text.charAt(start + 1) === ',' || text.charAt(start + 1) !== '\n')) { 
-						start-- 
-						delta = -1 
-					} 
+						start--
+						delta = -1
+					}
 				}
 				else if(delchar === '{' && text.charAt(end) === '}') end++
 				else if(delchar === '[' && text.charAt(end) === ']') end++
@@ -851,44 +770,9 @@ module.exports = class Code extends require('views/edit'){
 			} 
 		} 
 		
-		this._text = text.slice(0, start) + text.slice(end) 
+		this._text = text.slice(0, start) + text.slice(end)
 		
-		this.$fastTextDelta -= (end - start) 
-		this.$fastTextStart = 
-		this.$fastTextOffset = start 
-		
-		// process a remove from the annotated array
-		var ann = this.ann 
-		var pos = 0 
-		for(var i = 0,len = ann.length,step = ann.step; i < len; i += step) { 
-			var txt = ann[i] 
-			pos += txt.length 
-			if(start < pos) { 
-				var idx = start - (pos - txt.length) 
-				ann[i] = txt.slice(0, idx) 
-				if(end <= pos) { 
-					var idx = end - (pos - txt.length) 
-					ann[i] += txt.slice(idx) 
-				}
-				else { // end is in the next one
-					for(i += step; i < len; i += step) { 
-						var txt = ann[i] 
-						pos += txt.length 
-						if(end < pos) { 
-							var idx = end - (pos - txt.length) 
-							ann[i] = txt.slice(idx) 
-							break 
-						}
-						else { 
-							ann[i] = '' 
-						} 
-						
-					} 
-				} 
-				break 
-			} 
-		} 
-		
+	
 		this.redraw() 
 		return delta 
 	} 

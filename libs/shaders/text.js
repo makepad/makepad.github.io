@@ -6,7 +6,8 @@ module.exports = class Text extends require('base/shader'){
 
 	prototype(){
 		this.props = {
-			//visible:{noTween:1, value:1.},
+			visible:1.,
+
 			x:NaN,
 			y:NaN,
 			dx:0,
@@ -41,8 +42,6 @@ module.exports = class Text extends require('base/shader'){
 			// character head/tail margin and advance
 			advance:{mask:0, value:0},
 			unicode:{mask:0, value:0},
-			head:{mask:0, value:0},
-			tail:{mask:0, value:0},
 			x1:{mask:0, value:0},
 			y1:{mask:0, value:0},
 			x2:{mask:0, value:0},
@@ -73,6 +72,10 @@ module.exports = class Text extends require('base/shader'){
 			$length:function(){
 				return this.PROPLEN
 			},
+			$removeLast:function(){
+				let o = --this.PROPLEN
+				this.turtle.wx -= this.PROP(o, 'fontSize') * this.PROP(o, 'advance')
+			},
 			$readOffset:function(o){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
@@ -82,13 +85,10 @@ module.exports = class Text extends require('base/shader'){
 				var read = {
 					x:this.PROP(o, 'x'),
 					y:this.PROP(o, 'y'),
-					head:this.PROP(o, 'head'),
 					advance:this.PROP(o, 'advance'),
-					tail:this.PROP(o, 'tail'),
-					fontSize:this.PROP(o, 'fontSize'),
-					italic:this.PROP(o, 'italic')
+					fontSize:this.PROP(o, 'fontSize')
 				}
-				read.w = (read.head + read.advance + read.tail) * read.fontSize
+				read.w = read.advance * read.fontSize
 				read.lineSpacing = proto.lineSpacing
 				read.baseLine = proto.baseLine
 				// write the bounding box
@@ -106,7 +106,7 @@ module.exports = class Text extends require('base/shader'){
 					var tx = this.PROP(i, 'x')
 					var ty = this.PROP(i, 'y')
 					var fs = this.PROP(i, 'fontSize')
-					var total = this.PROP(i, 'advance') + this.PROP(i, 'head') + this.PROP(i, 'tail')
+					var total = this.PROP(i, 'advance') //+ this.PROP(i, 'head') + this.PROP(i, 'tail')
 
 					var xw = total * fs
 					if(ty >= y){
@@ -137,7 +137,7 @@ module.exports = class Text extends require('base/shader'){
 					var ty = this.PROP(i, 'y')
 					var fs = this.PROP(i, 'fontSize')
 					var advance = this.PROP(i, 'advance')
-					var total = abs(advance) +  this.PROP(i, 'head') + this.PROP(i, 'tail')
+					var total = abs(advance) //+  this.PROP(i, 'head') + this.PROP(i, 'tail')
 
 					if(curBox && lty !== undefined && lty !== ty){
 						curBox.w = (ltx + lfs * lad) - curBox.x
@@ -235,8 +235,8 @@ module.exports = class Text extends require('base/shader'){
 						var g = glyphs[unicode] || glyphs[63]
 						this.WRITEPROPS({
 							advance:g.advance,
-							head:0.,
-							tail:0.,
+						//	head:0.,
+						//	tail:0.,
 							tx1: g.tx1,
 							ty1: g.ty1,
 							tx2: g.tx2,
@@ -271,8 +271,6 @@ module.exports = class Text extends require('base/shader'){
 	}
 
 	vertex(){$
-		this.visible = 1.0
-
 		this.vertexStyle()
 
 		if(this.visible < 0.5){
@@ -281,14 +279,14 @@ module.exports = class Text extends require('base/shader'){
 
 		// ref these for characters with margins (prefix->advance)
 		this.advance
-		this.tail
+		//this.tail
 
 		var minPos = vec2(
-			this.x + this.fontSize * (this.x1 + this.head),
+			this.x + this.fontSize * (this.x1 ),
 			this.y - this.fontSize * this.y1 + this.fontSize * this.baseLine
 		)
 		var maxPos = vec2(
-			this.x + this.fontSize * (this.x2 + this.head),
+			this.x + this.fontSize * (this.x2 ),
 			this.y - this.fontSize * this.y2 + this.fontSize * this.baseLine
 		)
 
@@ -330,8 +328,13 @@ module.exports = class Text extends require('base/shader'){
 			vec2(this.tx2, this.ty2), 
 			this.mesh.xy
 		)
+		this.pos = this.vertexPos(pos)
+		this.ppos = this.pos - vec2(this.x, this.y)
+		this.psize = vec2((this.x2-this.x1)*this.fontSize,(this.y2-this.y1)*this.fontSize)
+		
+		//this.ppos = pos - vec2(this.x2 - this.y2)
 
-		return vec4(this.vertexPos(pos),0.,1.) * this.viewPosition * this.camPosition * this.camProjection
+		return vec4(this.pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
 	/*
 	drawField(field){$
@@ -353,26 +356,80 @@ module.exports = class Text extends require('base/shader'){
 		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
 		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
 	}*/
-	
+	/*
 	textShape(){
-		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*0.25)-.05
+		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*8)*this.aaFactor//*0.045-.008
+		//this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r))*1.9-.3
 		this._oldShape = this.shape
 		this.shape = min(this.shape, this.field)
+		this.shape = this.field 
 	}
 
 	pixel(){$
-		this.viewport(this.mesh.xy)
+		
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
+		this._field = field
+
+		field = this._field - this.boldness
+
+		if(field > 1.){
+			discard
+		}
+		var a = smoothstep(.75,-.75, field)
+		let delta1 = vec4(this.color.rgb*a, a)
+		//return delta1
+
+		this.viewport(this.textureCoords.xy)
 		this.textShape() 
-		if(this.mesh.z < 0.5){
-			this.blur = this.shadowBlur
-			return this.fill(this.shadowColor)
-		}
+		//if(this.mesh.z < 0.5){
+		//	this.blur = this.shadowBlur
+		//	return this.fill(this.shadowColor)
+		//}
 		this.fillKeep(this.color)
-		if(this.outlineWidth>0.){
-			this.stroke(this.outlineColor,this.outlineWidth)
-		}
+		//if(this.outlineWidth>0.){
+		//	this.stroke(this.outlineColor,this.outlineWidth)
+		//}
+		//return vec4(abs(this.result.rgb - delta1.rgb)*16.,1.)
 		return this.result
 	}
+	*/
+	drawField(field){$
+		if(field > 1. + this.outlineWidth){
+			discard
+		}
+
+		if(this.outlineWidth>0.){
+			var outline = abs(field) - (this.outlineWidth)
+			var inner = field + this.outlineWidth
+			var borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline,0.,1.))
+			return mix(this.color, borderfinal, clamp(inner, 0., 1.))
+		}
+		var a = smoothstep(.75,-.75, field)
+		return vec4(this.color.rgb*a, a)
+	}
+
+	drawShadow(field){
+		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
+		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
+	}
+
+	pixel(){$
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
+		this._field = field
+
+		this.pixelStyle()
+
+		field = this._field - this.boldness
+
+		if(this.mesh.z < 0.5){
+			return this.drawShadow(field)
+		}
+		return this.drawField(field)
+	}
+
+
 
 	onCompileVerbs(){
 		super.onCompileVerbs()

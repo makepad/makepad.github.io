@@ -158,6 +158,8 @@ class Example extends Base{
 
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
+		this.xOverflow = 'none'
+		this.yOverflow = 'none'
 		this.props = {
 			winner: - 1,
 			page:0
@@ -273,42 +275,57 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		this.teams = [
 			{name:"Team1", color:'#7', players:[
-				{name:"Player1", ctrl:0, buzzer:2, button:1, sound:0, score:0, color:'#c33'},
-				{name:"Player2", ctrl:0, buzzer:2, button:2, sound:1, score:0, color:'#3c3'},
-				{name:"Player3", ctrl:0, buzzer:2, button:3, sound:2, score:0, color:'#33c'},
+				{name:"Nikolai", ctrl:0, buzzer:0, button:0, sound:0, score:0, color:'#c33'},
+				{name:"Chrissy", ctrl:0, buzzer:1, button:0, sound:1, score:0, color:'#3c3'},
+				{name:"Fabian", ctrl:0, buzzer:2, button:0, sound:2, score:0, color:'#33c'},
 			]},
 			{name:"Team2", color:'#6', players:[
-				{name:"Player4", ctrl:0, buzzer:2, button:4, sound:3, score:0, color:'#cc3'},
-				{name:"Player5", ctrl:0, buzzer:2, button:0, sound:4, score:0, color:'#3cc'},
-				{name:"Player6", ctrl:0, buzzer:2, button:4, sound:5, score:0, color:'#c3c'}
+				{name:"Sergey", ctrl:1, buzzer:0, button:0, sound:3, score:0, color:'#cc3'},
+				{name:"Stijn", ctrl:1, buzzer:1, button:0, sound:4, score:0, color:'#3cc'},
+				{name:"Player6", ctrl:1, buzzer:2, button:0, sound:5, score:0, color:'#c3c'}
 			]}
 		]
 		
+		this.controller = {
+			ctrl:1,
+			buzzer:3,
+			button:0
+		}
+		this.page = 0
 		this.questions = [
+			{h:"Classes", q:""},
 			{h:"Classes", q:"Explain prototypes\nin 2 sentences"},
-			{h:"Classes", q:"Are classes prototypes?"},
+			{h:"Classes", q:"Whats classy about prototypes"},
 			{h:"Classes", q:"Examples"},
+			{h:"Syntax", q:""},
 			{h:"Syntax", q:"What is hoisting?"},
-			{h:"Syntax", q:"...what?"},
+			{h:"Syntax", q:"arguments ...what?"},
 			{h:"Syntax", q:"Examples"},
+			{h:"Arrow functions", q:""},
 			{h:"Arrow functions", q:"Say lambda 5 times real fast"},
 			{h:"Arrow functions", q:"What is this?"},
 			{h:"Arrow functions", q:"Examples"},
+			{h:"Promises", q:""},
 			{h:"Promises", q:"What is christmas tree\nprogramming?"},
-			{h:"Promises", q:"Why do promises\neat exceptions?"},
+			{h:"Promises", q:"Whats exceptional about a promise?"},
 			{h:"Promises", q:"Examples"},
-			{h:"Iterators", q:"Enact iterators with your team"},
+			{h:"Iterators", q:""},
+			{h:"Iterators", q:"Act out a for loop"},
 			{h:"Iterators", q:"Examples"},
-			{h:"Generators", q:"What happens if you combine\na generator and a promise?"},
-			{h:"Generators", q:"What do generators generate?"},
+			{h:"Generators", q:""},
+			{h:"Generators", q:"Whats the promise of a generator"},
+			{h:"Generators", q:"Generate something"},
 			{h:"Generators", q:"Examples"},
+			{h:"Template literals", q:""},
 			{h:"Template literals", q:"Whats literal about\na template literal?"},
 			{h:"Template literals", q:"Whats the next biggest\nuse of the backtick"},
 			{h:"Template literals", q:"Examples"},
-			{h:"Modules", q:"What does static analysis mean"},
+			{h:"Modules", q:""},
+			{h:"Modules", q:"How do you analyse static"},
 			{h:"Modules", q:"Examples"},
-			{h:"WeakMaps", q:"Whats weak about this map"},
-			{h:"WeakMaps", q:"Examples"},
+			{h:"Structures", q:""},
+			{h:"Structures", q:"Whats weak about a WeakMap"},
+			{h:"Structures", q:"Examples"},
 			{h:"Final Score", q:""},
 		]
 		
@@ -321,6 +338,11 @@ module.exports = class extends require('base/drawapp'){ //top
 		socket.onMessage = msg=>{
 			if( ! msg.state) return
 			console.log(msg)
+			let ctrl = this.controller
+			if(msg.controller === ctrl.ctrl && msg.buzzer === ctrl.buzzer && msg.button === ctrl.button) {
+				this.lightsOff()
+				return
+			}
 			// fix player selector based on buzzer
 			for(let t = 0;t < this.teams.length;t ++ ){
 				let team = this.teams[t]
@@ -334,7 +356,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			}
 		}
 		
-		this.page = 0
+	
 	}
 	
 	playerWin(player) {
@@ -391,6 +413,8 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
+		var scale = 0.6
+		var panel = 300
 		//for(var i=0;i<1;i++)
 		let team = 0
 		for(let t = 0;t < this.teams.length;t ++ ){
@@ -405,16 +429,16 @@ module.exports = class extends require('base/drawapp'){ //top
 					down:1,
 					margin:2,
 					padding:7,
-					w:'200'
+					w:panel * scale
 				})
 				this.drawText({
 					align:[1, 0],
-					fontSize:20,
+					fontSize:20 * scale,
 					order:1,
 					text:'' + player.score
 				})
 				this.drawText({
-					fontSize:20,
+					fontSize:20 * scale,
 					align:[0, 0],
 					order:1,
 					text:player.name
@@ -427,17 +451,17 @@ module.exports = class extends require('base/drawapp'){ //top
 				down:1,
 				color:team.color,
 				margin:2,
-				padding:7,
-				w:'200'
+				padding:7 * scale,
+				w:panel * scale
 			})
 			this.drawText({
 				align:[1, 0],
-				fontSize:20,
+				fontSize:20 * scale,
 				order:1,
 				text:'' + total
 			})
 			this.drawText({
-				fontSize:20,
+				fontSize:20 * scale,
 				align:[0, 0],
 				order:1,
 				text:team.name
@@ -451,14 +475,14 @@ module.exports = class extends require('base/drawapp'){ //top
 			this.drawText({
 				color:'#7',
 				margin:[0, 0, 0, 10],
-				fontSize:16,
+				fontSize:16 * scale,
 				text:"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
 			})
 		}
 		else {
 			
 			this.drawText({
-				fontSize:50,
+				fontSize:50 * scale,
 				margin:[0, 0, 0, 40],
 				align:[0., 0],
 				text:this.questions[this.page - 1].h
@@ -466,7 +490,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			this.lineBreak()
 			this.turtle.wy += 40
 			this.drawText({
-				fontSize:32,
+				fontSize:32 * scale,
 				margin:[0, 0, 0, 40],
 				text:this.questions[this.page - 1].q
 			})
@@ -475,7 +499,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		// draw players points
 		if(this.winner) {
-			this.drawSplash({id:1, x:100, y:120, color:this.winner.color, text:this.winner.name})
+			this.drawSplash({id:1, x:100 * scale, y:20 * scale, color:this.winner.color, text:this.winner.name})
 		}
 		//this.drawSplash({id:0,text:'hi'+this.show})
 	}

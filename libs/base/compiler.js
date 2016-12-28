@@ -747,6 +747,7 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$turtle = 'this.turtle'
 		scope.$shaderOrder = 'this.$shaders.'+className 
 		scope.$proto = 'this.' + className +'.prototype'
+		scope.$a = scope.$props = 1
 		//scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
 		//scope.$props = '$shader.$props'
 		//scope.$a = '$props.array'
@@ -863,10 +864,15 @@ module.exports = class Compiler extends require('base/class'){
 		return code
 	}*/
 
+	LENCORRECT(args, indent, className, scope){
+		return '$props.length = $turtle.$propOffset'
+	}
+
+
 	PROPLEN(args, indent, className, scope){
 		scope.$proto = 'this.' + className +'.prototype'
 		if(!scope.$props) scope.$props = 'this.$shaders.'+className+' && this.$shaders.'+className+'[$proto.order].$props'
-		return '$props && $props.length'
+		return '$props.length'
 	}
 
 	PROP(args, indent, className, scope){
@@ -879,6 +885,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!scope.$a) scope.$a = '$props.array'
 		
 		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
+		if(!prop) console.error("Cannot find property "+args[1])
 		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+prop.offset+']'
 	}
 

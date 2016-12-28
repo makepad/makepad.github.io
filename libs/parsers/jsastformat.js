@@ -10,17 +10,20 @@ module.exports = class JSFormatter extends require('base/class'){
 		for(let glslKey in require('base/infer').prototype.glslfunctions) this.glslGlobals[glslKey] = 1
 	}
 
-	formatJS(indentSize, ast){
-		this.indent = 0
-		this.currentIndent = this.drawPadding && this.drawPadding[3] || this.padding[3]
-		this.indentSize = indentSize
-		this._text = ''
+	jsASTFormat(indentSize, ast){
+		//this.currentIndent = this.drawPadding && this.drawPadding[3] || this.padding[3]
+		//this.indentSize = indentSize
+		//this._text = ''
 		//this.trace = ''
 		//this.traceMap = []//[]
-		this.ann.length = 0
-		this.$fastTextWritten = 0
-		this.$fastTextLines = [0]
-		this.$fastTextAnnotate = true
+		//this.ann.length = 0
+		//this.$fastTextWritten = 0
+		//this.$fastTextLines = [0]
+		//this.$fastTextAnnotate = true
+		this.$fastTextIndent = 0
+		this.$fastTextChunks = []
+		this.$fastTextStyles = []
+
 		this.scope = Object.create(this.defaultScope)
 		// run the AST formatter
 		this[this.ast.type](this.ast, null)
@@ -41,36 +44,36 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(bottom) this.fastText(node.bottom, this.styles.Comment), this.trace += bottom
 	}
 
-	//BlockStatement:{body:2},
-	indentIn(){
-		this.indent++
-		this.currentIndent += this.indentSize * this.$fastTextFontSize 
-
-		this.turtle.sx = this.turtle.$xAbs + this.currentIndent//this.indent * this.indentSize + this.padding[3]
-		// check if our last newline needs reindenting
-		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
-			this.turtle.wx = this.turtle.sx
-		}
-	}
-
 	lastIsNewline(){
-		var text = this.ann[this.ann.length - this.ann.step]
+		let styles = this.$fastTextStyles
+		let chunks = this.$fastTextChunks
+		let iter = styles.length - 1
+		while(styles[iter] === this.$fastTextWhitespace){
+			iter --
+		}
+		let text = chunks[iter]
 		var last = text.charCodeAt(text.length - 1)
 		if(last === 10 || last === 13){
 			return true
 		}
 		return false
 	}
+	//BlockStatement:{body:2},
 
-	indentOut(delta){
-		this.indent--
-		this.currentIndent -= this.indentSize * this.$fastTextFontSize
-		this.turtle.sx = this.turtle.$xAbs + this.currentIndent//this.indent * this.indentSize + this.padding[3]
-		// check if our last newline needs reindenting
-		if(this.lastIsNewline()){
-			this.ann[this.ann.length - 1] = -this.ann[this.ann.length - 1]
-			this.turtle.wx = this.turtle.sx
+	tearLastIndent(){
+		let styles = this.$fastTextStyles
+		let chunks = this.$fastTextChunks
+		let ws = this.$fastTextWhitespace
+		let iter = styles.length - 1
+		while(styles[iter] === ws){
+			iter --
+		}
+		let text = chunks[iter]
+		var last = text.charCodeAt(text.length - 1)
+		if(last === 10 || last === 13){
+			chunks.length--
+			styles.length--
+			this.$removeLastText()
 		}
 	}
 
@@ -78,7 +81,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		// store the startx/y position
 		let turtle = this.turtle
 
-		let startx = turtle.sx, starty = turtle.wy
+		let starty = turtle.wy
 		
 		this.trace += '{'
 		let traceHandler = false
@@ -101,7 +104,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		let endx = turtle.wx, lineh = turtle.mh
 		// lets indent
-		this.indentIn()
+		this.$fastTextIndent++
 		//this.newLine()
 		let top = node.top
 
@@ -147,8 +150,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
 
 		if(isFolded) this.$fastTextFontSize = isFolded
-
-		this.indentOut()
+		this.tearLastIndent()
+		this.$fastTextIndent--
 		// store endx endy
 		let blockh = turtle.wy
 		
@@ -156,8 +159,9 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.trace += '}catch($e){$T(-'+traceHandler+',$e);throw $e}finally{$T(-'+traceHandler+',this)}'
 		}
 		else this.trace += '}'
+		let startx = turtle.wx 
 		this.fastText('}', colorScheme.curly)
-	
+		
 		let pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node 
 		this.fastBlock(
@@ -167,7 +171,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			lineh,
 			this.indentSize* this.$fastTextFontSize,
 			blockh - starty,
-			this.indent,
+			this.$fastTextIndent,
 			pickId,
 			starty !== blockh?
 				(colorScheme||this.styles.Block.BlockStatement).block.open:
@@ -179,7 +183,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	ArrayExpression(node){
 		let turtle = this.turtle
 
-		let startx = turtle.sx, starty = turtle.wy
+		let starty = turtle.wy
 		this.fastText('[', this.styles.Array.bracket)
 		this.trace += '['
 		let elems = node.elements
@@ -198,8 +202,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		let top = node.top
 		if(top){
 			this.trace += top
+			this.$fastTextIndent++
 			this.fastText(top, this.styles.Comment.top)
-			this.indentIn()
 
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
@@ -234,13 +238,15 @@ module.exports = class JSFormatter extends require('base/class'){
 				}
 			}
 			if(isFolded) this.$fastTextFontSize = isFolded
-			this.indentOut()
+			this.tearLastIndent()
+			this.$fastTextIndent--
 		}
 
 		let blockh = turtle.wy
 
 		//this.$fastTextDelta += dy
 		this.trace += ']'
+		let startx = turtle.wx 
 		this.fastText(']', this.styles.Array.bracket)
 
 		let pickId = this.pickIdCounter++
@@ -266,7 +272,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		let turtle = this.turtle
 		let keyStyle = this.styles.Object.key
 
-		let startx = turtle.sx, starty = turtle.wy
+		let starty = turtle.wy
 		
 		this.fastText('{', this.styles.Object.curly)
 		this.trace += '{'
@@ -277,20 +283,21 @@ module.exports = class JSFormatter extends require('base/class'){
 		let propslen = props.length - 1
 
 		// make space for our expanded or collapsed view
-		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
-			this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
-		}
+		//if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
+		//	this.$fastTextDelta += (propslen + 1) * this.$fastTextDelta
+		//}
 		// make room for inserted commas
 		let insCommas = node.insCommas
-		if(insCommas) this.$fastTextDelta += insCommas
+		//if(insCommas) this.$fastTextDelta += insCommas
 		let top = node.top
 		//this.newLine()
 		if(top){
+			this.$fastTextIndent++
+			
 			var maxlen = 0
 			this.fastText(top, this.styles.Comment.top)
 			this.trace += top
-			this.indentIn()
-
+			
 			var isFolded = top.charCodeAt(top.length - 1) === 13?this.$fastTextFontSize:0
 			if(isFolded) this.$fastTextFontSize = 1
 
@@ -316,7 +323,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(key.type === 'Identifier'){
 				if(top) keypos = key.name.length
 				this.trace += key.name
-				this.fastText(key.name, keyStyle,keypos?(maxlen - keypos)*keyStyle.alignLeft:0)
+				this.fastText(key.name, keyStyle)
 			}
 			else this[key.type](key)
 
@@ -351,11 +358,14 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(isFolded) this.$fastTextFontSize = isFolded
 
-			this.indentOut()
+			this.tearLastIndent()
+			this.$fastTextIndent--
+
 		}
 
 		//this.$fastTextDelta += dy
 		this.trace += '}'
+		let startx = turtle.wx 
 		this.fastText('}', this.styles.Object.curly)
 
 		let blockh = turtle.wy
@@ -381,14 +391,14 @@ module.exports = class JSFormatter extends require('base/class'){
 	//ClassBody:{body:2},
 	ClassBody(node){
 		let turtle = this.turtle
-		let startx = turtle.sx, starty = turtle.wy
+		let starty = turtle.wy
 
 		this.fastText('{', this.styles.Class.curly)
 		this.trace += '{'
 		
 		let endx = turtle.wx, lineh = turtle.mh
 
-		this.indentIn()
+		this.$fastTextIndent++
 		var top = node.top
 		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
 		var body = node.body
@@ -404,8 +414,10 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		let bottom = node.bottom
         if(bottom) this.fastText(bottom, this.styles.Comment.bottom), this.trace += bottom
-		this.indentOut()
+		this.tearLastIndent()
+		this.$fastTextIndent--
 		this.trace += '}'
+		let startx = turtle.wx 
 		this.fastText('}', this.styles.Class.curly)
 		// store endx endy
 		var blockh = turtle.wy
@@ -461,7 +473,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		// check if we need to indent
 		if(node.top){
 			this.fastText(node.top, this.styles.Comment.top)
-			this.indentIn()
+			this.$fastTextIndent++
 		}
 
 		var exp = node.expression
@@ -478,7 +490,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 			if(node.bottom) this.fastText(node.bottom, this.styles.Comment.bottom)
 			if(!exp.side && !node.bottom) this.fastText('\n', this.styles.Comment.bottom)
-			this.indentOut()
+			this.$fastTextIndent--
 		}
 		this.trace += ')'
 		if(this.allowOperatorSpaces && node.rightSpace){
@@ -543,7 +555,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(node.around1){
 				this.fastText(node.around1, this.styles.Comment.around)
 			}
-			this.indentIn()
+			this.$fastTextIndent++
 			this.trace += '.'
 			this.fastText('.', this.styles.Object.dot)
 			if(node.around2){
@@ -555,7 +567,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				this.trace += name
 				this.fastText(name, this.styles.Object.member)
 			}
-			this.indentOut()
+			this.$fastTextIndent--
 		}
 	}
 
@@ -595,7 +607,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(top){
 			this.fastText(node.top, this.styles.Comment.top)
 			this.trace += top
-			this.indentIn()
+			this.$fastTextIndent++
 		}
 		
 		for(let i = 0; i <= argslen;i++){
@@ -623,7 +635,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				}
 			}
 			
-			this.indentOut()
+			this.$fastTextIndent--
 		}
 		this.$fastTextDelta += dy
 		this.trace += ')'
@@ -697,7 +709,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		let top = node.top
 		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
-		this.indentIn()
+		this.$fastTextIndent++
 
 		var oldscope = this.scope
 		this.scope = Object.create(this.scope)
@@ -718,7 +730,7 @@ module.exports = class JSFormatter extends require('base/class'){
                 if(param.type === 'RestElement'){
                     this.scope[param.argument.name] = 'arg'
                 }
-                console.log(param.type)
+                //console.log(param.type)
 				this[param.type](param)
 			}
 			if(i < paramslen){
@@ -742,7 +754,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			}
 		}
 
-		this.indentOut()
+		this.$fastTextIndent--
 		this.trace += ')'
 		this.fastText(')', this.styles.Function.parenRight)
 
@@ -820,7 +832,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		let around1 = node.around1
 		if(around1) this.fastText(around1, this.styles.Comment.around), this.trace += around1
-		this.indentIn()
+		this.$fastTextIndent++
 
 		this.trace += node.operator
 		this.fastText(node.operator, this.styles.Operator[node.operator] || this.styles.Operator.default)
@@ -829,7 +841,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this[right.type](right,level + 1)
 		if(this.traceMap) this.trace += ')'
-		this.indentOut()
+		this.$fastTextIndent--
 	}
 
 	//BinaryExpression:{left:1, right:1, operator:0},
@@ -852,7 +864,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(around1){
 			this.fastText(around1, this.styles.Comment.around), this.trace += around1
 		}
-		if(doIndent) this.indentIn()
+		if(doIndent) this.$fastTextIndent++
 		var x2 = turtle.wx 
 		this.trace += op
 		if(this.allowOperatorSpaces){
@@ -875,7 +887,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	
 		if(this.traceMap) this.trace + ')'
 
-		if(doIndent) this.indentOut()
+		if(doIndent) this.$fastTextIndent--
 		//if(turtle.wy === ys) this.stopMarker(m, x1,x2,x3,turtle.wx, turtle.mh)
 		//else this.stopMarker(m, 0,0,0,0,0)
 	}
@@ -902,7 +914,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[test.type](test)
 		this.trace += '?'
 		this.fastText('?', this.styles.Operator['?:'])
-		this.indentIn()
+		this.$fastTextIndent++
 		var afterq = node.afterq
 		if(afterq) this.fastText(afterq, this.styles.Comment.above), this.trace += afterq
 		var cq = node.consequent
@@ -913,7 +925,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(afterc) this.fastText(afterc, this.styles.Comment.above), this.trace += afterc
 		var alt = node.alternate
 		this[alt.type](alt)
-		this.indentOut()
+		this.$fastTextIndent--
 
 	}
 
@@ -1340,7 +1352,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.fastText(':', this.styles.If.caseColon)
 		let side = node.side
 		if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
-		this.indentIn()
+		this.$fastTextIndent++
 		var cqs = node.consequent
 		var cqlen = cqs.length
 		for(let i = 0; i < cqlen; i++){
@@ -1352,7 +1364,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(side) this.fastText(side, this.styles.Comment.side), this.trace += side
 			this.trace += '\n'
 		}
-		this.indentOut()
+		this.$fastTextIndent--
 	}
 
 	//TaggedTemplateExpression:{tag:1, quasi:1},
