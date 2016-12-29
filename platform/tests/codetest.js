@@ -13,8 +13,10 @@ module.exports = class extends require('base/app'){
 
 	constructor(){
 		super()
-	
-		this.code = new this.Code(this, {text:'var x = {\nx:1,y:2}'})
+		this.code = new this.Code(this, {text:'function t(){\nvar t=2\n+2\n}'})
+		
+		//this.code = new this.Code(this, {text:'function t(){\nvar t=2+\nfunction t(){}\n}'})
+		//this.code = new this.Code(this, {text:module.source})
 		//this.code = new this.Code(this, {text:'if(x){\n\t1+2\nif(t){\n}\n}'})
 	}
 

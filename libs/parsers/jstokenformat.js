@@ -27,6 +27,10 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("class", this.styles.Class.class)
 		}
 
+		this["super"] = function(tok){
+			this.writeText("super", this.styles.Class.super)
+		}
+
 		this["while"] = function(tok){
 			this.writeText("while", this.styles.For.for)
 		}
@@ -101,6 +105,10 @@ module.exports = class JSFormatter extends require('base/class'){
 	
 		this["."] = function(tok){
 			this.writeText('.', this.styles.Operator.default)
+		}
+
+		this["`"] = function(tok){
+			this.writeText('`', this.styles.Operator.default)
 		}
 
 		this[":"] = function(tok){

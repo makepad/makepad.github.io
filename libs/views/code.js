@@ -526,6 +526,139 @@ module.exports = class Code extends require('views/edit'){
 		this.endBg(true) 
 	} 
 	
+	scanChange(pos, oldText, newText){
+		
+		// only do this when at token boundary
+		// attempt #5002
+		//let dx = 0
+		var p0 = oldText.charCodeAt(pos-1)
+		if(p0 === 10 || p0 === 13 || p0 === 9) p0 = undefined
+		// we cant hold onto a space
+		//if(p0 === 32) p0 = oldText.charCodeAt(pos - 2), dx = -1
+		var p1 = oldText.charCodeAt(pos)
+		if(p1 === 32) p1 = undefined
+		var p2 = oldText.charCodeAt(pos+1)
+
+		for(var i = pos+1; i >= 0; i--){
+			if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
+				break
+			}
+		}
+		for(var j = pos-1; j < newText.length+1; j++){
+			if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
+				break
+			}
+		}
+		for(var k = pos+1; k >= 0; k--){
+			if(newText.charCodeAt(k) === p0){
+				k++
+				break
+			}
+		}
+		for(var l = pos-1; l < newText.length+1; l++){
+			if(newText.charCodeAt(l) === p0){
+				l++
+				break
+			}
+		}
+		for(var m = pos+1; m >= 0; m--){
+			if(newText.charCodeAt(m) === p1){
+				break
+			}
+		}
+		for(var n = pos-1; n < newText.length+1; n++){
+			if(newText.charCodeAt(n) === p1){
+				break
+			}
+		}
+		function minAbs(a,b){
+			if(abs(a)<abs(b)) return a
+			return b
+		}
+
+		/*
+		console.log(
+			oldText.slice(0,pos-1) + '#A#' +
+			oldText.slice(pos-1, pos) + '#B#' +
+			oldText.slice(pos, pos+1) + '#C#' +
+			oldText.slice(pos+1, pos+2) + '##' +
+			oldText.slice(pos+2),
+			pos
+			//newText.length,
+			//p0,p1,p2,
+			//i,j,k,l,m,n,
+			//pos-minAbs(minAbs(minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l), pos-m), pos-n)
+		)*/
+		let newpos = pos-minAbs(minAbs(minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l), pos-m), pos-n)
+		if(!this.isTokenBoundary(newpos)) return pos
+
+		return newpos
+	}
+
+	isTokenBoundary(start){
+		// alright. what do we do.
+		var chunks = this.$fastTextChunks 
+		var styles = this.$fastTextStyles
+		var pos = 0 
+		for(var i = 0, len = chunks.length; i < len; i ++) { 
+			var txt = chunks[i] 
+			pos += txt.length
+			if(start < pos) {
+				var idx = start - (pos - txt.length)
+				if(idx === 0){ // we are at the beginning
+					return true
+				}
+				return false
+			}
+		}
+	}
+
+	scanBackSpaceRange(start){
+
+		// alright. what do we do.
+		var chunks = this.$fastTextChunks 
+		var styles = this.$fastTextStyles
+		var pos = 0 
+		for(var i = 0, len = chunks.length; i < len; i ++) { 
+			var txt = chunks[i] 
+			pos += txt.length
+			if(start < pos) {
+				var idx = start - (pos - txt.length)
+				if(idx === 0){ // we are at the beginning
+					// scan forwards through spaces
+					// scan backwards through 
+					i--
+					if(this.ast && chunks[i] === ' ') i--, start --
+					if(chunks[i] === '\t'){ // lets scan indentation 
+						let delta = 1
+						for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){
+							delta += chunks[i].length
+						}
+						return {
+							start:start - delta,
+							end:start
+						}
+					}
+					// otherwise we scan formatting whitespace
+					if(this.ast && chunks[i].length === 1){
+						let end = start
+						if(chunks[i-1] === ' ') start -= 1
+						if(chunks[i+1] === ' ') end += 1
+						return {
+							start:start - 1,
+							end: end
+						}
+					}
+				}
+				break
+			} 
+		}
+		return {
+			start:start - 1,
+			end:start
+		}
+	}
+
 	onFlag32() { 
 		this.$textClean = false 
 		this.redraw() 
@@ -699,33 +832,6 @@ module.exports = class Code extends require('views/edit'){
 			move:move
 		}
 	} 
-
-	scanBackSpaceRange(start){
-		// alright. what do we do.
-		var chunks = this.$fastTextChunks 
-		var styles = this.$fastTextStyles
-		var pos = 0 
-		for(var i = 0, len = chunks.length; i < len; i ++) { 
-			var txt = chunks[i] 
-			pos += txt.length
-			if(start < pos) {
-				var idx = start - (pos - txt.length)
-				if(idx === 0){ // we are at the beginning
-					let delta = 1
-
-					if(styles[i] !== this.$fastTextWhitespace)i--
-					// lets scan through generated whitespace
-					for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){
-						delta += chunks[i].length
-					}
-					return start - delta
-				}
-				break
-			} 
-		}
-
-		return start - 1
-	}
 
 	dump(){
 		var chunks = this.$fastTextChunks 

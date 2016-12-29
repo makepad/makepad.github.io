@@ -821,16 +821,17 @@ class Cursor extends require('base/class'){
 	backSpace(){
 		if(this.start !== this.end) return this.deleteRange()
 		if(this.start === 0) return
-		var prev = this.end
-		// lets scan for the right start eating all gen whitespace
-		prev = this.editor.scanBackSpaceRange(prev)
+		//var prev = this.end
 
-		this.editor.addUndoInsert(prev, this.end)
-		prev += this.editor.removeText(prev, this.end)
+		// lets scan for the right start eating all gen whitespace
+		let range = this.editor.scanBackSpaceRange(this.end)
+
+		this.editor.addUndoInsert(range.start, range.end)
+		let last = range.start + this.editor.removeText(range.start, range.end)
 
 		this.cursorSet.delta -= 1
 		this.editor.forkRedo()
-		this.start = this.end = prev
+		this.start = this.end = last
 		this.max = -1//true
 		//this.max = this.editor.cursorRect(this.end).x
 		this.editor.cursorChanged(this)
@@ -862,39 +863,8 @@ class Cursor extends require('base/class'){
 	scanChange(oldText, newText){
 		//return
 		if(this.start !== this.end) return
-		//if(pos < this.end){
-		let pos = this.end
-		// attempt #5001
-		var p1 = oldText.charCodeAt(this.end)
-		var p2 = oldText.charCodeAt(this.end+1)
-		// find the closest 2 character or 1 character match
-		for(var i = pos+1; i > 0; i--){
-			if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
-				break
-			}
-		}
-		for(var j = pos-1; j < newText.length; j++){
-			if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
-				break
-			}
-		}
-		for(var k = pos+1; k > 0; k--){
-			if(newText.charCodeAt(i) === p1){
-				break
-			}
-		}
-		for(var l = pos-1; l < newText.length; l++){
-			if(newText.charCodeAt(l) === p1){
-				break
-			}
-		}
-
-		function minAbs(a,b){
-			if(abs(a)<abs(b)) return a
-			return b
-		}
-	
-		this.start = this.end = pos-minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l)
+		this.start = this.end = this.editor.scanChange(this.end, oldText, newText)
+		//this.start = this.end = pos-minAbs(minAbs(minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l), pos-m), pos-n)//+dx
 	}
 
 	invalidateMax(){

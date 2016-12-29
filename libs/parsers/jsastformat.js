@@ -605,9 +605,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		let top = node.top
 		if(top){
+			this.$fastTextIndent++
 			this.fastText(node.top, this.styles.Comment.top)
 			this.trace += top
-			this.$fastTextIndent++
 		}
 		
 		for(let i = 0; i <= argslen;i++){
@@ -634,7 +634,7 @@ module.exports = class JSFormatter extends require('base/class'){
 					this.fastText('\n', this.styles.Comment.bottom), this.trace += '\n'
 				}
 			}
-			
+			this.tearLastIndent()
 			this.$fastTextIndent--
 		}
 		this.$fastTextDelta += dy
