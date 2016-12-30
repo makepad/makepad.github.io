@@ -98,11 +98,51 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["+/-"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
-
-		this["*"] = function(tok){
+		
+		this["==/!="] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
+
+		this["</>"] = function(tok){
+			this.writeText(tok.value, this.styles.Operator.default)
+		}
+
+		this["in"] = function(tok){
+			this.writeText('in', this.styles.Operator.default)
+		}
+
+		this["of"] = function(tok){
+			this.writeText('of', this.styles.Operator.default)
+		}
+
+		this["<</>>"] = function(tok){
+			this.writeText(tok.value, this.styles.Operator.default)
+		}
+		
+		this["probe"] = function(tok){
+			this.writeText(tok.value, this.styles.Operator.default)
+		}
+		
+		this["prefix"] = function(tok){
+			this.writeText(tok.value, this.styles.Operator.default)
+		}
+
+		this["*"] = function(tok){
+			this.writeText('*', this.styles.Operator.default)
+		}
 	
+		this["/"] = function(tok){
+			this.writeText('/', this.styles.Operator.default)
+		}
+	
+		this["&"] = function(tok){
+			this.writeText('&', this.styles.Operator.default)
+		}
+
+		this["|"] = function(tok){
+			this.writeText('|', this.styles.Operator.default)
+		}
+		
 		this["."] = function(tok){
 			this.writeText('.', this.styles.Operator.default)
 		}
@@ -110,7 +150,11 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["`"] = function(tok){
 			this.writeText('`', this.styles.Operator.default)
 		}
-
+		
+		this[";"] = function(tok){
+			this.writeText(';', this.styles.Operator.default)
+		}
+		
 		this[":"] = function(tok){
 			this.writeText(':', this.styles.Operator.default)
 		}
@@ -119,10 +163,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText(',', this.styles.Operator.default)
 		}
 	
-		this["/"] = function(tok){
-			this.writeText(tok.value, this.styles.Operator.default)
-		}
-
+		
 		this["++/--"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
@@ -233,5 +274,6 @@ module.exports = class JSFormatter extends require('base/class'){
 			//if(i++==28)debugger
 			tok.nextTokenWs()
 		}
+
 	}
 }

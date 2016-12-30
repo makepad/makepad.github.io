@@ -13,7 +13,8 @@ module.exports = class extends require('base/app'){
 
 	constructor(){
 		super()
-		this.code = new this.Code(this, {text:'function t(){\nvar t=2\n+2\n}'})
+		console.log ()
+		this.code = new this.Code(this, {text:require('/examples/tiny.js').__module__.source})
 		
 		//this.code = new this.Code(this, {text:'function t(){\nvar t=2+\nfunction t(){}\n}'})
 		//this.code = new this.Code(this, {text:module.source})
