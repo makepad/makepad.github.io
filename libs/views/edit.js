@@ -889,7 +889,7 @@ class Cursor extends require('base/class'){
 			if(code === 47) ct++
 			else ct = 0
 			if(ct === 2) break
-			if(code === 10 || code === 13) break
+			if(code === 9 || code === 10 || code === 13) break
 		}
 		var d = 0
 		if(ct === 2){
