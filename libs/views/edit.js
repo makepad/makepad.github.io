@@ -899,12 +899,11 @@ class Cursor extends require('base/class'){
 		}
 		else{
 			this.editor.insertText(i+1, '//')
-			this.cursorSet.delta += 2
 			this.editor.addUndoDelete(i+1, i+3)
 			d = 2
 		}
 
-		this.cursorSet.delta = d
+		this.cursorSet.delta += d
 		this.start += d
 		this.end += d
 		this.editor.cursorChanged()

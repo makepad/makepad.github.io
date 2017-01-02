@@ -564,7 +564,7 @@ module.exports = class Code extends require('views/edit'){
 	} 
 	
 	scanChange(pos, oldText, newText){
-		
+		//return
 		// only do this when at token boundary
 		// attempt #5002
 		//let dx = 0
