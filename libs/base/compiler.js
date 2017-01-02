@@ -956,7 +956,7 @@ module.exports = class Compiler extends require('base/class'){
 				else if(key === 'thisDOTanimState'){ // decode state prop
 					source = '$stateId'
 				}
-				else if(key === 'thisDOTpickId' ){ 
+				else if(key === 'thisDOTpickId'){ 
 					source = '$turtle._pickId'
 				}
 				else if(key === 'thisDOTorder'){ 

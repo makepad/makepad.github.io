@@ -22,13 +22,10 @@ module.exports = class CodeBlock extends require('base/shader'){
 			fontSize:12.,
 			color: {pack:'float12', value:'gray'},
 			borderColor: {pack:'float12', value:'gray'},
-
 			// make these uniforms
-			turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
+			turtleClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 			moveScroll:{kind:'uniform', noTween:1, value:1.},
-
 			//errorAnim:{kind:'uniform', animate:1, value:[0,0,0,0]},
-
 			tween: {kind:'uniform', value:0.},
 			ease: {kind:'uniform', value:[0,10,1.0,1.0]},
 			duration: {noTween:1., value:0.3},

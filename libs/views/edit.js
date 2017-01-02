@@ -824,12 +824,13 @@ class Cursor extends require('base/class'){
 		//var prev = this.end
 
 		// lets scan for the right start eating all gen whitespace
-		let range = this.editor.scanBackSpaceRange(this.end)
+		let range = this.editor.scanBackSpaceRange(this.end, this.cursorSet.delta)
 
 		this.editor.addUndoInsert(range.start, range.end)
 		let last = range.start + this.editor.removeText(range.start, range.end)
-
-		this.cursorSet.delta -= 1
+		
+		this.cursorSet.delta -= (range.end-range.start)
+		
 		this.editor.forkRedo()
 		this.start = this.end = last
 		this.max = -1//true

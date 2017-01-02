@@ -714,7 +714,8 @@ module.exports = class JSFormatter extends require('base/class'){
             }
 		}
 		this.trace += '('
-		this.fastText('(', this.styles.Function.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.Function.parenLeft, undefined, parenId)
 
 		let top = node.top
 		if(top) this.fastText(top, this.styles.Comment.top), this.trace += top
@@ -765,8 +766,8 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this.$fastTextIndent--
 		this.trace += ')'
-		this.fastText(')', this.styles.Function.parenRight)
-
+		let pEnd = this.fastText(')', this.styles.Function.parenRight, undefined, parenId)
+		
 		var body = node.body
 		this[body.type](body, this.styles.Function, node)
 

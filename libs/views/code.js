@@ -650,7 +650,9 @@ module.exports = class Code extends require('views/edit'){
 		}
 	}
 
-	scanBackSpaceRange(start){
+	scanBackSpaceRange(start, delta){
+
+		let seek = start - delta
 
 		// alright. what do we do.										
 		var chunks = this.$fastTextChunks 
@@ -659,13 +661,13 @@ module.exports = class Code extends require('views/edit'){
 		for(var i = 0, len = chunks.length; i < len; i ++) { 
 			var txt = chunks[i] 
 			pos += txt.length
-			if(start < pos) {
-				var idx = start - (pos - txt.length)
+			if(seek < pos) {
+				var idx = seek - (pos - txt.length)
 				if(idx === 0){ // we are at the beginning
 					// scan forwards through spaces
 					// scan backwards through 
 					i--
-					if(this.ast && chunks[i] === ' ') i--, start --
+					if(this.ast && chunks[i] === ' ') i--, seek --
 					if(chunks[i] === '\t'){ // lets scan indentation 
 						let delta = 1
 						for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){
