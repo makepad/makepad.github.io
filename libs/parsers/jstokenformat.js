@@ -162,7 +162,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[","] = function(tok){
 			this.writeText(',', this.styles.Operator.default)
 		}
-	
 		
 		this["++/--"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)

@@ -12,8 +12,11 @@ module.exports = class CodeText extends require('shaders/text'){
 			color:{value:'black'},
 			fontSize:12,
 			boldness:0, 
+			group:0,
 			unicode:{mask:0, value:0},
 			italic:{value:0.},
+
+			groupHighlightId:{kind:'uniform', value:0},
 
 			outlineColor:{kind:'uniform', value:'white'},
 			shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
@@ -36,21 +39,21 @@ module.exports = class CodeText extends require('shaders/text'){
 				styles.push(style)
 				//debugger
 				//$turtle._debug = 1
-				var len = txt.length - 1
-				var turtle = this.turtle
-				var fontSize = this.$fastNAMEFontSize
+				let len = txt.length - 1
+				let turtle = this.turtle
+				let fontSize = this.$fastNAMEFontSize
 
-				var lineSpacing = $proto.lineSpacing
-				var glyphs = $proto.font.fontmap.glyphs
+				let lineSpacing = $proto.lineSpacing
+				let glyphs = $proto.font.fontmap.glyphs
 
-				var spaceAdvance = glyphs[32].advance
-				var tabAdvance = glyphs[9].advance
+				let spaceAdvance = glyphs[32].advance
+				let tabAdvance = glyphs[9].advance
 
-				var posx = turtle.wx
-				var posy = turtle.wy
+				let posx = turtle.wx
+				let posy = turtle.wy
 
-				var nh = fontSize * lineSpacing
-				var sx = turtle.sx
+				let nh = fontSize * lineSpacing
+				let sx = turtle.sx
 
 				// allocate enough space
 				let need = len+1
@@ -75,7 +78,7 @@ module.exports = class CodeText extends require('shaders/text'){
 						fontSize:fontSize,
 						italic:0,
 						boldness:boldness, 
-						unicode:unicode,
+						group:unicode === 9?-1:1,
 						advance:advance,
 						tx1: g.tx1,
 						ty1: g.ty1,
@@ -85,7 +88,6 @@ module.exports = class CodeText extends require('shaders/text'){
 						y1: g.y1,// + d.y,
 						x2: g.x2,// + d.x,
 						y2: g.y2,// + d.y,
-						unicode: unicode
 					})
 
 					posx += advance * fontSize
@@ -105,7 +107,7 @@ module.exports = class CodeText extends require('shaders/text'){
 				turtle.wx = posx// + margin[1]* fontSize
 			},
 			// function with support for handling whitespace
-			fast:function(txt, style, ihead, itail){
+			fast:function(txt, style, ihead, igroup){
 				//debugger
 				//$turtle._debug = 1
 				var len = txt.length - 1
@@ -128,8 +130,8 @@ module.exports = class CodeText extends require('shaders/text'){
 				var sx = turtle.sx
 
 				var head = ihead!==undefined? ihead: style.head
-				var tail = itail!==undefined? itail: style.tail
-
+				var tail = style.tail// itail!==undefined? itail: style.tail
+				var group = igroup!==undefined?igroup:1
 				// allocate enough space
 				let need = (len + 1) * (indent+1) + head + tail
 				this.ALLOCDRAW(null, need)
@@ -176,7 +178,8 @@ module.exports = class CodeText extends require('shaders/text'){
 						fontSize:fontSize,
 						italic:0,
 						boldness:boldness, 
-						unicode:unicode,
+						group:group,
+						//unicode:unicode,
 						advance:advance,
 						tx1: g.tx1,
 						ty1: g.ty1,
@@ -186,7 +189,6 @@ module.exports = class CodeText extends require('shaders/text'){
 						y1: g.y1,// + d.y,
 						x2: g.x2,// + d.x,
 						y2: g.y2,// + d.y,
-						unicode: unicode
 					})
 
 					posx += advance * fontSize
@@ -242,7 +244,7 @@ module.exports = class CodeText extends require('shaders/text'){
 				if(posy>turtle.y2) turtle.y2 = posy				
 				turtle.wx = posx// + margin[1]* fontSize
 				// correct length to actual used data
-				this.LENCORRECT()
+				return this.LENCORRECT()
 			}
 		}
 
@@ -255,18 +257,24 @@ module.exports = class CodeText extends require('shaders/text'){
 		this.indices = new painter.Mesh(types.uint16)
 		this.indices.push(0,1,2,2,1,3)
 	}
+	
+	vertexStyle(){$
+		if(this.group == this.groupHighlightId){
+			this.boldness += 0.5
+			this.color *= 1.5
+		}
+	}
 
 	pixel(){$
 		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
 		this._field = field
 
-		if(this.unicode == 9.){
+		if(this.group < 0.){
 			this.viewport(this.ppos)
 			this.moveTo(5.,0.)
 			this.lineTo(5.,this.psize.y)
 			return this.stroke('#4',1.)
-			//return 'red'
 		}
 
 		this.pixelStyle()

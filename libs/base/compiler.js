@@ -19,7 +19,7 @@ module.exports = class Compiler extends require('base/class'){
 		this.inheritable('props', function(){
 			var props = this.props
 			for(let key in props){
-				if(!this.$defineProp)debugger
+				if(!this.$defineProp) debugger
 				this.$defineProp(key, props[key])
 			}
 		})
@@ -788,6 +788,7 @@ module.exports = class Compiler extends require('base/class'){
 			var thisname = key.slice(7)
 			var source = (args[0]!=='null'?args[0]+' && '+args[0]+'.'+thisname+' || ':'')+'$view.'+ thisname +'|| $proto.'+thisname
 			var typename = uniform.type.name
+			//code += indent+'	console.log("'+key+'",'+source+')\n'
 			code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
 		}
 
@@ -937,19 +938,25 @@ module.exports = class Compiler extends require('base/class'){
 
 		// write properties.
 		var last = 'if(!$last){\n'
+		let args0 = args[0]
 		for(let key in instanceProps){
 			let prop = instanceProps[key]
 			if(!prop.slots) continue
 			let name = prop.name
 			var source = '$turtle._' + name
-			if(typeof args[0] === 'object' && name in args[0] || !prop.config.mask){ // system values
+			
+			if(typeof args0 === 'object' && name in args0){ // passed as arg
+				source = args0[name]
+				if(!source) throw new Error('Unknown key with mask 0 ' + key)
+			}
+			else if(!prop.config.mask){ // system value
 				if(key === 'thisDOTanimStart'){ // now?
 					source = '$view._time + ($info.stateDelay[$stateId] || 0)'
 				}
 				else if(key === 'thisDOTanimState'){ // decode state prop
 					source = '$stateId'
 				}
-				else if(key === 'thisDOTpickId'){ 
+				else if(key === 'thisDOTpickId' ){ 
 					source = '$turtle._pickId'
 				}
 				else if(key === 'thisDOTorder'){ 
@@ -957,10 +964,6 @@ module.exports = class Compiler extends require('base/class'){
 				}
 				else if(key === 'thisDOTanimNext'){
 					continue
-				}
-				else{
-					source = args[0][name]
-					if(!source) throw new Error('Unknown key with mask 0 ' + key)
 				}
 			}
 			if(key === 'thisDOTx'){

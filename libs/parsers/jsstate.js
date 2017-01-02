@@ -103,5 +103,9 @@ function ParserPrototype(){
 		this.nextToken()
 		return this.parseTopLevel(node)
 	}
+
+	this.tokenize = function(){
+		
+	}
 }
 ParserPrototype.call(exports.Parser.prototype)

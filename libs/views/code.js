@@ -35,18 +35,23 @@ module.exports = class Code extends require('views/edit'){
 			}), 
 			Block: require('shaders/codeblock').extend({
 				pickAlpha: 0.,
+				blockHighlightPickId:{kind:'uniform', value:0},
 				vertexStyle: function() {$
 					this.x -= (6. / 12.) * this.fontSize
 					this.w += 3.
 					this.w += 10.
 					this.h2 += 2.
 					var pos = vec2()
+					
 					if(this.isFingerOver(pos) > 0) {
 						this.color.rgb += vec3(0.2)
 					}
 					else {
 						this.color.a *= .25
 					} 
+					if(this.pickId == this.blockHighlightPickId){
+						this.color.a *= 2.5// = 'red'
+					}
 					// lets figure out a hover anim here?
 					this.color.rgb += vec3(this.indent * 0.05)
 					this.borderColor = this.color
@@ -383,6 +388,38 @@ module.exports = class Code extends require('views/edit'){
 			//})
 		} 
 	} 
+	// serialize all selections, lazily
+	cursorChanged(){
+		super.cursorChanged()
+		// lets take the last cursor and figure out the highlight
+		// range
+		let cursor = this.cs.cursors[0]
+		let pos = cursor.start
+		let blocks = this.$blockRanges
+		let minsize = Infinity
+		let found
+		for(let i = 0, l = blocks.length; i < l; i++){
+			let block = blocks[i]
+			if(pos >= block.start && pos < block.end){
+				let size = block.end - block.start
+				if(size <= minsize) minsize = size, found = block
+			}
+		}
+		this.blockHighlightPickId = found?found.id:0
+		
+		// scan for paren ranges
+		let parens = this.$parenRanges
+		minsize = Infinity
+		found = undefined
+		for(let i = 0, l = parens.length; i < l; i++){
+			let paren = parens[i]
+			if(pos >= paren.start && pos < paren.end){
+				let size = paren.end - paren.start
+				if(size <= minsize) minsize = size, found = paren
+			}
+		}
+		this.groupHighlightId = found?found.id:0
+	}
 
 	onClearErrors(){
 	}
@@ -615,7 +652,7 @@ module.exports = class Code extends require('views/edit'){
 
 	scanBackSpaceRange(start){
 
-		// alright. what do we do.
+		// alright. what do we do.										
 		var chunks = this.$fastTextChunks 
 		var styles = this.$fastTextStyles
 		var pos = 0 

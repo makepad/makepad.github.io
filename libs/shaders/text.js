@@ -429,8 +429,6 @@ module.exports = class Text extends require('base/shader'){
 		return this.drawField(field)
 	}
 
-
-
 	onCompileVerbs(){
 		super.onCompileVerbs()
 		if(this.font){

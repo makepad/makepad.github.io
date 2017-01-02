@@ -41,8 +41,9 @@ module.exports = class CodeBlock extends require('base/shader'){
 				this.$PROP[o, 'tweenStart'] = v
 			},
 			fast:function(x, y, w, h, w2, h2, indent, pickId, style){
-				
 				this.ALLOCDRAW(null,1)
+				//console.log(style.color)
+				//var color = 'white'
 				this.WRITEPROPS({
 					visible:1,
 					delay:0.,
@@ -131,6 +132,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 	}
 
 	pixel(){$
+		//return 'red'
 		this.viewport(this.p)
 		this.box(4.,13.4,this.topSize.x - 6. - 5.,  this.topSize.y - 13.5, 1.)
 		this.box(this.topSize.x - 18., 0., 18., this.topSize.y - 0., this.borderRadius)
