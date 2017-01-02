@@ -4,8 +4,9 @@ module.exports = class extends require('base/app'){
 
 	prototype(){
 		this.tools = {
+			Rect:require('shaders/quad'),
 			Code: require('views/code').extend({
-				w:'100%',
+				w:'100#',
 				h:'100%'
 			})
 		}
@@ -22,6 +23,11 @@ module.exports = class extends require('base/app'){
 	}
 
 	onDraw(){
+		this.drawRect({
+			w:100,
+			h:100,
+			color:'red'
+		})
 		this.code.draw(this)
 	}
 }

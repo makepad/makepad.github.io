@@ -25,7 +25,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.$fastTextStyles = []
 		this.$blockRanges = []
 		this.$parenRanges = []
-		this.$parenGroupId = 1
+		this.$parenGroupId = 2
 		this.scope = Object.create(this.defaultScope)
 		// run the AST formatter
 		this[this.ast.type](this.ast, null)
