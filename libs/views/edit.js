@@ -300,7 +300,7 @@ module.exports = class Edit extends require('base/view'){
 		//console.log(rd.y - this.todo.yScroll, this.todo.yView)
 		this.app.setCharacterAccentMenuPos(
 			this.$xAbs + rd.x + 0.5 * rd.advance - this.todo.xScroll, 
-			this.$yAbs + rd.y - this.todo.yScroll
+			this.$yAbs + rd.y - this.todo.yScroll 
 		)
 	}
 
@@ -333,7 +333,7 @@ module.exports = class Edit extends require('base/view'){
 	//
 	//
 
-	addUndoInsert(start, end, stack, slicesrc){
+	addUndoInsert(start, end, stack, slicesrc, mark){
 		if(!stack) stack = this.$undoStack
 		var last = stack[stack.length - 1]
 		if(last && last.type === 'insert' && last.start == end){
@@ -346,13 +346,14 @@ module.exports = class Edit extends require('base/view'){
 		stack.push({
 			group: this.$undoGroup,
 			type:'insert',
+			mark:mark,
 			start:start,
 			data: this.serializeSlice(start, end, slicesrc),
 			cursors: this.cs.serializeToArray()
 		})
 	}
 
-	addUndoDelete(start, end, stack){
+	addUndoDelete(start, end, stack, mark){
 		if(!stack) stack = this.$undoStack
 		var last = stack[stack.length - 1]
 		if(last && last.type === 'delete' && last.end === start){
@@ -362,6 +363,7 @@ module.exports = class Edit extends require('base/view'){
 		stack.push({
 			group: this.$undoGroup,
 			type:'delete',
+			mark:mark,
 			start:start,
 			end:end,
 			cursors:this.cs.serializeToArray()
@@ -383,6 +385,7 @@ module.exports = class Edit extends require('base/view'){
 			var lastCursors
 			if(item.group !== lastGroup) break
 			if(item.type === 'insert'){
+				//continue
 				this.addUndoDelete(item.start, item.start + item.data.length, stack2)
 				this.insertText(item.start, item.data, 1)
 				lastCursors = item.cursors
@@ -762,23 +765,20 @@ class Cursor extends require('base/class'){
 
 		this.editor.addUndoInsert(lo, hi)
 		this.editor.removeText(lo, hi)
-
+		this.start = this.end = lo
 		this.cursorSet.delta -= this.span()
 		var len = text.length
 		if(len){
-			
 			let ins = this.editor.insertText(lo, text)
 			if(ins){
 				len = ins.len
-				lo += ins.move
+				this.start = this.end = lo + ins.move
 			}
 			this.cursorSet.delta += len
+	
 			this.editor.addUndoDelete(lo, lo +len)
 		}
-		this.start = this.end = lo
-		//this.max = this.editor.cursorRect(this.end).x
 		this.max = -1//true
-		//console.log(this.max)
 		this.editor.cursorChanged(this)
 	}
 

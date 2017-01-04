@@ -4,9 +4,9 @@ var storage = require('services/storage')
 module.exports = class Code extends require('views/edit'){ 
 
 	// mixin the formatter
-	prototype() { 
-		this.mixin(require('parsers/jsastformat')) 
-		this.mixin(require('parsers/jstokenformat')) 
+	prototype() {
+		this.mixin(require('parsers/jsastformat'))
+		this.mixin(require('parsers/jstokenformat'))
 		
 		this.allowOperatorSpaces = 0
 		this.overflow = 'scroll'
@@ -32,7 +32,7 @@ module.exports = class Code extends require('views/edit'){
 			Text: require('shaders/codetext').extend({
 				font: require('fonts/ubuntu_monospace_256.font'),
 				order:3,
-			}), 
+			}),
 			Block: require('shaders/codeblock').extend({
 				pickAlpha: 0.,
 				blockHighlightPickId:{kind:'uniform', value:0},
@@ -357,8 +357,6 @@ module.exports = class Code extends require('views/edit'){
 			mix: 'global', 
 			arguments: 'const' 
 		} 
-
-
 	} 
 	
 	constructor(...args) { 
@@ -396,6 +394,7 @@ module.exports = class Code extends require('views/edit'){
 		let cursor = this.cs.cursors[0]
 		let pos = cursor.start
 		let blocks = this.$blockRanges
+		if(!blocks) return
 		let minsize = Infinity
 		let found
 		for(let i = 0, l = blocks.length; i < l; i++){
@@ -469,16 +468,12 @@ module.exports = class Code extends require('views/edit'){
 						break
 					} 
 				}
-				
+
 				this.wasNoopChange = false 
 				
 				if(start !== newlen) {
-					// this gets tacked onto the undo with the same group
-					this.addUndoInsert(start, oldlen, this.$undoStack, oldtext) 
-					this.addUndoDelete(start, newlen) 
-					// lets check what we did
-					var oldrem = oldtext.slice(start, oldend) 
-					var newins = newtext.slice(start, newend) 
+					this.addUndoInsert(start, oldend+1, this.$undoStack, oldtext, "format") 
+					this.addUndoDelete(start, newend+1, undefined, "format") 
 				}
 				
 				this.cs.scanChange(oldtext, newtext) 
@@ -844,17 +839,17 @@ module.exports = class Code extends require('views/edit'){
 			
 			if(text === '"' && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== '"' && prev !== '"') text = '""' 
 			if(text === "'" && (!this.parseError || this.parseError.message !== 'Unterminated string constant') && char !== "'" && prev !== "'") text = "''" 
-		} 
 
-		if(text === '\n'){
-			text = '\n'
-			//TODO figure out if(x){<\n>\n}
-			let depth = this.currentIndent(offset)
-			text += Array(depth+1).join('\t')
-			move += depth
-			this.wasNewlineChange = 1
+			if(text === '\n'){
+				text = '\n'
+				//TODO figure out if(x){<\n>\n}
+				let depth = this.currentIndent(offset)
+				text += Array(depth+1).join('\t')
+				move += depth
+				this.wasNewlineChange = 1
+			}
+			else this.wasNewlineChange = 0
 		}
-		else this.wasNewlineChange = 0
 
 		if(this.wasNewlineChange && this._text.charAt(offset) !== '\n' && this._text.charAt(offset + 1) !== '\n') { 
 			this.wasFirstNewlineChange = 1 
@@ -916,7 +911,6 @@ module.exports = class Code extends require('views/edit'){
 		} 
 		
 		this._text = text.slice(0, start) + text.slice(end)
-		
 	
 		this.redraw() 
 		return delta 

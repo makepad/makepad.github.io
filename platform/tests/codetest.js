@@ -14,10 +14,10 @@ module.exports = class extends require('base/app'){
 
 	constructor(){
 		super()
-		console.log ()
-		this.code = new this.Code(this, {text:require('/examples/tiny.js').__module__.source})
+
+		//this.code = new this.Code(this, {text:require('/examples/tiny.js').__module__.source})
 		
-		//this.code = new this.Code(this, {text:'function t(){\nvar t=2+\nfunction t(){}\n}'})
+		this.code = new this.Code(this, {text:'function t(){\ntest(50. + 20, 80., 30.)\n}'})
 		//this.code = new this.Code(this, {text:module.source})
 		//this.code = new this.Code(this, {text:'if(x){\n\t1+2\nif(t){\n}\n}'})
 	}
