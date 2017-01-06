@@ -287,7 +287,8 @@ module.exports = class CodeText extends require('shaders/text'){
 		var s = texture2D(this.fontSampler, this.textureCoords.xy)
 		//var sigDist = s.a - .5
 		var sigDist = max(min(s.r,s.g),min(max(s.r,s.g),s.b))-.5+0.1*this.boldness
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))*12.
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x*this.fontTextureSize.x)), length(dFdy(this.textureCoords.y*this.fontTextureSize.y))))*0.07
+		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))*12.
 		var opacity = clamp(sigDist/adjust + 0.5, 0.0, 1.0)
 
 		return vec4(this.color.rgb*opacity, opacity)
