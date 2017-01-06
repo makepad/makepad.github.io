@@ -266,9 +266,13 @@ module.exports = class CodeText extends require('shaders/text'){
 	}
 
 	pixel(){$
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
-		this._field = field
+		//this.pixelStyle()
+
+		
+
+		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		//var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
+		//this._field = field
 
 		if(this.group < 0.){
 			this.viewport(this.ppos)
@@ -278,9 +282,17 @@ module.exports = class CodeText extends require('shaders/text'){
 		}
 
 		this.pixelStyle()
+		
+		//var sigDist = s1.a-.5//(s1.a*2.+s2.a+s3.a+s4.a+s5.a)/5.7 - .5// + 0.1*this.boldness
+		var s = texture2D(this.fontSampler, this.textureCoords.xy)
+		//var sigDist = s.a - .5
+		var sigDist = max(min(s.r,s.g),min(max(s.r,s.g),s.b))-.5+0.1*this.boldness
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))*12.
+		var opacity = clamp(sigDist/adjust + 0.5, 0.0, 1.0)
 
-		field = this._field - this.boldness
+		return vec4(this.color.rgb*opacity, opacity)
+		//field = this._field - this.boldness
 
-		return this.drawField(field)
+		//return this.drawField(field)
 	}
 }

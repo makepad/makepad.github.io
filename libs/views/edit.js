@@ -25,7 +25,7 @@ module.exports = class Edit extends require('base/view'){
 				color:colors.codeBg
 			}),
 			Text:require('shaders/text').extend({
-				font:require('fonts/ubuntu_medium_256.font'),
+				font:require('fonts/ubuntu_regular_256.font'),
 				fontSize:24,
 				order:3,
 				color:'#ccc',

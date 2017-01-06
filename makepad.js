@@ -35,8 +35,6 @@ module.exports = class Makepad extends require('base/app'){
 			UserProcess: require('./makepad/userprocess')
 			//Settings: require('./makepad/settings'),
 		}
-		// set the styleclasscf4
-		this.style = require('./makepad/styles')
 	}
 
 	constructor() {

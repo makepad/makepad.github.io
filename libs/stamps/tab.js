@@ -1,4 +1,5 @@
 let colors = module.style.colors
+let fonts = module.style.fonts
 module.exports = require('base/stamp').extend({
 	props:{
 		selected:false,
@@ -124,6 +125,7 @@ module.exports = require('base/stamp').extend({
 			}
 		}),
 		Text:require('shaders/text').extend({
+			font:fonts.regular
 		}),
 		Icon:require('shaders/icon').extend({
 			color:'#7'

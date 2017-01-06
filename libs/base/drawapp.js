@@ -11,10 +11,10 @@ module.exports = class DrawApp extends require('base/app'){
 			Quad:require('shaders/quad'),
 			Line:require('shaders/line'),
 			Text:require('shaders/text').extend({
-				font:require('fonts/ubuntu_medium_256.font')
+				font:require('fonts/ubuntu_regular_256.font')
 			}),
 			Icon:require('shaders/icon').extend({
-				font:require('fonts/fontawesome_low.font')
+				font:require('fonts/fontawesome.font')
 			})
 		}
 	}

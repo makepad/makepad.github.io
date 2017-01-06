@@ -30,7 +30,7 @@ module.exports = class Text extends require('base/shader'){
 			shadowOffset: [0., 0.],
 			
 			fontSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
-
+			fontTextureSize:{kind:'uniform', value:[0,0]},
 			down: 0,
 			align: [undefined,undefined],
 			wrapping:'line',
@@ -415,18 +415,26 @@ module.exports = class Text extends require('base/shader'){
 	}
 
 	pixel(){$
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
-		this._field = field
-
 		this.pixelStyle()
 
-		field = this._field - this.boldness
+		var s = texture2D(this.fontSampler, this.textureCoords.xy)
+		var sigDist = max(min(s.r,s.g),min(max(s.r,s.g),s.b))-.5+0.1*this.boldness
+		var adjust = length(vec2(length(dFdx(this.textureCoords.x*this.fontTextureSize.x)), length(dFdy(this.textureCoords.y*this.fontTextureSize.y))))*0.07
+		var opacity = clamp(sigDist/adjust + 0.5, 0.0, 1.0)
 
-		if(this.mesh.z < 0.5){
-			return this.drawShadow(field)
-		}
-		return this.drawField(field)
+		return vec4(this.color.rgb*opacity, opacity)
+		
+		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
+		//var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
+		//this._field = field
+
+		
+		//field = this._field - this.boldness
+
+		//if(this.mesh.z < 0.5){
+		//	return this.drawShadow(field)
+		//}
+		//return this.drawField(field)
 	}
 
 	onCompileVerbs(){
@@ -434,10 +442,12 @@ module.exports = class Text extends require('base/shader'){
 		if(this.font){
 			if(!this.font.fontmap){
 				var map = this.font.fontmap = fontloader(this.font)
-				this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
+				//this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
+				this.font.fontSampler = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
 			}
 			// make the texture.
 			this.fontSampler = this.font.fontSampler
+			this.fontTextureSize = [this.font.fontmap.texw, this.font.fontmap.texh]
 		}
 	}
 }

@@ -35,8 +35,8 @@
 				{"name":"view.js"}
 			]},
 			{"name":"fonts","folder":[
-				{"name":"fontawesome_low.font"},
-				{"name":"ubuntu_medium_256.font"},
+				{"name":"fontawesome.font"},
+				{"name":"ubuntu_regular_256.font"},
 				{"name":"ubuntu_monospace_256.font"}
 			]},
 			{"name":"shaders","folder":[
@@ -137,7 +137,6 @@
 			{"name":"filetree.js"},
 			{"name":"homescreen.js"},
 			{"name":"settings.js"},
-			{"name":"styles.js"},
 			{"name":"userprocess.js"},
 			{"name":"wave.js"}
 		]},

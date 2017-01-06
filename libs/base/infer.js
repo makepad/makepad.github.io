@@ -1426,7 +1426,8 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 			dFdx:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
 			dFdy:{return:types.gen, params:[{name:'x', type:types.gen}]},
-
+			fwidth:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			
 			texture2DLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
 			texture2DProjLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
 			textureCubeLod:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'lod', type:types.float}]},
