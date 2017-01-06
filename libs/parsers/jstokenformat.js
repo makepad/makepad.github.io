@@ -6,9 +6,17 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["if"] = function(tok){
 			this.writeText("if", this.styles.If.if)
 		}
+		
+		this["else"] = function(tok){
+			this.writeText("if", this.styles.If.else)
+		}
 
 		this["for"] = function(tok){
 			this.writeText("for", this.styles.For.for)
+		}
+
+		this["break"] = function(tok){
+			this.writeText("for", this.styles.For.break)
 		}
 
 		this["new"] = function(tok){
@@ -45,6 +53,18 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this["yield"] = function(tok){
 			this.writeText("yield", this.styles.Function.yield)
+		}
+
+		this["true"] = function(tok){
+			this.writeText("true", this.styles.Value.boolean)
+		}
+
+		this["false"] = function(tok){
+			this.writeText("false", this.styles.Value.boolean)
+		}
+
+		this["null"] = function(tok){
+			this.writeText("null", this.styles.Value.object)
 		}
 
 		this["var"] = function(tok){
@@ -98,7 +118,35 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["+/-"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
+
+		this["%"] = function(tok){
+			this.writeText('%', this.styles.Operator.default)
+		}
 		
+		this["?"] = function(tok){
+			this.writeText('?', this.styles.Operator.default)
+		}
+
+		this[":"] = function(tok){
+			this.writeText(':', this.styles.Operator.default)
+		}
+
+		this["..."] = function(tok){
+			this.writeText("...", this.styles.Operator.default)
+		}
+
+		this["=>"] = function(tok){
+			this.writeText("=>", this.styles.Operator.default)
+		}
+
+		this["template"] = function(tok){
+			//this.writeText("", this.styles.Operator.default)
+		}
+		
+		this["${"] = function(tok){
+			this.writeText("${", this.styles.Operator.default)
+		}
+
 		this["==/!="] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
@@ -165,6 +213,10 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		this["++/--"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
+		}
+
+		this["&&"] = function(tok){
+			this.writeText('&&', this.styles.Operator.default)
 		}
 
 		this["="] = function(tok){

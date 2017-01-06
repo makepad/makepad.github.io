@@ -1,5 +1,6 @@
 fonts/encoder/glyphy
 fonts/encoder/*.ttf
+fontencoder/fontencoder
 platform/node/cache
 node_modules/*
 *.test
