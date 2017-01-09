@@ -34,6 +34,10 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	constructor() {
 		super()
+		this.start()
+	}
+	
+	start() {
 		this.snake = [[0, 0]]
 		this.len = 10
 		this.dir = [1, 0]
@@ -53,8 +57,12 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(next[1] < this.border[1]) this.dead = true
 		if(next[0] >= this.border[2]) this.dead = true
 		if(next[1] >= this.border[3]) this.dead = true
-		if(this.snake.length > this.len) 
-		this.snake.pop()
+		if(this.snake.length > this.len) {
+			this.snake.pop()
+		}
+		if(this.dead) {
+			setTimeout(_=>this.start(), 200)
+		}
 	}
 	
 	onDraw() {
