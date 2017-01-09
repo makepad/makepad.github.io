@@ -331,7 +331,9 @@ module.exports=class Dock extends require('base/view'){
 				}
 			}
 			if(this.drag){
-				this.drawTab({id:0, order:3,state:'selected', x:this.xDrag, y:this.yDrag, text:this.drag.tabTitle})
+				this.drawTab({
+					id:0, order:3,state:'selected', x:this.xDrag, y:this.yDrag, text:this.drag.tabTitle||'', icon:this.drag.tabIcon||''
+				})
 			}
 		}
 

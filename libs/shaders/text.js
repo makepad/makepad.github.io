@@ -329,7 +329,7 @@ module.exports = class Text extends require('base/shader'){
 			this.mesh.xy
 		)
 		this.pos = this.vertexPos(pos)
-		this.ppos = this.pos - vec2(this.x, this.y)
+		this.ppos = this.pos - vec2(this.x, this.y) - shift
 		this.psize = vec2((this.x2-this.x1)*this.fontSize,(this.y2-this.y1)*this.fontSize)
 		
 		//this.ppos = pos - vec2(this.x2 - this.y2)
@@ -419,10 +419,10 @@ module.exports = class Text extends require('base/shader'){
 
 		var s = texture2D(this.fontSampler, this.textureCoords.xy)
 		var sigDist = max(min(s.r,s.g),min(max(s.r,s.g),s.b))-.5+0.1*this.boldness
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x*this.fontTextureSize.x)), length(dFdy(this.textureCoords.y*this.fontTextureSize.y))))*0.07
+		var adjust = length(vec2(dFdx(this.textureCoords.x*this.fontTextureSize.x), dFdy(this.textureCoords.y*this.fontTextureSize.y)))*0.07
 		var opacity = clamp(sigDist/adjust + 0.5, 0.0, 1.0)
 
-		return vec4(this.color.rgb*opacity, opacity)
+		return vec4(this.color.rgb*this.color.a*opacity, this.color.a*opacity)
 		
 		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		//var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 

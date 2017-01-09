@@ -36,6 +36,7 @@ module.exports = class Source extends require('base/view'){
 			ErrorBg:require('shaders/quad').extend({
 				w:'100%',
 				pickAlpha:1,
+				wrap:0,
 				states:{
 					default:{
 						duration:.5,
@@ -48,7 +49,7 @@ module.exports = class Source extends require('base/view'){
 						}
 					},
 				},
-				padding:[15,0,15,15],
+				padding:[7,0,6,7],
 				order:5,
 				color:'#000b'
 			}),
@@ -223,7 +224,9 @@ module.exports = class Source extends require('base/view'){
 		this.beginErrorBg({
 			//debug:1,
 			//x:this.turtle.wx,
-			y:this.turtle.wy
+			y:'0',
+			//h:this.turtle.wy - this.turtle.$yAbs
+			//y:this.turtle.wy
 		})
 
 		var parseErrors = this.resource.parseErrors

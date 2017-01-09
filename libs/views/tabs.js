@@ -59,11 +59,13 @@ module.exports=class Tabs extends require('base/view'){
 			this.selected = index-1
 			this.redraw()
 		}
-
-		if(tabStamp.$x + tabStamp.dx < -tabStamp.$w*.5 || 
-			tabStamp.$x + tabStamp.dx > this.$w - tabStamp.$w*.5 ||
+		let xpos = (tabStamp.$x-this.$x) + tabStamp.dx
+		if( xpos< -tabStamp.$w*.5 || 
+			xpos > this.$w - tabStamp.$w*.5 ||
 			dy > tabStamp.$h || dy <-tabStamp.$h){
 			// rip the tab off
+			tabStamp.from_dx = undefined
+			tabStamp.xStart = -1
 			if(this.onTabRip) this.onTabRip(e)
 		}
 	}
@@ -86,7 +88,6 @@ module.exports=class Tabs extends require('base/view'){
 		for(let tabs = this.tabs, i = 0 ; i < this.tabs.length; i++){
 			let tab = tabs[i]
 			// console.log(sel === i?'selected':'default')
-			
 			let stamp = tab.$tabStamp = this.drawTab({
 				id:tab.id, // utilize some kind of unique id
 				order:sel === i?2:1,

@@ -140,6 +140,7 @@ module.exports = require('base/stamp').extend({
 	},
 	onFingerUp(){
 		this.from_dx = undefined
+		this.dx = 0
 		this.xStart = -1
 		this.redraw()
 	},

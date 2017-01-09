@@ -1516,7 +1516,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	//DebuggerStatement:{},
 	DebuggerStatement(node){
 		this.trace += 'debugger'
-		this.fastText('debugger', this.styles.DebuggerStatement)
+		this.fastText('debugger', this.styles.Keyword.debugger)
 	}
 	//LabeledStatement:{label:1, body:1},
 	LabeledStatement(node){

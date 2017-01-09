@@ -15,8 +15,36 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("for", this.styles.For.for)
 		}
 
+		this["throw"] = function(tok){
+			this.writeText("for", this.styles.Exception.throw)
+		}
+
+		this["try"] = function(tok){
+			this.writeText("try", this.styles.Exception.try)
+		}
+
+		this["catch"] = function(tok){
+			this.writeText("catch", this.styles.Exception.catch)
+		}
+
+		this["finally"] = function(tok){
+			this.writeText("finally", this.styles.Exception.finally)
+		}
+	
+		this["debugger"] = function(tok){
+			this.writeText("debugger", this.styles.Keyword.debugger)
+		}
+
+		this["typeof"] = function(tok){
+			this.writeText("typeof", this.styles.Operator.default)
+		}
+
 		this["break"] = function(tok){
 			this.writeText("for", this.styles.For.break)
+		}
+
+		this["continue"] = function(tok){
+			this.writeText("for", this.styles.For.continue)
 		}
 
 		this["new"] = function(tok){
@@ -217,6 +245,10 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		this["&&"] = function(tok){
 			this.writeText('&&', this.styles.Operator.default)
+		}
+
+		this["||"] = function(tok){
+			this.writeText('||', this.styles.Operator.default)
 		}
 
 		this["="] = function(tok){

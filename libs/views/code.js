@@ -250,7 +250,8 @@ module.exports = class Code extends require('views/edit'){
 				varComma:{$color:colors.codeVar, $tail:1},
 				var:{$color:colors.codeVar, $boldness:0.4},
 				const:{$color:colors.codeConst, $boldness:0.2},
-				let:{$color:colors.codeLet, $boldness:0.2}
+				let:{$color:colors.codeLet, $boldness:0.2},
+				debugger:{$color:colors.codeFunction, $boldness:0.2}
 			},
 			Id:{
 				arg:{$color:colors.codeFunction, closure:{}},
@@ -368,22 +369,22 @@ module.exports = class Code extends require('views/edit'){
 		this.$fastTextWhitespace = this.styles.whitespace
 	} 
 	
-	parseText() { 
+	parseText() {
 		this.ast = undefined 
 		this.parseError = undefined 
 		this.onClearErrors()
-		try{ 
+		try{
 			this.ast = parser.parse(this._text, { 
 				storeComments: [] 
-			}) 
-		} 
-		catch(e) { 
+			})
+		}
+		catch(e) {
 			this.parseError = e
-			//this.store.act("addParseError",store=>{
-			//	this.resource.parseErrors.length = 0
-			//	this.resource.parseErrors.push(e)
-			//	console.log(this.resource.parseErrors)
-			//})
+			this.store.act("addParseError",store=>{
+				this.resource.parseErrors.length = 0
+				this.resource.parseErrors.push(e)
+				console.log(this.resource.parseErrors)
+			})
 		} 
 	} 
 	// serialize all selections, lazily
