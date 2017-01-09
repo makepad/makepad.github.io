@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/tiny.js"],
-	"run":["/examples/tiny.js"],
+	"open":["/examples/snake.js"],
+	"run":["/examples/snake.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -128,6 +128,7 @@
 			{"name":"lines.js"},
 			{"name":"buttons.js"},
 			{"name":"shiny.js"},
+			{"name":"snake.js"},
 			{"name":"tiny.js"},
 			{"name":"gameshow.js"}
 		]},
