@@ -103,7 +103,7 @@ module.exports = class Source extends require('base/view'){
 				onKeyS(e) {
 					this.inputDirty = false
 					if(!e.meta && !e.ctrl) return true 
-					var text = this.serializeWithFormatting()
+					var text = this._text
 
 					storage.save(this.resource.path, text) 
 					this.store.act('setDirty',store=>{
@@ -235,14 +235,15 @@ module.exports = class Source extends require('base/view'){
 
 		if(parseErrors.length){
 			parseErrors.forEach(e=>{
+				errors.push(e)
 				//var error = {name:e.message,error:e,icon:'exclamation-circle',folder:[]}
-				this.drawErrorIcon({
-					text:this.lookupErrorIcon['exclamation-triangle']
-				})
-				this.drawErrorText({
-					text:e.message
-				})
-				this.lineBreak()
+				//this.drawErrorIcon({
+				//	text:this.lookupErrorIcon['exclamation-triangle']
+				//})
+				//this.drawErrorText({
+				//	text:e.message
+				//})
+				//this.lineBreak()
 				//console.log(error)
 				//tree.folder.push(error)
 				//errors.push(e.pos)
@@ -253,7 +254,8 @@ module.exports = class Source extends require('base/view'){
 			this.resource.processes.forEach(p=>p.runtimeErrors.forEach(e=>runtimeErrors.push(e)))
 
 			var resPath = this.resource.path
-			runtimeErrors.forEach((e,i)=>{
+			runtimeErrors.forEach((e, i)=>{
+				errors.push(e)
 				/*
 				var oldf = old.folder && old.folder[i]
 				// push a marker
@@ -266,14 +268,16 @@ module.exports = class Source extends require('base/view'){
 
 					}
 				}*/
-
+				/*
 				this.drawErrorIcon({
 					text:this.lookupErrorIcon['exclamation-circle']
 				})
+
 				this.drawErrorText({
 					text:e.message
 				})
-				this.lineBreak()
+
+				this.lineBreak()*/
 
 				//var error = {name:e.message + (e.count>1?':x'+e.count:''), path:e.path, error:e, open:oldf&&oldf.open, icon:'exclamation-triangle', folder:[]}
 
@@ -298,7 +302,8 @@ module.exports = class Source extends require('base/view'){
 		this.endErrorBg()
 		this.drawCode({
 			order:2,
-			resource:this.resource
+			resource:this.resource,
+			errors:errors
 		})
 	}
 }

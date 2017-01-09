@@ -500,10 +500,11 @@ module.exports = class Code extends require('views/edit'){
 		if(errors){
 			for(let i = errors.length - 1; i >= 0; --i){
 				var error = errors[i]
-				var epos = clamp(error, 0, this.$lengthText() - 1) 
+				var epos = clamp(error.pos, 0, this.$lengthText() - 1) 
+				
 				var rd = this.$readOffsetText(epos) 			
 				if(!rd) continue
-					
+				//console.log(rd)
 				//console.log(out)
 				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
 				var marker = { 
@@ -511,10 +512,9 @@ module.exports = class Code extends require('views/edit'){
 					x2: rd.x, 
 					x3: rd.x + rd.w, 
 					x4: 100000, 
-					y: rd.y, 
+					y: rd.y+this.turtle.$yAbs, 
 					h: rd.fontSize * rd.lineSpacing, 
 					closed: 0 
-
 				}
 				this.drawErrorMarker(marker)
 				if(i==0 && !this.hasFocus) this.scrollIntoView(marker.x, marker.y, marker.w, marker.h)
