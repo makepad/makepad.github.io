@@ -22,12 +22,12 @@ module.exports = class CodeText extends require('shaders/text'){
 			shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
 			baseLine:{kind:'uniform', value:1.},
 			shadowOffset: {kind:'uniform', value:[0., 0.]},
-			shadowBlur:{kind:'uniform',value:1.0},
-			shadowSpread:{kind:'uniform',value:-1.},
+			shadowBlur:{kind:'uniform', value:1.0},
+			shadowSpread:{kind:'uniform', value:-1.},
 			outlineWidth:{kind:'uniform', value:0.},
 
 			// make these uniforms now
-			turtleClip:{kind:'uniform',value:[-50000,-50000,50000,50000]},
+			turtleClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
 			moveScroll:{kind:'uniform', value:1.}
 		}
 		this.$noWriteList = true
@@ -267,9 +267,6 @@ module.exports = class CodeText extends require('shaders/text'){
 
 	pixel(){$
 		//this.pixelStyle()
-
-		
-
 		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
 		//var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
 		//this._field = field

@@ -234,6 +234,16 @@ module.exports = class Code extends require('views/edit'){
 				'#':{},
 				'...':{}
 			},
+			UnaryExpression:{
+				$color:colors.codeOperator,
+				prefix:{$head:0, $tail:0},
+				postfix:{$head:0, $tail:0},
+			},
+			UpdateExpression:{
+				$color:colors.codeOperator,
+				prefix:{$head:0, $tail:0},
+				postfix:{$head:0, $tail:0},
+			},
 			Template:{
 				$color:colors.codeString,
 				template:{},
@@ -559,73 +569,55 @@ module.exports = class Code extends require('views/edit'){
 		this.endBg(true) 
 	} 
 	
-	scanChange(pos, oldText, newText){
-		//return
-		// only do this when at token boundary
-		// attempt #5002
-		//let dx = 0
-		var p0 = oldText.charCodeAt(pos-1)
-		if(p0 === 10 || p0 === 13 || p0 === 9) p0 = undefined
-		// we cant hold onto a space
-		//if(p0 === 32) p0 = oldText.charCodeAt(pos - 2), dx = -1
-		var p1 = oldText.charCodeAt(pos)
-		if(p1 === 32) p1 = undefined
-		var p2 = oldText.charCodeAt(pos+1)
-
-		for(var i = pos+1; i >= 0; i--){
-			if(newText.charCodeAt(i) === p1 && newText.charCodeAt(i+1) === p2){
-				break
-			}
-		}
-		for(var j = pos-1; j < newText.length+1; j++){
-			if(newText.charCodeAt(j) === p1 && newText.charCodeAt(j+1)=== p2){
-				break
-			}
-		}
-		for(var k = pos+1; k >= 0; k--){
-			if(newText.charCodeAt(k) === p0){
-				k++
-				break
-			}
-		}
-		for(var l = pos-1; l < newText.length+1; l++){
-			if(newText.charCodeAt(l) === p0){
-				l++
-				break
-			}
-		}
-		for(var m = pos+1; m >= 0; m--){
-			if(newText.charCodeAt(m) === p1){
-				break
-			}
-		}
-		for(var n = pos-1; n < newText.length+1; n++){
-			if(newText.charCodeAt(n) === p1){
-				break
-			}
-		}
+	findNearest(pos, oldText, newText, char){
 		function minAbs(a,b){
 			if(abs(a)<abs(b)) return a
 			return b
 		}
+		// now find our true offset
+		let oldOff = 0
+		for(let i = 0; i < pos; i++){
+			let code = oldText.charCodeAt(i)
+			if(code !== 32 && code !== 9 && code !== 10 && code !== 13) oldOff++
+		}
+		// ok now lets find that trueOff in the new one
+		let newOff = 0
+		for(var newPos = 0;newPos < newText.length; newPos++){
+			let code = newText.charCodeAt(newPos)
+			if(code !== 32 && code !== 9 && code !== 10 && code !== 13) newOff++
+			if(newOff == oldOff) break
+		}
+		// ok so we have a newOff and a oldOff
+		// now we have to just find our character near newOff
+		for(var a = newPos; a < newText.length; a++){
+			if(newText.charCodeAt(a) === char){
+				a++
+				break
+			}
+		}
+		for(var b = newPos; b >= 0; b--){
+			if(newText.charCodeAt(b) === char){
+				b++
+				break
+			}
+		}
 
-		/*
-		console.log(
-			oldText.slice(0,pos-1) + '#A#' +
-			oldText.slice(pos-1, pos) + '#B#' +
-			oldText.slice(pos, pos+1) + '#C#' +
-			oldText.slice(pos+1, pos+2) + '##' +
-			oldText.slice(pos+2),
-			pos
-			//newText.length,
-			//p0,p1,p2,
-			//i,j,k,l,m,n,
-			//pos-minAbs(minAbs(minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l), pos-m), pos-n)
-		)*/
-		let newpos = pos-minAbs(minAbs(minAbs(minAbs(minAbs(pos-i,pos-j), pos-k), pos-l), pos-m), pos-n)
-		if(!this.isTokenBoundary(newpos)) return pos
-
+		let newpos = pos - minAbs(pos-a,pos-b)
 		return newpos
+	}
+
+	// #attempt 5003
+	scanChange(pos, oldText, newText){
+		var c1 = oldText.charCodeAt(pos-1)
+		var c2 = oldText.charCodeAt(pos)
+		if(c1 !== 32 && c1 !== 9 && c1 !== 10 && c1 !== 13){
+			return this.findNearest(pos, oldText, newText, c1)
+		}
+		if(c2 !== 32 && c2 !== 9 && c2 !== 10 && c2 !== 13){
+			return this.findNearest(pos+1, oldText, newText, c2)-1
+		}
+
+		return pos
 	}
 
 	isTokenBoundary(start){

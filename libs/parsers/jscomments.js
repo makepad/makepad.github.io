@@ -271,3 +271,14 @@ pp.commentAfter = function(token){
 		}
 	}
 }
+
+pp.commentClear = function(token){
+	var comments = this.storeComments
+	//if(token === tt._var) console.log(comments)
+	for(var i = 0,l = comments.length;i < l; i++){
+		if(comments[i] == token){
+			comments.splice(0,i+1)
+			return 
+		}
+	}
+}

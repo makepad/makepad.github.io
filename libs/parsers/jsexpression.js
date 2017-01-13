@@ -282,7 +282,12 @@ pp.parseSubscripts = function(base, startPos, noCalls) {
 			node.property = this.parseExpression()
 			node.computed = true
 			this.expect(tt.bracketR)
+			if(this.storeComments){
+				//!TODO if we want whitespace mode for [ ] , dont clear them
+				this.commentClear(tt.bracketR)
+			}
 			base = this.finishNode(node, "MemberExpression")
+
 		} else if (!noCalls && this.eat(tt.parenL)) {
 			var node = this.startNodeAt(startPos)
 			node.callee = base
@@ -819,10 +824,10 @@ pp.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructur
  			this.unexpected()
  		}
 	}
-
 	if(this.storeComments && node){
 		this.commentBottom(close, node)
 	}
+
 
 	return elts
 }

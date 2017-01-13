@@ -476,7 +476,8 @@ module.exports = class JSFormatter extends require('base/class'){
 	ParenthesizedExpression(node, level){
 		if(!level) level = 0
 		this.trace += '('
-		this.fastText('(', this.styles.Parens.left)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.Parens.left, undefined, parenId)
 		// check if we need to indent
 		if(node.top){
 			this.fastText(node.top, this.styles.Comment.top)
@@ -500,12 +501,13 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.$fastTextIndent--
 		}
 		this.trace += ')'
+		let pEnd
 		if(this.allowOperatorSpaces && node.rightSpace){
 			for(let i = node.rightSpace, rs = ''; i > 0; --i) rs += ' '
-			this.fastText(')'+rs, this.styles.Parens.right)
+			pEnd = this.fastText(')'+rs, this.styles.Parens.right, undefined, parenId)
 		}
-		else this.fastText(')', this.styles.Parens.right)
-
+		else pEnd = this.fastText(')', this.styles.Parens.right, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 	}
 
 	//Literal:{raw:0, value:0},
@@ -767,7 +769,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.$fastTextIndent--
 		this.trace += ')'
 		let pEnd = this.fastText(')', this.styles.Function.parenRight, undefined, parenId)
-		
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
+	
 		var body = node.body
 		this[body.type](body, this.styles.Function, node)
 
@@ -939,26 +942,6 @@ module.exports = class JSFormatter extends require('base/class'){
 
 	}
 
-	//UpdateExpression:{operator:0, prefix:0, argument:1},
-	UpdateExpression(node){
-		if(node.prefix){
-			var op = node.operator
-			this.trace += op
-			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
-			var arg = node.argument
-			var argtype = arg.type
-			this[argtype](arg)
-		}
-		else{
-			var arg = node.argument
-			var argtype = arg.type
-			this[argtype](arg)
-			var op = node.operator
-			this.trace += op
-			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
-		}
- 	}
-
  	onProbeExpression(op, arg, lhs){
 		if(op === 'probe'){
 			var id = this.onProbe(arg, lhs)
@@ -998,7 +981,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			var op = node.operator
 			if(op.length > 1) op = op + ' '
 			this.trace += op
-			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
+			this.fastText(op, this.styles.UnaryExpression.prefix)
 			var arg = node.argument
 			var argtype = arg.type
 			this[argtype](arg)
@@ -1008,7 +991,27 @@ module.exports = class JSFormatter extends require('base/class'){
 			var argtype = arg.type
 			this[argtype](arg)
 			var op = node.operator
-			this.fastText(op, this.styles.Operator[op] || this.styles.Operator.default)
+			this.fastText(op, this.styles.UnaryExpression.postfix)
+		}
+ 	}
+
+	//UpdateExpression:{operator:0, prefix:0, argument:1},
+	UpdateExpression(node){
+		if(node.prefix){
+			var op = node.operator
+			this.trace += op
+			this.fastText(op, this.styles.UpdateExpression.prefix)
+			var arg = node.argument
+			var argtype = arg.type
+			this[argtype](arg)
+		}
+		else{
+			var arg = node.argument
+			var argtype = arg.type
+			this[argtype](arg)
+			var op = node.operator
+			this.trace += op
+			this.fastText(op, this.styles.UpdateExpression.postfix)
 		}
  	}
 
@@ -1017,14 +1020,16 @@ module.exports = class JSFormatter extends require('base/class'){
 		if(this.traceMap) this.trace += 'if(T$('+this.traceMap.push(node)+','
 		else this.trace += 'if('
 		this.fastText('if', this.styles.If.if)
-		this.fastText('(', this.styles.If.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.If.parenLeft, undefined, parenId)
 		var test = node.test
 		this[test.type](test,1)
 
 		if(this.traceMap) this.trace += '))'
 		else this.trace += ')'
+		let pEnd = this.fastText(')', this.styles.If.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 
-		this.fastText(')', this.styles.If.parenRight)
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
 		var cq = node.consequent
@@ -1043,7 +1048,8 @@ module.exports = class JSFormatter extends require('base/class'){
 	ForStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this.styles.For.for)
-		this.fastText('(', this.styles.For.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.For.parenLeft, undefined, parenId)
 		var init = node.init
 		if(init)this[init.type](init, 1, 3)
 		this.trace += ';'
@@ -1055,7 +1061,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		var update = node.update
 		if(update)this[update.type](update, 1)
 		this.trace += ')'
-		this.fastText(')', this.styles.For.parenRight)
+		let pEnd = this.fastText(')', this.styles.For.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
@@ -1066,7 +1073,8 @@ module.exports = class JSFormatter extends require('base/class'){
 	ForInStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this.styles.For.for)
-		this.fastText('(', this.styles.For.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.For.parenLeft, undefined, parenId)
 		var left = node.left
 		this[left.type](left)
 		this.trace += ' in '
@@ -1074,7 +1082,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		var right = node.right
 		this[right.type](right)
 		this.trace += ')'
-		this.fastText(')', this.styles.For.parenRight)
+		let pEnd = this.fastText(')', this.styles.For.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
@@ -1085,7 +1094,8 @@ module.exports = class JSFormatter extends require('base/class'){
 	ForOfStatement(node){
 		this.trace += 'for('
 		this.fastText('for', this.styles.For.for)
-		this.fastText('(', this.styles.For.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.For.parenLeft, undefined, parenId)
 		var left = node.left
 		this[left.type](left)
 		this.trace += ' of '
@@ -1093,7 +1103,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		var right = node.right
 		this[right.type](right)
 		this.trace += ')'
-		this.fastText(')', this.styles.For.parenRight)
+		let pEnd = this.fastText(')', this.styles.For.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		var body = node.body
 		let after = node.after
 		if(after) this.fastText(after, this.styles.Comment.above), this.trace += after
@@ -1103,11 +1114,13 @@ module.exports = class JSFormatter extends require('base/class'){
 	//WhileStatement:{body:1, test:1},
 	WhileStatement(node){
 		this.fastText('while', this.styles.For.while)
-		this.fastText('(', this.styles.For.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.For.parenLeft, undefined, parenId)
 		this.trace += 'while('
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this.styles.For.parenRight)
+		let pEnd = this.fastText(')', this.styles.For.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		this.trace += ')'
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1
@@ -1122,11 +1135,13 @@ module.exports = class JSFormatter extends require('base/class'){
 		var body = node.body
 		this[body.type](body, this.styles.For)
 		this.fastText('while', this.styles.For.while)
-		this.fastText('(', this.styles.For.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.For.parenLeft, undefined, parenId)
 		this.trace += 'while('
 		var test = node.test
 		this[test.type](test)
-		this.fastText(')', this.styles.For.parenRight)
+		let pEnd = this.fastText(')', this.styles.For.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		this.trace += ')'
 	}
 
@@ -1216,10 +1231,12 @@ module.exports = class JSFormatter extends require('base/class'){
 	CatchClause(node){
 		this.trace += 'catch('
 		this.fastText('catch', this.styles.Exception.catch)
-		this.fastText('(', this.styles.Exception.parenLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.Exception.parenLeft, undefined, parenId)
 		var param = node.param
 		this[param.type](param)
-		this.fastText(')', this.styles.Exception.parenRight)
+		let pEnd = this.fastText(')', this.styles.Exception.parenRight, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		this.trace += ')'
 		var body = node.body
 		this[body.type](body, this.styles.Exception)
@@ -1284,8 +1301,11 @@ module.exports = class JSFormatter extends require('base/class'){
 	//ArrowFunctionExpression:{params:2, expression:0, body:1},
 	ArrowFunctionExpression(node){
 		this.trace += '('
+		let parenId
+		let pStart
 		if(!node.noParens){
-			this.fastText('(', this.styles.Function.parenLeft)
+			parenId = this.$parenGroupId++
+			pStart = this.fastText('(', this.styles.Function.parenLeft, undefined, parenId)
 		}
 		var params = node.params
 		var paramslen = params.length - 1
@@ -1310,7 +1330,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		this.trace += ')'
 		if(!node.noParens){
-			this.fastText(')', this.styles.Function.parenRight)	
+			let pEnd = this.fastText(')', this.styles.Function.parenRight, undefined, parenId)	
+			this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
 		}
 		this.trace += '=>'
 		this.fastText('=>', this.styles.Function.arrow)
@@ -1322,13 +1343,18 @@ module.exports = class JSFormatter extends require('base/class'){
 	SwitchStatement(node){
 		this.trace += 'switch('
 		this.fastText('switch', this.styles.If.switch)
-		this.fastText('(', this.styles.If.parentLeft)
+		let parenId = this.$parenGroupId++
+		let pStart = this.fastText('(', this.styles.If.parentLeft, undefined, parenId)
 		var disc = node.discriminant
 		this[disc.type](disc)
-		this.fastText(')', this.styles.If.parentLeft)
-		this.fastText('{', this.styles.If.curly)
+		let pEnd = this.fastText(')', this.styles.If.parentLeft, undefined, parenId)
+		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
+
+		let blStart = this.fastText('{', this.styles.If.curly)
+
+		let endx = turtle.wx, lineh = turtle.mh
+		this.$fastTextIndent++
 		this.trace += '){\n'
-		
 		var top = node.top
 		if(top) this.fastText(top, this.styles.Comment.top)
 		var cases = node.cases
@@ -1339,9 +1365,30 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		var bottom = node.bottom
 		if(bottom) this.fastText(bottom, this.styles.Comment.bottom)
-		
-		this.fastText('}', this.styles.If.curly)
+		this.tearLastIndent()
+		this.$fastTextIndent--
+		let startx = turtle.wx 
+		let blEnd = this.fastText('}', this.styles.If.curly)
 		this.trace += '}'
+
+		// store endx endy
+		var blockh = turtle.wy
+
+		var pickId = this.pickIdCounter++
+		this.pickIds[pickId] = node 
+		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
+		this.fastBlock(
+			startx,
+			starty,
+			endx-startx, 
+			lineh,
+			this.indentSize* this.$fastTextFontSize,
+			blockh - starty,
+			this.$fastTextIndent,
+			pickId,
+			this.styles.Switch.block
+		)
+
 	}
 
 	//SwitchCase:{test:1, consequent:2},
