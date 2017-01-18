@@ -315,7 +315,7 @@ module.exports = class Code extends require('views/edit'){
 			}
 		} 
 
-		this.defaultScope = { 
+		this._defaultScope ={ 
 			console: 'global', 
 			eval: 'global', 
 			Infinity: 'global', 
@@ -404,8 +404,12 @@ module.exports = class Code extends require('views/edit'){
 			smoothstep: 'global', 
 			mix: 'global', 
 			arguments: 'const' 
+		}
+		this.defaultScope = Object.create(null)
+		for(let key in this._defaultScope){
+			this.defaultScope[key] = this._defaultScope[key]
 		} 
-	} 
+	}
 	
 	constructor(...args) { 
 		super(...args) 

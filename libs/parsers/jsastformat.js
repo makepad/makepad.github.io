@@ -522,7 +522,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var name = node.name
 		var where
 		if(where = this.scope[name]){
-			if(this.scope.hasOwnProperty(name)){
+			if(this.scope[name]){
 				style = this.styles.Id[where]
 			}
 			else{

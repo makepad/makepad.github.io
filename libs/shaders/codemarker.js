@@ -73,7 +73,7 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 
 	pixel(){$
 		//return 'red'
-		var bg = '#07000000'
+		var bg = '#09000000'
 		var pos = this.viewport()
 		this.result = bg
 		this.pos.x = mod(this.pos.x,8.)

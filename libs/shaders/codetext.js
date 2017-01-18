@@ -32,7 +32,8 @@ module.exports = class CodeText extends require('shaders/text'){
 		}
 		this.$noWriteList = true
 		this.verbs = {
-			write:function(txt, style){ // just write plain text
+			write:function(txt, style, igroup){ // just write plain text
+				var group = igroup!==undefined?igroup:1
 				let chunks = this.$fastNAMEChunks
 				let styles = this.$fastNAMEStyles
 				chunks.push(txt)
@@ -78,7 +79,7 @@ module.exports = class CodeText extends require('shaders/text'){
 						fontSize:fontSize,
 						italic:0,
 						boldness:boldness, 
-						group:unicode === 9?-1:1,
+						group:group,
 						advance:advance,
 						tx1: g.tx1,
 						ty1: g.ty1,
@@ -105,6 +106,7 @@ module.exports = class CodeText extends require('shaders/text'){
 				posy += nh
 				if(posy>turtle.y2) turtle.y2 = posy				
 				turtle.wx = posx// + margin[1]* fontSize
+				return this.LENCORRECT()
 			},
 			// function with support for handling whitespace
 			fast:function(txt, style, ihead, igroup){

@@ -9,7 +9,9 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		this.$fastTextChunks = []
 		this.$fastTextStyles = []
-
+		this.$blockRanges = []
+		this.$parenRanges = []
+		this.$parenGroupId = 2
 		//this.writeText("HIIII", this.styles.Array.bracket)
 		let tt = this.tt = parser.tokTypes
 		let raised = false
@@ -45,6 +47,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			if(!tok.type.isWhitespace){
 				this.tokArray.push(tok.type, tok.pos)
 			}
+			last = tok.pos
 			tok.nextTokenWs()
 		}
 	}
@@ -55,9 +58,27 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["name"] = function(tok){
-			if(this.lastTok === this.tt.dot){
-				return this.writeText(tok.value, this.styles.Object.key)
+			let value = tok.value
+			let ps = this.parenStack
+			let tokens = this.tokArray
+			if(tokens[tokens.length - 2]  === this.tt.dot){
+				return this.writeText(value, this.styles.Object.key)
 			}
+			if(this.defaultScope[value]){
+				return this.writeText(tok.value, this.styles.Id.global)
+			}
+			let top = this.tokArray[ps[ps.length - 5]]
+			if(top === this.tt.braceL){
+				let style = ps[ps.length -4]
+				
+				if(style === this.styles.Class){
+					return this.writeText(value, this.styles.Class.method)
+				}
+				if(style === this.styles.Object){
+					return this.writeText(value, this.styles.Object.key)
+				}
+			}
+			
 			this.writeText(tok.value, this.styles.Id.var)
 		}
 		
@@ -170,16 +191,43 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["("] = function(tok){
-			this.writeText("(", this.styles.Tokenized.paren)
+			let parenId = this.$parenGroupId++
+			// if prev = name 
+			let tokens = this.tokArray
+			let style = this.styles.Parens.left
+			let prev = tokens[tokens.length - 2]
+			if(prev === this.tt.name || prev === this.tt._super){
+				style = this.styles.Call.paren
+			}
+			else if(prev === this.tt._if){
+				style = this.styles.If.parenLeft
+			}
+			else if(prev === this.tt._for){
+				style = this.styles.If.parenLeft
+			}
+			else if(prev === this.tt._function){
+				style = this.styles.Function.parenLeft
+			}
+			this.writeText("(", style, parenId)
 			this.parenStack.push(
-				this.tokArray.length
+				this.tokArray.length,
+				style,0,0,parenId
 			)
 		}
 
 		this[")"] = function(tok){
-			this.writeText(")", this.styles.Tokenized.paren)
-			let s = this.openParenStart = this.parenStack.pop()
-			console.log('here',this.tokArray[s])
+			let ps = this.parenStack
+			let parenId = ps.pop()
+			let xPos = ps.pop()
+			let yPos = ps.pop()
+			let style = ps.pop()
+			let s = this.openParenStart = ps.pop()
+
+			let blStart = this.tokArray[s+1]
+			let blEnd = tok.pos
+			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
+			this.writeText(")", style || this.styles.Tokenized.paren, parenId)
+			//console.log('here',this.tokArray[s])
 			if(!s || this.tokArray[s] !== this.tt.parenL){
 				this.parseErrors.push({
 					pos:tok.pos,
@@ -189,17 +237,83 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["{"] = function(tok){
-			// lets check if we are after a ), ifso
-			// lets check what the ( was after
-			this.writeText("{", this.styles.Tokenized.curly)
+			// lets figure out what kind of { we are
+			let tokens = this.tokArray
+			let tlen = tokens.length
+			// if we have a ) 
+			let ptok = tokens[tlen - 2]
+			let style = this.styles.Tokenized
+			if(ptok === this.tt.parenR){
+				
+				// lets check openParenStart to see what goes before it
+				let pre = this.tokArray[this.openParenStart-2]
+				
+				if(pre === this.tt._function){ // its a function
+					style = this.styles.Function
+				}
+				if(pre === this.tt.name){ // its a method
+					let before = this.tokArray[this.openParenStart-4]
+					//console.log(before === this.tt._extends)
+					//console.log(before)
+					if(before === this.tt._extends){ // its a class
+						style = this.styles.Class
+					}
+					else style = this.styles.Function
+				}
+			}
+			else if(ptok === this.tt.arrow){
+				style = this.styles.Function
+			}
+			else{ // object
+				style = this.styles.Object
+			}
+
+			let parenId = this.$parenGroupId++
+			this.writeText("{", style.curly, parenId)
+
 			this.parenStack.push(
-				this.tokArray.length
+				this.tokArray.length,
+				style,
+				this.turtle.wx,
+				this.turtle.wy,
+				parenId
 			)
 		}
 
 		this["}"] = function(tok){
-			this.writeText("}", this.styles.Tokenized.curly)
-			let s = this.parenStack.pop()
+			let ps = this.parenStack
+			let parenId = ps.pop()
+			let yPos = ps.pop()
+			let xPos = ps.pop()
+			let style = ps.pop() 
+			if(!style || !style.curly) style = this.styles.Object
+			let s = ps.pop()
+			let blStart = this.tokArray[s+1]
+			let blEnd = tok.pos
+			//let endx = turtle.wx, lineh = turtle.mh
+			let startx = this.turtle.wx 
+
+			this.writeText("}", style.curly, parenId)
+			let lineh = this.turtle.mh
+			let blockh = this.turtle.wy
+			let pickId = this.pickIdCounter++
+			//this.pickIds[pickId] = node 
+			this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
+			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
+			// lets draw a block with this information
+			this.fastBlock(
+				startx,
+				yPos,
+				xPos-startx, 
+				lineh,
+				this.indentSize * this.$fastTextFontSize,
+				blockh - yPos,
+				this.$fastTextIndent,
+				pickId,
+				(style || this.styles.Object).block.open
+			)
+			// lets write a block matching the style
+
 			if(!s || this.tokArray[s] !== this.tt.braceL){
 				this.parseErrors.push({
 					pos:tok.pos,
@@ -211,13 +325,20 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["["] = function(tok){
 			this.writeText("[", this.styles.Tokenized.bracket)
 			this.parenStack.push(
-				this.tokArray.length
+				this.tokArray.length,
+				0,0,0,0
+
 			)
 		}
 
 		this["]"] = function(tok){
 			this.writeText("]", this.styles.Tokenized.bracket)
-			let s = this.parenStack.pop()
+			let ps = this.parenStack
+			let parenId = ps.pop()
+			let yPos = ps.pop()
+			let xPos = ps.pop()
+			let style = ps.pop()
+			let s = ps.pop()
 			if(!s || this.tokArray[s] !== this.tt.bracketL){
 				this.parseErrors.push({
 					pos:tok.pos,
@@ -236,10 +357,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		this["?"] = function(tok){
 			this.writeText('?', this.styles.Operator.default)
-		}
-
-		this[":"] = function(tok){
-			this.writeText(':', this.styles.Operator.default)
 		}
 
 		this["..."] = function(tok){
@@ -303,7 +420,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		
 		this["."] = function(tok){
-			this.writeText('.', this.styles.Operator.default)
+			this.writeText('.', this.styles.Object.dot)
 		}
 
 		this["`"] = function(tok){
@@ -315,14 +432,31 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		
 		this[":"] = function(tok){
+			let ps = this.parenStack
+			let top = this.tokArray[ps[ps.length - 5]]
+			if(top === this.tt.braceL){
+				let style = ps[ps.length - 4]
+				if(style === this.styles.Object){
+					return this.writeText(':', this.styles.Object.colon)
+				}
+			}
 			this.writeText(':', this.styles.Operator.default)
 		}
 
 		this[","] = function(tok){
+			let ps = this.parenStack
+			let top = this.tokArray[ps[ps.length - 5]]
+			if(top === this.tt.braceL){
+				let style = ps[ps.length - 4]
+				if(style === this.styles.Object){
+					return this.writeText(',', this.styles.Object.commaOpen)
+				}
+			}
 			this.writeText(',', this.styles.Operator.default)
 		}
 		
 		this["++/--"] = function(tok){
+
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
 
