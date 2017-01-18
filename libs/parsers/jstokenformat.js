@@ -310,7 +310,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				blockh - yPos,
 				this.$fastTextIndent,
 				pickId,
-				(style || this.styles.Object).block.open
+				style.block.open
 			)
 			// lets write a block matching the style
 
@@ -323,22 +323,65 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["["] = function(tok){
-			this.writeText("[", this.styles.Tokenized.bracket)
+			// lets figure out what kind of { we are
+			let tokens = this.tokArray
+			let tlen = tokens.length
+			// if we have a ) 
+			let ptok = tokens[tlen - 2]
+			let style = this.styles.Array
+			if(ptok === this.tt.parenR || ptok === this.tt.name){
+				style = this.styles.Object
+			}
+			let parenId = this.$parenGroupId++
+			this.writeText("[", style.bracket, parenId)
+
 			this.parenStack.push(
 				this.tokArray.length,
-				0,0,0,0
-
+				style,
+				this.turtle.wx,
+				this.turtle.wy,
+				parenId
 			)
 		}
 
 		this["]"] = function(tok){
-			this.writeText("]", this.styles.Tokenized.bracket)
 			let ps = this.parenStack
 			let parenId = ps.pop()
 			let yPos = ps.pop()
 			let xPos = ps.pop()
-			let style = ps.pop()
+			let style = ps.pop() 
+			if(!style || !style.bracket) style = this.styles.Object
 			let s = ps.pop()
+			let blStart = this.tokArray[s+1]
+			let blEnd = tok.pos
+			//let endx = turtle.wx, lineh = turtle.mh
+			let startx = this.turtle.wx 
+
+			this.writeText("]", style.bracket, parenId)
+			let lineh = this.turtle.mh
+			let blockh = this.turtle.wy
+			//this.pickIds[pickId] = node 
+			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
+
+			if(style === this.styles.Array){
+				let pickId = this.pickIdCounter++
+				this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
+
+				// lets draw a block with this information
+				this.fastBlock(
+					startx,
+					yPos,
+					xPos-startx, 
+					lineh,
+					this.indentSize * this.$fastTextFontSize,
+					blockh - yPos,
+					this.$fastTextIndent,
+					pickId,
+					style.block.open
+				)
+				// lets write a block matching the style
+			}
+
 			if(!s || this.tokArray[s] !== this.tt.bracketL){
 				this.parseErrors.push({
 					pos:tok.pos,
@@ -446,7 +489,13 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[","] = function(tok){
 			let ps = this.parenStack
 			let top = this.tokArray[ps[ps.length - 5]]
-			if(top === this.tt.braceL){
+			if(top === this.tt.bracketL){
+				let style = ps[ps.length - 4]
+				if(style === this.styles.Array){
+					return this.writeText(',', this.styles.Array.commaOpen)
+				}
+			}
+			else if(top === this.tt.braceL){
 				let style = ps[ps.length - 4]
 				if(style === this.styles.Object){
 					return this.writeText(',', this.styles.Object.commaOpen)

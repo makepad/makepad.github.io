@@ -950,7 +950,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			style.probeId = id
 			this.fastText('#', style)
 			// store ID in fontsize
-			this.ann[this.ann.length-2] = id
+			//this.ann[this.ann.length-2] = id
 			// allright lets store in ann some metadata on our probe
 			var argtype = arg.type
 			this[argtype](arg)
