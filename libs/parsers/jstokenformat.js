@@ -1,7 +1,69 @@
 let parser = require('parsers/js')
 module.exports = class JSFormatter extends require('base/class'){
 
+	jsTokenFormat(text){
+		//console.log(this._text)
+		let tok = parser.tokenize(text, {
+			storeComments: []
+		})
+		
+		this.$fastTextChunks = []
+		this.$fastTextStyles = []
+
+		//this.writeText("HIIII", this.styles.Array.bracket)
+		let tt = this.tt = parser.tokTypes
+		let raised = false
+		let raisedPos = null
+		let raisedMessage = null
+		let raisedId = null
+		tok.raise = (pos, e, id)=>{
+			raised = true
+			this.parseErrors.push({
+				pos:pos,
+				message:e
+			})
+			raisedId = id
+		}
+		let last = tok.pos
+		tok.nextTokenWs()
+		let i =0
+		this.tokArray = []
+		this.parenStack = []
+		while(tok.type !== tt.eof){
+			if(raised){
+				raised = false
+				if(typeof this[raisedId] !== 'function') console.log("CANT FIND" + raisedId)
+				this[raisedId](tok, last)
+			}
+			else{
+				let label = tok.type.label
+				if(typeof this[label] !== 'function') console.log("CANT FIND" + label)
+				this[label](tok)
+			}
+			//ast = tok.pos
+			//if(i++==28)debugger
+			if(!tok.type.isWhitespace){
+				this.tokArray.push(tok.type, tok.pos)
+			}
+			tok.nextTokenWs()
+		}
+	}
+
 	prototype(){
+		this["string"] = function(tok){
+			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.string)
+		}
+
+		this["name"] = function(tok){
+			if(this.lastTok === this.tt.dot){
+				return this.writeText(tok.value, this.styles.Object.key)
+			}
+			this.writeText(tok.value, this.styles.Id.var)
+		}
+		
+		this["num"] = function(tok){
+			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.num)
+		}
 
 		this["if"] = function(tok){
 			this.writeText("if", this.styles.If.if)
@@ -107,40 +169,61 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("let", this.styles.Keyword.let)
 		}
 
-		this["string"] = function(tok){
-			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.string)
-		}
-
 		this["("] = function(tok){
 			this.writeText("(", this.styles.Tokenized.paren)
+			this.parenStack.push(
+				this.tokArray.length
+			)
 		}
 
 		this[")"] = function(tok){
 			this.writeText(")", this.styles.Tokenized.paren)
+			let s = this.openParenStart = this.parenStack.pop()
+			console.log('here',this.tokArray[s])
+			if(!s || this.tokArray[s] !== this.tt.parenL){
+				this.parseErrors.push({
+					pos:tok.pos,
+					message:'mismatched )'
+				})
+			}
 		}
 
 		this["{"] = function(tok){
+			// lets check if we are after a ), ifso
+			// lets check what the ( was after
 			this.writeText("{", this.styles.Tokenized.curly)
+			this.parenStack.push(
+				this.tokArray.length
+			)
 		}
 
 		this["}"] = function(tok){
 			this.writeText("}", this.styles.Tokenized.curly)
+			let s = this.parenStack.pop()
+			if(!s || this.tokArray[s] !== this.tt.braceL){
+				this.parseErrors.push({
+					pos:tok.pos,
+					message:'mismatched }'
+				})
+			}
 		}
 
 		this["["] = function(tok){
 			this.writeText("[", this.styles.Tokenized.bracket)
+			this.parenStack.push(
+				this.tokArray.length
+			)
 		}
 
 		this["]"] = function(tok){
 			this.writeText("]", this.styles.Tokenized.bracket)
-		}
-
-		this["name"] = function(tok){
-			this.writeText(tok.value, this.styles.Id.var)
-		}
-		
-		this["num"] = function(tok){
-			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.num)
+			let s = this.parenStack.pop()
+			if(!s || this.tokArray[s] !== this.tt.bracketL){
+				this.parseErrors.push({
+					pos:tok.pos,
+					message:'mismatched ]'
+				})
+			}
 		}
 
 		this["+/-"] = function(tok){
@@ -320,43 +403,4 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 	}
 
-	jsTokenFormat(text){
-		//console.log(this._text)
-		let tok = parser.tokenize(text, {
-			storeComments: []
-		})
-		
-		this.$fastTextChunks = []
-		this.$fastTextStyles = []
-
-		//this.writeText("HIIII", this.styles.Array.bracket)
-		let tt = parser.tokTypes
-		let raised = false
-		let raisedPos = null
-		let raisedId = null
-		tok.raise = function(pos, e, id){
-			raised = true
-			raisedPos = pos
-			raisedId = id
-		}
-		let last = tok.pos
-		tok.nextTokenWs()
-		let i =0
-		while(tok.type !== tt.eof){
-			if(raised){
-				raised = false
-				if(typeof this[raisedId] !== 'function') console.log("CANT FIND" + raisedId)
-				this[raisedId](tok, last)
-			}
-			else{
-				let label = tok.type.label
-				if(typeof this[label] !== 'function') console.log("CANT FIND" + label)
-				this[label](tok)
-			}
-			last = tok.pos
-			//if(i++==28)debugger
-			tok.nextTokenWs()
-		}
-
-	}
 }

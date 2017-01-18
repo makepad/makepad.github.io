@@ -252,6 +252,10 @@ module.exports = class Turtle extends require('base/class'){
 		if(this._x < this.x1) this.x1 = this._x
 		if(this._y < this.y1) this.y1 = this._y
 	}
+	
+	displace(dx, dy, dw){
+		this.view.$moveWritten(this.$writeStart+(dw||0), dx, dy)
+	}
 
 	lineBreak(){
 		this.wx = this.sx

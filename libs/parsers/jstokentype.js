@@ -32,6 +32,7 @@ var TokenType = exports.TokenType = function TokenType(label, conf){
 	this.prefix = !!conf.prefix
 	this.postfix = !!conf.postfix
 	this.binop = conf.binop || null
+	this.isWhitespace = conf.isWhitespace
 	this.updateContext = null
 }
 
@@ -45,6 +46,7 @@ var types = exports.types = {
 	regexp: new TokenType("regexp", startsExpr),
 	string: new TokenType("string", startsExpr),
 	name: new TokenType("name", startsExpr),
+	bof: new TokenType("bof"),
 	eof: new TokenType("eof"),
 	// Punctuation token types.
 	bracketL: new TokenType("[", {beforeExpr: true, startsExpr: true}),
@@ -97,11 +99,11 @@ var types = exports.types = {
 	slash: binop("/", 10),
 	starstar: new TokenType("**", {beforeExpr: true}),
 	// whitespace token types
-	space: new TokenType(" "),
-	tab: new TokenType("\t"),
-	lineComment: new TokenType("//"),
-	blockComment: new TokenType("/*"),
-	newline: new TokenType("\n")
+	space: new TokenType(" ", {isWhitespace:true}),
+	tab: new TokenType("\t", {isWhitespace:true}),
+	lineComment: new TokenType("//", {isWhitespace:true}),
+	blockComment: new TokenType("/*", {isWhitespace:true}),
+	newline: new TokenType("\n", {isWhitespace:true})
 }
 
 // Map keyword names to token types.

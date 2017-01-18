@@ -175,8 +175,7 @@ module.exports = class Makepad extends require('base/app'){
 						trace: '',
 						traceLines: null,
 						dirty: false,
-						processes: [],
-						parseErrors: []
+						processes: []
 					})
 				}
 				// lets store it

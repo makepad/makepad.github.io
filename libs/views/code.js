@@ -80,6 +80,34 @@ module.exports = class Code extends require('views/edit'){
 					this.opColor = this.bgColor * 2.3 
 					this.borderColor = this.bgColor * 1.4 
 				} 
+			}),
+			ErrorMessage: require('base/stamp').extend({
+				order:8,
+				margin:[6,0,0,0],
+				props:{
+					errorPos:0,
+					text:'error'
+				},
+				tools:{
+					Text:require('shaders/text').extend({
+						color:'black',
+						font:module.style.fonts.regular,
+						fontSize:module.style.fonts.size*0.8
+					}),
+					Bg:require('shaders/bg').extend({
+						padding:2,
+						borderRadius:2,
+						color:'#ccc'
+					})
+				},
+				onDraw(){
+					this.beginBg({})
+					this.drawText({text:this.text})
+					this.endBg()
+					if(this.errorPos>this.turtle._w){
+						this.turtle.displace(this.errorPos - this.turtle._w,0)
+					}
+				}
 			})
 		} 
 		
@@ -390,19 +418,15 @@ module.exports = class Code extends require('views/edit'){
 	
 	parseText() {
 		this.ast = undefined 
-		this.parseError = undefined 
-		this.onClearErrors()
 		try{
+			this.runtimeErrors.length = 0
+			this.parseErrors.length = 0
 			this.ast = parser.parse(this._text, { 
 				storeComments: [] 
 			})
 		}
 		catch(e) {
-			this.parseError = e
-			this.store.act("addParseError",store=>{
-				this.resource.parseErrors.length = 0
-				this.resource.parseErrors.push(e)
-			})
+			this.parseErrors.push(e)
 		} 
 	} 
 	// serialize all selections, lazily
@@ -439,7 +463,41 @@ module.exports = class Code extends require('views/edit'){
 		this.groupHighlightId = found?found.id:0
 	}
 
-	onClearErrors(){
+	drawError(error, id){
+		var epos = clamp(error.pos, 0, this.$lengthText() - 1) 
+		
+		var rd = this.$readOffsetText(epos) 			
+		if(!rd) return
+
+		var marker = { 
+			x1: 0, 
+			x2: rd.x, 
+			x3: rd.x + abs(rd.w), 
+			x4: 100000, 
+			y: rd.y, 
+			h: rd.fontSize * rd.lineSpacing, 
+			closed: 0 
+		}
+		this.drawErrorMarker(marker)
+		// if cursor is at same epos (or mouse hovers over dot?..)
+		// draw ErrorMessage
+		
+		// lets check if the epos is a cursor end
+		var cursors = this.cs.cursors 
+		for(var i = 0; i < cursors.length; i++) {
+			var cursor = cursors[i] 
+			if(cursor.end === epos){
+				this.drawErrorMessage({
+					id:id,
+					errorPos:rd.x+rd.w,
+					x:0,
+					y:marker.y+marker.h,
+					text:error.message
+				})
+				break
+			}
+		}
+		//if(i==0 && !this.hasFocus) this.scrollIntoView(marker.x, marker.y, marker.w, marker.h)
 	}
 
 	onDraw() { 
@@ -454,7 +512,7 @@ module.exports = class Code extends require('views/edit'){
 		}
 		else {
 			this.$fastTextDelay = 0 
-
+			this.parseErrors = []
 			this.parseText()
 			
 			this.pickIdCounter = 1 
@@ -462,9 +520,7 @@ module.exports = class Code extends require('views/edit'){
 			this.$textClean = true 
 			
 			if(this.ast) {
-				this.reuseErrorMarker()
-	
-				// first we format the code
+					// first we format the code
 				if(this.onBeginFormatAST) this.onBeginFormatAST()
 
 				this.jsASTFormat(this.indentSize, this.ast)
@@ -514,33 +570,31 @@ module.exports = class Code extends require('views/edit'){
 			this.$fastTextDelta = 0 
 		} 
 
-		var errors = this.errors
-		if(errors){
-			for(let i = errors.length - 1; i >= 0; --i){
-				var error = errors[i]
-				var epos = clamp(error.pos, 0, this.$lengthText() - 1) 
-				
-				var rd = this.$readOffsetText(epos) 			
-				if(!rd) continue
-					console.log(rd.w)
-				//console.log(rd)
-				//console.log(out)
-				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
-				var marker = { 
-					x1: 0, 
-					x2: rd.x, 
-					x3: rd.x + abs(rd.w), 
-					x4: 100000, 
-					y: rd.y, 
-					h: rd.fontSize * rd.lineSpacing, 
-					closed: 0 
+		if(this.runtimeErrors){
+			for(let i = this.runtimeErrors.length - 1; i >= 0; --i){
+				let err = this.runtimeErrors[i]
+				let text = this._text
+				let line = err.line - 1
+				let col = err.column
+				var j = 0, tl = text.length;
+				for(; j < tl; j++){
+					if(text.charCodeAt(j) === 10) line--
+					if(line<=0) break
 				}
-				this.drawErrorMarker(marker)
-				if(i==0 && !this.hasFocus) this.scrollIntoView(marker.x, marker.y, marker.w, marker.h)
+				this.drawError({
+					pos:j+col,
+					message:err.message
+				}, 'rt'+i)
 			}
 		}
 
-		if(this.hasFocus) {
+		if(this.parseErrors){
+			for(let i = this.parseErrors.length - 1; i >= 0; --i){
+				this.drawError(this.parseErrors[i], 'parse'+i)
+			}
+		}
+
+		if(this.hasFocus) { // draw cursors
 
 			var cursors = this.cs.cursors 
 			for(var i = 0; i < cursors.length; i++) {
@@ -668,7 +722,7 @@ module.exports = class Code extends require('views/edit'){
 					// scan forwards through spaces
 					// scan backwards through 
 					i--
-					if(this.ast && chunks[i] === ' ') i--, seek --
+					if(this.ast && chunks[i] === ' ') i--, start--, seek --
 					if(chunks[i] === '\t'){ // lets scan indentation 
 						let delta = 1
 						for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){

@@ -32,6 +32,7 @@ module.exports = class Bg extends require('./quad'){
 				var ot = this.endTurtle(doBounds)
 				this.turtle.walk(ot)
 				this.WRITEPROPS()
+				return ot
 			}
 		}
 

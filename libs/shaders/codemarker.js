@@ -73,16 +73,18 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 
 	pixel(){$
 		//return 'red'
+		var bg = '#07000000'
 		var pos = this.viewport()
+		this.result = bg
 		this.pos.x = mod(this.pos.x,8.)
 		this.moveTo(0., this.h - 1.)
 		this.lineTo(3., this.h - 1.)
 		this.stroke('#c00',1.)
 		this.pos = pos
-		if(this.pos.x < this.h*0.2) this.result = vec4(0.)
-		if(this.pos.x > this.x2) this.result = vec4(0.)
+		if(this.pos.x < this.h*0.2) this.result = bg
+		if(this.pos.x > this.x2) this.result = bg
 
-		this.circle(this.h*0.25,this.h*0.75,this.h*.2)
+		this.circle(this.h*0.25,this.h*0.75-2.,this.h*.2)
 		this.fill('#c00')
 		var start = this.x2 + this.h*0.2
 		var end = this.x3 - this.h*0.2

@@ -55,6 +55,7 @@ module.exports = class Quad extends require('base/shader'){
 				var ot = this.endTurtle(doBounds)
 				this.turtle.walk(ot)
 				this.WRITEPROPS()
+				return ot
 			}
 		}
 	}
