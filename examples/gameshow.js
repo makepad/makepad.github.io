@@ -276,13 +276,13 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		this.teams = [
 			{name:"Team1", color:'#7', players:[
-				{name:"Nikolai", ctrl:0, buzzer:1, button:0, sound:0, score:0, color:'#c33'},
-				{name:"Chrissy", ctrl:0, buzzer:2, button:0, sound:1, score:0, color:'#3c3'},
-				{name:"Fabian", ctrl:0, buzzer:3, button:0, sound:2, score:0, color:'#33c'},
+				{name:"Player1", ctrl:0, buzzer:1, button:0, sound:0, score:0, color:'#c33'},
+				{name:"Player2", ctrl:0, buzzer:2, button:0, sound:1, score:0, color:'#3c3'},
+				{name:"Player3", ctrl:0, buzzer:3, button:0, sound:2, score:0, color:'#33c'},
 			]},
 			{name:"Team2", color:'#6', players:[
-				{name:"Sergey", ctrl:1, buzzer:0, button:0, sound:3, score:0, color:'#cc3'},
-				{name:"Stijn", ctrl:1, buzzer:1, button:0, sound:4, score:0, color:'#3cc'},
+				{name:"Player4", ctrl:1, buzzer:0, button:0, sound:3, score:0, color:'#cc3'},
+				{name:"Player5", ctrl:1, buzzer:1, button:0, sound:4, score:0, color:'#3cc'},
 				{name:"Player6", ctrl:1, buzzer:2, button:0, sound:5, score:0, color:'#c3c'}
 			]}
 		]
@@ -472,7 +472,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		
 		if(this.page == 0) {
-			this.drawSplash({id:0, text:'Never mind the\n   Buzzwords'})
+			this.drawSplash({id:0, text:' Never Mind\nThe Buzzwords'})
 			this.drawText({
 				color   :'#7',
 				margin  :[0, 0, 0, 10],
