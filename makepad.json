@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/camera.js"],
-	"run":["/examples/camera.js"],
+	"open":["/examples/gameshow.js"],
+	"run":["/examples/gameshow.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[

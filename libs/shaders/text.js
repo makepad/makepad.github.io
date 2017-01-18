@@ -23,7 +23,7 @@ module.exports = class Text extends require('base/shader'){
 			baseLine:{kind:'uniform', value:1.},
 			aaFactor:{kind:'uniform', value:0.01},
 			shadowBlur: 1.0,
-			shadowSpread: -1.,
+			shadowSpread: 0.,
 
 			outlineWidth:0.,
 			boldness:0, 
@@ -328,72 +328,15 @@ module.exports = class Text extends require('base/shader'){
 			vec2(this.tx2, this.ty2), 
 			this.mesh.xy
 		)
-		this.pos = this.vertexPos(pos)
-		this.ppos = this.pos - vec2(this.x, this.y) - shift
+		this.vpos = this.vertexPos(pos.xy)
+		this.ppos = this.vpos - vec2(this.x, this.y) - shift
 		this.psize = vec2((this.x2-this.x1)*this.fontSize,(this.y2-this.y1)*this.fontSize)
 		
 		//this.ppos = pos - vec2(this.x2 - this.y2)
 
-		return vec4(this.pos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
+		return vec4(this.vpos,0.,1.) * this.viewPosition * this.camPosition * this.camProjection
 	}
-	/*
-	drawField(field){$
-		if(field > 1. + this.outlineWidth){
-			discard
-		}
-
-		if(this.outlineWidth>0.){
-			var outline = abs(field) - (this.outlineWidth)
-			var inner = field + this.outlineWidth
-			var borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline,0.,1.))
-			return mix(this.color, borderfinal, clamp(inner, 0., 1.))
-		}
-		var a = smoothstep(.75,-.75, field)
-		return this.color.rgba*a*this.color.a//vec4(this.color.rgb*a, a*this.color.a)
-	}
-
-	drawShadow(field){
-		var shadowfield = (field-clamp(this.shadowBlur,1.,26.))/this.shadowBlur-this.shadowSpread
-		return mix(this.shadowColor, vec4(this.shadowColor.rgb,0.), clamp(shadowfield,0.,1.))
-	}*/
-	/*
-	textShape(){
-		this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r)*8)*this.aaFactor//*0.045-.008
-		//this.field = ((.75-texture2D(this.fontSampler,this.textureCoords.xy).r))*1.9-.3
-		this._oldShape = this.shape
-		this.shape = min(this.shape, this.field)
-		this.shape = this.field 
-	}
-
-	pixel(){$
-		
-		var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
-		this._field = field
-
-		field = this._field - this.boldness
-
-		if(field > 1.){
-			discard
-		}
-		var a = smoothstep(.75,-.75, field)
-		let delta1 = vec4(this.color.rgb*a, a)
-		//return delta1
-
-		this.viewport(this.textureCoords.xy)
-		this.textShape() 
-		//if(this.mesh.z < 0.5){
-		//	this.blur = this.shadowBlur
-		//	return this.fill(this.shadowColor)
-		//}
-		this.fillKeep(this.color)
-		//if(this.outlineWidth>0.){
-		//	this.stroke(this.outlineColor,this.outlineWidth)
-		//}
-		//return vec4(abs(this.result.rgb - delta1.rgb)*16.,1.)
-		return this.result
-	}
-	*/
+	
 	drawField(field){$
 		if(field > 1. + this.outlineWidth){
 			discard
@@ -419,22 +362,21 @@ module.exports = class Text extends require('base/shader'){
 
 		var s = texture2D(this.fontSampler, this.textureCoords.xy)
 		var sigDist = max(min(s.r,s.g),min(max(s.r,s.g),s.b))-.5+0.1*this.boldness
-		var adjust = length(vec2(dFdx(this.textureCoords.x*this.fontTextureSize.x), dFdy(this.textureCoords.y*this.fontTextureSize.y)))*0.07
-		var opacity = clamp(sigDist/adjust + 0.5, 0.0, 1.0)
+		var color = this.color
 
-		return vec4(this.color.rgb*this.color.a*opacity, this.color.a*opacity)
-		
-		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))
-		//var field = (((.75-texture2D(this.fontSampler, this.textureCoords.xy).r)*4.) * this.aaFactor) / adjust * 1.4 
-		//this._field = field
+		this.viewport(this.textureCoords*this.fontTextureSize*0.07)
 
-		
-		//field = this._field - this.boldness
+		this.shape = (-sigDist-0.5/this._aa)
 
-		//if(this.mesh.z < 0.5){
-		//	return this.drawShadow(field)
-		//}
-		//return this.drawField(field)
+		if(this.mesh.z < 0.5){
+			this.shape = this.shape/this.shadowBlur - this.shadowSpread
+			return this.fill(this.shadowColor)
+		}
+		if(this.outlineWidth>0.){
+			this.fillKeep(this.color)
+			return this.stroke(this.outlineColor, this.outlineWidth)
+		}
+		return this.fill(this.color)
 	}
 
 	onCompileVerbs(){

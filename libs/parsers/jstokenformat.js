@@ -91,7 +91,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		
 		this["else"] = function(tok){
-			this.writeText("if", this.styles.If.else)
+			this.writeText("else", this.styles.If.else)
 		}
 
 		this["for"] = function(tok){
@@ -123,11 +123,11 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["break"] = function(tok){
-			this.writeText("for", this.styles.For.break)
+			this.writeText("break", this.styles.For.break)
 		}
 
 		this["continue"] = function(tok){
-			this.writeText("for", this.styles.For.continue)
+			this.writeText("continue", this.styles.For.continue)
 		}
 
 		this["new"] = function(tok){
@@ -203,7 +203,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				style = this.styles.If.parenLeft
 			}
 			else if(prev === this.tt._for){
-				style = this.styles.If.parenLeft
+				style = this.styles.For.parenLeft
 			}
 			else if(prev === this.tt._function){
 				style = this.styles.Function.parenLeft
@@ -251,7 +251,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				if(pre === this.tt._function){ // its a function
 					style = this.styles.Function
 				}
-				if(pre === this.tt.name){ // its a method
+				else if(pre === this.tt.name){ // its a method
 					let before = this.tokArray[this.openParenStart-4]
 					//console.log(before === this.tt._extends)
 					//console.log(before)
@@ -260,9 +260,19 @@ module.exports = class JSFormatter extends require('base/class'){
 					}
 					else style = this.styles.Function
 				}
+				else if(pre === this.tt._for){
+					style = this.styles.For
+				}
 			}
 			else if(ptok === this.tt.arrow){
 				style = this.styles.Function
+			}
+			else if(ptok === this.tt.name){
+				let pre = this.tokArray[tlen-4]
+				if(pre === this.tt._extends || pre === this.tt._class){ // its a function
+					style = this.styles.Class
+				}
+				else style = this.styles.Object
 			}
 			else{ // object
 				style = this.styles.Object
@@ -286,7 +296,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			let yPos = ps.pop()
 			let xPos = ps.pop()
 			let style = ps.pop() 
-			if(!style || !style.curly) style = this.styles.Object
+			if(!style || !style.curly || !style.block) style = this.styles.Object
 			let s = ps.pop()
 			let blStart = this.tokArray[s+1]
 			let blEnd = tok.pos
@@ -314,7 +324,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			)
 			// lets write a block matching the style
 
-			if(!s || this.tokArray[s] !== this.tt.braceL){
+			if(!s || (this.tokArray[s] !== this.tt.braceL &&  this.tokArray[s] !== this.tt.dollarBraceL)){
 				this.parseErrors.push({
 					pos:tok.pos,
 					message:'mismatched }'
@@ -350,7 +360,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			let yPos = ps.pop()
 			let xPos = ps.pop()
 			let style = ps.pop() 
-			if(!style || !style.bracket) style = this.styles.Object
+			if(!style || !style.bracket || !style.block) style = this.styles.Object
 			let s = ps.pop()
 			let blStart = this.tokArray[s+1]
 			let blEnd = tok.pos
@@ -411,11 +421,26 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 
 		this["template"] = function(tok){
-			//this.writeText("", this.styles.Operator.default)
+			this.writeText(tok.value, this.styles.Operator.default)
 		}
 		
 		this["${"] = function(tok){
-			this.writeText("${", this.styles.Operator.default)
+			// lets figure out what kind of { we are
+			let tokens = this.tokArray
+			let tlen = tokens.length
+			let ptok = tokens[tlen - 2]
+			let style = this.styles.Function
+
+			let parenId = this.$parenGroupId++
+
+			this.parenStack.push(
+				this.tokArray.length,
+				style,
+				this.turtle.wx,
+				this.turtle.wy,
+				parenId
+			)
+			this.writeText("${", style.curly, parenId)
 		}
 
 		this["==/!="] = function(tok){

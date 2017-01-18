@@ -325,7 +325,7 @@ module.exports = class Shader extends require('base/compiler'){
 	_calcBlur(w) {
 		var f = w - this.blur
 		var wa = clamp( - w * this._aa, 0., 1.)
-		var wb = clamp( - w / this.blur, 0., 1.)
+		var wb = this.blur<0.0001?1.0:clamp( - w / this.blur, 0., 1.)
 		return wa * wb
 	}
 	

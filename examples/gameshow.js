@@ -35,7 +35,7 @@ class Example extends Base{
 		const t = 20
 		t = 30 //exception
 		// let scope bound
-		for(let i = 0;i < 10;i ++ ){
+		for(let i = 0;i < 10;i++){
 			
 		}
 		// splatting array into arguments
@@ -132,9 +132,9 @@ class Example extends Base{
 		
 		const prop = require('module').prop
 		// import prop from "module"
-	
-	// import {a,b} from "module"
-	// import * as obj from "module"
+		
+		// import {a,b} from "module"
+		// import * as obj from "module"
 	}
 	
 	WeakMap() {
@@ -161,17 +161,17 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.xOverflow = 'none'
 		this.yOverflow = 'none'
 		this.props = {
-			winner: - 1,
-			page:0
+			winner:-1,
+			page  :0
 		}
 		this.tools = {
 			Splash:require('base/view').extend({
-				props:{text:'HI'},
-				tools:{
-					Bg:require('shaders/quad').extend({
-						padding:130,
+				props :{text:'HI'},
+				tools :{
+					Bg  :require('shaders/quad').extend({
+						padding  :130,
 						fillColor:'orange',
-						pixel:function() {$
+						pixel    :function() {$
 							this.viewport(this.mesh.xy)
 							this.translate(.5, .5)
 							this.circle(0., 0., .35) //+sin(this.time*8))
@@ -187,25 +187,26 @@ module.exports = class extends require('base/drawapp'){ //top
 						}
 					}),
 					Text:require('shaders/text').extend({
-						fontSize:32,
-						align:[0.5, 0.5],
-						boldness:3.,
+						fontSize    :32,
+						align       :[0.5, 0.5],
+						boldness    :0.,
 						outlineWidth:0.04,
-						shadowColor:'#0009',
-						shadowBlur:0.01,
+						shadowColor :'#0009',
+						shadowBlur  :1.0,
+						shadowSpread:0.,
 						shadowOffset:[2., 2],
-						dy: - 4.1,
-						lineSpacing:0.9,
+						dy          :-4.1,
+						lineSpacing :0.9,
 						outlineColor:'black',
-						vertexStyle:function() {
+						vertexStyle :function() {$
 							let b = this.bouncy = abs(sin(this.time))
 							this.shadowOffset = vec2(b * 10, b * 10)
 						},
-						vertexPos:function(pos) {
+						vertexPos   :function(pos) {$
 							//return pos
 							this.pos = pos
 							let cen = vec2(this.viewSpace.x * .5, this.viewSpace.y * .53)
-							this.scale((this.bouncy * 0.8 + 1.5), cen.x, cen.y)
+							this.scale((this.bouncy * .8 + 1.5), cen.x, cen.y)
 							this.rotate(this.bouncy * .25, cen.x, cen.y)
 							return this.pos
 						},
@@ -238,46 +239,46 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		var flen = .1 * 44100
 		var freqUp = new Float32Array(flen)
-		for(let i = 0;i < flen;i ++ ){
+		for(let i = 0;i < flen;i++){
 			freqUp[i] = ((flen - i) / flen * 0.05)
 		}
 		// lets set up microphones
 		
 		this.recFlow = new audio.Flow({
-			delay1:{
+			delay1 :{
 				to:'output'
 			},
-			gain1:{
-				to:'output',
+			gain1  :{
+				to  :'output',
 				gain:1.0,
 			},
-			gain2:{
+			gain2  :{
 				to:'delay1.delayTime',
 			},
 			buffer1:{
-				to:'gain2',
+				to  :'gain2',
 				data:[freqUp],
 				loop:true
 			},
-			input1:{
-				to:'gain1',
+			input1 :{
+				to    :'gain1',
 				device:'Mic1'
 			},
-			input2:{
-				to:'gain1',
+			input2 :{
+				to    :'gain1',
 				device:'Mic2'
 			},
-			input3:{
-				to:'gain1',
+			input3 :{
+				to    :'gain1',
 				device:'Mic3'
 			}
 		})
 		
 		this.teams = [
 			{name:"Team1", color:'#7', players:[
-				{name:"Nikolai", ctrl:0, buzzer:0, button:0, sound:0, score:0, color:'#c33'},
-				{name:"Chrissy", ctrl:0, buzzer:1, button:0, sound:1, score:0, color:'#3c3'},
-				{name:"Fabian", ctrl:0, buzzer:2, button:0, sound:2, score:0, color:'#33c'},
+				{name:"Nikolai", ctrl:0, buzzer:1, button:0, sound:0, score:0, color:'#c33'},
+				{name:"Chrissy", ctrl:0, buzzer:2, button:0, sound:1, score:0, color:'#3c3'},
+				{name:"Fabian", ctrl:0, buzzer:3, button:0, sound:2, score:0, color:'#33c'},
 			]},
 			{name:"Team2", color:'#6', players:[
 				{name:"Sergey", ctrl:1, buzzer:0, button:0, sound:3, score:0, color:'#cc3'},
@@ -287,8 +288,8 @@ module.exports = class extends require('base/drawapp'){ //top
 		]
 		
 		this.controller = {
-			ctrl:1,
-			buzzer:3,
+			ctrl  :0,
+			buzzer:0,
 			button:0
 		}
 		this.page = 0
@@ -336,7 +337,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.winner = null
 		
 		socket.onMessage = msg=>{
-			if( ! msg.state) return
+			if(!msg.state) return
 			console.log(msg)
 			let ctrl = this.controller
 			if(msg.controller === ctrl.ctrl && msg.buzzer === ctrl.buzzer && msg.button === ctrl.button) {
@@ -344,9 +345,9 @@ module.exports = class extends require('base/drawapp'){ //top
 				return
 			}
 			// fix player selector based on buzzer
-			for(let t = 0;t < this.teams.length;t ++ ){
+			for(let t = 0;t < this.teams.length;t++){
 				let team = this.teams[t]
-				for(let i = 0;i < team.players.length;i ++ ){
+				for(let i = 0;i < team.players.length;i++){
 					let player = team.players[i]
 					if(player.ctrl == msg.controller && player.buzzer == msg.buzzer && player.button == msg.button) {
 						this.playerWin(player)
@@ -356,7 +357,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			}
 		}
 		
-	
+		
 	}
 	
 	playerWin(player) {
@@ -367,18 +368,18 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		socket.postMessage({
 			controller:player.ctrl,
-			buzzer:player.buzzer,
-			led:true
+			buzzer    :player.buzzer,
+			led       :true
 		})
 	}
 	
 	lightsOff() {
 		this.winner = null
-		for(let i = 0;i < 8;i ++ ){
+		for(let i = 0;i < 8;i++){
 			socket.postMessage({
 				controller:floor(i / 4),
-				buzzer:i & 3,
-				led:false
+				buzzer    :i & 3,
+				led       :false
 			})
 		}
 	}
@@ -402,7 +403,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			let id = parseInt(e.name.slice(3)) - 1
 			let team = this.teams[floor(id / 3)]
 			let player = team && team.players[id % 3]
-			if(player) this.playerScore(player, e.shift? - 1:1)
+			if(player) this.playerScore(player, e.shift?-1:1)
 		}
 		if(e.name === 'leftArrow') {
 			this.page = max(0, this.page - 1)
@@ -417,54 +418,54 @@ module.exports = class extends require('base/drawapp'){ //top
 		var panel = 300
 		//for(var i=0;i<1;i++)
 		let team = 0
-		for(let t = 0;t < this.teams.length;t ++ ){
+		for(let t = 0;t < this.teams.length;t++){
 			let total = 0
 			let team = this.teams[t]
-			for(let i = 0;i < team.players.length;i ++ ){
+			for(let i = 0;i < team.players.length;i++){
 				let player = team.players[i]
 				total += player.score
 				this.beginBg({
-					align:[t, 1],
-					color:player.color,
-					down:1,
-					margin:2,
+					align  :[t, 1],
+					color  :player.color,
+					down   :1,
+					margin :2,
 					padding:7,
-					w:panel * scale
+					w      :panel * scale
 				})
 				this.drawText({
-					align:[1, 0],
+					align   :[1, 0],
 					fontSize:20 * scale,
-					order:1,
-					text:'' + player.score
+					order   :1,
+					text    :'' + player.score
 				})
 				this.drawText({
 					fontSize:20 * scale,
-					align:[0, 0],
-					order:1,
-					text:player.name
+					align   :[0, 0],
+					order   :1,
+					text    :player.name
 				})
 				
 				this.endBg()
 			}
 			this.beginBg({
-				align:[t, 1],
-				down:1,
-				color:team.color,
-				margin:2,
+				align  :[t, 1],
+				down   :1,
+				color  :team.color,
+				margin :2,
 				padding:7 * scale,
-				w:panel * scale
+				w      :panel * scale
 			})
 			this.drawText({
-				align:[1, 0],
+				align   :[1, 0],
 				fontSize:20 * scale,
-				order:1,
-				text:'' + total
+				order   :1,
+				text    :'' + total
 			})
 			this.drawText({
 				fontSize:20 * scale,
-				align:[0, 0],
-				order:1,
-				text:team.name
+				align   :[0, 0],
+				order   :1,
+				text    :team.name
 			})
 			
 			this.endBg()
@@ -473,33 +474,33 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(this.page == 0) {
 			this.drawSplash({id:0, text:'Never mind the\n   Buzzwords'})
 			this.drawText({
-				color:'#7',
-				margin:[0, 0, 0, 10],
+				color   :'#7',
+				margin  :[0, 0, 0, 10],
 				fontSize:16 * scale,
-				text:"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
+				text    :"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
 			})
 		}
 		else {
 			
 			this.drawText({
 				fontSize:50 * scale,
-				margin:[0, 0, 0, 40],
-				align:[0., 0],
-				text:this.questions[this.page - 1].h
+				margin  :[0, 0, 0, 40],
+				align   :[0., 0],
+				text    :this.questions[this.page - 1].h
 			})
 			this.lineBreak()
 			this.turtle.wy += 40
 			this.drawText({
 				fontSize:32 * scale,
-				margin:[0, 0, 0, 40],
-				text:this.questions[this.page - 1].q
+				margin  :[0, 0, 0, 40],
+				text    :this.questions[this.page - 1].q
 			})
 			
-		
+			
 		}
 		// draw players points
 		if(this.winner) {
-			this.drawSplash({id:1, x:100 * scale, y:20 * scale, color:this.winner.color, text:this.winner.name})
+			this.drawSplash({id:1, color:this.winner.color, text:this.winner.name})
 		}
 		//this.drawSplash({id:0,text:'hi'+this.show})
 	}

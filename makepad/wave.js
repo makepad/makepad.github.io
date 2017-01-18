@@ -352,21 +352,20 @@ module.exports = class Wave extends require('views/draw'){
 		}) 
 		//console.log(10000/this.zoom)
 		this.drawRounded({ 
-			x: (this.selStart) / this.zoom+ this.turtle.$xAbs, 
+			x: (this.selStart) / this.zoom,//+ this.turtle.$xAbs, 
 			w: (this.selEnd - this.selStart) / this.zoom, 
 			h: '100%' 
 		}) 
 		
 		// lets draw the recording
 		if(this.recording) { 
-			
 			var height = this.turtle.height 
 			var scale = this.zoom 
 			var smod = floor(scale) 
 			var minv = 0, maxv = 0. 
 			// we should draw it near the scroll position
-			var xmin = this.todo.xScroll - this.$w 
-			var xmax = xmin + this.$w * 3 
+			var xmin = this.todo.xScroll - this.turtle.width
+			var xmax = xmin + this.turtle.width * 3 
 			var t = 0
 			outer:
 			for(let c = 0; c < this.recording.length; c++) { 
@@ -388,7 +387,7 @@ module.exports = class Wave extends require('views/draw'){
 					if(!(t++ % smod) && t / scale > xmin) { 
 						this.drawQuad({ 
 							color: t > this.selStart && t < this.selEnd? '#ccc': '#ccc', 
-							x: t / scale + this.turtle.$xAbs, 
+							x: t / scale, 
 							y: minv * height * .5 + this.turtle.sy + 0.5 * height, 
 							w: 1, ///painter.pixelRatio,//t / scale,
 							h: (maxv - minv) * height * .5 + 1. //+300
