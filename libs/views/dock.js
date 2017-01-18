@@ -282,9 +282,10 @@ module.exports=class Dock extends require('base/view'){
 					var m = min(l, r, t, b)
 					let pdock = 30
 					if(m === l){
+
 						if(tx === px && x < tx+pdock && !(tabs.parent instanceof this.constructor)){
 							this.dropInfo = {tabs:tabs.parent,part:0,isParent:1}
-							this.drawDrop({order:2,x:px, y:py, w:pw*0.25, h:ph})
+							this.drawDrop({order:2,x:px, y:py, w:pw*0.15, h:ph})
 							break
 						}
 						else{
@@ -296,7 +297,7 @@ module.exports=class Dock extends require('base/view'){
 					else if(m === r){
 						if(tx+tw === px+pw && x > tx+tw-pdock && !(tabs.parent instanceof this.constructor)){
 							this.dropInfo = {tabs:tabs.parent,part:1,isParent:1}
-							this.drawDrop({order:2,x:px+pw*0.75, y:py, w:pw*0.25, h:ph})
+							this.drawDrop({order:2,x:px+pw*0.85, y:py, w:pw*0.15, h:ph})
 							break
 						}
 						else{
@@ -306,9 +307,9 @@ module.exports=class Dock extends require('base/view'){
 						}
 					}
 					else if(m === t){
-						if(ty === py && x < ty+pdock && !(tabs.parent instanceof this.constructor)){
+						if(ty === py && y < ty+pdock*2 && !(tabs.parent instanceof this.constructor)){
 							this.dropInfo = {tabs:tabs.parent,part:2,isParent:1}
-							this.drawDrop({order:2,x:px, y:py, w:pw, h:ph*0.25})
+							this.drawDrop({order:2,x:px, y:py, w:pw, h:ph*0.15})
 							break
 						}
 						else{
@@ -318,9 +319,10 @@ module.exports=class Dock extends require('base/view'){
 						}
 					}
 					else if(m ===b){
-						if(ty+th === py+ph && y > ty+th+pdock && !(tabs.parent instanceof this.constructor)){
+						if(ty+th === py+ph && y > ty+th-pdock && !(tabs.parent instanceof this.constructor)){
 							this.dropInfo = {tabs:tabs.parent,part:3,isParent:1}
-							this.drawDrop({order:2,x:px, y:py+ph*0.75, w:pw, h:ph*0.25})
+							this.drawDrop({order:2,x:px, y:py+ph*0.85, w:pw, h:ph*0.15})
+							break
 						}
 						else{
 							this.dropInfo = {tabs:tabs,part:3}
@@ -331,6 +333,7 @@ module.exports=class Dock extends require('base/view'){
 				}
 			}
 			if(this.drag){
+				//console.log(this.xDrag, this.yDrag)
 				this.drawTab({
 					id:0, order:3,state:'selected', x:this.xDrag, y:this.yDrag, text:this.drag.tabTitle||'', icon:this.drag.tabIcon||''
 				})

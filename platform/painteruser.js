@@ -58,16 +58,24 @@ module.exports = function painterUser(proto){
 		this.shaderIds[msg.shaderId] = undefined
 	}
 
+	proto.user_positionFramebuffer = function(msg){
+		var prev = this.framebufferIds[msg.fbId]
+		if(prev.xStart !== msg.x || prev.yStart !== msg.y){
+			prev.xStart = msg.x
+			prev.yStart = msg.y
+			if(prev.child) this.moveChild(prev.child, msg.fbId)
+		}
+	}
+
 	proto.user_newFramebuffer = function(msg){
 		var gl = this.gl
 		var prev = this.framebufferIds[msg.fbId]
 
 		// delete previous if its there
-		
 		if(prev){
 			if(prev.w == msg.w && prev.h === msg.h){
-				prev.xStart = msg.xStart
-				prev.yStart = msg.yStart
+				//prev.xStart = msg.xStart
+				//prev.yStart = msg.yStart
 				if(prev.child) this.resizeChild(prev.child, msg.fbId)
 				return
 			}
@@ -113,9 +121,9 @@ module.exports = function painterUser(proto){
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 			
-			var bufType = this.textureBufTypes[tex.bufType]
-			var dataType = this.textureDataTypes[tex.dataType]
-			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, msg.w, msg.h, 0, bufType, dataType, null)
+			var textureFormat = this.textureFormats[tex.format]
+			var textureType = this.textureTypes[tex.type]
+			gl.texImage2D(gl.TEXTURE_2D, 0, textureFormat, msg.w, msg.h, 0, textureFormat, textureType, null)
 			//gl.bindFramebuffer(gl.FRAMEBUFFER, this.glframe_buf)
 			//console.log(this.glframe_buf)
 			tex.w = msg.w
@@ -187,14 +195,16 @@ module.exports = function painterUser(proto){
 		var tex = this.textureIds[msg.texId]
 		if(!tex){
 			tex = this.textureIds[msg.texId] = {samplers:{}}
-			tex.bufType = msg.bufType
-			tex.dataType = msg.dataType
-			tex.flags = msg.flags
 		}
+		tex.format = msg.format
+		tex.type = msg.type
+		tex.flags = msg.flags
+		//if(msg.w === undefined) console.log("WHUT", msg)
 		tex.w = msg.w
 		tex.h = msg.h
 		tex.array = msg.array
 		tex.updateId = this.frameId
+		tex.external = msg.external
 	}
 	
 	proto.user_destroyTexture = function(msg){
@@ -258,6 +268,7 @@ module.exports = function painterUser(proto){
 		todo.yScrollId = msg.yScrollId
 		todo.xsScroll = msg.xsScroll
 		todo.ysScroll = msg.ysScroll
+
 		todo.scrollToSpeed = msg.scrollToSpeed || .5
 		todo.scrollMomentum = msg.scrollMomentum
 		todo.scrollMask = msg.scrollMask

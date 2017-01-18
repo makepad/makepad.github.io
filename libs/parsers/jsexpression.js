@@ -331,7 +331,14 @@ pp.parseExprAtom = function(refDestructuringErrors) {
 		var startPos = this.start
 		var id = this.parseIdent(this.type !== tt.name)
 		if (canBeArrow && !this.canInsertSemicolon() && this.eat(tt.arrow)){
+
+			if(this.storeComments){
+				var cmt = this.commentAfter(tt.arrow)
+			}
 			var node = this.parseArrowExpression(this.startNodeAt(startPos), [id])
+			if(this.storeComments){
+				node.between = cmt
+			}
 			node.noParens = 1
 			return node
 		}

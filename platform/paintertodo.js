@@ -8,7 +8,7 @@ module.exports = function painterTodo(proto){
 
 		var gl = this.gl
 		// texture flags
-		this.textureBufTypes = [
+		this.textureFormats = [
 			gl.RGBA,
 			gl.RGB,
 			gl.ALPHA,
@@ -19,7 +19,7 @@ module.exports = function painterTodo(proto){
 			gl.DEPTH_STENCIL
 		]
 
-		this.textureDataTypes = [
+		this.textureTypes = [
 			gl.UNSIGNED_BYTE,
 			gl.UNSIGNED_SHORT,
 			gl.OES_texture_float && gl.FLOAT,
@@ -52,6 +52,14 @@ module.exports = function painterTodo(proto){
 			gl.LINE_STRIP,
 			gl.LINE_LOOP
 		]
+
+		this.empty_texture = gl.createTexture()
+		gl.bindTexture(gl.TEXTURE_2D, this.empty_texture)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
 	}
 
 	proto.runTodo = function(todo){
@@ -241,38 +249,77 @@ module.exports = function painterTodo(proto){
 		var tex = this.textureIds[i32[o+3]]
 		var samplerType = i32[o+4]
 
-		var sam = tex.samplers[samplerType] || (tex.samplers[samplerType] = {})
-
 		var texid = currentShader.samplers++
-
+		if(!tex){
+			gl.activeTexture(gl.TEXTURE0 + texid)
+			gl.bindTexture(gl.TEXTURE_2D, this.empty_texture)
+			gl.uniform1i(currentShader.uniLocs[this.nameRev[i32[o+2]]], texid)
+			return
+		}
+		let repaint = false
+		var sam = tex.samplers[samplerType] || (tex.samplers[samplerType] = {})
+		let external = tex.external
+		if(external){
+			let svc = this.worker.services[external.service]
+			if(svc && svc.onExternalTexture){
+				repaint = svc.onExternalTexture(tex, external, this.frameId)
+			}
+		}
 		// its a data texture
 		// otherwise it should exist already
-		if(sam.updateId !== tex.updateId && tex.array){
+		if(sam.updateId !== tex.updateId && (tex.array || tex.image)){
 			sam.updateId = tex.updateId
-			if(sam.gltex) gl.deleteTexture(sam.gltex)
 
-			sam.gltex = gl.createTexture()
-			gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
+			let gltex = sam.gltex
 
+			if(gltex){
+				if(gltex.__samplerType !== samplerType ||
+					gltex.__width !== tex.w || 
+					gltex.__height !== tex.h){
+					gl.deleteTexture(gltex)
+					gltex = undefined
+				}
+			}
+			if(!gltex){
+				gltex = sam.gltex = gl.createTexture()
+				gl.bindTexture(gl.TEXTURE_2D, gltex)
+				gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.samplerFilter[(samplerType>>0)&0xf])
+				gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.samplerFilter[(samplerType>>4)&0xf])
+				gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.samplerWrap[(samplerType>>8)&0xf])
+				gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.samplerWrap[(samplerType>>12)&0xf])
+				gltex.__samplerType = samplerType
+			}
+			else{
+				gl.bindTexture(gl.TEXTURE_2D, gltex)
+			}
+	
 			// lets set the flipy/premul
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, tex.flags & this.textureFlags.FLIP_Y?gl.TRUE:gl.FALSE)
 			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, tex.flags & this.textureFlags.PREMULTIPLY_ALPHA?gl.TRUE:gl.FALSE)
 
 			// lets figure out the flags
-			var bufType = this.textureBufTypes[tex.bufType]
-			var dataType = this.textureDataTypes[tex.dataType]
+			var textureFormat = this.textureFormats[tex.format]
+			var textureType = this.textureTypes[tex.type]
 			// upload array
-			var dt = performance.now()
+			//var dt = performance.now()
 			//gl.texSubImage2D(gl.TEXTURE_2D, 1, 0, 0, tex.w, tex.h, bufType, dataType, new Uint8Array(tex.array), 0)
-			gl.texImage2D(gl.TEXTURE_2D, 0, bufType, tex.w, tex.h, 0, bufType, dataType, new Uint8Array(tex.array))
+			gltex.__width = tex.w
+			gltex.__height = tex.h
+			if(tex.image){
+				// put image in.
+				 gl.texImage2D(gl.TEXTURE_2D, 0, textureFormat, textureFormat, textureType, tex.image)
+			}
+			else{
+				gl.texImage2D(gl.TEXTURE_2D, 0, textureFormat, tex.w, tex.h, 0, textureFormat, textureType, new Uint8Array(tex.array))
+			}
 			//console.log(performance.now()-dt, tex.array.byteLength, dataType)
-			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.samplerFilter[(samplerType>>0)&0xf])
-			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.samplerFilter[(samplerType>>4)&0xf])
-			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.samplerWrap[(samplerType>>8)&0xf])
-			gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.samplerWrap[(samplerType>>12)&0xf])
 		}
 		if(!sam.gltex){
-			return console.log("sampler texture invalid")
+			gl.activeTexture(gl.TEXTURE0 + texid)
+			gl.bindTexture(gl.TEXTURE_2D, this.empty_texture)
+			gl.uniform1i(currentShader.uniLocs[this.nameRev[i32[o+2]]], texid)
+			return
+			//	return console.log("sampler texture invalid", tex)
 		}
 
 		// bind it
@@ -280,6 +327,7 @@ module.exports = function painterTodo(proto){
 		gl.activeTexture(gl.TEXTURE0 + texid)
 		gl.bindTexture(gl.TEXTURE_2D, sam.gltex)
 		gl.uniform1i(currentShader.uniLocs[this.nameRev[i32[o+2]]], texid)
+		return repaint
 	}
 
 	//

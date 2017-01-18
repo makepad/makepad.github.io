@@ -16,7 +16,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			Quad:{
 				dead  :0,
 				states:{
-					defaul:{
+					default:{
 						duration:0.1,
 						//time    :{fn:'ease', begin:0, end:10},
 						from    :{

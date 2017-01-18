@@ -71,6 +71,7 @@ module.exports = class Code extends require('views/edit'){
 				}
 			}), 			
 			ErrorMarker: require('shaders/codemarker').extend({
+				order:4,
 				vertexStyle: function() {$
 					//this.errorTime = max(0., .1 - this.errorTime) 
 					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
@@ -223,7 +224,8 @@ module.exports = class Code extends require('views/edit'){
 				above: {},
 				top: {$head: 1},
 				bottom: {$head: 0.},
-				around: {}
+				around: {},
+				between:{}
 			}, 
 			Operator:{
 				$color:colors.codeOperator,
@@ -232,7 +234,13 @@ module.exports = class Code extends require('views/edit'){
 				'?:':{},
 				'@':{},
 				'#':{},
-				'...':{}
+				'...':{},
+				':':{}
+			},
+			LabeledStatement:{
+				$color:colors.codeOperator,
+				label:{},
+				colon:{}
 			},
 			UnaryExpression:{
 				$color:colors.codeOperator,
@@ -268,6 +276,7 @@ module.exports = class Code extends require('views/edit'){
 				var:{$color:colors.codeVar, closure:{}},
 				const:{$color:colors.codeConst, closure:{}},
 				let:{$color:colors.codeLet, closure:{}},
+				label:{$color:colors.codeVar, closure:{}},
 				glsl$const:{},
 				magic$const:{},
 				fn$const:{},
@@ -393,7 +402,6 @@ module.exports = class Code extends require('views/edit'){
 			this.store.act("addParseError",store=>{
 				this.resource.parseErrors.length = 0
 				this.resource.parseErrors.push(e)
-				console.log(this.resource.parseErrors)
 			})
 		} 
 	} 
@@ -514,15 +522,16 @@ module.exports = class Code extends require('views/edit'){
 				
 				var rd = this.$readOffsetText(epos) 			
 				if(!rd) continue
+					console.log(rd.w)
 				//console.log(rd)
 				//console.log(out)
 				//rd.x,rd.y,rd.w,rd.fontSize*rd.lineSpacing,-1,-1,-1,-1)
 				var marker = { 
 					x1: 0, 
 					x2: rd.x, 
-					x3: rd.x + rd.w, 
+					x3: rd.x + abs(rd.w), 
 					x4: 100000, 
-					y: rd.y+this.turtle.$yAbs, 
+					y: rd.y, 
 					h: rd.fontSize * rd.lineSpacing, 
 					closed: 0 
 				}
@@ -557,8 +566,8 @@ module.exports = class Code extends require('views/edit'){
 					) 
 				} 
 				this.drawCursor({ 
-					x: this.turtle.$xAbs + t.x - 1, 
-					y: this.turtle.$yAbs + t.y, 
+					x: t.x - 1, 
+					y: t.y, 
 					w: 2, 
 					h: t.h 
 				}) 
@@ -601,12 +610,13 @@ module.exports = class Code extends require('views/edit'){
 				break
 			}
 		}
-
+		// what if we are next to a space in the old one,
+		// and next to a tab in the new one? well we skip back one.
 		let newpos = pos - minAbs(pos-a,pos-b)
 		return newpos
 	}
 
-	// #attempt 5003
+	// #attempt 5004
 	scanChange(pos, oldText, newText){
 		var c1 = oldText.charCodeAt(pos-1)
 		var c2 = oldText.charCodeAt(pos)
@@ -616,6 +626,9 @@ module.exports = class Code extends require('views/edit'){
 		if(c2 !== 32 && c2 !== 9 && c2 !== 10 && c2 !== 13){
 			return this.findNearest(pos+1, oldText, newText, c2)-1
 		}
+		var c3 = newText.charCodeAt(pos)
+		// if at the end of the line and pressing space, dont skip to first
+		if((c1 === 32 || c1 === 9) && c2 === 10 && c3 === 9) return pos -1
 
 		return pos
 	}
@@ -811,20 +824,22 @@ module.exports = class Code extends require('views/edit'){
 		var char = this._text.charAt(offset)
 		var move = 0
 		var prev = this._text.charAt(offset - 1)
-		
+		var next = this._text.charAt(offset+1)
 		if(!isUndo) { 
 			if(text === "'" && char === "'") return 0 
 			if(text === '"' && char === '"') return 0 
 			if(text === '}' && char === '}') return 0 
 			if(text === ']' && char === ']') return 0 
 			if(text === ')' && char === ')') return 0 
-			if(text === '\n' && (prev === '{' && char === '}'||prev==='[' && char === ']'||prev==='('&&char===')')){
+			if(text === '\n' && (prev === '{' ||prev==='[' ||prev==='(')){
 				text = '\n'
 				let depth = this.currentIndent(offset)
 				text += Array(depth+2).join('\t')
-				move += depth + 1
-				text += '\n'
-				text += Array(depth+1).join('\t')
+				move += depth +1
+				if(char === '}' || char === ']' || char===')'){
+					text += '\n'
+					text += Array(depth+1).join('\t')
+				}
 			}
 			if(text === '{' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',' || char === ')' || char === ']') && (!this.error || char !== '}')) text = '{}' 
 			if(text === '[' && (!this.parseError || this.parseError.message !== 'Matching ({[ error') && (char === '\n' || char === ',') && char !== ']') text = '[]' 

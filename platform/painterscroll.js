@@ -7,7 +7,6 @@ module.exports = function painterScroll(proto){
 	}
 
 	proto.doScroll = function(todo, sx, sy){
-
 		var xScroll = sx !== todo.xScroll?Math.min(Math.max(sx, 0), Math.max(0,todo.xTotal - todo.xView)):todo.xScroll
 		var yScroll = sy !== todo.yScroll?Math.min(Math.max(sy, 0), Math.max(0,todo.yTotal - todo.yView)):todo.yScroll
 
@@ -148,6 +147,7 @@ module.exports = function painterScroll(proto){
 			return
 		}
 		if(this.isScrollBarMove === 2){
+
 			// ok lets map the mouse cursor position without delta
 			// to the scroll area
 			var vx = todo.xView / todo.xTotal

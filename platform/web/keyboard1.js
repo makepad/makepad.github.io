@@ -437,10 +437,11 @@ module.exports = class extends require('/platform/service'){
 			this.moveTextArea(x,y)
 		}
 		//cliptext.focus()
+
 		this.postKeyEvent({
 			fn:'onKeyDown',
 			pileupTime:Date.now(),
-			repeat: e.repeat,
+			repeat: e.repeat?true:false,
 			code:code,
 			shift: e.shiftKey?true:false,
 			alt: e.altKey?true:false,
@@ -463,7 +464,7 @@ module.exports = class extends require('/platform/service'){
 		this.postKeyEvent({
 			fn:'onKeyUp',
 			pileupTime:Date.now(),
-			repeat: e.repeat,
+			repeat: e.repeat?true:false,
 			code:code,
 			shift: e.shiftKey?true:false,
 			alt: e.altKey?true:false,
@@ -480,14 +481,14 @@ module.exports = class extends require('/platform/service'){
 			fn:'onKeyDown',
 			pileupTime:Date.now(),
 			meta: true,
-			repeat: 1,
+			repeat: false,
 			code: 88
 		})
 		this.postKeyEvent({
 			fn:'onKeyUp',
 			pileupTime:Date.now(),
 			meta: true,
-			repeat: 1,
+			repeat: false,
 			code: 88
 		})
 	}
@@ -509,14 +510,14 @@ module.exports = class extends require('/platform/service'){
 				fn:'onKeyDown',
 				pileupTime:Date.now(),
 				meta: true,
-				repeat: 1,
+				repeat: false,
 				code: 65
 			})
 			this.postKeyEvent({
 				fn:'onKeyUp',
 				pileupTime:Date.now(),
 				meta: true,
-				repeat: 1,
+				repeat: false,
 				code: 65
 			})
 		}
@@ -537,13 +538,13 @@ module.exports = class extends require('/platform/service'){
 				this.postKeyEvent({
 					fn:'onKeyDown',
 					pileupTime:Date.now(),
-					repeat: 1,
+					repeat: false,
 					code: 8
 				})
 				this.postKeyEvent({
 					fn:'onKeyUp',
 					pileupTime:Date.now(),
-					repeat: 1,
+					repeat: false,
 					code: 8
 				})
 			}
@@ -562,19 +563,19 @@ module.exports = class extends require('/platform/service'){
 					pileupTime:Date.now(),
 					char:value.charCodeAt(2),
 					special:1,
-					repeat: 1
+					repeat: false
 				})
 			}
 			// the main keypress entry including multiple characters
 			// like swipe android keyboards 
 			else for(let i = 0, len = value.length - 2 - this.defaultStart; i < len; i++){
 				var charcode = value.charCodeAt(i + this.defaultStart)
-
+				
 				var msg = {
 					fn:'onKeyPress',
 					pileupTime:Date.now(),
 					char:charcode,
-					repeat: 1
+					repeat: false
 				}
 				// if we are more than one character let the otherside know
 				// about this (for instance for undo handling)
@@ -583,7 +584,9 @@ module.exports = class extends require('/platform/service'){
 					msg.groupLen = len
 				}
 				// ignore newlines and magicClip values
-				if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)) this.postKeyEvent(msg)
+				if(charcode !== 10 && charcode !== magicClip.charCodeAt(1)){
+					this.postKeyEvent(msg)
+				}
 			}
 		}
 	}

@@ -60,7 +60,8 @@ module.exports = class UserProcess extends require('views/draw'){
 			id:'surface',
 			w:'100%',
 			h:'100#',
-			pick:true
+			pick:true,
+			positioned:true
 		})
 		this.endPass()
 

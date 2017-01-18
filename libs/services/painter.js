@@ -31,9 +31,12 @@ function flushPileupQueue(){
 }
 
 service.onMessage = function(msg){
-	if(msg.fn === 'onResize'){
+	if(msg.fn === 'onMove'){
 		painter.x = msg.x
 		painter.y = msg.y
+		if(painter[msg.fn]) painter[msg.fn](msg)
+	}
+	if(msg.fn === 'onResize'){
 		painter.w = msg.w
 		painter.h = msg.h
 		painter.pixelRatio = msg.pixelRatio
@@ -735,7 +738,7 @@ painter.Mesh = class Mesh extends require('base/class'){
 
 var textureIds = new IdAlloc()
 
-// texture buffer type flags
+// texture format flags
 painter.RGBA = 0
 painter.RGB = 1
 painter.ALPHA = 2
@@ -745,7 +748,7 @@ painter.DEPTH_COMPONENT16 = 5
 painter.STENCIL_INDEX = 6
 painter.DEPTH_STENCIL = 7
 
-// data type
+// texture type
 painter.UNSIGNED_BYTE = 0
 painter.UNSIGNED_SHORT = 1
 painter.FLOAT = 2
@@ -778,12 +781,12 @@ painter.Texture = class Texture extends require('base/class'){
 			}
 			transfer.push(sendbuffer)
 		}
-
 		return [{
 			fn:'newTexture',
-			bufType:this.bufType,
-			dataType:this.dataType,
+			format:this.format,
+			type:this.type,
 			flags:this.flags,
+			external:this.external,
 			w:this.w,
 			h:this.h,
 			array:sendbuffer,
@@ -791,17 +794,28 @@ painter.Texture = class Texture extends require('base/class'){
 		}, transfer]
 	}
 
-	constructor(bufType, dataType, flags, w, h, array){
+	constructor(options){
 		super()
-
-		this.bufType = bufType
-		this.dataType = dataType
-		this.flags = flags
-		this.w = w
-		this.h = h
-		this.array = array
+		
+		//format, type, flags, w, h, array
+		this.format = options.format || painter.RGBA
+		this.type = options.type || painter.UNSIGNED_BYTE
+		this.external = options.external
+		this.flags = options.flags 
+		this.w = options.w 
+		this.h = options.h
+		this.array = options.array
 		this.texId = textureIds.alloc(this)
+		service.batchMessage(this)
+	}
 
+	update(options){
+		if(options.format !== undefined) this.format = options.format
+		if(options.type !== undefined) this.type = options.type
+		if(options.flags !== undefined) this.flags = options.flags
+		if(options.w !== undefined) this.w = options.w
+		if(options.h !== undefined) this.h = options.h
+		if(options.array !== undefined) this.array = options.array
 		service.batchMessage(this)
 	}
 
@@ -1073,7 +1087,7 @@ var framebufferIds = new IdAlloc()
 
 painter.Framebuffer = class Framebuffer extends require('base/class'){
 
-	constructor(w, h, attachments, xStart, yStart){
+	constructor(w, h, attachments){
 		super()
 		var fbId = framebufferIds.alloc(this)
 		var attach
@@ -1095,9 +1109,9 @@ painter.Framebuffer = class Framebuffer extends require('base/class'){
 			fbId: fbId,
 			attach: attach,
 			w:w,
-			h:h,
-			xStart:xStart,
-			yStart:yStart,
+			h:h//,
+			//xStart:xStart,
+			//yStart:yStart,
 		})
 	}
 
@@ -1110,15 +1124,24 @@ painter.Framebuffer = class Framebuffer extends require('base/class'){
 		this.fbId = undefined
 	}
 
-	resize(w, h, xStart, yStart){
+	resize(w, h){
 		service.batchMessage({
 			fn:'newFramebuffer',
 			fbId: this.fbId,
 			attach: this.attachments,
 			w:w,
-			h:h,
-			xStart:xStart,
-			yStart:yStart,
+			h:h//,
+			//xStart:xStart,
+			//yStart:yStart,
+		})
+	}
+
+	position(x, y){
+		service.batchMessage({
+			fn:'positionFramebuffer',
+			fbId: this.fbId,
+			x:x,
+			y:y
 		})
 	}
 

@@ -300,8 +300,9 @@ module.exports = class Shader extends require('base/compiler'){
 		this.blur = 0.00001
 		this._aa = this.antialias(pos)
 		this._scale = 1.
+		return pos
 	}
-	
+
 	translate(x, y) {$
 		this.pos -= vec2(x, y)
 	}

@@ -59,7 +59,7 @@ module.exports=class Tabs extends require('base/view'){
 			this.selected = index-1
 			this.redraw()
 		}
-		let xpos = (tabStamp.$x-this.$x) + tabStamp.dx
+		let xpos = tabStamp.$x + tabStamp.dx
 		if( xpos< -tabStamp.$w*.5 || 
 			xpos > this.$w - tabStamp.$w*.5 ||
 			dy > tabStamp.$h || dy <-tabStamp.$h){

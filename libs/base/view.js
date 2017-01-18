@@ -309,12 +309,17 @@ module.exports = class View extends require('base/class'){
 		this.$turtleStack.len = 0
 
 		//console.log(this.turtle.wx)
+		var owx = turtle.wx
+		var owy = turtle.wy
+		// conceptual error!.
 		this.beginTurtle()
-		var nt = this.turtle
 
-		// absolute coordinate? so we write relative
-		nt.$xAbs = nt.ix + nt.margin[3]
-		nt.$yAbs = nt.iy + nt.margin[0]
+		var nt = this.turtle
+		// make turtle relatively positioned
+		nt.wx -= turtle.wx
+		nt.wy -= turtle.wy
+		nt.sx -= turtle.wx
+		nt.sy -= turtle.wy
 
 		var viewClip = this.viewClip
 		viewClip[0] = -50000
@@ -345,9 +350,8 @@ module.exports = class View extends require('base/class'){
 		// we need to walk the turtle.
 		this.$w = nt.wBound()
 		this.$h = nt.hBound()
-		this.$vw = nt.x2 - nt.$xAbs //- turtle._margin[3]
-		this.$vh = nt.y2 - nt.$yAbs //- turtle._margin[0]
-
+		this.$vw = nt.x2// - nt.$xAbs //- turtle._margin[3]
+		this.$vh = nt.y2// - nt.$yAbs //- turtle._margin[0]
 		this.$xReuse = nt.x2
 		this.$yReuse = nt.y2
 
@@ -360,8 +364,8 @@ module.exports = class View extends require('base/class'){
 		turtle.walk(nt, true)
 
 		// store computed absolute coordinates
-		this.$x = turtle._x //+ turtle.$xAbs
-		this.$y = turtle._y //+ turtle.$yAbs
+		this.$rx = turtle._x //+ turtle.$xAbs
+		this.$ry = turtle._y//+ turtle.$yAbs
 
 		if(this.$turtleStack.len !== 0){
 			console.error("Disalign detected in begin/end for turtle: "+this.name+" disalign:"+$turtleStack.len, this)
@@ -565,14 +569,32 @@ module.exports = class View extends require('base/class'){
 
 		if(!pass){ // initialize the buffers for the pass
 			pass = this.$renderPasses[id] = {}
-			pass.color0 = new painter.Texture(painter.RGBA, options.colorType || painter.UNSIGNED_BYTE, 0, 0, 0)
-			if(options.pick) pass.pick = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, 0, 0, 0)
-			if(options.depth) pass.depth = new painter.Texture(painter.DEPTH, painter.UNSIGNER_SHORT, 0, 0, 0)
+			pass.color0 = new painter.Texture({
+				format:painter.RGBA, 
+				type:options.colorType || painter.UNSIGNED_BYTE, 
+				flags:0, 
+				w:0, 
+				h:0
+			})
+			if(options.pick) pass.pick = new painter.Texture({
+				format:painter.RGBA, 
+				type:painter.UNSIGNED_BYTE, 
+				flags:0, 
+				w:0, 
+				h:0
+			})
+			if(options.depth) pass.depth = new painter.Texture({
+				format:painter.DEPTH, 
+				type:painter.UNSIGNER_SHORT, 
+				flags:0, 
+				w:0, 
+				h:0
+			})
 			pass.framebuffer = new painter.Framebuffer(sw, sh,{
 				color0:pass.color0,
 				pick:pass.pick,
 				depth:pass.depth,
-			}, this.$xAbs, this.$yAbs)
+			})
 			pass.todo = this.$createTodo()
 			// store the view reference
 			this.app.$viewTodoMap[pass.todo.todoId] = this
@@ -584,6 +606,12 @@ module.exports = class View extends require('base/class'){
 			mat4.ortho(pass.projection, 0, pass.w, 0, pass.h, -100, 100)
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodoAndUbo(pass.todo, this.app.painterUbo)
+
+			if(options.positioned){
+				let pp = this.$positionedPasses
+				if(!pp) this.$positionedPasses = pp = []
+				pp.push(pass)	
+			}
 		}
 
 		// swap out our todo object
@@ -594,10 +622,10 @@ module.exports = class View extends require('base/class'){
 		this.todo.clearTodo()
 
 		// see if we need to resize buffers
-		if(pass.sw !== sw || pass.sh !== sh || pass.sx !== this.$xAbs || pass.sy !== this.$yAbs){
-			pass.framebuffer.resize(sw, sh, this.$xAbs, this.$yAbs)
-			pass.sx = this.$xAbs
-			pass.sy = this.$yAbs
+		if(pass.sw !== sw || pass.sh !== sh){
+			pass.framebuffer.resize(sw, sh)
+			//pass.sx = this.$xAbs
+			//pass.sy = this.$yAbs
 			pass.w = w
 			pass.h = h
 			pass.sw = sw
@@ -631,10 +659,12 @@ module.exports = class View extends require('base/class'){
 	$recomputeMatrix(px, py){
 		var hw = this.$w * this.xCenter
 		var hh = this.$h * this.yCenter
-		let x = this.$x - px
-		let y = this.$y - py
+		let x = this.$x = this.$rx + px
+		let y = this.$y = this.$ry + py
+		let rx = this.$rx// - px
+		let ry = this.$ry// - py
 
-		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + x, hh+y, 0)
+		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + rx, hh+ry, 0)
 
 		if(this.parent){
 			mat4.multiply(this.viewTotal, this.parent.viewPosition, this.viewPosition)
@@ -645,13 +675,18 @@ module.exports = class View extends require('base/class'){
 		}
 
 		var todo = this.todo
-		this.todo.xsScroll = this.$x + painter.x
-		this.todo.ysScroll = this.$y + painter.y
-
+		this.todo.xsScroll = x + painter.x 
+		this.todo.ysScroll = y + painter.y
+		let pp =this.$positionedPasses
+		if(pp){
+			for(let i = 0 ;i < pp.length;i++){
+				pp[i].framebuffer.position(x+painter.x, y+painter.y)
+			}
+		}
 		// lets set some globals
 		var todoUbo = todo.todoUbo
 		todoUbo.mat4(painter.nameId('thisDOTviewPosition'), this.viewPosition)
-		todoUbo.mat4(painter.nameId('thisDOTviewInverse'),this.viewInverse)
+		todoUbo.mat4(painter.nameId('thisDOTviewInverse'), this.viewInverse)
 
 		var children = todo.children
 		var todoIds = todo.todoIds

@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/snake.js"],
-	"run":["/examples/snake.js"],
+	"open":["/examples/camera.js"],
+	"run":["/examples/camera.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -79,12 +79,13 @@
 				{"name":"fingers.js"},
 				{"name":"keyboard.js"},
 				{"name":"audio.js"},
+				{"name":"cameras.js"},
 				{"name":"worker.js"},
 				{"name":"storage.js"},
 				{"name":"dropfiles.js"},
 				{"name":"midi.js"},
 				{"name":"debug.js"},
-				{"name":"gamepad.js"},
+				{"name":"gamepads.js"},
 				{"name":"socket.js"}
 			]},
 			{"name":"parsers","folder":[
@@ -114,6 +115,7 @@
 		]},
 		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
+			{"name":"camera.js"},
 			{"name":"baby.wav"},
 			{"name":"bicycle.wav"},
 			{"name":"cash.wav"},

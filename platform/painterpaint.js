@@ -38,6 +38,20 @@ module.exports = function painterPaint(proto){
 		fb.child = child
 	}
 
+	proto.moveChild = function(child, fbId){
+		var fb = this.framebufferIds[fbId]
+		var cfb = child.parentFramebuffer
+		var ca = child.args
+		ca.x = fb.xStart
+		ca.y = fb.yStart
+		child.postMessage({
+			fn:'onMove', 
+			pileupTime:Date.now(), 
+			x:ca.x,
+			y:ca.y
+		})	
+	}
+
 	proto.resizeChild = function(child, fbId){
 		var fb = this.framebufferIds[fbId]
 		var cfb = child.parentFramebuffer
@@ -46,16 +60,12 @@ module.exports = function painterPaint(proto){
 		cfb.glpfb = fb.glpfb
 		var ca = child.args
 		ca.pixelRatio = this.args.pixelRatio
-		ca.x = fb.xStart
-		ca.y = fb.yStart
 		ca.w = fb.attach.color0.w / ca.pixelRatio
 		ca.h = fb.attach.color0.h / ca.pixelRatio 
 		child.postMessage({
 			fn:'onResize', 
 			pileupTime:Date.now(), 
 			pixelRatio:ca.pixelRatio, 
-			x:ca.x,
-			y:ca.y,
 			w:ca.w, 
 			h:ca.h
 		})	

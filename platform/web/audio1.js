@@ -114,7 +114,7 @@ module.exports = class extends require('/platform/service'){
 					for(let i = 0; i < infos.length; i++){
 						let info = infos[i]
 						if(info.kind === 'audioinput' && info.label === node.config.device){
-							getUserMedia.call(navigator, {audio:{deviceId: {exact: info.deviceId}}}, function(flow, node, stream){
+							navigator.mediaDevices.getUserMedia({audio:{deviceId: {exact: info.deviceId}}}).then(function(flow, node, stream){
 								node.audioNode = this.context.createMediaStreamSource(stream)
 								//console.log(node.audioNode)
 								// connect it lazily
@@ -130,7 +130,7 @@ module.exports = class extends require('/platform/service'){
 									}
 								}
 
-							}.bind(this, flow, node), function(err){
+							}.bind(this, flow, node)).catch(function(err){
 								// error opening input. todo . fix.
 							}.bind(this))
 						}

@@ -781,7 +781,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	VariableDeclaration(node, level){
 		var kind = node.kind
 		if(node.space !== undefined) this.fastText(kind+node.space, this.styles.VariableDeclaration)
-		else this.fastText(kind+' ', this.styles.Keyword[kind])
+		else this.fastText(kind+' ', this.styles.Keyword[kind]||this.styles.Keyword.var)
 		this.trace += kind+' '
 		let mid = node.mid
 		if(mid){
@@ -1335,6 +1335,10 @@ module.exports = class JSFormatter extends require('base/class'){
 		}
 		this.trace += '=>'
 		this.fastText('=>', this.styles.Function.arrow)
+		if(node.between){
+			var between = node.between
+			if(between) this.fastText(between, this.styles.Comment.between)
+		}
 		var body = node.body
 		this[body.type](body, this.styles.Function)
 	}
@@ -1570,7 +1574,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var label = node.label
 		this[label.type](label)
 		this.trace += ':'
-		this.fastText(':', this.styles.LabeledStatement)
+		this.fastText(':', this.styles.Operator[':'])
 		
 		let after1 = node.after1
 		if(after1) this.fastText(after1, this.styles.Comment.above), this.trace += after1

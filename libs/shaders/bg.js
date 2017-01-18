@@ -89,7 +89,14 @@ module.exports = class Bg extends require('./quad'){
 		    }
 		}
 
-	    this.fieldSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, 0, csize, csize, circleu8)
+	    this.fieldSampler = new painter.Texture({
+	    	format:painter.LUMINANCE, 
+	    	type:painter.UNSIGNED_BYTE, 
+	    	flags:0, 
+	    	w:csize, 
+	    	h:csize, 
+	    	array:circleu8
+	    })
 	}
 
     vertexPre(){}

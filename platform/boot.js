@@ -8,6 +8,7 @@ var loadServices = [
 	"storage1",
 	"worker1",
 	"audio1",
+	"cameras1",
 	"gamepad1",
 	"socket1"
 //	"dropfiles1",
@@ -606,7 +607,7 @@ function createOnMessage(worker){
 				}, transfers)
 			}
 			catch(e){
-				console.error('cloneError', batchMessages)
+				console.error(e)//'cloneError', batchMessages)
 			}
 			worker.batchMessages = []
 			worker.batchTransfers = []

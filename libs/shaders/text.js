@@ -443,7 +443,14 @@ module.exports = class Text extends require('base/shader'){
 			if(!this.font.fontmap){
 				var map = this.font.fontmap = fontloader(this.font)
 				//this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
-				this.font.fontSampler = new painter.Texture(painter.RGBA, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
+				this.font.fontSampler = new painter.Texture({
+					format:painter.RGBA, 
+					type:painter.UNSIGNED_BYTE, 
+					flags:painter.TRANSFER_DATA, 
+					w:map.texw, 
+					h:map.texh, 
+					array:map.textureArray
+				})
 			}
 			// make the texture.
 			this.fontSampler = this.font.fontSampler

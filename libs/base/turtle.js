@@ -27,7 +27,7 @@ module.exports = class Turtle extends require('base/class'){
 		',wy:'+this.wy)
 	}
 	
-	begin(outer, dump){
+	begin(outer, walkZero){
 
 		this.outer = outer
 
@@ -103,8 +103,8 @@ module.exports = class Turtle extends require('base/class'){
 		this.$writeCursor = 
 		this.$writeStart = this.view.$writeList && this.view.$writeList.length || 0
 
-		this.$xAbs = outer.$xAbs
-		this.$yAbs = outer.$yAbs
+		//this.$xAbs = outer.$xAbs
+		//this.$yAbs = outer.$yAbs
 	}	
 
 	// lets do alignment
@@ -188,7 +188,7 @@ module.exports = class Turtle extends require('base/class'){
 
 					if(!isNaNx) dx = 0
 					if(!isNaNy) dy = 0
-					this.wy= this.sy
+					this.wy = this.sy
 					this.wx += this.mh
 					this.mh = 0
 					// move the body of the wrapped thing
@@ -251,9 +251,6 @@ module.exports = class Turtle extends require('base/class'){
 		}
 		if(this._x < this.x1) this.x1 = this._x
 		if(this._y < this.y1) this.y1 = this._y
-		// remove abs
-		//this._x -= this.$xAbs
-		//this._y -= this.$yAbs
 	}
 
 	lineBreak(){

@@ -66,13 +66,33 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 	vertexPre(){$
 		this.x = this.x1
 		this.w = this.x4 - this.x1
-
+		this.h+=2.
 		//this.errorTime = 1.-this.animateUniform(this.errorAnim)
 	}
 		
 
 	pixel(){$
-		return 'red'
+		//return 'red'
+		var pos = this.viewport()
+		this.pos.x = mod(this.pos.x,8.)
+		this.moveTo(0., this.h - 1.)
+		this.lineTo(3., this.h - 1.)
+		this.stroke('#c00',1.)
+		this.pos = pos
+		if(this.pos.x < this.h*0.2) this.result = vec4(0.)
+		if(this.pos.x > this.x2) this.result = vec4(0.)
+
+		this.circle(this.h*0.25,this.h*0.75,this.h*.2)
+		this.fill('#c00')
+		var start = this.x2 + this.h*0.2
+		var end = this.x3 - this.h*0.2
+		this.moveTo(start, this.h - 1.)
+		this.lineTo(start+(end-start)*0.5, this.h - 2.)
+		this.lineTo(end, this.h - 1.)
+		this.stroke('#ccc',1.)
+
+
+		return this.result
 		/*
 		var p = this.mesh.xy * vec2(this.w, this.h)
 
