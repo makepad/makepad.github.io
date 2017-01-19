@@ -632,8 +632,6 @@ painter.Mesh = class Mesh extends require('base/class'){
 			type = types.float
 		}
 
-		if(!type) debugger
-
 		if(!initalloc) initalloc = 1
 		this.meshId = meshIds.alloc(this)
 

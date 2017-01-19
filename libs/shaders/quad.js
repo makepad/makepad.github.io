@@ -46,7 +46,6 @@ module.exports = class Quad extends require('base/shader'){
 				this.WRITEPROPS()
 			},
 			begin:function(overload){
-				if(overload && overload.debug) debugger
 				this.STYLEPROPS(overload, 3)
 				this.ALLOCDRAW(overload)
 				this.beginTurtle()

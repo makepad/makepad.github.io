@@ -86,6 +86,10 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.num)
 		}
 
+		this["regexp"] = function(tok){
+			this.writeText(tok.input.slice(tok.start, tok.end), this.styles.Value.regexp)
+		}
+
 		this["if"] = function(tok){
 			this.writeText("if", this.styles.If.if)
 		}

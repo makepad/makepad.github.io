@@ -19,7 +19,7 @@ module.exports = class Code extends require('views/edit'){
 			errors:undefined
 		}
 		
-		let colors = module.style.colors
+		var colors = module.style.colors
 
 		this.tools = {
 			Bg:require('shaders/quad').extend({
@@ -406,7 +406,7 @@ module.exports = class Code extends require('views/edit'){
 			arguments: 'const' 
 		}
 		this.defaultScope = Object.create(null)
-		for(let key in this._defaultScope){
+		for(var key in this._defaultScope){
 			this.defaultScope[key] = this._defaultScope[key]
 		} 
 	}
@@ -438,29 +438,29 @@ module.exports = class Code extends require('views/edit'){
 		super.cursorChanged()
 		// lets take the last cursor and figure out the highlight
 		// range
-		let cursor = this.cs.cursors[0]
-		let pos = cursor.start
-		let blocks = this.$blockRanges
+		var cursor = this.cs.cursors[0]
+		var pos = cursor.start
+		var blocks = this.$blockRanges
 		if(!blocks) return
-		let minsize = Infinity
-		let found
-		for(let i = 0, l = blocks.length; i < l; i++){
-			let block = blocks[i]
+		var minsize = Infinity
+		var found
+		for(var i = 0, l = blocks.length; i < l; i++){
+			var block = blocks[i]
 			if(pos >= block.start && pos < block.end){
-				let size = block.end - block.start
+				var size = block.end - block.start
 				if(size <= minsize) minsize = size, found = block
 			}
 		}
 		this.blockHighlightPickId = found?found.id:0
 		
 		// scan for paren ranges
-		let parens = this.$parenRanges
+		var parens = this.$parenRanges
 		minsize = Infinity
 		found = undefined
-		for(let i = 0, l = parens.length; i < l; i++){
-			let paren = parens[i]
+		for(var i = 0, l = parens.length; i < l; i++){
+			var paren = parens[i]
 			if(pos >= paren.start && pos < paren.end){
-				let size = paren.end - paren.start
+				var size = paren.end - paren.start
 				if(size <= minsize) minsize = size, found = paren
 			}
 		}
@@ -575,11 +575,11 @@ module.exports = class Code extends require('views/edit'){
 		} 
 
 		if(this.runtimeErrors){
-			for(let i = this.runtimeErrors.length - 1; i >= 0; --i){
-				let err = this.runtimeErrors[i]
-				let text = this._text
-				let line = err.line - 1
-				let col = err.column
+			for(var i = this.runtimeErrors.length - 1; i >= 0; --i){
+				var err = this.runtimeErrors[i]
+				var text = this._text
+				var line = err.line - 1
+				var col = err.column
 				var j = 0, tl = text.length;
 				for(; j < tl; j++){
 					if(text.charCodeAt(j) === 10) line--
@@ -593,7 +593,7 @@ module.exports = class Code extends require('views/edit'){
 		}
 
 		if(this.parseErrors){
-			for(let i = this.parseErrors.length - 1; i >= 0; --i){
+			for(var i = this.parseErrors.length - 1; i >= 0; --i){
 				this.drawError(this.parseErrors[i], 'parse'+i)
 			}
 		}
@@ -642,15 +642,15 @@ module.exports = class Code extends require('views/edit'){
 			return b
 		}
 		// now find our true offset
-		let oldOff = 0
-		for(let i = 0; i < pos; i++){
-			let code = oldText.charCodeAt(i)
+		var oldOff = 0
+		for(var i = 0; i < pos; i++){
+			var code = oldText.charCodeAt(i)
 			if(code !== 32 && code !== 9 && code !== 10 && code !== 13) oldOff++
 		}
 		// ok now lets find that trueOff in the new one
-		let newOff = 0
+		var newOff = 0
 		for(var newPos = 0;newPos < newText.length; newPos++){
-			let code = newText.charCodeAt(newPos)
+			var code = newText.charCodeAt(newPos)
 			if(code !== 32 && code !== 9 && code !== 10 && code !== 13) newOff++
 			if(newOff == oldOff) break
 		}
@@ -670,7 +670,7 @@ module.exports = class Code extends require('views/edit'){
 		}
 		// what if we are next to a space in the old one,
 		// and next to a tab in the new one? well we skip back one.
-		let newpos = pos - minAbs(pos-a,pos-b)
+		var newpos = pos - minAbs(pos-a,pos-b)
 		return newpos
 	}
 
@@ -711,7 +711,7 @@ module.exports = class Code extends require('views/edit'){
 
 	scanBackSpaceRange(start, delta){
 
-		let seek = start - delta
+		var seek = start - delta
 
 		// alright. what do we do.										
 		var chunks = this.$fastTextChunks 
@@ -728,7 +728,7 @@ module.exports = class Code extends require('views/edit'){
 					i--
 					if(this.ast && chunks[i] === ' ') i--, start--, seek --
 					if(chunks[i] === '\t'){ // lets scan indentation 
-						let delta = 1
+						var delta = 1
 						for(;i>0 && styles[i] === this.$fastTextWhitespace;i--){
 							delta += chunks[i].length
 						}
@@ -739,7 +739,7 @@ module.exports = class Code extends require('views/edit'){
 					}
 					// otherwise we scan formatting whitespace
 					if(this.ast && chunks[i].length === 1){
-						let end = start
+						var end = start
 						if(chunks[i-1] === ' ') start -= 1
 						if(chunks[i+1] === ' ') end += 1
 						return {
@@ -856,18 +856,18 @@ module.exports = class Code extends require('views/edit'){
 	} 
 	
 	currentIndent(offset){
-		let prev = 0
-		let text = this._text
-		for(let i = offset; i >=0; i--){
-			let char = text.charCodeAt(i)
+		var prev = 0
+		var text = this._text
+		for(var i = offset; i >=0; i--){
+			var char = text.charCodeAt(i)
 			if(i !== offset && (char === 10 || char === 13)) break
 			if(char === 9) prev ++
 			else prev = 0 
 		}
-		let seek = false
-		let next = 0
-		for(let i = offset; i < text.length; i++){
-			let char = text.charCodeAt(i)
+		var seek = false
+		var next = 0
+		for(var i = offset; i < text.length; i++){
+			var char = text.charCodeAt(i)
 			if(seek){
 				if(char === 9) next ++
 				else break
@@ -891,7 +891,7 @@ module.exports = class Code extends require('views/edit'){
 			if(text === ')' && char === ')') return 0 
 			if(text === '\n' && (prev === '{' ||prev==='[' ||prev==='(')){
 				text = '\n'
-				let depth = this.currentIndent(offset)
+				var depth = this.currentIndent(offset)
 				text += Array(depth+2).join('\t')
 				move += depth +1
 				if(char === '}' || char === ']' || char===')'){
@@ -909,7 +909,7 @@ module.exports = class Code extends require('views/edit'){
 			if(text === '\n'){
 				text = '\n'
 				//TODO figure out if(x){<\n>\n}
-				let depth = this.currentIndent(offset)
+				var depth = this.currentIndent(offset)
 				text += Array(depth+1).join('\t')
 				move += depth
 				this.wasNewlineChange = 1
@@ -936,9 +936,9 @@ module.exports = class Code extends require('views/edit'){
 	dump(){
 		var chunks = this.$fastTextChunks 
 		var styles = this.$fastTextStyles
-		let i = 0
-		let str = ''
-		for(let i = 0; i < chunks.length; i++){
+		var i = 0
+		var str = ''
+		for(var i = 0; i < chunks.length; i++){
 			str += JSON.stringify(chunks[i])+' ' + (styles[i]?styles[i].name:'0')+'\n'
 		}
 		console.log(str)

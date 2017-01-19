@@ -19,7 +19,6 @@ module.exports = class Compiler extends require('base/class'){
 		this.inheritable('props', function(){
 			var props = this.props
 			for(let key in props){
-				if(!this.$defineProp) debugger
 				this.$defineProp(key, props[key])
 			}
 		})

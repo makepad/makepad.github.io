@@ -245,7 +245,7 @@ module.exports = class Tools extends require('base/class'){
 		var view = this.view
 		var writes = view.$writeList
 		var current = view.$turtleStack.len
-		for(let i = start; i < writes.length; i += 3){
+		for(var i = start; i < writes.length; i += 3){
 			var props = writes[i]
 			var begin = writes[i+1]
 			if(begin<0){ // its a view
@@ -259,7 +259,7 @@ module.exports = class Tools extends require('base/class'){
 			var xoff = props.xOffset
 			var yoff = props.yOffset
 			var array = props.array
-			for(let j = begin; j < end; j++){
+			for(var j = begin; j < end; j++){
 				array[j * slots + xoff] += dx
 				array[j * slots + yoff] += dy
  			}
