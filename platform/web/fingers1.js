@@ -184,6 +184,7 @@ module.exports = class extends require('/platform/service'){
 
 			this.worker.services.painter1.pickFinger(f.digit, f.x, f.y, fingers.length === 1,function(f, pick){
 				if(!pick) return
+				
 
 				f.dx = 0
 				f.dy = 0
@@ -207,7 +208,6 @@ module.exports = class extends require('/platform/service'){
 				this.worker.services.painter1.onFingerDown(fm)
 				// post the message
 				this.batchMessage(fm)
-
 			}.bind(this, f))
 		}
 	}

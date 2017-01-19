@@ -446,10 +446,11 @@ module.exports = function painterUser(proto){
 			var loc = attrLocs[nameRev[startId+i]]
 			var index = loc.index
 			//if(this.currentShader.trace) console.log("attr",index, nameRev[startId+i])
-			if(index<0) continue
-			gl.enableVertexAttribArray(index)
-			gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
-			gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
+			if(index>=0){
+				gl.enableVertexAttribArray(index)
+				gl.vertexAttribPointer(index, loc.slots, gl.FLOAT, false, stride * 4, offset * stride  * 4 + slotoff)
+				gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(index, divisor)
+			}
 			slotoff += loc.slots * 4
 		}
 	}
@@ -600,7 +601,7 @@ module.exports = function painterUser(proto){
 		for(let name in attrs){
 			//var nameid = nameIds[name]
 			var index = gl.getAttribLocation(shader, name)
-			if(index === -1)console.error("Attribute location returns -1 for, bug in system GLSL compiler likely " + name)
+			//if(index === -1)console.error("Attribute location returns -1 for, bug in system GLSL compiler likely " + name)
 			if(index > maxAttrIndex) maxAttrIndex = index
 			attrLocs[name] = {
 				index: index,

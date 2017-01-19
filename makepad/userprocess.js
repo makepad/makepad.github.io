@@ -61,10 +61,12 @@ module.exports = class UserProcess extends require('views/draw'){
 			w:'100%',
 			h:'100#',
 			pick:true,
+			dx:this.turtle.wx,
+			dy:this.turtle.wy,
 			positioned:true
 		})
 		this.endPass()
-
+		//console.log(this.turtle.wy)
 		this.drawPass({
 			align:[0,0],
 			w:'100%',

@@ -20,7 +20,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	constructor() {
 		super()
 		let cam = this.cam = new cameras.Camera()
-
+		
 		cam.onFrame2 = msg=>{
 		}
 		cam.start(640, 480, 60)

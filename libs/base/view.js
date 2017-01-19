@@ -532,7 +532,7 @@ module.exports = class View extends require('base/class'){
 
 	toLocal(msg, noScroll){
 		var xy = [0,0,0,0]
-		vec4.transformMat4(xy, [msg.x - painter.x, msg.y - painter.y, 0, 1.], this.viewInverse)
+		vec4.transformMat4(xy, [msg.x, msg.y, 0, 1.], this.viewInverse)
 		return {
 			x:xy[0] + (noScroll?0:(this.todo.xScroll || 0)),
 			y:xy[1] + (noScroll?0:(this.todo.yScroll || 0))
@@ -609,7 +609,7 @@ module.exports = class View extends require('base/class'){
 			// assign the todo to the framebuffe
 			pass.framebuffer.assignTodoAndUbo(pass.todo, this.app.painterUbo)
 
-			if(options.positioned){
+			if(options.dx !== undefined || options.dy !== undefined){
 				let pp = this.$positionedPasses
 				if(!pp) this.$positionedPasses = pp = []
 				pp.push(pass)	
@@ -634,7 +634,8 @@ module.exports = class View extends require('base/class'){
 			pass.sh = sh
 			mat4.ortho(pass.projection,0, pass.w,  0,pass.h, -100, 100)
 		}
-
+		pass.dx = options.dx || 0
+		pass.dy = options.dy || 0
 		return pass
 	}
 	
@@ -661,11 +662,11 @@ module.exports = class View extends require('base/class'){
 	$recomputeMatrix(px, py){
 		var hw = this.$w * this.xCenter
 		var hh = this.$h * this.yCenter
-		let x = this.$x = this.$rx + px
-		let y = this.$y = this.$ry + py
 		let rx = this.$rx// - px
 		let ry = this.$ry// - py
-
+		let x = this.$x = rx + px
+		let y = this.$y = ry + py
+		
 		mat4.fromTSRT(this.viewPosition, -hw, -hh, 0, this.xScale, this.yScale, 1., 0, 0, radians(this.rotate), hw + rx, hh+ry, 0)
 
 		if(this.parent){
@@ -677,14 +678,14 @@ module.exports = class View extends require('base/class'){
 		}
 
 		var todo = this.todo
+		if(!todo) return
 		this.todo.xsScroll = x + painter.x 
 		this.todo.ysScroll = y + painter.y 
 		//console.log(painter.y)
 		let pp =this.$positionedPasses
 		if(pp){
 			for(let i = 0 ;i < pp.length;i++){
-				//console.log(painterpainter.pixelRatio)
-				pp[i].framebuffer.position(x+painter.x, y+painter.y)
+				pp[i].framebuffer.position(x+painter.x + pp[i].dx, y+painter.y + pp[i].dy)
 			}
 		}
 		// lets set some globals
@@ -696,7 +697,7 @@ module.exports = class View extends require('base/class'){
 		var todoIds = todo.todoIds
 		for(var i = 0, l = children.length; i < l; i++){
 			var view = todoIds[children[i]].view
-			view.$recomputeMatrix(this.$x, this.$y)
+			view.$recomputeMatrix(x, y)
 		}
 	}
 

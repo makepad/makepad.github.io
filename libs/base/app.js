@@ -43,6 +43,12 @@ module.exports = class App extends require('base/view'){
 		app._frameId = 0
 
 		function fingerMessage(event, todoId, pickId, msg, isOut){
+			if(msg.xDown !== undefined){
+				msg.xDown -= painter.x
+				msg.yDown -= painter.y
+			}
+			msg.x -= painter.x
+			msg.y -= painter.y
 			var view = viewTodoMap[todoId]
 			if(!view) return				
 

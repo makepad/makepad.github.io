@@ -250,8 +250,9 @@ module.exports = class Tools extends require('base/class'){
 			var begin = writes[i+1]
 			if(begin<0){ // its a view
 				// move the view
-				props.$x += dx
-				props.$y += dy
+				//console.log("MOVE", dx, dy)
+				props.$rx += dx
+				props.$ry += dy
 				continue
 			}
 			var end = writes[i+2]

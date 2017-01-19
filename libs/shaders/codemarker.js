@@ -59,7 +59,6 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 				return this.$PROPLEN - 1
 			}
 		}
-
 		this.noInterrupt = 1
 	}
 

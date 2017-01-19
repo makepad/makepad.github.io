@@ -32,7 +32,6 @@ function flushPileupQueue(){
 
 service.onMessage = function(msg){
 	if(msg.fn === 'onMove'){
-		console.log("MOVE", msg.x, msg.y)
 		painter.x = msg.x
 		painter.y = msg.y
 		if(painter[msg.fn]) painter[msg.fn](msg)

@@ -75,7 +75,7 @@ module.exports = function painterScroll(proto){
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		var o = (f.digit - 1.) * 4
-		console.log(args)
+
 		fingerInfo[o + 0] = f.x - args.x
 		fingerInfo[o + 1] = f.y - args.y
 		fingerInfo[o + 2] = f.workerId * 256 + f.todoId
@@ -92,7 +92,7 @@ module.exports = function painterScroll(proto){
 			var pn = (1.-ry) * (todo.yScroll / todo.yTotal) / (1.-vy)
 			var py = pn * todo.yView + todo.ysScroll
 			var wy = ry * todo.yView
-			console.log(f.y, pn, todo.yView, todo.ysScroll)
+
 			if(f.y < py){
 				todo.yScrollTo = Math.max(0,todo.yScroll - todo.yView)
 				this.isScrollBarMove = 0
@@ -132,6 +132,7 @@ module.exports = function painterScroll(proto){
 		var args = this.args
 		// store finger pos
 		var o = (f.digit-1) * 4
+
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
 
@@ -161,8 +162,7 @@ module.exports = function painterScroll(proto){
 
 		// dont scroll
 		if(!f.touch || f.pickId === todo.yScrollId || f.pickId === todo.xScrollId) return	
-		if(todo.scrollMask >= 0 && f.pickId !== todo.scrollMask) return
-		
+		if(todo.scrollMask > 0 && f.pickId !== todo.scrollMask) return
 		this.doScroll(todo, todo.xScroll + f.dx, todo.yScroll + f.dy)
 	}
 
@@ -191,7 +191,7 @@ module.exports = function painterScroll(proto){
 		var fingerInfo = this.fingerInfo
 		var args = this.args
 		var o = (f.digit-1) * 4
-		
+		//console.log(f.x, f.y)
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
 		fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
