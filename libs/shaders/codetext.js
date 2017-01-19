@@ -115,8 +115,8 @@ module.exports = class CodeText extends require('shaders/text'){
 				var len = txt.length - 1
 				var turtle = this.turtle
 				var indent = this.$fastNAMEIndent
-				let chunks = this.$fastNAMEChunks
-				let styles = this.$fastNAMEStyles
+				var chunks = this.$fastNAMEChunks
+				var styles = this.$fastNAMEStyles
 				var fontSize = this.$fastNAMEFontSize
 
 				var lineSpacing = $proto.lineSpacing
@@ -135,15 +135,15 @@ module.exports = class CodeText extends require('shaders/text'){
 				var tail = style.tail// itail!==undefined? itail: style.tail
 				var group = igroup!==undefined?igroup:1
 				// allocate enough space
-				let need = (len + 1) * (indent+1) + head + tail
+				var need = (len + 1) * (indent+1) + head + tail
 				this.ALLOCDRAW(null, need)
 				
-				let first = txt.charCodeAt(0)
+				var first = txt.charCodeAt(0)
 
 				if(first !== 10 && first !== 13){
-					for(let i = 0; i < head; i++){
+					for(var i = 0; i < head; i++){
 						// write spaces
-						let o = $turtle.$propOffset++
+						var o = $turtle.$propOffset++
 						this.PROP[o, 'visible'] = 0
 						this.PROP[o, 'x'] = posx// - turtle.$xAbs
 						this.PROP[o, 'y'] = posy// - turtle.$yAbs
@@ -156,14 +156,14 @@ module.exports = class CodeText extends require('shaders/text'){
 				}
 
 				// output the text
-				let chunk = chunks.push(txt) - 1
-				let start = 0
+				var chunk = chunks.push(txt) - 1
+				var start = 0
 				styles.push(style)
 
 				var color = style.color
 				var boldness = style.boldness
 
-				for(let i = 0; i <= len; i++){
+				for(var i = 0; i <= len; i++){
 					var unicode = txt.charCodeAt(i)
 
 					var g = glyphs[unicode] || glyphs[63]
@@ -208,8 +208,8 @@ module.exports = class CodeText extends require('shaders/text'){
 						posx = sx, posy += nh
 						turtle.wy += nh
 
-						for(let i = 0; i < indent; i++){
-							let o = $turtle.$propOffset++
+						for(var j = 0; j < indent; j++){
+							var o = $turtle.$propOffset++
 							this.PROP[o, 'visible'] = 0
 							this.PROP[o, 'x'] = posx //- turtle.$xAbs
 							this.PROP[o, 'y'] = posy //- turtle.$yAbs
@@ -229,8 +229,8 @@ module.exports = class CodeText extends require('shaders/text'){
 				}
 				
 				// write tail
-				for(let i = 0; i < tail; i++){
-					let o = $turtle.$propOffset++
+				for(var j = 0; j < tail; j++){
+					var o = $turtle.$propOffset++
 					this.PROP[o, 'visible'] = 0
 					this.PROP[o, 'x'] = posx //- turtle.$xAbs
 					this.PROP[o, 'y'] = posy //- turtle.$yAbs

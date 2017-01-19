@@ -425,6 +425,7 @@ module.exports = class View extends require('base/class'){
 				this.lineBreak()
 				this.$xScroll = this.drawScrollBar({
 					id:'hscroll',
+					pickId:65534,
 					moveScroll:0,
 					vertical:false,
 					x:'0',
@@ -445,6 +446,7 @@ module.exports = class View extends require('base/class'){
 			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
 				this.$yScroll = this.drawScrollBar({
 					id:'vscroll',
+					pickId:65535,
 					moveScroll:0,
 					vertical:true,
 					x:'@0',
@@ -676,10 +678,12 @@ module.exports = class View extends require('base/class'){
 
 		var todo = this.todo
 		this.todo.xsScroll = x + painter.x 
-		this.todo.ysScroll = y + painter.y
+		this.todo.ysScroll = y + painter.y 
+		//console.log(painter.y)
 		let pp =this.$positionedPasses
 		if(pp){
 			for(let i = 0 ;i < pp.length;i++){
+				//console.log(painterpainter.pixelRatio)
 				pp[i].framebuffer.position(x+painter.x, y+painter.y)
 			}
 		}
@@ -703,7 +707,8 @@ module.exports = class View extends require('base/class'){
 		var stamp = this.$stamps[id]
 		if(!stamp){
 			stamp = this.$stamps[id] = new context[classname]()
-			var pickId = this.$pickId++
+			var pickId = args.pickId || ++this.$pickId
+			//console.log('allocating', id, classname, pickId)
 			this.$pickIds[pickId] = stamp
 			stamp.view = this
 			var name = context.$context?context.$context + '_' + classname:classname

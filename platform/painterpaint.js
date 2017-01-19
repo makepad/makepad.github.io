@@ -44,6 +44,7 @@ module.exports = function painterPaint(proto){
 		var ca = child.args
 		ca.x = fb.xStart
 		ca.y = fb.yStart
+		
 		child.postMessage({
 			fn:'onMove', 
 			pileupTime:Date.now(), 

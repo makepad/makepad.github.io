@@ -63,6 +63,7 @@ module.exports = function painterUser(proto){
 		if(prev.xStart !== msg.x || prev.yStart !== msg.y){
 			prev.xStart = msg.x
 			prev.yStart = msg.y
+			//console.log("MOVECHILD", msg.x, msg.y)
 			if(prev.child) this.moveChild(prev.child, msg.fbId)
 		}
 	}
@@ -164,9 +165,9 @@ module.exports = function painterUser(proto){
 			fbId: msg.fbId,
 			uboId: prev && prev.uboId || undefined,
 			todoId: prev && prev.todoId || undefined,
-			attach: attach,
-			xStart: msg.xStart,
-			yStart: msg.yStart
+			attach: attach
+			//xStart: msg.xStart,
+			//yStart: msg.yStart
 		}
 
 		// signal the child their framebuffer has resized
