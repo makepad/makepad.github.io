@@ -6,10 +6,11 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.tools = {
 			Cam:require('shaders/quad').extend({
 				dead :0,
+				col  :'red',
 				cam  :{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
 				pixel:function() {$
-					return 'red'
-					return texture2D(this.cam, this.mesh.xy)
+					//return 'red'
+					return texture2D(this.cam, this.mesh.xy) * this.col
 				},
 			})
 		}
@@ -26,10 +27,12 @@ module.exports = class extends require('base/drawapp'){ //top
 		cam.start(640, 480, 60)
 	}
 	onDraw() {
+		for(let i = 0;i < 100;i++)
 		this.drawCam({
+			col:'random',
 			cam:this.cam,
 			w  :'100%',
-			h  :'this.w*1.85'
+			h  :'this.w*0.85'
 		})
 	}
 }
