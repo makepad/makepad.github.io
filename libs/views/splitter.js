@@ -255,6 +255,15 @@ module.exports=class Splitter extends require('base/view'){
 		this.redraw()
 	}
 
+	
+	constructor(...args){
+		super(...args)
+		var panes = this.panes
+		for(let i = 0; i < panes.length; i++){
+			panes[i].parent = this
+		}
+	}
+
 	onDraw(){
 		this.$splitWidth = this.turtle.width
 		this.$splitHeight = this.turtle.height

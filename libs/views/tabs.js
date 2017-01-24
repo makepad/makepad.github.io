@@ -16,6 +16,14 @@ module.exports=class Tabs extends require('base/view'){
 		}
 	}
 
+	constructor(...args){
+		super(...args)
+		var tabs = this.tabs
+		for(let i = 0; i < tabs.length; i++){
+			tabs[i].parent = this
+		}
+	}
+
 	selectTabIndex(index){
 		this.tabs[this.selected].$tabStamp.dx = 0
 		this.selected = index

@@ -199,6 +199,7 @@ module.exports = class Code extends require('views/edit'){
 				block$block:{},
 				switch:{},
 				case:{},
+				default:{},
 				caseColon:{}
 			},
 			For:{

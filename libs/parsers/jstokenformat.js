@@ -130,6 +130,10 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("break", this.styles.For.break)
 		}
 
+		this["default"] = function(tok){
+			this.writeText("default", this.styles.If.default)
+		}
+
 		this["continue"] = function(tok){
 			this.writeText("continue", this.styles.For.continue)
 		}
@@ -267,6 +271,9 @@ module.exports = class JSFormatter extends require('base/class'){
 				else if(pre === this.tt._for){
 					style = this.styles.For
 				}
+				else if(pre === this.tt._if){
+					style = this.styles.If
+				}
 			}
 			else if(ptok === this.tt.arrow){
 				style = this.styles.Function
@@ -312,20 +319,22 @@ module.exports = class JSFormatter extends require('base/class'){
 			let blockh = this.turtle.wy
 			let pickId = this.pickIdCounter++
 			//this.pickIds[pickId] = node 
-			this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
-			// lets draw a block with this information
-			this.fastBlock(
-				startx,
-				yPos,
-				xPos-startx, 
-				lineh,
-				this.indentSize * this.$fastTextFontSize,
-				blockh - yPos,
-				this.$fastTextIndent,
-				pickId,
-				style.block.open
-			)
+			if(yPos !== this.turtle.wy){
+				this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
+				// lets draw a block with this information
+				this.fastBlock(
+					startx,
+					yPos,
+					xPos-startx, 
+					lineh,
+					this.indentSize * this.$fastTextFontSize,
+					blockh - yPos,
+					this.$fastTextIndent,
+					pickId,
+					style.block.open
+				)
+			}
 			// lets write a block matching the style
 
 			if(!s || (this.tokArray[s] !== this.tt.braceL &&  this.tokArray[s] !== this.tt.dollarBraceL)){
@@ -377,10 +386,9 @@ module.exports = class JSFormatter extends require('base/class'){
 			//this.pickIds[pickId] = node 
 			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 
-			if(style === this.styles.Array){
+			if(style === this.styles.Array && yPos !== this.turtle.wy){
 				let pickId = this.pickIdCounter++
 				this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
-
 				// lets draw a block with this information
 				this.fastBlock(
 					startx,

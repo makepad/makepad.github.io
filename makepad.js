@@ -61,14 +61,25 @@ module.exports = class Makepad extends require('base/app'){
 					pane1   :{
 						selected:0,
 						tabs    :[
-							{type:'HomeScreen', id:'HomeSource', icon:'home'}
+							{type:'HomeScreen', id:'HomeSource', icon:'puzzle-piece'}
 						]
 					},
 					pane2   :{
 						selected:0,
-						tabs    :[
-							{type:'HomeScreen', id:'HomeProcess', icon:'home'}
-						]
+						vertical:false,
+						locked:true,
+						position:-150,
+						pane1   :{
+							tabs    :[
+								{type:'HomeScreen', id:'HomeProcess', icon:'television'}
+							]
+						},
+						pane2:{
+							selected:0,
+							tabs    :[
+								{type:'HomeScreen', id:'HomeLog', icon:'info-circle'}
+							]
+						}
 					}
 				}
 			}
@@ -294,6 +305,7 @@ module.exports = class Makepad extends require('base/app'){
 		// select it
 		tabs.selected = tabs.tabs.push(view) - 1
 		tabs.redraw()
+		
 		this.processTabTitles()
 	}
 	
@@ -316,13 +328,14 @@ module.exports = class Makepad extends require('base/app'){
 		
 		var tabs = this.find('HomeProcess').parent
 		let view = new this.UserProcess(this.dock, {
-			id      :'Process' + resource.path,
-			tabTitle:resource.path,
-			resource:resource,
-			process :processList[processList.length - 1],
+			id      : 'Process' + resource.path,
+			tabTitle: resource.path,
+			resource: resource,
+			process : processList[processList.length - 1],
 		})
-		
+
 		tabs.selected = tabs.tabs.push(view) - 1
+
 		tabs.redraw()
 		this.processTabTitles()
 	}
