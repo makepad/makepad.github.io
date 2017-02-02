@@ -142,7 +142,6 @@ module.exports = class View extends require('base/class'){
 				//	this['_'+key] = value
 				//}
 				//else 
-
 				this[key] = value
 			}
 		}

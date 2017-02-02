@@ -69,9 +69,6 @@ module.exports = class Text extends require('base/shader'){
 		this.indices.push(0,1,2,2,1,3,4,5,6,6,5,7)
 
 		this.verbs = {
-			$length:function(){
-				return this.PROPLEN
-			},
 			$removeLast:function(){
 				let o = --this.PROPLEN
 				this.turtle.wx -= this.PROP(o, 'fontSize') * this.PROP(o, 'advance')

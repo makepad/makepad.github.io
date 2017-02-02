@@ -61,12 +61,13 @@ module.exports = class Shader extends require('base/compiler'){
 		}
 		
 		// safety for infinite loops
-		this.propAllocLimit = 150000
+		this.propAllocLimit = 1500000
 				
 		this.tweenTime = this.tweenAll
 		
 		this.verbs = {
 			length:function() {
+				if(!$props) return 0
 				return this.PROPLEN()
 			},
 			//order:function(overload) {

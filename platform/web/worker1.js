@@ -6,13 +6,14 @@ module.exports = class extends require('/platform/service'){
 		this.workers = []
 	}
 
-	user_onDebug(msg){
+	user_onLog(msg){
 		msg.localId = this.worker.localId
 		msg.pileupTimer = Date.now()
 		this.parent.batchMessages.push({
 			$:'worker1',
 			msg:msg
 		})
+		this.parent.batchTransfers.push(msg.data)
 		var after = this.parent.onAfterEntry
 		if(this.worker.afterEntryCallbacks.indexOf(after) === -1){
 			this.worker.afterEntryCallbacks.push(after)
@@ -26,6 +27,7 @@ module.exports = class extends require('/platform/service'){
 			$:'worker1',
 			msg:msg
 		})
+
 		var after = this.parent.onAfterEntry
 		if(this.worker.afterEntryCallbacks.indexOf(after) === -1){
 			this.worker.afterEntryCallbacks.push(after)

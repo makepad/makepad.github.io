@@ -10,7 +10,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				cam  :{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
 				pixel:function() {$
 					//return 'red'
-					return texture2D(this.cam, this.mesh.xy) * this.col
+					return texture2D(this.cam, this.mesh.xy) * this.col * 2.
 				},
 			})
 		}
@@ -31,8 +31,8 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.drawCam({
 			col:'random',
 			cam:this.cam,
-			w  :'100%',
-			h  :'this.w*0.85'
+			w  :'10%',
+			h  :'10%'
 		})
 	}
 }

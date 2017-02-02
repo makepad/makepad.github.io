@@ -298,6 +298,12 @@ function workerBoot(){
 						column:parseInt(line[4])
 					})
 				}
+				else{
+					var method = lines[i]
+					if(method && method !== '[native code]') stack.push({
+						method:lines[i]
+					})
+				}
 			}
 			return {
 				message:e.message,
@@ -369,14 +375,13 @@ function workerBoot(){
 	}
 
 	worker.Module = Module
-	/*
-	worker.define_ = function(getset){
-		Object.defineProperty(global,'_',{
+	worker.defineGlobal = function(name, get, set){
+		Object.defineProperty(global, name, {
 			configurable:true,
-			get:getset.get,
-			set:getset.set
+			get:get,
+			set:set
 		})
-	}*/
+	}
 
 	function invalidateModuleDeps(module, log, path){
 		if(!module) return

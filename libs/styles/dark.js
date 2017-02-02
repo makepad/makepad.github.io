@@ -45,7 +45,8 @@ module.exports = class DarkStyle extends require('base/style'){
 			codeNumber:'IndigoA100',
 			codeBoolean:'Red400',
 			codeString:'GreenA200',
-			codeTokException:'red'
+			codeTokException:'red',
+			codeLog:'yellow'
 		}
 	}
 

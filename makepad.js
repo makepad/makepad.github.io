@@ -32,7 +32,8 @@ module.exports = class Makepad extends require('base/app'){
 			Wave       :require('./makepad/wave'),
 			FileTree   :require('./makepad/filetree'),
 			HomeScreen :require('./makepad/homescreen'),
-			UserProcess:require('./makepad/userprocess')
+			UserProcess:require('./makepad/userprocess'),
+			ProcessLog :require('./makepad/processlog')
 			//Settings: require('./makepad/settings'),
 		}
 	}
@@ -67,17 +68,17 @@ module.exports = class Makepad extends require('base/app'){
 					pane2   :{
 						selected:0,
 						vertical:false,
-						locked:true,
+						locked  :true,
 						position:-150,
 						pane1   :{
-							tabs    :[
+							tabs:[
 								{type:'HomeScreen', id:'HomeProcess', icon:'television'}
 							]
 						},
-						pane2:{
+						pane2   :{
 							selected:0,
 							tabs    :[
-								{type:'HomeScreen', id:'HomeLog', icon:'info-circle'}
+								{type:'HomeScreen', id:'HomeLogs', icon:'info-circle'}
 							]
 						}
 					}
@@ -228,7 +229,7 @@ module.exports = class Makepad extends require('base/app'){
 	
 	// create uniquely identifyable tab titles
 	processTabTitles() {
-		var allTabs = this.findAll(/^Source|^Process/)
+		var allTabs = this.findAll(/^Source|^Process|^Log/)
 		var collide = {}
 		for(var i = 0;i < allTabs.length;i++){
 			var tab = allTabs[i]
@@ -327,16 +328,27 @@ module.exports = class Makepad extends require('base/app'){
 		})
 		
 		var tabs = this.find('HomeProcess').parent
-		let view = new this.UserProcess(this.dock, {
-			id      : 'Process' + resource.path,
-			tabTitle: resource.path,
-			resource: resource,
-			process : processList[processList.length - 1],
+		let process = new this.UserProcess(this.dock, {
+			id      :'Process' + resource.path,
+			tabTitle:resource.path,
+			resource:resource,
+			process :processList[processList.length - 1],
 		})
-
-		tabs.selected = tabs.tabs.push(view) - 1
-
+		
+		tabs.selected = tabs.tabs.push(process) - 1
 		tabs.redraw()
+		
+		// add log
+		tabs = this.find('HomeLogs').parent
+		let log = new this.ProcessLog(this.dock, {
+			id      :'Log' + resource.path,
+			tabTitle:resource.path,
+			resource:resource,
+			process :processList[processList.length - 1]
+		})
+		tabs.selected = tabs.tabs.push(log) - 1
+		tabs.redraw()
+		
 		this.processTabTitles()
 	}
 	
@@ -348,6 +360,7 @@ module.exports = class Makepad extends require('base/app'){
 	}
 	
 	onDraw() {
+		//_=this
 		this.dock.draw(this)
 	}
 }

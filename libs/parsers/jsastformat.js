@@ -193,7 +193,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var elemslen = elems.length - 1
 
 		//var dy = 0
-		if(this.$lengthText() === this.$fastTextOffset && this.wasNewlineChange){
+		if(this.lengthText() === this.$fastTextOffset && this.wasNewlineChange){
 		//	dy = this.$fastTextDelta
 			this.$fastTextDelta += (elemslen+1)*this.$fastTextDelta
 		}
@@ -609,7 +609,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var argslen = args.length - 1
 
 		var dy = 0
-		if(this.$lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
+		if(this.lengthText() === this.$fastTextOffset && this.wasFirstNewlineChange){
 			dy = this.$fastTextDelta
 			this.$fastTextDelta += argslen * dy
 		}
@@ -780,8 +780,9 @@ module.exports = class JSFormatter extends require('base/class'){
 	//VariableDeclaration:{declarations:2, kind:0},
 	VariableDeclaration(node, level){
 		var kind = node.kind
-		if(node.space !== undefined) this.fastText(kind+node.space, this.styles.VariableDeclaration)
-		else this.fastText(kind+' ', this.styles.Keyword[kind]||this.styles.Keyword.var)
+		let style =  this.styles.Keyword[kind]||this.styles.Keyword.var
+		if(node.space !== undefined) this.fastText(kind+node.space, style)
+		else this.fastText(kind+' ',style)
 		//this.trace += kind+' '
 		var mid = node.mid
 		if(mid){
@@ -909,12 +910,19 @@ module.exports = class JSFormatter extends require('base/class'){
 	AssignmentExpression(node){
 		var left = node.left
 		var right = node.right
-		var leftype = left.type
-		this[left.type](left)
-		var around1 = node.around1
-		if(around1) this.fastText(around1, this.styles.Comment.around)//, this.trace += around1
-		//this.trace += node.operator
-		this.fastText(node.operator, this.styles.Operator[node.operator] || this.styles.Operator.default)
+		var lefttype = left.type
+		if(lefttype === 'Identifier' && left.name === '_' && node.operator === '='){
+			console.log("HERE",this.styles.Log)
+			this.fastText('_=', this.styles.Log)
+		}
+		else{
+			this[lefttype](left)
+			var around1 = node.around1
+			if(around1) this.fastText(around1, this.styles.Comment.around)//, this.trace += around1
+			// lets ignore padding when left = _
+			this.fastText(node.operator, this.styles.Operator[node.operator] || this.styles.Operator.default)
+		}
+
 		var around2 = node.around2
 		if(around2) this.fastText(around2, this.styles.Comment.around)//, this.trace += around2
 
@@ -1348,14 +1356,14 @@ module.exports = class JSFormatter extends require('base/class'){
 		//this.trace += 'switch('
 		this.fastText('switch', this.styles.If.switch)
 		var parenId = this.$parenGroupId++
-		var pStart = this.fastText('(', this.styles.If.parentLeft, undefined, parenId)
+		var pStart = this.fastText('(', this.styles.If.parenLeft, undefined, parenId)
 		var disc = node.discriminant
 		this[disc.type](disc)
-		var pEnd = this.fastText(')', this.styles.If.parentLeft, undefined, parenId)
+		var pEnd = this.fastText(')', this.styles.If.parenLeft, undefined, parenId)
 		this.$parenRanges.push({start:pStart,end:pEnd, id:parenId})
-
 		var blStart = this.fastText('{', this.styles.If.curly)
-
+		var turtle = this.turtle
+		var starty = turtle.wy
 		var endx = turtle.wx, lineh = turtle.mh
 		this.$fastTextIndent++
 		//this.trace += '){\n'
@@ -1390,7 +1398,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			blockh - starty,
 			this.$fastTextIndent,
 			pickId,
-			this.styles.Switch.block
+			this.styles.If.block
 		)
 
 	}
@@ -1581,7 +1589,7 @@ module.exports = class JSFormatter extends require('base/class'){
 
 		// lets inject a newline
 		var body = node.body
-		this[body.type](body)
+		this[body.type](body, this.styles.If)
 	}
 	// WithStatement:{object:1, body:1}
 	WithStatement(node){

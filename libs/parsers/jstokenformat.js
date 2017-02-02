@@ -326,7 +326,7 @@ module.exports = class JSFormatter extends require('base/class'){
 				this.fastBlock(
 					startx,
 					yPos,
-					xPos-startx, 
+					xPos-startx,
 					lineh,
 					this.indentSize * this.$fastTextFontSize,
 					blockh - yPos,

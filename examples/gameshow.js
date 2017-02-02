@@ -414,7 +414,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
-		var scale = 0.6
+		var scale = 0.4
 		var panel = 300
 		//for(var i=0;i<1;i++)
 		let team = 0

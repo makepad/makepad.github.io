@@ -8,6 +8,8 @@ var Worker = require('services/worker')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 
+require('base/log')
+
 module.exports = class App extends require('base/view'){
 	
 	// lets define some props

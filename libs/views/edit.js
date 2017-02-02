@@ -182,7 +182,7 @@ module.exports = class Edit extends require('base/view'){
 				return {}
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
-			var last = this.$lengthText() - 1//this._text.length - 1
+			var last = this.lengthText() - 1//this._text.length - 1
 			if(last <0){ // first cursor, make it up from initial props
 				var ls = this.Text.prototype.lineSpacing
 				var fs = this.Text.prototype.fontSize

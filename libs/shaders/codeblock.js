@@ -130,6 +130,7 @@ module.exports = class CodeBlock extends require('base/shader'){
 
 	pixel(){$
 		//return 'red'
+		//return this.color*0.5
 		this.viewport(this.p)
 		this.box(4.,13.4,this.topSize.x - 6. - 5.,  this.topSize.y - 13.5, 1.)
 		this.box(this.topSize.x - 18., 0., 18., this.topSize.y - 0., this.borderRadius)

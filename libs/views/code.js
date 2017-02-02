@@ -30,7 +30,7 @@ module.exports = class Code extends require('views/edit'){
 				color:colors.codeBg
 			}),
 			Text: require('shaders/codetext').extend({
-				font: require('fonts/ubuntu_monospace_256.font'),
+				font: module.style.fonts.mono,
 				order:3,
 			}),
 			Block: require('shaders/codeblock').extend({
@@ -266,6 +266,9 @@ module.exports = class Code extends require('views/edit'){
 				'...':{},
 				':':{}
 			},
+			Log:{
+				$color:colors.codeLog
+			},
 			LabeledStatement:{
 				$color:colors.codeOperator,
 				label:{},
@@ -469,7 +472,7 @@ module.exports = class Code extends require('views/edit'){
 	}
 
 	drawError(error, id){
-		var epos = clamp(error.pos, 0, this.$lengthText() - 1) 
+		var epos = clamp(error.pos, 0, this.lengthText() - 1) 
 		
 		var rd = this.$readOffsetText(epos) 			
 		if(!rd) return

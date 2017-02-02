@@ -11,16 +11,16 @@ var MakeProxy = function(value) {
 
 class ProxyMap{
 	constructor(map){
-		this['0__unwrap__'] = map
+		this['__unwrap__'] = map
 	}
 
 	get(key){
-		var map = this['0__unwrap__']
+		var map = this['__unwrap__']
 		return proxyHandlerGet(map, key, map.get(key))
 	}
 
 	set(key, value){
-		var map = this['0__unwrap__']
+		var map = this['__unwrap__']
 		var old = map.get(key)
 		proxyHandlerSet(map, key, value, old)
 		map.set(key, value)
@@ -28,7 +28,7 @@ class ProxyMap{
 
 	// TODO wrap these
 	keys(){
-		var map = this['0__unwrap__']
+		var map = this['__unwrap__']
 		return map.keys()
 	}
 
@@ -38,14 +38,14 @@ class ProxyMap{
 	}
 
 	delete(key){
-		var map = this['0__unwrap__']
+		var map = this['__unwrap__']
 		var old = map.get(index)
 		proxyHandlerSet(map, index, undefined, old)
 		map.delete(key)
 	}
 
 	clear(){
-		var map = this['0__unwrap__']
+		var map = this['__unwrap__']
 		for(let key of map.keys()){
 			proxyHandlerSet(map, key, undefined, map.get(old))
 		}
@@ -53,7 +53,7 @@ class ProxyMap{
 	}
 
 	get __proxymeta__(){
-		return proxyMeta.get(this['0__unwrap__'])
+		return proxyMeta.get(this['__unwrap__'])
 	}
 }
 
@@ -61,11 +61,11 @@ function defineObjectProperty(proto, key){
 	Object.defineProperty(proto, key, {
 		configurable:true,
 		get:function(){
-			var object =  this['0__unwrap__']
+			var object =  this['__unwrap__']
 			return proxyHandlerGet(object, key, object[key])
 		},
 		set:function(value){
-			var object =  this['0__unwrap__']
+			var object =  this['__unwrap__']
 			var old = object[key]
 			proxyHandlerSet(object, key, value, old)
 			object[key] = value
@@ -76,11 +76,11 @@ function defineObjectProperty(proto, key){
 function defineArrayProperty(proto, i){
 	Object.defineProperty(proto, i, {
 		get:function(){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			return proxyHandlerGet(array, i, array[i])
 		},
 		set:function(value){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var old = array[i]
 			proxyHandlerSet(array, i, value, old)
 			array[i] = value
@@ -96,7 +96,7 @@ if(ProxyFallback){
 	class ProxyObject{
 		constructor(object){
 			// helper property to quickly access underlying object
-			Object.defineProperty(this, '0__unwrap__', {
+			Object.defineProperty(this, '__unwrap__', {
 				configurable:true,
 				value:object
 			})
@@ -120,21 +120,21 @@ if(ProxyFallback){
 		}
 
 		get __proxymeta__(){
-			return proxyMeta.get(this['0__unwrap__'])
+			return proxyMeta.get(this['__unwrap__'])
 		}
 	}
 
 	class ProxyArray{
 		constructor(array){
 			this._defineProxyProps(array.length)
-			Object.defineProperty(this, '0__unwrap__', {
+			Object.defineProperty(this, '__unwrap__', {
 				configurable:true,
 				value:array
 			})
 		}
 
 		push(...args){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var total = array.length + args.length
 			this._defineProxyProps(total)
 			for(let i = array.length, j = 0; i < total; i++, j++){
@@ -143,7 +143,7 @@ if(ProxyFallback){
 		}
 
 		pop(){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var len = array.length
 			if(!len) return
 			var ret = this[len - 1]
@@ -153,19 +153,19 @@ if(ProxyFallback){
 		}
 
 		forEach(cb){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			for(let i = 0, l = array.length; i < l; i++){
 				cb(this[i], i, this)
 			}
 		}
 		
 		forEachUnwrap(...args){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			return array.forEach(...args)
 		}
 
 		map(...args){ 
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var out = []
 			for(let i = 0, l = array.length; i < l; i++){
 				out[i] = this[i]
@@ -174,19 +174,19 @@ if(ProxyFallback){
 		}
 
 		indexOf(thing){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var proxy = thing && thing.__proxymeta__
 			if(proxy) thing = proxy.object
 			return array.indexOf(thing)
 		}
 
 		get length(){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			return proxyHandlerGet(array, 'length', array.length)
 		}
 
 		set length(value){
-			var array = this['0__unwrap__']
+			var array = this['__unwrap__']
 			var oldLen = array.length
 			// if shorten
 			for(var i = oldLen - 1; i >= value; i--){
@@ -208,7 +208,7 @@ if(ProxyFallback){
 		}
 
 		get __proxymeta__(){
-			return proxyMeta.get(this['0__unwrap__'])
+			return proxyMeta.get(this['__unwrap__'])
 		}
 	}
 
@@ -246,11 +246,11 @@ if(ProxyFallback){
 				object[key] = value
 				Object.defineProperty(input, key, {
 					get:function(){
-						var object = this['0__unwrap__']
+						var object = this['__unwrap__']
 						return proxyHandlerGet(object, key, object[key])
 					},
 					set:function(value){
-						var object = this['0__unwrap__']
+						var object = this['__unwrap__']
 						var old = object[key]
 						proxyHandlerSet(object, key, value, old)
 						object[key] = value

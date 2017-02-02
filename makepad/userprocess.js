@@ -148,14 +148,14 @@ module.exports = class UserProcess extends require('views/draw'){
 			return a === b
 		}
 
-		this.worker.onDebug = e=>{
-			console.log("HERE",e)
-			// alright so where do we put it.
+		this.worker.onLog = e=>{
 			this.store.act("addLog", store=>{
 				var logs = this.process.logs
 				// check if we are the same as the last
-				var last = logs[logs.length - 1]
-				console.log(e)
+				logs.push(e)
+				
+				//var last = logs[logs.length - 1]
+				//console.log(e)
 				//logs.push(e)
 				//if(logs.length > 10000){
 				//	logs.unshift()

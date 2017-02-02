@@ -22,7 +22,7 @@ function flushPileupQueue(){
 		else if(msg.fn == 'onError'){
 			localIds[msg.localId].onError(msg.error)
 		}
-		else if(msg.fn == 'onDebug'){
+		else if(msg.fn == 'onLog'){
 			localIds[msg.localId].onLog(msg)
 		}
 	}

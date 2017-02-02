@@ -7,6 +7,7 @@
 		{"name":"libs","folder":[
 			{"name":"base","folder":[
 				{"name":"app.js"},
+				{"name":"log.js"},
 				{"name":"class.js"},
 				{"name":"compiler.js"},
 				{"name":"drawapp.js"},
@@ -135,7 +136,7 @@
 			{"name":"gameshow.js"}
 		]},
 		{"name":"makepad","folder":[
-			{"name":"log.js"},
+			{"name":"processlog.js"},
 			{"name":"source.js"},
 			{"name":"filetree.js"},
 			{"name":"homescreen.js"},

@@ -2,15 +2,14 @@ new require('styles/dark')
 module.exports = require('base/drawapp').extend({
 	props       :{autumn:0},
 	tools       :{
-		Rect  :{color:'#005'},
 		Branch:require('shaders/quad').extend({
-			path    :{noTween:1, value:0},
+			path    :0,
 			depth   :0,
 			leaf    :0,
 			tween   :3,
 			duration:2.,
 			autumn  :0,
-			ease    :[0.2, 10, 0, 0],
+			//ease    :[0.2, 10, 0, 0],
 			rotate2d:function(v, a) {$
 				var ca = cos(a)
 				var sa = sin(a)
@@ -104,7 +103,7 @@ module.exports = require('base/drawapp').extend({
 	},
 	onDraw      :function () {
 		var p = this
-		this.drawRect(this.viewGeom)
+		//this.drawRect(this.viewGeom)
 		function recur(path, depth) {
 			p.drawBranch({
 				autumn:p.autumn,
