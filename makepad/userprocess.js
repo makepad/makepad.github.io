@@ -100,6 +100,7 @@ module.exports = class UserProcess extends require('views/draw'){
 	}
 
 	startWorker(pass){
+		this.pass = pass
 		this.worker = new Worker(null, {
 			parentFbId: pass.framebuffer.fbId 
 		})
@@ -197,8 +198,9 @@ module.exports = class UserProcess extends require('views/draw'){
 			})
 		}
 
-		this.worker.ping(2000)
+		this.worker.ping(4000)
 		this.worker.onPingTimeout = ()=>{
+			console.log("TERMINATING")
 			this.worker.terminate()
 			this.app.findAll(/^Source/).forEach(s=>{
 				this.store.act("addRuntimeError",store=>{
@@ -207,7 +209,7 @@ module.exports = class UserProcess extends require('views/draw'){
 					})
 				})
 			})
-			this.startWorker()
+			this.startWorker(this.pass)
 		}
 	}
 }

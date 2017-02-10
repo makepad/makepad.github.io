@@ -1,16 +1,59 @@
 module.exports = class Slider extends require('base/stamp'){
 	
 	prototype() {
-		
+		let colors = module.style.colors
+
 		this.props = {
+			id          :'',
 			vertical    :false,
 			value       :0,
 			knobSize    :20,
 			range       :[0, 1],
 			step        :0,
-			onValue     :undefined,
-			onValueStamp:undefined
+			onSlide     :undefined
 		}
+	
+		this.states = { // animation!
+			default         :{
+				to       :{
+					Slider  :{
+						bgColor      :colors.bgTop,
+						//glowSize   :0,
+						knobColor:'white'//colors.textMed
+					}
+				},
+				duration :0.8,
+				interrupt:false
+			},
+			over            :{
+				to      :{
+					Slider  :{
+						bgColor      :colors.bgHi,
+						knobColor:'red',
+						//glowSize   :1
+					}
+				},
+				duration:0.05
+			},
+			down            :{
+				0:{
+					Slider  :{
+						bgColor      :colors.bgHi,
+						knobColor:'red',
+						//glowSize   :1
+					}
+				},
+				to      :{
+					Slider  :{
+						bgColor      :colors.bgHi,
+						knobColor:'red',
+						//glowSize   :1
+					}
+				},
+				duration:0.2
+			}
+		}
+
 		//this.wrapped = false
 		this.dragOffset = -1
 		this.tools = {
@@ -18,6 +61,7 @@ module.exports = class Slider extends require('base/stamp'){
 				vertical   :0,
 				value      :0,
 				step       :0,
+				//glowSize   :0,
 				range      :[0., 1.],
 				bgColor    :'gray',
 				knobColor  :'white',
@@ -33,8 +77,8 @@ module.exports = class Slider extends require('base/stamp'){
 						rs = this.h - this.knobSize
 					}
 					
-					if(this.isFingerDown(pos) > 0) {
-						this.slide = 100.
+					//if(this.isFingerDown(pos) > 0) {
+						//this.slide = 100.
 						/*
 						if(this.vertical<0.5){
 						v = clamp((pos.x - this.x) / rs,0.,1.)*rw+this.range.x
@@ -45,8 +89,9 @@ module.exports = class Slider extends require('base/stamp'){
 						if(this.step>0.) v = floor(v/this.step+.5)*this.step
 						this.slide = ((v-this.range.x)/rw)*rs
 						*/
-					}
-					else this.slide = ((this.value - this.range.x) / rw) * rs
+					//}
+					//else 
+					this.slide = ((this.value - this.range.x) / rw) * rs
 				},
 				pixel      :function() {$
 					this.viewport()
@@ -64,41 +109,7 @@ module.exports = class Slider extends require('base/stamp'){
 					return this.result
 				}
 			})
-			/*
-			Knob:require('shaders/quad').extend({
-			color:'white',
-			vertical:0,
-			pos:0,
-			poff:-1,
-			psize:0,
-			step:0,
-			range:[0.,1.],
-			vertexPre:function(){$
-			var pos = vec2()
-			if(this.isFingerDown(pos) > 0 && this.poff > 0.){
-			var rw = (this.range.y-this.range.x)
-			var rs = 0., v=0.
-			if(this.vertical<0.5){
-			rs = (this.psize - this.w)
-			v = clamp((pos.x - this.x - this.poff) / rs,0.,1.)*rw+this.range.x
-			}
-			else{
-			rs = (this.psize - this.h)
-			v = clamp((pos.y - this.y - this.poff) / rs,0.,1.)*rw+this.range.x
-			}
-			if(this.step>0.) v = floor(v/this.step+.5)*this.step
-			this.pos= ((v-this.range.x)/rw)*rs
-			}
-			if(this.vertical < 0.5){
-			this.x += this.pos
-			}
-			else{
-			this.y += this.pos
-			}
-			}
-			})*/
-		}
-		
+		}		
 	}
 	
 	mapValue(pos) {
@@ -110,22 +121,23 @@ module.exports = class Slider extends require('base/stamp'){
 	}
 	
 	onFingerDown(e) {
-		_=e
-		return
+		
+		var le = this.toLocal(e)
 		// check where we clicked
 		var pos = (this.value - this.range[0]) / (this.range[1] - this.range[0])
 		if(this.vertical) {
-			var yp = this.dragSize * pos + this.innerPadding[0]
-			if(e.y > yp && e.y < yp + this.knobSize) {
-				this.dragOffset = e.y - yp + this.innerPadding[0]
+			var yp = this.dragSize * pos// + this.innerPadding[0]
+			if(le.y > yp && le.y < yp + this.knobSize) {
+				this.dragOffset = le.y - yp// + this.innerPadding[0]
 			}
 			else {
 				// compute pos
-				this.dragOffset = 0.5 * this.knobSize + this.innerPadding[0]
-				this.value = this.mapValue((e.y - this.dragOffset) / this.dragSize)
+				this.dragOffset = 0.5 * this.knobSize// + this.innerPadding[0]
+				this.value = this.mapValue((le.y - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
-				if(this.onValue) this.onValue.call(this.view, this) //this.value)
+				if(this.onSlide) this.onSlide.call(this.view, this) //this.value)
 			}
+
 		}
 		else {
 			var xp = this.dragSize * pos + this.innerPadding[3]
@@ -138,38 +150,41 @@ module.exports = class Slider extends require('base/stamp'){
 				this.dragOffset = 0.5 * this.knobSize + this.innerPadding[3]
 				this.value = this.mapValue((e.x - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
-				if(this.onValue) this.onValue.call(this.view, this)
+				if(this.onSlide) this.onSlide.call(this.view, this)
 			}
 		}
-		this.state = this.styles.sliding
+
+		this.setState('down')
 	}
 	
 	onFingerMove(e) {
-		return
-		
+		var le = this.toLocal(e)
 		//console.log(this.view.name)
 		if(this.vertical) {
-			this.value = this.mapValue((e.y - this.dragOffset) / this.dragSize)
+			this.value = this.mapValue((le.y - this.dragOffset) / this.dragSize)
 		}
 		else {
-			this.value = this.mapValue((e.x - this.dragOffset) / this.dragSize)
+			this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
 		}
-		if(this.onValueStamp) this.onValueStamp({value:this.value})
-		//if(this.onValue) this.onValue.call(this.view, this.value)
+		this.setState('down', false, {value:this.value})
+		if(this.onSlide) this.onSlide.call(this.view, this)
 	}
 	
 	onFingerOver() {
+		this.setState('over')
 	}
 	
 	onFingerOut() {
+		this.setState('default')
 	}
 	
 	onFingerUp(e) {
+		this.setState(e.samePick?'over':'default')
 	}
 	
 	onDraw() {
 		//var pos = (this.value - this.range[0])/(this.range[1]-this.range[0])
-		//this.dragSize = this.turtle.height
+		this.dragSize = this.turtle.height - this.knobSize
 		this.drawSlider({
 			w       :'100%',
 			h       :'100%',
@@ -179,34 +194,5 @@ module.exports = class Slider extends require('base/stamp'){
 			step    :this.step,
 			value   :this.value
 		})
-		/*
-		if(this.vertical){
-		this.dragSize = this.turtle._h - this.knobSize
-		console.log(this.turtle.dump())
-		this.drawKnob({
-		vertical:this.vertical,
-		w:this.turtle._w,
-		h:this.knobSize,
-		step:this.step,
-		poff:this.dragOffset>=0?this.dragOffset-this.innerPadding[0]:-1,
-		psize: this.turtle._h,
-		pos:this.dragSize * pos
-		})
-		}
-		else{
-		this.dragSize = this.turtle._w - this.knobSize
-		this.drawKnob({
-		vertical:this.vertical,
-		w:this.knobSize,
-		h:this.turtle._h,
-		step:this.step,
-		range:this.range,
-		poff:this.dragOffset>=0?this.dragOffset-this.innerPadding[3]:-1,
-		psize: this.turtle._w,
-		pos:this.dragSize * pos
-		})
-		}
-		this.endBg()
-		*/
 	}
 }

@@ -7,21 +7,25 @@ module.exports = class extends require('base/drawapp'){
 		}
 		
 	}
-	
+	onSlide(sld) {
+		console.error(1)
+		_=[sld.id, sld.value]
+	}
 	onDraw() {
 		//_='HELLO WORLD ' + this.time
 		var t = 0.5
-		for(let i = 0;i < 4000;i++){
+		for(let i = 0;i < 4;i++){
 			t = clamp(t + (1 - random() * 2) * 0.1, 0, 1)
 			
 			this.drawSlider({
-				w       :4,
+				w       :40,
 				margin  :0,
-				knobSize:20,
-				h       :100,
+				knobSize:50,
+				h       :250,
 				vertical:true,
 				value   :t,
 				id      :i,
+				onSlide :this.onSlide
 			})
 		}
 		//this.redraw(true)

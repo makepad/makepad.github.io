@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/sliders.js"],
-	"run":["/examples/sliders.js"],
+	"open":["/examples/windtree.js"],
+	"run":["/examples/windtree.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[

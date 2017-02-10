@@ -1,3 +1,4 @@
+var types = require('base/types')
 module.exports = class extends require('base/view'){
 	prototype(){
 		this.tools = {
@@ -5,7 +6,10 @@ module.exports = class extends require('base/view'){
 				order:4,
 			}),
 			Slider:require('stamps/slider').extend({
-
+				vertical:true,
+				range:[1,0],
+				w:10,
+				h:'100%'
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -31,6 +35,21 @@ module.exports = class extends require('base/view'){
 		this.redraw()
 	}
 
+	onColorSlide(sld){
+		var ar = this.colorArray
+		ar[sld.id] = sld.value
+		// now modify the node
+		var s = "'#"+
+		('00'+(ar[0]*255|0).toString(16)).slice(-2)+
+		('00'+(ar[1]*255|0).toString(16)).slice(-2)+
+		('00'+(ar[2]*255|0).toString(16)).slice(-2)+
+		('00'+(ar[3]*255|0).toString(16)).slice(-2)+
+		"'"
+		this.astNode.raw = s
+		this.editor.$textClean = null
+		this.editor.redraw()
+	}
+
 	onDraw(){
 		// lets find the AST node we are on
 		// and manipulate that
@@ -47,15 +66,33 @@ module.exports = class extends require('base/view'){
 			var pos = nodes[i]
 			if(node.type === 'Literal' && scan >= pos-node.raw.length && scan <= pos){
 				// maybe color?
-				if(node.kind === 'string'){
+				var ar =  []
+				if(node.kind === 'string' && types.colorFromString(node.raw.slice(1,-1),1,ar,0)){
+					// lets parse a color
+					this.astNode = node
+					this.colorArray = []
 					// lets draw 3 sliders
 					// lets make a bunch of slides w live coded 
 					// example code that 'survives' reload!
 					this.drawSlider({
 						id:0,
-						vertical:true,
-						w:10,
-						h:'100%'
+						value:ar[0],
+						onSlide:this.onColorSlide
+					})
+					this.drawSlider({
+						id:1,
+						value:ar[1],
+						onSlide:this.onColorSlide
+					})
+					this.drawSlider({
+						id:2,
+						value:ar[2],
+						onSlide:this.onColorSlide
+					})
+					this.drawSlider({
+						id:3,
+						value:ar[3],
+						onSlide:this.onColorSlide
 					})
 				}
 				// maybe 
