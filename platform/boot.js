@@ -284,7 +284,7 @@ function workerBoot(){
 			var lines = e.stack.split(/\n/)
 			var stack = []
 			stack.push({
-				path:null,
+				path:'unknown',
 				line:parseInt(e.line),
 				column:parseInt(e.column)
 			})
@@ -293,7 +293,7 @@ function workerBoot(){
 				if(line){
 					stack.push({
 						method:line[1],
-						path:line[2],
+						path:line[2] || 'unknown',
 						line:parseInt(line[3]),
 						column:parseInt(line[4])
 					})
@@ -301,7 +301,8 @@ function workerBoot(){
 				else{
 					var method = lines[i]
 					if(method && method !== '[native code]') stack.push({
-						method:lines[i]
+						method:lines[i],
+						path:'unknown'
 					})
 				}
 			}
@@ -872,6 +873,12 @@ function mathLib(g){
 		console.error(...args)
 		return args[0]
 	}
+
+	//if(!String.prototype.lastIndexOf){
+	//	String.prototype.lastIndexOf = function(chr) {
+	//		return this.indexOf(chr)
+	//	}
+	//}
 }
 
 //

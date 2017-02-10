@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/windtree.js"],
-	"run":["/examples/windtree.js"],
+	"open":["/examples/websockdemo.js"],
+	"run":["/examples/websockdemo.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -116,6 +116,7 @@
 		]},
 		{"name":"examples", "open":true, "folder":[
 			{"name":"audio.js"},
+			{"name":"websockdemo.js"},
 			{"name":"camera.js"},
 			{"name":"baby.wav"},
 			{"name":"bicycle.wav"},
