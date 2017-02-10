@@ -3,6 +3,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
 		this.tools = {
 			Quad:{
+				time :0,
 				pixel:function() {$
 					this.viewport()
 					this.circle(
@@ -32,7 +33,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
-		//_=this
+		_=this
 		this.drawQuad({w:'100%', h:'100%'})
 	}
 }

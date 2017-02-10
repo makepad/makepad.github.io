@@ -208,6 +208,17 @@ function profile(id){
 	}
 }
 
+var batchLogMessages = []
+var batchLogTransfers = []
+function batchLogSend(){
+	module.worker.postMessage({
+		$:'batch',
+		msgs:batchLogMessages
+	}, batchLogTransfers)
+	batchLogMessages = []
+	batchLogTransfers = []
+}
+
 function log(v){
 	var stack = module.worker.decodeException(new Error())
 	
@@ -226,14 +237,21 @@ function log(v){
 	serialize(buf, v)
 	// ok lets transfer this buffer to the main thread
 	//console.log(buf.u32[1])
-	module.worker.postMessage({
+	if(module.worker.afterEntryCallbacks.indexOf(batchLogSend) === -1){
+		module.worker.afterEntryCallbacks.push(batchLogSend)
+	}
+	batchLogMessages.push({
 		$:'worker1',
 		msg:{
 			fn:'onLog',
 			stack:stack,
 			data:buf.u32.buffer
 		}
-	},[buf.u32.buffer])
+	})
+	batchLogTransfers.push(buf.u32.buffer)
+	if(batchLogMessages.length>10000){
+		batchLogSend()
+	}
 }
 
 // lets define _ 

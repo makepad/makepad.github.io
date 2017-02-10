@@ -27,7 +27,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.drawBg(this.viewGeom)
 	}
 
-	onResource(e){	
+	onResource(e){
 		// it changes! lets reload?..
 	}
 

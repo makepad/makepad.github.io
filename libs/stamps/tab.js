@@ -95,6 +95,7 @@ module.exports = require('base/stamp').extend({
 		Bg:require('shaders/quad').extend({
 			borderRadius:4,
 			color:colors.bgNormal,
+			split:colors.bgTop,
 			padding:[10,12,6,12],
 			selected:0.,
 			lineL:1.,
@@ -112,6 +113,7 @@ module.exports = require('base/stamp').extend({
 					if(this.result.a<0.5) discard;
 				}
 				else{
+					//this.box(0, 0., this.w,this.h)
 					this.clear(this.color)
 					if(this.lineL>.5){
 						this.box(0, 0., 3., this.h+2,1.)
@@ -119,13 +121,14 @@ module.exports = require('base/stamp').extend({
 					if(this.lineR>.5){
 						this.box(this.w-3., 0., 3., this.h+2,1.)
 					}
-					this.fill('#4')
+					this.fill(this.split)
 				}
 				return this.result
 			}
 		}),
 		Text:require('shaders/text').extend({
-			font:fonts.regular
+			font:fonts.regular,
+			color:colors.textNormal
 		}),
 		Icon:require('shaders/icon').extend({
 			color:'#7'

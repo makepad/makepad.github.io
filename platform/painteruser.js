@@ -356,7 +356,7 @@ module.exports = function painterUser(proto){
 
 	proto.user_newUbo = function(msg){
 		var ubo = this.uboIds[msg.uboId]
-		if(ubo) return console.error('new ubo already exists')
+		if(ubo) return console.error('new ubo already exists', ubo, msg)
 		var order = msg.order
 		// compute offsets
 		var offsets = {}
@@ -379,6 +379,7 @@ module.exports = function painterUser(proto){
 	}
 
 	proto.user_destroyUbo = function(msg){
+		//console.log("DESTROY", msg.uboId)
 		var ubo = this.uboIds[msg.uboId]
 		if(!ubo) return console.log("Destroy ubo already deleted ")
 		this.uboIds[msg.uboId] = undefined

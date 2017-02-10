@@ -67,6 +67,7 @@ module.exports = class Tree extends require('base/view'){
 			}),
 			Text:require('shaders/text').extend({
 				font:fonts.regular,
+				color:colors.textNormal
 			}),
 			Icon:require('shaders/icon').extend({
 			}),

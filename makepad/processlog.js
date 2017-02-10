@@ -1,16 +1,20 @@
 var types = require('base/log').types
-var codeStyles = 
-module.exports = class Wave extends require('base/view'){
+
+class Log extends require('base/view'){
 	
 	prototype() {
 		this.props = {
 			w:'100%',
+			h:'100#',
+			padding:5,
 			resource:null,
-			overflow:'scroll'
-		} 
+			overflow:'scroll',
+			tail:true
+		}
+		this.order = 2,
 		this.tools = {
 			Bg:require("shaders/bg").extend({
-
+				color:module.style.colors.bgNormal
 			}),
 			Text: require('shaders/codetext').extend({
 				font: require('fonts/ubuntu_monospace_256.font'),
@@ -53,10 +57,10 @@ module.exports = class Wave extends require('base/view'){
 				undefined:{
 					global:{$color:colors.codeGlobal, $boldness:0.2}
 				},
-				regexp: {
+				regexp:{
 					$color:colors.codeString
 				}, 
-				object: {
+				object:{
 					$color:colors.codeObject
 				},
 				num:{
@@ -72,8 +76,8 @@ module.exports = class Wave extends require('base/view'){
 		} 
 	} 
 	
-	constructor(...args) { 
-		super(...args) 
+	constructor(...args){
+		super(...args)
 	}
 	
 	onDestroy(){
@@ -147,14 +151,23 @@ module.exports = class Wave extends require('base/view'){
 			var skip = buf.u32[buf.off++]
 			var id = buf.u32[buf.off++]
 			var len = buf.u32[buf.off++]
-			buf.off = skip
+			
 			if(len === 0){
 				if(this.writeText('[]', this.styles.Array.bracket)>buf.MAXTEXT) return true
 			}
 			else{
-				if(skipObj) if(this.writeText('[.]', this.styles.Array.bracket)>buf.MAXTEXT) return true
+				if(skipObj){
+					buf.off = skip
+					if(this.writeText('[.]', this.styles.Array.bracket)>buf.MAXTEXT) return true
+					return
+				}
 				// write array..
-
+				if(this.writeText('[', this.styles.Array.bracket)>buf.MAXTEXT) return true
+				for(var i = 0; i < len; i++){
+					if(this.deserializeLog(buf, false, true)) return true
+					if(i !== len - 1) if(this.writeText(',', this.styles.Array.commaClose)>buf.MAXTEXT) return true		
+				}
+				if(this.writeText(']', this.styles.Array.bracket)>buf.MAXTEXT) return true				
 			}
 			return
 		}
@@ -196,32 +209,59 @@ module.exports = class Wave extends require('base/view'){
 		}
 	}
 
-	onDraw() {
-		//this.beginBg()	
+	onScroll(e) { 
+		this.tail = false
+		this.parent.tail = false
+		this.redraw() 
+	}
 
+	onDraw() {
+		this.drawBg({
+			w:'100%',
+			h:'100%',
+			moveScroll:0
+		})
+		//this.beginBg()	
 		this.$fastTextChunks = []
 		this.$fastTextStyles = []
-		this.$fastTextFontSize = 8
+		this.$fastTextFontSize = 10
 
 		var tproto = this.Text.prototype
-		var lineHeight = tproto.lineHeight * this.$fastTextFontSize
+		var lineHeight = tproto.lineSpacing * this.$fastTextFontSize
 		var charWidth = tproto.font.fontmap.glyphs[32].advance * this.$fastTextFontSize
 		// how would we virtual viewport this thing?
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
 		if(logs){
 			// lets set the viewspace
-			this.scrollSize(charWidth * 1000, lineHeight *logs.length)
+			this.scrollSize(charWidth * 1000, lineHeight *(logs.length))
+			// lets scroll to the bottom
+			// be sure to start at yScroll and stop when > size
+			var ypos = 0
+			var height = this.turtle.height
+			var scroll = this.todo.yScroll
+
+			// compute the start i and end i
+			var iStart = max(0,floor(scroll / lineHeight)-10)
+			var iEnd = min(iStart + ceil(height / lineHeight)+20, logs.length)
 			
+			if(this.tail){
+				// how do we scroll to the bottom?
+				this.todo.scrollTo(undefined,(logs.length+1)* lineHeight- this.turtle.height, -1)
+			}
+
+			// how do we see if a scrollbar is at the bottom?
+			this.turtle.wy = iStart * lineHeight
+
 			// lets write callstack position here
-
-			// do a viewport ont he logs
-			// offset coordinates/
-
-			for(var i = 0; i < logs.length; i++){
+			for(var i = iStart; i < iEnd; i++){
 				var log = logs[i]
-				if(!log.data) continue
+				if(!log || !log.data) continue
 				// lets draw what we logged
 				// all primitive values instead of object
+				var item = log.stack && log.stack.stack && log.stack.stack[1]
+				var lid = item.path.lastIndexOf('/')
+				this.writeText(item.path.slice(lid+1)+':', this.styles.Function)
+				this.writeText(item.line+' ', this.styles.Value.regexp)
 				var buf = {
 					MAXTEXT:(this.lengthText() || 0) + 1000,
 					str:'',
@@ -237,5 +277,69 @@ module.exports = class Wave extends require('base/view'){
 			}
 		}
 		//this.endBg()
+	}
+}
+
+module.exports = class extends require('base/view'){
+	prototype(){
+		this.tools = {
+			Log:Log,
+			Button: require('stamps/button').extend({
+				order:4,
+			}),
+			Bg:require('shaders/quad').extend({
+				w:'100%',
+				padding:[0,5,0,5],
+				wrap:false,
+				color:module.style.colors.bgNormal
+			})
+		}
+		this.props = {
+			w:'100%',
+			h:'100%',
+			tail:true,
+			resource:null,
+		}
+	}
+
+	constructor(...args){
+		super(...args)
+		this.log = new this.Log(this,{resource:this.resource})
+	}
+	
+	onTrash(){
+		// send new init message to worker
+		this.store.act("clearLog",store=>{
+			this.resource.processes[0].logs.length = 0
+		})
+	}
+
+	onTailToggle(btn){
+		this.tail = btn.toggled
+	}
+
+	onDraw(){
+		//this.beginBg({
+		//})
+		
+		this.drawButton({
+			id:'play',
+			icon:'trash-o',
+			align:[1,0],
+			onClick:this.onTrash
+		})
+
+		this.drawButton({
+			id:'close',
+			align:[1,0],
+			icon:'level-down',
+			margin:[2,10,0,0],
+			toggle:true,
+			toggled:this.tail,
+			onClick:this.onTailToggle
+		})
+		//this.endBg()
+		//this.lineBreak()
+		this.log.draw(this,{x:0,y:0,tail:this.tail})
 	}
 }

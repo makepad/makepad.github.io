@@ -122,6 +122,10 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("debugger", this.styles.Keyword.debugger)
 		}
 
+		this["with"] = function(tok){
+			this.writeText("with", this.styles.Keyword.debugger)
+		} 
+
 		this["typeof"] = function(tok){
 			this.writeText("typeof", this.styles.Operator.default)
 		}

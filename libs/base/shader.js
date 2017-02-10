@@ -242,11 +242,8 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	checkFingerDown(f, pos) {
-		if(f[2] > 0. && this.todoId == mod(f[2], 256.) && abs(this.workerId) == floor(f[2] / 256.) && (this.pickId < 0. || this.pickId == f[3])) {
-			pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
-			return true
-		}
-		return false
+		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
+		return (f[2] > 0. && this.todoId == mod(f[2], 256.) && abs(this.workerId) == floor(f[2] / 256.) && (this.pickId < 0. || this.pickId == f[3]))?true:false
 	}
 	
 	isFingerDown(pos) {$
@@ -260,14 +257,10 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	checkFingerOver(f, pos) {
 		var f2 = abs(f[2])
-		if(abs(this.workerId) == floor(f2 / 256.) && this.todoId == mod(f2, 256.) && (this.pickId < 0. || this.pickId == f[3])) {
-			pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
-			return true
-		}
-		return false
+		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)	
+		return (abs(this.workerId) == floor(f2 / 256.) && this.todoId == mod(f2, 256.) && (this.pickId < 0. || this.pickId == f[3]))?true:false
 	}
-	
-	// finger over
+
 	isFingerOver(pos) {$
 		pos = vec2(0.)
 		if(this.checkFingerOver(this.fingerInfo[0], pos)) return 1
@@ -276,7 +269,7 @@ module.exports = class Shader extends require('base/compiler'){
 		if(this.checkFingerOver(this.fingerInfo[3], pos)) return 4
 		return 0
 	}
-	
+
 	//
 	//
 	// Simple vector API

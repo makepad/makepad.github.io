@@ -28,6 +28,8 @@ module.exports = class Tools extends require('base/class'){
 		this.inheritable('states', function(){
 			// process stamp states. into shader states
 			var states = this.states
+			this._statesProto = protoInherit(this._statesProto, states)
+			states = this.states = protoProcess('', this._statesProto, null, null, null, new WeakMap())
 
 			for(let stateName in states){
 				var state = states[stateName]

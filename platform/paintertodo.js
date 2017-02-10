@@ -449,6 +449,7 @@ module.exports = function painterTodo(proto){
 		var uniLocs = currentShader.uniLocs
 		var uniVals = currentShader.uniVals
 		var ubo = this.uboIds[i32[o+3]]
+		if(!ubo) return
 		var order = ubo.order
 		var offsets = ubo.offsets
 		var i32 = ubo.i32

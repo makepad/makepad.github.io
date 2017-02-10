@@ -337,6 +337,8 @@ module.exports = class View extends require('base/class'){
 				viewClip[3] = this.turtle.height+pad[0]
 			}
 		}
+		
+		this.$dirty = false
 
 		if(this.onDraw){
 			this.onFlag = 4
@@ -344,8 +346,7 @@ module.exports = class View extends require('base/class'){
 			this.onFlag = 0
 		}
 		
-		this.$dirty = false
-
+	
 		// we need to walk the turtle.
 		this.$w = nt.wBound()
 		this.$h = nt.hBound()
@@ -436,7 +437,7 @@ module.exports = class View extends require('base/class'){
 				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
 			}
 			else if(todo.xScroll > 0){
-				todo.scrollTo(0,undefined)
+				todo.scrollTo(0,undefined,-1)
 			}
 			// lets clamp our scroll positions
 			xScroll = clamp(xScroll,0,max(0,todo.xTotal - todo.xView))
@@ -457,12 +458,12 @@ module.exports = class View extends require('base/class'){
 				if(this.onScroll) this.todo.onScroll = this.onScroll.bind(this)
 			}
 			else if(todo.yScroll > 0){
-				todo.scrollTo(undefined,0)
+				todo.scrollTo(undefined,0,-1)
 			}
 			yScroll = clamp(yScroll,0,max(0,todo.yTotal - todo.yView))
 		}
 		if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
-			todo.scrollTo(xScroll, yScroll)
+			todo.scrollTo(xScroll, yScroll, -1)
 		}
 	}
 
@@ -706,7 +707,7 @@ module.exports = class View extends require('base/class'){
 		if(id === undefined) throw new Error("Please provide a view unique id to a stamp")
 		var stamp = this.$stamps[id]
 		if(!stamp){
-			stamp = this.$stamps[id] = new context[classname]()
+			stamp = this.$stamps[id] = new context[classname](args)
 			var pickId = args.pickId || ++this.$pickId
 			//console.log('allocating', id, classname, pickId)
 			this.$pickIds[pickId] = stamp
@@ -775,11 +776,20 @@ module.exports = class View extends require('base/class'){
 		}
 		let app = this.app
 		if(app && !app.redrawTimer && (app.redrawTimer === undefined || force)){
-			this.app.redrawTimer = setImmediate(function(){
-				this.redrawTimer = null
-				this.$redrawViews()
-				if(this.redrawTimer === null) this.redrawTimer = undefined
-			}.bind(this.app),0)
+			if(app.redrawTimer === null){ // make sure we dont flood the main thread
+				app.redrawTimer = setTimeout(function(){
+					this.redrawTimer = null
+					this.$redrawViews()
+					if(this.redrawTimer === null) this.redrawTimer = undefined
+				}.bind(app),16)
+			}
+			else{
+				app.redrawTimer = setImmediate(function(){
+					this.redrawTimer = null
+					this.$redrawViews()
+					if(this.redrawTimer === null) this.redrawTimer = undefined
+				}.bind(app),0)
+			}
 		}
 	}
 

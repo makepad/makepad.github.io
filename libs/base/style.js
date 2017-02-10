@@ -35,6 +35,9 @@ module.exports = class Style extends require('base/class'){
 	}
 
 	processModule(m){
+		if(m.path.indexOf('/libs/services') === 0 && m.initialized){
+			return
+		}
 		// we have to call the factory
 		// we can customize the 'style' class to this module
 		// in the query
@@ -45,6 +48,7 @@ module.exports = class Style extends require('base/class'){
 		m.style = localStyle
 		let ret = m.factory.call(m.exports, m.require, m.exports, m)
 		if(ret !== undefined) m.exports = ret
+		m.initialized = true
 
 		// and what do we do with the subclassing?
 		var cls = m.exports
@@ -60,8 +64,12 @@ module.exports = class Style extends require('base/class'){
 			var item = chain[i]
 			if(item.inherit) item.inherit.call(this, path)
 			// add our style as a dependency to the module
-			var sub = item.constructor.__module__
-			if(sub) m.deps[sub.path] = sub
+			//var sub = item.constructor.__module__
+
+			//if(sub){
+			//	m.deps[sub.path] = sub
+			//	console.log("Depending ", m.path, sub.path )
+			//}
 		}
 
 		if(this.changed){ // inherit class

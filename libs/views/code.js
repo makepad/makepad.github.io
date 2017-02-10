@@ -469,6 +469,11 @@ module.exports = class Code extends require('views/edit'){
 			}
 		}
 		this.groupHighlightId = found?found.id:0
+		// trigger some kind of signal for our editor to redraw
+		var visualEditor = this.app.find('VisualEdit')
+		if(visualEditor){
+			visualEditor.onCursorMove(this)
+		}
 	}
 
 	drawError(error, id){
@@ -521,8 +526,9 @@ module.exports = class Code extends require('views/edit'){
 		else {
 			this.$fastTextDelay = 0 
 			this.parseErrors = []
-			this.parseText()
-			
+			if(this.$textClean !== null){
+				this.parseText()
+			}		
 			this.pickIdCounter = 1 
 			this.pickIds = [0] 
 			this.$textClean = true 
@@ -824,6 +830,7 @@ module.exports = class Code extends require('views/edit'){
 	onFingerDown(f) { 
 		// check if we are a doubleclick on a block
 		var node = this.pickIds[f.pickId] 
+		/*
 		if(node) { 
 			// toggle all inner nodes
 			var redraw = false 
@@ -855,7 +862,7 @@ module.exports = class Code extends require('views/edit'){
 				this.redraw() 
 				return 
 			} 
-		} 
+		} */
 		return super.onFingerDown(f) 
 	} 
 	

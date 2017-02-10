@@ -22,6 +22,11 @@ module.exports = class App extends require('base/view'){
 		this.h = '100%'
 	}
 
+	destroy(){
+		super.destroy()
+		this.painterUbo.destroyUbo()
+	}
+
 	constructor(){
 		super()
 		

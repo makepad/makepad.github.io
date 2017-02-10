@@ -6,7 +6,7 @@ module.exports = function painterScroll(proto){
 		this.scrollDelta
 	}
 
-	proto.doScroll = function(todo, sx, sy){
+	proto.doScroll = function(todo, sx, sy, noPost){
 		var xScroll = sx !== todo.xScroll?Math.min(Math.max(sx, 0), Math.max(0,todo.xTotal - todo.xView)):todo.xScroll
 		var yScroll = sy !== todo.yScroll?Math.min(Math.max(sy, 0), Math.max(0,todo.yTotal - todo.yView)):todo.yScroll
 
@@ -14,13 +14,15 @@ module.exports = function painterScroll(proto){
 		if(xScroll !== todo.xScroll || yScroll !== todo.yScroll){
 			todo.xScroll = xScroll
 			todo.yScroll = yScroll
-			this.postMessage({
-				fn:'onScrollTodo',
-				pileupTime:Date.now(), 
-				todoId:todo.todoId,
-				x:xScroll,
-				y:yScroll
-			})
+			if(!noPost){
+				this.postMessage({
+					fn:'onScrollTodo',
+					pileupTime:Date.now(), 
+					todoId:todo.todoId,
+					x:xScroll,
+					y:yScroll
+				})
+			}
 			this.requestRepaint()
 			return true
 		}
@@ -28,21 +30,24 @@ module.exports = function painterScroll(proto){
 
 	proto.processScrollState = function(todo){
 		if(todo.yScrollTo !== undefined || todo.xScrollTo !== undefined){
+			
 			var ys = todo.yScroll
+			var scrollToSpeed = todo.scrollToSpeed
+			if(scrollToSpeed<0) scrollToSpeed = 1
 			if(todo.yScrollTo !== undefined){
-				ys = (todo.yScroll*(1.-todo.scrollToSpeed) + todo.yScrollTo*todo.scrollToSpeed)
+				ys = (todo.yScroll*(1.-scrollToSpeed) + todo.yScrollTo*scrollToSpeed)
 				if(Math.abs(todo.yScroll - todo.yScrollTo) < 1){
 					todo.yScrollTo = undefined
 				}
 			}
 			var xs = todo.xScroll
 			if(todo.xScrollTo !== undefined){
-				xs = (todo.xScroll*(1.-todo.scrollToSpeed) + todo.xScrollTo*todo.scrollToSpeed)
+				xs = (todo.xScroll*(1.-scrollToSpeed) + todo.xScrollTo*scrollToSpeed)
 				if(Math.abs(todo.xScroll - todo.xScrollTo) < 1){
 					todo.xScrollTo = undefined
 				}
 			}
-			this.doScroll(todo, xs, ys)
+			this.doScroll(todo, xs, ys, todo.scrollToSpeed<0)
 
 			return true
 		}

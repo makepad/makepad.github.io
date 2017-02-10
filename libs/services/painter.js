@@ -733,9 +733,8 @@ painter.Mesh = class Mesh extends require('base/class'){
 		return this
 	}
 }
-
+                        
 var textureIds = new IdAlloc()
-
 // texture format flags
 painter.RGBA = 0
 painter.RGB = 1

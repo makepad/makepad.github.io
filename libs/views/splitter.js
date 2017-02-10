@@ -1,6 +1,7 @@
 
 module.exports=class Splitter extends require('base/view'){
 	prototype(){
+		let colors = module.style.colors
 		this.name = 'Splitter'
 		this.barSize = 2
 		this.locked = false
@@ -18,9 +19,9 @@ module.exports=class Splitter extends require('base/view'){
 						duration:.3,
 						time:{fn:'ease',begin:0,end:10},
 						to:{
-							Bar:{color:'#2',glowColor:'#0000'},
-							GripBg:{color:'#2'},
-							Grip:{color:'#7'},
+							Bar:{color:colors.bgNormal,glowColor:'#0000'},
+							GripBg:{color:colors.bgNormal},
+							Grip:{color:colors.textNormal},
 						}
 					},
 					focus:{
@@ -147,6 +148,8 @@ module.exports=class Splitter extends require('base/view'){
 					Grip:require('shaders/quad').extend({
 						vertical:0,
 						color:'#4',
+						dx:2,
+						dy:2,
 						pixel(){$
 							this.viewport()
 							if(this.vertical<0.5){
@@ -181,7 +184,7 @@ module.exports=class Splitter extends require('base/view'){
 					// the nub
 					if(this.vertical){
 						this.drawBar({x:'0',y:'0',w:'100%',h:'100%',vertical:1})
-						this.beginGripBg({x:'(turtle._w-turtle.width)*-.5',y:'75%', w:16, h:16})
+						this.beginGripBg({x:'(turtle._w-turtle.width)*-.5',y:'75%', w:20, h:20})
 						this.drawGrip({color:'#4',vertical:1,w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){
@@ -191,7 +194,7 @@ module.exports=class Splitter extends require('base/view'){
 					}
 					else{
 						this.drawBar({x:'0',y:'0',w:'100%',h:'100%',vertical:0})
-						this.beginGripBg({y:'(turtle._h-turtle.height)*-.5',x:'75%', w:16, h:16})
+						this.beginGripBg({y:'(turtle._h-turtle.height)*-.5',x:'75%', w:20, h:20})
 						this.drawGrip({color:'#4',vertical:0,w:'100%',h:'100%'})
 						this.endGripBg()
 						if(this.state === 'focus'){

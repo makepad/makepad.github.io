@@ -1,3 +1,4 @@
+//new require('styles/dark')
 new require('styles/dark')
 
 var storage = require('services/storage')
@@ -33,7 +34,8 @@ module.exports = class Makepad extends require('base/app'){
 			FileTree   :require('./makepad/filetree'),
 			HomeScreen :require('./makepad/homescreen'),
 			UserProcess:require('./makepad/userprocess'),
-			ProcessLog :require('./makepad/processlog')
+			ProcessLog :require('./makepad/processlog'),
+			VisualEdit:require('./makepad/visualedit')
 			//Settings: require('./makepad/settings'),
 		}
 	}
@@ -45,43 +47,54 @@ module.exports = class Makepad extends require('base/app'){
 		this.dock = new this.Dock(this, {
 			data:{
 				locked  :true,
-				position:120,
-				vertical:true,
-				pane1   :{
-					selected:1,
-					tabs    :[
-						{type:'HomeScreen', icon:'gear'},
-						{type:'FileTree', title:'Files'},
-					]
-				},
-				pane2   :{
-					selected:0,
-					locked  :false,
-					position:0.5,
+				position:-120,
+				vertical:false,
+				pane1:{
+					locked  :true,
+					position:120,
 					vertical:true,
 					pane1   :{
-						selected:0,
+						selected:1,
 						tabs    :[
-							{type:'HomeScreen', id:'HomeSource', icon:'puzzle-piece'}
+							{type:'HomeScreen', icon:'gear'},
+							{type:'FileTree', title:'Files'},
 						]
 					},
 					pane2   :{
 						selected:0,
-						vertical:false,
-						locked  :true,
-						position:-150,
+						locked  :false,
+						position:0.5,
+						vertical:true,
 						pane1   :{
-							tabs:[
-								{type:'HomeScreen', id:'HomeProcess', icon:'television'}
+							selected:0,
+							tabs    :[
+								{type:'HomeScreen', id:'HomeSource', icon:'puzzle-piece'}
 							]
 						},
 						pane2   :{
 							selected:0,
-							tabs    :[
-								{type:'HomeScreen', id:'HomeLogs', icon:'info-circle'}
-							]
+							vertical:false,
+							locked  :true,
+							position:-150,
+							pane1   :{
+								tabs:[
+									{type:'HomeScreen', id:'HomeProcess', icon:'television'}
+								]
+							},
+							pane2   :{
+								selected:0,
+								tabs    :[
+									{type:'VisualEdit', id:'VisualEdit', icon:'pencil'}
+								]
+							}
 						}
 					}
+				},
+				pane2:{
+					selected:0,
+					tabs    :[
+						{type:'HomeScreen', id:'HomeLogs', icon:'info-circle'}
+					]
 				}
 			}
 		})

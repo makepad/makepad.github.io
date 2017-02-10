@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/tiny.js"],
-	"run":["/examples/tiny.js"],
+	"open":["/examples/sliders.js"],
+	"run":["/examples/sliders.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -130,10 +130,12 @@
 			{"name":"windtree.js"},
 			{"name":"lines.js"},
 			{"name":"buttons.js"},
+			{"name":"sliders.js"},
 			{"name":"shiny.js"},
 			{"name":"snake.js"},
 			{"name":"tiny.js"},
-			{"name":"gameshow.js"}
+			{"name":"gameshow.js"},
+			{"name":"present.js"}
 		]},
 		{"name":"makepad","folder":[
 			{"name":"processlog.js"},
@@ -141,6 +143,7 @@
 			{"name":"filetree.js"},
 			{"name":"homescreen.js"},
 			{"name":"settings.js"},
+			{"name":"visualedit.js"},
 			{"name":"userprocess.js"},
 			{"name":"wave.js"}
 		]},

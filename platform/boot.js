@@ -383,13 +383,14 @@ function workerBoot(){
 		})
 	}
 
-	function invalidateModuleDeps(module, log, path){
+	function invalidateModuleDeps(module, log, path, dp){
 		if(!module) return
+		//console.log("Module", path, Object.keys(module.deps).join('-'))
 		for(var key in module.deps){
 			var oldModule = module.deps[key]
 			if(oldModule.exports){
 				oldModule.exports = undefined
-				invalidateModuleDeps(oldModule, log, key)
+				invalidateModuleDeps(oldModule, log, key, dp+1)
 			}
 		}
 	}
@@ -430,7 +431,7 @@ function workerBoot(){
 		for(let path in resources){
 			var source = resources[path]
 			// invalidate dependencies
-			invalidateModuleDeps(modules[path], modules[path])
+			invalidateModuleDeps(modules[path], modules[path], path, 0)
 
 			if(typeof source !== 'string'){
 				var m = modules[path] = new worker.Module(path, source)
