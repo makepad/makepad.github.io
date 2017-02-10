@@ -37,7 +37,7 @@ module.exports = class extends require('base/view'){
 
 	onColorSlide(sld){
 		var ar = this.colorArray
-		ar[sld.id] = sld.value
+		ar[parseInt(sld.id)] = sld.value
 		// now modify the node
 		var s = "'#"+
 		('00'+(ar[0]*255|0).toString(16)).slice(-2)+
@@ -70,7 +70,7 @@ module.exports = class extends require('base/view'){
 				if(node.kind === 'string' && types.colorFromString(node.raw.slice(1,-1),1,ar,0)){
 					// lets parse a color
 					this.astNode = node
-					this.colorArray = []
+					this.colorArray = ar
 					// lets draw 3 sliders
 					// lets make a bunch of slides w live coded 
 					// example code that 'survives' reload!
