@@ -87,7 +87,8 @@
 				{"name":"midi.js"},
 				{"name":"debug.js"},
 				{"name":"gamepads.js"},
-				{"name":"socket.js"}
+				{"name":"socket.js"},
+				{"name":"http.js"}
 			]},
 			{"name":"parsers","folder":[
 				{"name":"font.js"},

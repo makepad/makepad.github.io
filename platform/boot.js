@@ -10,7 +10,8 @@ var loadServices = [
 	"audio1",
 	"cameras1",
 	"gamepad1",
-	"socket1"
+	"socket1",
+	"http1"
 //	"dropfiles1",
 ]
 

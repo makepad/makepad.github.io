@@ -5,19 +5,19 @@ module.exports = class Line extends require('base/shader'){
 
 	prototype(){
 		this.props = {
-			visible: {noTween:true, value:1.0},
+			visible: 1.0,
 
-			space:{styleLevel:1, value:0},
+			space: 0.,
 
 			// start x
-			sx: {styleLevel:1, value:NaN},
-			sy: {styleLevel:1, value:NaN},
+			sx: NaN,
+			sy: NaN,
 			// end x / y line x /y
 			x: NaN,
 			y: NaN,
-			first: {styleLevel:1, value:false},
+			first: false,
 
-			point:{noTween:1, noStyle:1, value:0},
+			point:{mask:0,value:0},
 			lineWidth:1,
 			outlineWidth:0.,
 			color:{pack:'float12', value:[1,1,1,1]},
@@ -29,14 +29,14 @@ module.exports = class Line extends require('base/shader'){
 			
 			mesh:{kind:'geometry', type:types.vec3},
 			// internal props
-			ax: {noStyle:1, value:NaN},
-			ay: {noStyle:1, value:NaN},
-			bx: {noStyle:1, value:NaN},
-			by: {noStyle:1, value:NaN},
-			cx: {noStyle:1, value:NaN},
-			cy: {noStyle:1, value:NaN},
-			dx: {noStyle:1, value:NaN},
-			dy: {noStyle:1, value:NaN},
+			ax: {mask:0, value:NaN},
+			ay: {mask:0, value:NaN},
+			bx: {mask:0, value:NaN},
+			by: {mask:0, value:NaN},
+			cx: {mask:0, value:NaN},
+			cy: {mask:0, value:NaN},
+			dx: {mask:0, value:NaN},
+			dy: {mask:0, value:NaN},
 		}
 
 		this.mesh = new painter.Mesh(types.vec3).pushQuad(
@@ -54,8 +54,8 @@ module.exports = class Line extends require('base/shader'){
 
 		this.verbs = {
 			draw:function(overload){
-				this.$STYLEPROPS(overload)
-				this.$ALLOCDRAW()
+				this.STYLEPROPS(overload, 1)
+				this.ALLOCDRAW(overload, 1)
 				var t = this.turtle
 				// lets make a little capture object
 				var p = t._NAMEPoints || (t._NAMEPoints = {})
@@ -90,8 +90,8 @@ module.exports = class Line extends require('base/shader'){
 					}
 					else{
 						var offset = this.$PROPLEN()
-						this.$PROP[offset - 1, 'dx'] = p.cx
-						this.$PROP[offset - 1, 'dy'] = p.cy
+						this.PROP[offset - 1, 'dx'] = p.cx
+						this.PROP[offset - 1, 'dy'] = p.cy
 					}
 				}
 				else{
@@ -123,7 +123,7 @@ module.exports = class Line extends require('base/shader'){
 				}
 				t._x = 0
 				t._y = 0
-				this.$WRITEPROPS({
+				this.WRITEPROPS({
 					point:p.points,
 					ax: p.ax, ay: p.ay,
 					bx: p.bx, by: p.by,
@@ -210,6 +210,6 @@ module.exports = class Line extends require('base/shader'){
 		var borderfinal = vec4()
 		if(abs(outline - fill) < 0.1) borderfinal = vec4(this.color.rgb,0.)
 		else borderfinal = mix(this.outlineColor, vec4(this.outlineColor.rgb, 0.), clamp(outline*antialias + 1.,0.,1.))
-		return mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.))
+		return this.premulAlpha(mix(this.color, borderfinal, clamp(fill * antialias + 1., 0., 1.)))
 	}
 }
