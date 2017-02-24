@@ -43,7 +43,12 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	onDraw() {
 		var p = makeParser(def)
-		var ast = p.parse(this.form)
+		var ast
+		var dt = Date.now()
+		for(var i = 0;i < 100;i++){
+			ast = p.parse(this.form)
+		}
+		_=Date.now() - dt
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
