@@ -8,7 +8,7 @@ var def = {
 	Answer  :p=>p.ws && p.String && p.ws && p.newline && 
 		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.newline && 
 		p.ws && p.Expr && p.newline,
-	If      :p=>p.ws && p('if') && p.ws && p('(') && p.Logic && p(')') && p.ws && p.Body,
+	If      :p=>p.ws && p('if') && p.ws && p('(') && p.ws && p.Logic && p.ws && p(')') && p.Body,
 	String  :p=>p('"') && p.any(p=>p('"', false)) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
@@ -18,7 +18,7 @@ var def = {
 	LPart   :p=>p.Id || p('(') && p.Logic && p(')'),
 	Expr    :p=>p.Sum,
 	Sum     :p=>p.Product && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Product),
-	Product :p=>p.EPart && p.any(p=>p.ws && (p('*') || p('/')) && pws && p.EPart),
+	Product :p=>p.EPart && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.EPart),
 	EPart   :p=>p.Id || p('(') && p.Expr && p(')')
 }
 
