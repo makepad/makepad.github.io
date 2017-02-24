@@ -15,14 +15,16 @@ var def = {
 	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
-	Logic   :p=>p.fold(p=>p.LgcOr),
-	LgcOr   :p=>p.fold(p=>p.LgcAnd && p.any(p=>p('||') && p.LgcAnd)),
-	LgcAnd  :p=>p.fold(p=>p.LgcNode && p.any(p=>p('&&') && p.LgcNode)),
-	LgcNode :p=>p.Id || p('(') && p.Logic && p(')'),
-	Expr    :p=>p.fold(p=>p.ExpSum),
-	ExpSum  :p=>p.fold(p=>p.ExpProd && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.ExpProd)),
-	ExpProd :p=>p.fold(p=>p.ExpNode && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExpNode)),
-	ExpNode :p=>p.Id || p('(') && p.Expr && p(')')
+	
+	Logic   :p=>p.fold(p=>p.Or),
+	Or      :p=>p.fold(p=>p.And && p.any(p=>p.ws && p('||') && p.ws && p.And)),
+	And     :p=>p.fold(p=>p.LogicP && p.any(p=>p.ws && p('&&') && p.ws && p.LogicP)),
+	LogicP  :p=>p.fold(p=>p.Id || p('(') && p.Logic && p(')')),
+	
+	Expr    :p=>p.fold(p=>p.Sum),
+	Sum     :p=>p.fold(p=>p.Prod && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Prod)),
+	Prod    :p=>p.fold(p=>p.ExprP && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExprP)),
+	ExprP   :p=>p.fold(p=>p.Id || p('(') && p.Expr && p(')'))
 }
 
 new require('styles/dark')
