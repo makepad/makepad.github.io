@@ -1,21 +1,54 @@
 
 var def = {
-	Root   :p=>p.Expr,
-	Expr   :p=>p.Sum,
-	Sum    :p=>p.Product && p.any(p=>(p('+') || p('-')) && p.Product),
-	Product:p=>p.Value && p.any(p=>(p('*') || p('/')) && p.Value),
-	Value  :p=>p.many(p=>p('0', '9')) || p('(') && p.Expr && p(')')
+	Root    :p=>p.Form,
+	Form    :p=>p('form') && p.many(p=>p.space) && p.Id && p.many(p=>p.space) && p.Body,
+	Body    :p=>p.ws && p('{') && p.newline && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.newline),
+	Question:p=>p.ws && p.String && p.ws && p.newline && 
+		p.ws && p.Id && p(':') && p.ws && p.Type && p.newline,
+	Answer  :p=>p.any(p=>p.space) && p.String && p.any(p=>p.space) && p.newline && 
+		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.newline && 
+		p.ws && p.Expr && p.newline,
+	If      :p=>p.ws && p('if') && p.ws && p('(') && p.Logic && p(')') && p.ws && p.Body,
+	String  :p=>p('"') && p.any(p=>p('"', false)) && p('"'),
+	Type    :p=>(p('boolean') || p('money')),
+	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
+	Logic   :p=>p.And,
+	Or      :p=>p.And && p.any(p=>p('||') && p.And),
+	And     :p=>p.LPart && p.any(p=>p('&&') && p.LPart),
+	LPart   :p=>p.Id || p('(') && p.Logic && p(')'),
+	Expr    :p=>p.Sum,
+	Sum     :p=>p.Product && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Product),
+	Product :p=>p.EPart && p.any(p=>p.ws && (p('*') || p('/')) && pws && p.EPart),
+	EPart   :p=>p.Id || p('(') && p.Expr && p(')')
 }
 
 new require('styles/dark')
 module.exports = class extends require('base/drawapp'){ //top
+	constructor() {
+		super()
+		this.form = 
+		'form taxOfficeExample {\n' + 
+			'  "Did you sell a house in 2010?"\n' + 
+			'    hasSoldHouse: boolean\n' + 
+			'  if (hasSoldHouse) {\n' + 
+			'    "What was the selling price?"\n' + 
+			'      sellingPrice: money\n' + 
+			'    "Private debts for the sold house:"\n' + 
+			'      privateDebt: money\n' + 
+			'    "Value residue:"\n' + 
+			'      valueResidue: money = \n' + 
+			'        (sellingPrice - privateDebt)\n' + 
+			'  }\n' + 
+			'}\n'
+	}
 	onDraw() {
 		var p = makeParser(def)
-		var ast = p.parse('1+2*3-(4*5)')
+		var ast = p.parse(this.form)
 		var recur = (node, d) =>{
 			this.drawText({
-				x   :d * 10,
-				text:node.type + ':' + node.value
+				fontSize:8,
+				x       :d * 10,
+				text    :node.type + ':' + node.value
 			})
 			this.lineBreak()
 			for(let i = 0;i < node.n.length;i++){
@@ -30,7 +63,7 @@ function makeParser(rules) {
 	
 	function p(a, b) {
 		var input = p.input
-		if(b !== undefined) { // range
+		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
 			if(c >= a.charCodeAt(0) && c <= b.charCodeAt(0)) {
 				p.ast.value += input.charAt(p.pos)
@@ -39,10 +72,21 @@ function makeParser(rules) {
 			}
 			return false
 		}
-		for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
-			if(input.charCodeAt(pos) !== a.charCodeAt(i)) return false
+		if(b === false) {
+			var s = ''
+			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
+				s += input.charAt(pos)
+				if(input.charCodeAt(pos) === a.charCodeAt(i)) return false
+			}
+			p.ast.value += s
 		}
-		p.ast.value += a
+		else {
+			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
+				if(input.charCodeAt(pos) !== a.charCodeAt(i)) return false
+			}
+			p.ast.value += a
+		}
+		
 		p.pos = pos
 		return true
 	}
@@ -54,6 +98,29 @@ function makeParser(rules) {
 		p.Root
 		return ast.n[0]
 	}
+	
+	p.__defineGetter__('space', function() {
+		if(p.input.charCodeAt(p.pos) === 32) {
+			p.pos++
+			return true
+		}
+		return false
+	})
+	
+	p.__defineGetter__('ws', function() {
+		while(p.input.charCodeAt(p.pos) === 32 || p.input.charCodeAt(p.pos) === 9){
+			p.pos++
+		}
+		return true
+	})
+	
+	p.__defineGetter__('newline', function() {
+		if(p.input.charCodeAt(p.pos) === 10) {
+			p.pos++
+			return true
+		}
+		return false
+	})
 	
 	p.any = function(fn) { //zero or more
 		while(fn(p)){}
