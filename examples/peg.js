@@ -1,7 +1,7 @@
 
 var def = {
 	Root    :p=>p.Form,
-	ws      :p=>p.fold(p=>p.any(p=>p.eat(' ') || p.eat('\t'))),
+	//ws      :p=>p.fold(p=>p.any(p=>p.eat(' ') || p.eat('\t'))),
 	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
 	Body    :p=>p.ws && p('{') && p.eat('\n') && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
 	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
@@ -44,7 +44,10 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	onDraw() {
 		var p = makeParser(def)
-		var ast = p.parse(this.form)
+		var dt = Date.now()
+		for(var i = 0;i < 100;i++){
+			var ast = p.parse(this.form)
+		}
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
