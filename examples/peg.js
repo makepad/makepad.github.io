@@ -4,22 +4,22 @@ var def = {
 	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
 	Body    :p=>p.ws && p('{') && p.eat('\n') && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
 	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
-		p.ws && p.Id && p(':') && p.ws && p.Type && p.eat('\n'),
+		p.ws && p.Id && p.eat(':') && p.ws && p.Type && p.eat('\n'),
 	Answer  :p=>p.ws && p.String && p.ws && p.eat('\n') && 
-		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.eat('\n') && 
-		p.ws && p.Expr && p('\n'),
+		p.ws && p.Id && p.eat(':') && p.ws && p.Type && p.ws && p.eat('=') && p.ws && p.eat('\n') && 
+		p.ws && p.Expr && p.eat('\n'),
 	If      :p=>p.ws && p('if') && p.ws && p('(') && p.ws && p.Logic && p.ws && p(')') && p.Body,
 	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
-	Logic   :p=>p.And,
-	Or      :p=>p.And && p.any(p=>p('||') && p.And),
-	And     :p=>p.LPart && p.any(p=>p('&&') && p.LPart),
-	LPart   :p=>p.Id || p('(') && p.Logic && p(')'),
-	Expr    :p=>p.Sum,
-	Sum     :p=>p.Product && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Product),
-	Product :p=>p.EPart && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.EPart),
-	EPart   :p=>p.Id || p('(') && p.Expr && p(')')
+	Logic   :p=>p.fold(p=>p.LogOr),
+	LogOr   :p=>p.fold(p=>p.LogAnd && p.any(p=>p('||') && p.LogAnd)),
+	LogAnd  :p=>p.fold(p=>p.LogNode && p.any(p=>p('&&') && p.LogNode)),
+	LogNode :p=>p.Id || p('(') && p.Logic && p(')'),
+	Expr    :p=>p.fold(p=>p.ExSum),
+	ExSum   :p=>p.fold(p=>p.ExProd && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.ExProd)),
+	ExProd  :p=>p.fold(p=>p.ExNode && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExNode)),
+	ExNode  :p=>p.Id || p('(') && p.Expr && p(')')
 }
 
 new require('styles/dark')
@@ -101,6 +101,14 @@ function makeParser(rules) {
 		return ast.n[0]
 	}
 	
+	p.fold = function(fn) {
+		if(fn(p)) {
+			if(p.ast.n.length === 1) return 0
+			return true
+		}
+		return false
+	}
+	
 	p.eat = function(a, b) {
 		return p(a, b, true)
 	}
@@ -143,15 +151,20 @@ function makeParser(rules) {
 			var mine = p.ast = {type:key, n:[], value:'', start:pos}
 			var pos = p.pos
 			var ret = rule(p)
-			if(ret) {
+			p.ast = parent
+			if(ret === true) {
 				mine.end = pos
 				parent.n.push(mine)
+				return true
+			}
+			else if(ret === 0) {
+				parent.n.push(mine.n[0])
+				return true
 			}
 			else {
 				p.pos = pos
 			}
-			p.ast = parent
-			return ret
+			return false
 		}.bind(this, key))
 	}
 	
