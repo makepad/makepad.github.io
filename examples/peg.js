@@ -1,13 +1,13 @@
 
 var def = {
 	Root    :p=>p.Form,
-	Form    :p=>p('form') && p.many(p=>p.space) && p.Id && p.ws && p.Body,
-	Body    :p=>p.ws && p('{') && p.newline && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.newline),
-	Question:p=>p.ws && p.String && p.ws && p.newline && 
-		p.ws && p.Id && p(':') && p.ws && p.Type && p.newline,
-	Answer  :p=>p.ws && p.String && p.ws && p.newline && 
-		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.newline && 
-		p.ws && p.Expr && p.newline,
+	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
+	Body    :p=>p.ws && p('{') && p.eat('\n') && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
+	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
+		p.ws && p.Id && p(':') && p.ws && p.Type && p.eat('\n'),
+	Answer  :p=>p.ws && p.String && p.ws && p.eat('\n') && 
+		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.eat('\n') && 
+		p.ws && p.Expr && p('\n'),
 	If      :p=>p.ws && p('if') && p.ws && p('(') && p.ws && p.Logic && p.ws && p(')') && p.Body,
 	String  :p=>p('"') && p.any(p=>p('"', false)) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
@@ -68,12 +68,12 @@ module.exports = class extends require('base/drawapp'){ //top
 
 function makeParser(rules) {
 	
-	function p(a, b) {
+	function p(a, b, skip) {
 		var input = p.input
 		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
 			if(c >= a.charCodeAt(0) && c <= b.charCodeAt(0)) {
-				p.ast.value += input.charAt(p.pos)
+				if(!skip) p.ast.value += input.charAt(p.pos)
 				p.pos++
 				return true
 			}
@@ -85,13 +85,13 @@ function makeParser(rules) {
 				s += input.charAt(pos)
 				if(input.charCodeAt(pos) === a.charCodeAt(i)) return false
 			}
-			p.ast.value += s
+			if(!skip) p.ast.value += s
 		}
 		else {
 			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
 				if(input.charCodeAt(pos) !== a.charCodeAt(i)) return false
 			}
-			p.ast.value += a
+			if(!skip) p.ast.value += a
 		}
 		if(pos > p.max) p.max = pos
 		p.pos = pos
@@ -107,27 +107,15 @@ function makeParser(rules) {
 		return ast.n[0]
 	}
 	
-	p.__defineGetter__('space', function() {
-		if(p.input.charCodeAt(p.pos) === 32) {
-			p.pos++
-			return true
-		}
-		return false
-	})
+	p.eat = function(a, b) {
+		return p(a, b, true)
+	}
 	
 	p.__defineGetter__('ws', function() {
 		while(p.input.charCodeAt(p.pos) === 32 || p.input.charCodeAt(p.pos) === 9){
 			p.pos++
 		}
 		return true
-	})
-	
-	p.__defineGetter__('newline', function() {
-		if(p.input.charCodeAt(p.pos) === 10) {
-			p.pos++
-			return true
-		}
-		return false
 	})
 	
 	p.any = function(fn) { //zero or more
