@@ -138,6 +138,11 @@ function makeParser(rules) {
 		return c !== 0
 	}
 	
+	p.opt = function(fn) {
+		fn(p)
+		return true
+	}
+	
 	p.not = function(fn, b) {
 		if(typeof fn === 'string') return p(fn, b, false, true)
 		var pos = p.pos, ret = fn(p)
