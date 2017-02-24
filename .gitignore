@@ -3,5 +3,6 @@ fonts/encoder/*.ttf
 fontencoder/fontencoder
 platform/node/cache
 node_modules/*
+checkout/*
 *.test
 .DS_Store

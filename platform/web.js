@@ -279,6 +279,8 @@
 			return LocalFunction.apply(null, fnargs)()
 		}
 
+		self.importScripts=function(){}
+
 		for(let i = 0; i < mask.length; i++){
 			var name = mask[i]
 			if(jsGlobals.indexOf(name) !== -1) continue

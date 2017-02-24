@@ -18,16 +18,16 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		this.props = {
 			data:[{
-				id:'test',
-				c :[
-					{id:'a'},
-					{id:'b'},
+				name:'test',
+				c   :[
+					{name:'a'},
+					{name:'b'},
 					{
-						id:'c',
-						c :[
-							{id:'x'},
-							{id:'y', c:[
-								{id:'1'},
+						name:'c',
+						c   :[
+							{name:'x'},
+							{name:'y', c:[
+								{name:'1'},
 								{id:'2'},
 							]},
 						]
@@ -65,7 +65,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		this.drawText({
 			fontSize:12 * scale,
-			text    :node.id
+			text    :node.name
 		})
 		
 		let c = node.c

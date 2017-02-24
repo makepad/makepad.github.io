@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/websockdemo.js"],
-	"run":["/examples/websockdemo.js"],
+	"open":["/examples/peg.js"],
+	"run":["/examples/peg.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[
@@ -92,6 +92,8 @@
 			]},
 			{"name":"parsers","folder":[
 				{"name":"font.js"},
+				{"name":"libjpegasm.js"},
+				{"name":"jpg.js"},
 				{"name":"js.js"},
 				{"name":"jscomments.js"},
 				{"name":"jsdefinitions.js"},
@@ -119,6 +121,7 @@
 			{"name":"audio.js"},
 			{"name":"websockdemo.js"},
 			{"name":"camera.js"},
+			{"name":"jpeg1.jpg"},
 			{"name":"baby.wav"},
 			{"name":"bicycle.wav"},
 			{"name":"cash.wav"},
@@ -131,6 +134,7 @@
 			{"name":"sample2.wav"},
 			{"name":"windtree.js"},
 			{"name":"lines.js"},
+			{"name":"peg.js"},
 			{"name":"buttons.js"},
 			{"name":"sliders.js"},
 			{"name":"shiny.js"},

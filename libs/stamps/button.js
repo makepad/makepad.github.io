@@ -12,7 +12,6 @@ module.exports = class Button extends require('base/stamp'){
 			toggle      :false,
 			toggled     :false,
 			margin      :[2, 0, 2, 0],
-			onClickStamp:undefined,
 			debug       :0
 		}
 		
@@ -168,7 +167,6 @@ module.exports = class Button extends require('base/stamp'){
 	}
 	
 	onDraw() {
-		
 		this.beginBg(this.wrap())
 		if(this.icon) {
 			this.drawIcon({

@@ -102,6 +102,22 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("for", this.styles.For.for)
 		}
 
+		this["do"] = function(tok){
+			this.writeText("do", this.styles.For.do)
+		}
+
+		this["switch"] = function(tok){
+			this.writeText("switch", this.styles.If.switch)
+		}
+
+		this["case"] = function(tok){
+			this.writeText("case", this.styles.If.case)
+		}
+
+		this["default"] = function(tok){
+			this.writeText("default", this.styles.If.default)
+		}
+
 		this["throw"] = function(tok){
 			this.writeText("for", this.styles.Exception.throw)
 		}
