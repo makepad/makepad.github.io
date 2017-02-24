@@ -1,7 +1,7 @@
 
 var def = {
 	Root    :p=>p.Form,
-	ws      :p=>p.any(p=>p.eat(' ') || p.eat('\t')),
+	ws      :p=>p.fold(p=>p.any(p=>p.eat(' ') || p.eat('\t'))),
 	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
 	Body    :p=>p.ws && p('{') && p.eat('\n') && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
 	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
@@ -104,7 +104,7 @@ function makeParser(rules) {
 	
 	p.fold = function(fn) {
 		if(fn(p)) {
-			if(p.ast.n.length === 1) return 0
+			if(p.ast.n.length < 2) return 0
 			return true
 		}
 		return false
@@ -113,6 +113,13 @@ function makeParser(rules) {
 	p.eat = function(a, b) {
 		return p(a, b, true)
 	}
+	
+	p.__defineGetter__('ws', function() {
+		while(p.input.charCodeAt(p.pos) === 32 || p.input.charCodeAt(p.pos) === 9){
+			p.pos++
+		}
+		return true
+	})
 	
 	p.any = function(fn) { //zero or more
 		while(fn(p)){}
@@ -152,7 +159,8 @@ function makeParser(rules) {
 				return true
 			}
 			else if(ret === 0) {
-				parent.n.push(mine.n[0])
+				var sub = mine.n[0]
+				if(sub) parent.n.push(mine.n[0])
 				return true
 			}
 			else {
