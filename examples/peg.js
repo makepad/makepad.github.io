@@ -9,7 +9,7 @@ var def = {
 		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.eat('\n') && 
 		p.ws && p.Expr && p('\n'),
 	If      :p=>p.ws && p('if') && p.ws && p('(') && p.ws && p.Logic && p.ws && p(')') && p.Body,
-	String  :p=>p('"') && p.any(p=>p('"', false)) && p('"'),
+	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
 	Logic   :p=>p.And,
@@ -68,31 +68,25 @@ module.exports = class extends require('base/drawapp'){ //top
 
 function makeParser(rules) {
 	
-	function p(a, b, eat) {
+	function p(a, b, eat, not) {
 		var input = p.input
 		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
-			if(c >= a.charCodeAt(0) && c <= b.charCodeAt(0)) {
+			var cin = c >= a.charCodeAt(0) && c <= b.charCodeAt(0)
+			if(not && !cin || !not && cin) {
 				if(!eat) p.ast.value += input.charAt(p.pos)
 				p.pos++
 				return true
 			}
 			return false
 		}
-		if(b === false) {
-			var s = ''
-			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
-				s += input.charAt(pos)
-				if(input.charCodeAt(pos) === a.charCodeAt(i)) return false
-			}
-			if(!eat) p.ast.value += s
+		var s = ''
+		for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
+			s += input.charAt(pos)
+			var cin = input.charCodeAt(pos) !== a.charCodeAt(i)
+			if(not && !cin || !not && cin) return false
 		}
-		else {
-			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
-				if(input.charCodeAt(pos) !== a.charCodeAt(i)) return false
-			}
-			if(!eat) p.ast.value += a
-		}
+		if(!eat) p.ast.value += s
 		if(pos > p.max) p.max = pos
 		p.pos = pos
 		return true
@@ -129,7 +123,8 @@ function makeParser(rules) {
 		return c !== 0
 	}
 	
-	p.not = function(fn) {
+	p.not = function(fn, b) {
+		if(typeof fn === 'string') return p(fn, b, false, true)
 		var pos = p.pos, ret = fn(p)
 		p.pos = pos
 		return !ret
