@@ -30,7 +30,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		'form taxOfficeExample {\n' + 
 			'  "Did you sell a house in 2010?"\n' + 
 			'    hasSoldHouse: boolean\n' + 
-			'  if (hasSoldHouse) {\n' + 
+			'  if(hasSoldHouse) {\n' + 
 			'    "What was the selling price?"\n' + 
 			'      sellingPrice: money\n' + 
 			'    "Private debts for the sold house:"\n' + 
@@ -44,6 +44,13 @@ module.exports = class extends require('base/drawapp'){ //top
 	onDraw() {
 		var p = makeParser(def)
 		var ast = p.parse(this.form)
+		if(!ast) {
+			this.drawText({
+				fontSize:20,
+				text    :"Parse error at: ..." + this.form.slice(p.max - 10, p.max) + '^' + this.form.slice(p.max, p.max + 10) + '...'
+			})
+			return
+		}
 		var recur = (node, d) =>{
 			this.drawText({
 				fontSize:8,
@@ -86,7 +93,7 @@ function makeParser(rules) {
 			}
 			p.ast.value += a
 		}
-		
+		if(pos > p.max) p.max = pos
 		p.pos = pos
 		return true
 	}
@@ -94,6 +101,7 @@ function makeParser(rules) {
 	p.parse = function(input) {
 		p.input = input
 		p.pos = 0
+		p.max = 0
 		var ast = p.ast = {n:[]}
 		p.Root
 		return ast.n[0]
