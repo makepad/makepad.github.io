@@ -1,11 +1,11 @@
 
 var def = {
 	Root    :p=>p.Form,
-	Form    :p=>p('form') && p.many(p=>p.space) && p.Id && p.many(p=>p.space) && p.Body,
+	Form    :p=>p('form') && p.many(p=>p.space) && p.Id && p.ws && p.Body,
 	Body    :p=>p.ws && p('{') && p.newline && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.newline),
 	Question:p=>p.ws && p.String && p.ws && p.newline && 
 		p.ws && p.Id && p(':') && p.ws && p.Type && p.newline,
-	Answer  :p=>p.any(p=>p.space) && p.String && p.any(p=>p.space) && p.newline && 
+	Answer  :p=>p.ws && p.String && p.ws && p.newline && 
 		p.ws && p.Id && p(':') && p.ws && p.Type && p.ws && p('=') && p.ws && p.newline && 
 		p.ws && p.Expr && p.newline,
 	If      :p=>p.ws && p('if') && p.ws && p('(') && p.Logic && p(')') && p.ws && p.Body,
