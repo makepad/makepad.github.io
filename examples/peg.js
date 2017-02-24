@@ -50,7 +50,6 @@ function makeParser(rules) {
 	p.parse = function(input) {
 		p.input = input
 		p.pos = 0
-		p.value = ''
 		var ast = p.ast = {n:[]}
 		p.Root
 		return ast.n[0]
