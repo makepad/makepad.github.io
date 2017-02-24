@@ -15,14 +15,14 @@ var def = {
 	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
-	Logic   :p=>p.fold(p=>p.LogOr),
-	LogOr   :p=>p.fold(p=>p.LogAnd && p.any(p=>p('||') && p.LogAnd)),
-	LogAnd  :p=>p.fold(p=>p.LogNode && p.any(p=>p('&&') && p.LogNode)),
-	LogNode :p=>p.Id || p('(') && p.Logic && p(')'),
-	Expr    :p=>p.fold(p=>p.ExSum),
-	ExSum   :p=>p.fold(p=>p.ExProd && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.ExProd)),
-	ExProd  :p=>p.fold(p=>p.ExNode && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExNode)),
-	ExNode  :p=>p.Id || p('(') && p.Expr && p(')')
+	Logic   :p=>p.fold(p=>p.LgcOr),
+	LgcOr   :p=>p.fold(p=>p.LgcAnd && p.any(p=>p('||') && p.LgcAnd)),
+	LgcAnd  :p=>p.fold(p=>p.LgcNode && p.any(p=>p('&&') && p.LgcNode)),
+	LgcNode :p=>p.Id || p('(') && p.Logic && p(')'),
+	Expr    :p=>p.fold(p=>p.ExpSum),
+	ExpSum  :p=>p.fold(p=>p.ExpProd && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.ExpProd)),
+	ExpProd :p=>p.fold(p=>p.ExpNode && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExpNode)),
+	ExpNode :p=>p.Id || p('(') && p.Expr && p(')')
 }
 
 new require('styles/dark')
@@ -54,7 +54,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
-				text    :"Parse error at: ..." + this.form.slice(p.max - 10, p.max) + '^' + this.form.slice(p.max, p.max + 10) + '...'
+				text    :"Parse error at: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
 			})
 			return
 		}
@@ -94,7 +94,7 @@ function makeParser(rules) {
 			if(not && !cin || !not && cin) return false
 		}
 		if(!eat) p.ast.value += s
-		if(pos > p.max) p.max = pos
+		if(pos > p.last) p.last = pos
 		p.pos = pos
 		return true
 	}
@@ -102,7 +102,7 @@ function makeParser(rules) {
 	p.parse = function(input) {
 		p.input = input
 		p.pos = 0
-		p.max = 0
+		p.last = 0
 		var ast = p.ast = {n:[]}
 		p.Root
 		return ast.n[0]
@@ -138,7 +138,7 @@ function makeParser(rules) {
 		return c !== 0
 	}
 	
-	p.opt = function(fn) {
+	p.opt = function(fn) { //zero or one
 		fn(p)
 		return true
 	}
