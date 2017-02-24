@@ -68,12 +68,12 @@ module.exports = class extends require('base/drawapp'){ //top
 
 function makeParser(rules) {
 	
-	function p(a, b, skip) {
+	function p(a, b, eat) {
 		var input = p.input
 		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
 			if(c >= a.charCodeAt(0) && c <= b.charCodeAt(0)) {
-				if(!skip) p.ast.value += input.charAt(p.pos)
+				if(!eat) p.ast.value += input.charAt(p.pos)
 				p.pos++
 				return true
 			}
@@ -85,13 +85,13 @@ function makeParser(rules) {
 				s += input.charAt(pos)
 				if(input.charCodeAt(pos) === a.charCodeAt(i)) return false
 			}
-			if(!skip) p.ast.value += s
+			if(!eat) p.ast.value += s
 		}
 		else {
 			for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
 				if(input.charCodeAt(pos) !== a.charCodeAt(i)) return false
 			}
-			if(!skip) p.ast.value += a
+			if(!eat) p.ast.value += a
 		}
 		if(pos > p.max) p.max = pos
 		p.pos = pos
