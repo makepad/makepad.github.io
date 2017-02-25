@@ -73,6 +73,7 @@ function makeParser(rules) {
 	
 	function p(a, b, eat, not) {
 		var input = p.input
+		if(p.pos > input.length) return false
 		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
 			var cin = c >= a.charCodeAt(0) && c <= b.charCodeAt(0)
