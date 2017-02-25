@@ -1,11 +1,9 @@
 
 var def = {
-	Root    :p=>p.Form,
+	Start   :p=>p.Form,
 	//ws      :p=>p.fold(p=>p.any(p=>p.eat(' ') || p.eat('\t'))),
 	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
-	Body    :p=>p.ws && p('{') && p.eat('\n') && 
-		p.any(p=>p.Answer || p.Question || p.If) && 
-		p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
+	Body    :p=>p.ws && p('{') && p.eat('\n') && p.any(p=>p.Answer || p.Question || p.If) && p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
 	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
 		p.ws && p.Id && p.eat(':') && p.ws && p.Type && p.eat('\n'),
 	Answer  :p=>p.ws && p.String && p.ws && p.eat('\n') && 
@@ -15,16 +13,14 @@ var def = {
 	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
 	Type    :p=>(p('boolean') || p('money')),
 	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
-	
-	Logic   :p=>p.fold(p=>p.Or),
-	Or      :p=>p.fold(p=>p.And && p.any(p=>p.ws && p('||') && p.ws && p.And)),
-	And     :p=>p.fold(p=>p.LogicP && p.any(p=>p.ws && p('&&') && p.ws && p.LogicP)),
-	LogicP  :p=>p.fold(p=>p.Id || p('(') && p.Logic && p(')')),
-	
-	Expr    :p=>p.fold(p=>p.Sum),
-	Sum     :p=>p.fold(p=>p.Prod && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Prod)),
-	Prod    :p=>p.fold(p=>p.ExprP && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExprP)),
-	ExprP   :p=>p.fold(p=>p.Id || p('(') && p.Expr && p(')'))
+	Logic   :p=>p.fold(p=>p.LogOr),
+	LogOr   :p=>p.fold(p=>p.LogAnd && p.any(p=>p('||') && p.LogAnd)),
+	LogAnd  :p=>p.fold(p=>p.LogNode && p.any(p=>p('&&') && p.LogNode)),
+	LogNode :p=>p.Id || p('(') && p.Logic && p(')'),
+	Expr    :p=>p.fold(p=>p.ExSum),
+	ExSum   :p=>p.fold(p=>p.ExProd && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.ExProd)),
+	ExProd  :p=>p.fold(p=>p.ExNode && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExNode)),
+	ExNode  :p=>p.Id || p('(') && p.Expr && p(')')
 }
 
 new require('styles/dark')
@@ -48,15 +44,11 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	onDraw() {
 		var p = makeParser(def)
-		var dt = Date.now()
-		for(var i = 0;i < 100;i++){
-			var ast = p.parse(this.form)
-		}
-		_=Date.now() - dt
+		var ast = p.parse(this.form)
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
-				text    :"Parse error, expected:" + p.lastKey + " at: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
+				text    :"Parse error in " + p.fail[0] + "\nat: ..." + this.form.slice(p.max - 10, p.max) + '^' + this.form.slice(p.max, p.max + 10) + '...'
 			})
 			return
 		}
@@ -93,10 +85,12 @@ function makeParser(rules) {
 		for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
 			s += input.charAt(pos)
 			var cin = input.charCodeAt(pos) !== a.charCodeAt(i)
-			if(not && !cin || !not && cin) return false
+			if(not && !cin || !not && cin) {
+				return false
+			}
 		}
 		if(!eat) p.ast.value += s
-		if(pos > p.last) p.last = pos,p.lastKey = p.key
+		if(pos > p.max) p.max = pos
 		p.pos = pos
 		return true
 	}
@@ -104,9 +98,11 @@ function makeParser(rules) {
 	p.parse = function(input) {
 		p.input = input
 		p.pos = 0
-		p.last = 0
+		p.max = 0
 		var ast = p.ast = {n:[]}
-		p.Root
+		p.fail = []
+		p.stack = []
+		p.Start
 		return ast.n[0]
 	}
 	
@@ -140,16 +136,17 @@ function makeParser(rules) {
 		return c !== 0
 	}
 	
-	p.opt = function(fn) { //zero or one
-		fn(p)
-		return true
-	}
-	
 	p.not = function(fn, b) {
 		if(typeof fn === 'string') return p(fn, b, false, true)
 		var pos = p.pos, ret = fn(p)
 		p.pos = pos
 		return !ret
+	}
+	
+	p.and = function(fn, b) {
+		var pos = p.pos, ret = fn(p)
+		p.pos = pos
+		return ret
 	}
 	
 	p.group = function(fn) {
@@ -164,20 +161,25 @@ function makeParser(rules) {
 			var parent = p.ast
 			var mine = p.ast = {type:key, n:[], value:'', start:pos}
 			var pos = p.pos
-			p.key = key
+			p.stack.push(key)
+			
 			var ret = rule(p)
 			p.ast = parent
 			if(ret === true) {
 				mine.end = pos
 				parent.n.push(mine)
+				p.stack.pop()
 				return true
 			}
 			else if(ret === 0) {
 				var sub = mine.n[0]
 				if(sub) parent.n.push(mine.n[0])
+				p.stack.pop()
 				return true
 			}
 			else {
+				p.fail.push(p.stack.join('/'))
+				p.stack.pop()
 				p.pos = pos
 			}
 			return false
