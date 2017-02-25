@@ -56,7 +56,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
-				text    :"Parse error at: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
+				text    :"Parse error, expected:" + p.lastKey + " at: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
 			})
 			return
 		}
@@ -96,7 +96,7 @@ function makeParser(rules) {
 			if(not && !cin || !not && cin) return false
 		}
 		if(!eat) p.ast.value += s
-		if(pos > p.last) p.last = pos
+		if(pos > p.last) p.last = pos,p.lastKey = p.key
 		p.pos = pos
 		return true
 	}
@@ -164,6 +164,7 @@ function makeParser(rules) {
 			var parent = p.ast
 			var mine = p.ast = {type:key, n:[], value:'', start:pos}
 			var pos = p.pos
+			p.key = key
 			var ret = rule(p)
 			p.ast = parent
 			if(ret === true) {
