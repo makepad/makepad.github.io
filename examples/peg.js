@@ -1,7 +1,7 @@
 var LOG = true
 var def = {
 	Start   :o=>o.Form,
-	//ws      :o=>o.fold(o=>o.any(o=>o.eat(' ') || o.eat('\t'))),
+	ws      :o=>o.fold(o=>o.any(o=>o.eat(' ') || o.eat('\t'))),
 	Form    :o=>o('form') && o.many(o=>o.eat(' ')) && o.Id && o.ws && o.Body,
 	Body    :o=>o.ws && o('{') && o.eat('\n') && 
 		o.any(o=>o.Answer || o.Question || o.If) && 
