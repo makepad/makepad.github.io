@@ -648,7 +648,7 @@ module.exports = class View extends require('base/class'){
 		this.app.transferFingerMove(digit, this.todo.todoId, typeof stamp === 'object'?stamp.$pickId:stamp)
 	}
 
-	scrollIntoView(x, y, w, h){
+	scrollIntoView(x, y, w, h,scrollToSpeed){
 		// we figure out the scroll-to we need
 		var todo = this.todo
 		var sx = todo.xScroll, sy = todo.yScroll
@@ -656,7 +656,22 @@ module.exports = class View extends require('base/class'){
 		if(x+w > todo.xScroll + todo.xView) sx = clamp(0.,x + w - todo.xView, todo.xTotal - todo.xView)
 		if(y < todo.yScroll) sy = max(0., y)
 		if(y+h > todo.yScroll + todo.yView) sy = clamp(0.,y + h - todo.yView, todo.yTotal - todo.yView)
-		this.todo.scrollTo(sx, sy)
+		this.todo.scrollTo(sx, sy,scrollToSpeed)
+	}
+
+	scrollTo(x, y, scrollToSpeed){
+		this.todo.scrollTo(x,y,scrollToSpeed)
+	}
+
+	scrollMode(scrollMode){
+		this.todo.scrollMode = scrollMode
+	}
+
+	scrollArea(x,y,w,h){
+		this.todo.xVisible = x
+		this.todo.yVisible = y
+		this.todo.wVisible = w
+		this.todo.hVisible = h
 	}
 
 	$recomputeMatrix(px, py){

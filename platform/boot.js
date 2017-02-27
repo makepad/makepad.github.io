@@ -232,10 +232,13 @@ function workerBoot(){
 	worker.services = {init:{}, ping:{}}
 	worker.modules = modules
 	worker.appMain = undefined
+	
+	Error.stackTraceLimit=1009
 
 	createOnMessage(worker)
 
 	worker.decodeException = function(e){
+
 		if(e.number !== undefined){ // ms edge
 			//edge: e.message, e.description, e.number, e.stack
 			var lines = e.stack.split(/[\r\n]+/)

@@ -73,7 +73,26 @@ module.exports = function painterTodo(proto){
 		var todoUbo = this.uboIds[todo.uboId]
 		if(!todoUbo) return false
 		this.floatUbo(todoUbo, nameIds.thisDOTtodoId, todo.todoId)
-		this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScroll, todo.yScroll)
+		if(todo.scrollMode){
+			// alright so. we need to check. if we are outside the viewrange
+			// use sync
+			if(todo.scrollMode === 2){
+				// check if we are outside the viewrange ifso syncscroll
+				if(todo.xScroll < todo.xVisible || 
+					todo.xScroll > todo.xVisible + todo.wVisible-todo.xView || 
+					todo.yScroll < todo.yScroll || 
+					todo.yScroll > todo.yScroll + todo.hVisible-todo.yView){
+					this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScrollSync, todo.yScrollSync)
+				}
+				else{
+					this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScroll, todo.yScroll)
+				}
+			}
+			else this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScrollSync, todo.yScrollSync)
+		}
+		else{
+			this.vec2fUbo(todoUbo, nameIds.thisDOTviewScroll, todo.xScroll, todo.yScroll)
+		}
 		this.vec4fUbo(todoUbo, nameIds.thisDOTviewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 
 		var f32 = todo.f32

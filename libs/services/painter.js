@@ -262,6 +262,17 @@ painter.Todo = class Todo extends require('base/class'){
 			xView:this.xView,
 			yTotal:this.yTotal,
 			yView:this.yView,
+			
+			// feed back xScroll and yScroll for sync
+			xScrollSync:this.xScroll,
+			yScrollSync:this.yScroll,
+			scrollMode:this.scrollMode,
+			// adaptive scrollmode visibility
+			xVisible:this.xVisible,
+			yVisible:this.yVisible,
+			wVisible:this.wVisible,
+			hVisible:this.hVisible,
+			
 			// id's of the scrollbars
 			xScrollId:this.xScrollId,
 			yScrollId:this.yScrollId,

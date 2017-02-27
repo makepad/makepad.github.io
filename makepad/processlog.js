@@ -6,12 +6,16 @@ class Log extends require('base/view'){
 		this.props = {
 			w:'100%',
 			h:'100#',
-			padding:5,
+			padding:0,
 			resource:null,
 			overflow:'scroll',
 			tail:true
 		}
+		var colors = module.style.colors
 		this.order = 2,
+		this.shiftX = 5,
+		this.shiftY = 5
+		this.selectedRow = 0
 		this.tools = {
 			Bg:require("shaders/bg").extend({
 				color:module.style.colors.bgNormal
@@ -20,9 +24,10 @@ class Log extends require('base/view'){
 				font: require('fonts/ubuntu_monospace_256.font'),
 				order:3,
 			}),
+			SelectedRow:require('shaders/quad').extend({
+				color:colors.accentNormal
+			})
 		} 
-
-		var colors = module.style.colors
 
 		this.styles = {
 			$boldness: 0.,
@@ -125,7 +130,13 @@ class Log extends require('base/view'){
 			var o = buf.off<<1
 			var str = isObjectKey?"":"'"
 			for(var i = 0; i < l; i++){
-				str += String.fromCharCode(u16[o++])
+				var cc = u16[o++]
+				if(cc < 32){
+					str += CharMap[cc]
+				}
+				else{
+					str += String.fromCharCode(cc)
+				}
 			}
 			if(o&1) o++
 			buf.off = o>>1
@@ -215,6 +226,82 @@ class Log extends require('base/view'){
 		this.redraw() 
 	}
 
+	// compute the selection ID
+	onFingerDown(e){
+		// lets compute the actual line selection
+		this.onFingerMove(e)
+		this.setFocus()
+	}
+
+	onFingerMove(e){
+		var pos = this.toLocal(e)
+		var off = max(0,floor((pos.y-this.shiftY) / this.lineHeight))
+		this.selectRow(off)
+	}
+
+	onSelectedChange(){
+		// ok so we changed the selected log item.
+		// now we need to highlight the callstack in the editor
+		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
+		if(!logs) return
+		var item = logs[this.selectedRow]
+		if(!item) return
+		// ok so now the next query.
+		// callstack markers.. how do we do them
+		// well first off we have to find the right editor
+		// shall we use the datamodel?... 
+		//console.log(item.stack)
+
+		// lets update our resources with callstacks we wanna viz
+		this.store.act('stackMarkers',store=>{
+			var res = this.resource
+			res.stackMarkers = item.stack.stack
+		})
+	}
+
+	selectRow(row){
+		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
+		if(!logs) return
+		if(row<0) row = logs.length - row
+		var newRow = clamp(row,0,logs.length-1)
+		if(newRow!==this.selectedRow){
+			this.selectedRow = newRow
+			// lets scroll it into view
+			this.scrollIntoView(
+				0,
+				this.selectedRow * this.lineHeight + this.shiftY,
+				0,
+				this.lineHeight,
+				1.
+			)
+			this.onSelectedChange()
+			this.redraw()
+		}
+	}
+
+	onKeyDown(e){
+		var row
+		if(e.name == 'downArrow'){
+			row = this.selectedRow+1
+		}
+		if(e.name == 'upArrow'){
+			row = max(this.selectedRow-1,0)
+		}
+		if(e.name === 'home'){
+			row = 0			
+		}
+		if(e.name === 'end'){
+			row = -1
+		}
+		if(e.name === 'pageUp'){
+			row = max(this.selectedRow-10,0)
+		}
+		if(e.name === 'pageDown'){
+			row = this.selectedRow+10
+		}
+		this.selectRow(row)
+	}
+
 	onDraw() {
 		this.drawBg({
 			w:'100%',
@@ -225,13 +312,17 @@ class Log extends require('base/view'){
 		this.$fastTextChunks = []
 		this.$fastTextStyles = []
 		this.$fastTextFontSize = 10
-
+		
+		this.scrollMode(2)
+		
 		var tproto = this.Text.prototype
-		var lineHeight = tproto.lineSpacing * this.$fastTextFontSize
+		var lineHeight = this.lineHeight = tproto.lineSpacing * this.$fastTextFontSize
 		var charWidth = tproto.font.fontmap.glyphs[32].advance * this.$fastTextFontSize
 		// how would we virtual viewport this thing?
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
 		if(logs){
+			//this.turtle.sx = this.shiftX
+			//this.turtle.sy = this.shiftY
 			// lets set the viewspace
 			this.scrollSize(charWidth * 1000, lineHeight *(logs.length))
 			// lets scroll to the bottom
@@ -240,17 +331,36 @@ class Log extends require('base/view'){
 			var height = this.turtle.height
 			var scroll = this.todo.yScroll
 
-			// compute the start i and end i
-			var iStart = max(0,floor(scroll / lineHeight)-10)
-			var iEnd = min(iStart + ceil(height / lineHeight)+20, logs.length)
-			
 			if(this.tail){
 				// how do we scroll to the bottom?
-				this.todo.scrollTo(undefined,(logs.length+1)* lineHeight- this.turtle.height, -1)
+				scroll = (logs.length+1)* lineHeight- this.turtle.height
+				this.scrollTo(undefined,scroll, -1)
 			}
 
+			// compute the start i and end i
+			var safeWin = 50
+			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
+			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
+			
+			this.turtle.wx = this.turtle.sx + this.shiftX
 			// how do we see if a scrollbar is at the bottom?
-			this.turtle.wy = iStart * lineHeight
+			this.turtle.wy = iStart * lineHeight + this.turtle.sy + this.shiftY
+			
+			// set scroll area for async scrolling
+			this.scrollArea(
+				this.turtle.wx,
+				this.turtle.wy,
+				(iEnd-iStart)*lineHeight,
+				charWidth*1000
+			)
+
+			// lets draw a cursor
+			this.drawSelectedRow({
+				x:0,
+				y:this.selectedRow * lineHeight + this.turtle.sy + this.shiftY,
+				w:charWidth*1000,
+				h:lineHeight
+			})
 
 			// lets write callstack position here
 			for(var i = iStart; i < iEnd; i++){
@@ -259,8 +369,11 @@ class Log extends require('base/view'){
 				// lets draw what we logged
 				// all primitive values instead of object
 				var item = log.stack && log.stack.stack && log.stack.stack[1]
-				var lid = item.path.lastIndexOf('/')
-				this.writeText(item.path.slice(lid+1)+':', this.styles.Function)
+				var path = 'undefined'
+				if(item.path){
+					path = item.path.slice(item.path.lastIndexOf('/')+1)+':'
+				}
+				this.writeText(path, this.styles.Function)
 				this.writeText(item.line+' ', this.styles.Value.regexp)
 				var buf = {
 					MAXTEXT:(this.lengthText() || 0) + 1000,
@@ -274,6 +387,7 @@ class Log extends require('base/view'){
 				}
 				this.deserializeLog(buf)
 				this.writeText('\n', this.styles.Value.undefined)
+				this.turtle.wx = this.turtle.sx + this.shiftX
 			}
 		}
 		//this.endBg()
@@ -310,6 +424,7 @@ module.exports = class extends require('base/view'){
 	onTrash(){
 		// send new init message to worker
 		this.store.act("clearLog",store=>{
+			console.log("CLEAR LOG")
 			this.resource.processes[0].logs.length = 0
 		})
 	}
@@ -343,3 +458,10 @@ module.exports = class extends require('base/view'){
 		this.log.draw(this,{x:0,y:0,tail:this.tail})
 	}
 }
+
+var CharMap = {
+	9:'\\t',
+	10:'\\n',
+	13:'\\r'
+}
+for(let i = 0;i < 32; i++) if(!CharMap[i]) CharMap[i] = '\\x'+i

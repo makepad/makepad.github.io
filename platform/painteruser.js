@@ -269,8 +269,14 @@ module.exports = function painterUser(proto){
 		todo.yScrollId = msg.yScrollId
 		todo.xsScroll = msg.xsScroll
 		todo.ysScroll = msg.ysScroll
-
-		todo.scrollToSpeed = msg.scrollToSpeed || .5
+		todo.xScrollSync = msg.xScrollSync
+		todo.yScrollSync = msg.yScrollSync
+		todo.scrollMode = msg.scrollMode
+		todo.xVisible = msg.xVisible
+		todo.yVisible = msg.hVisible
+		todo.wVisible = msg.wVisible
+		todo.hVisible = msg.hVisible
+				todo.scrollToSpeed = msg.scrollToSpeed || .5
 		todo.scrollMomentum = msg.scrollMomentum
 		todo.scrollMask = msg.scrollMask
 		todo.scrollMinSize = msg.scrollMinSize

@@ -57,18 +57,8 @@ module.exports = class Code extends require('views/edit'){
 					this.borderColor = this.color
 				} 
 			}), 
-			Marker: require('shaders/codemarker').extend({
-				vertexStyle: function() {$
-					this.opColor = this.bgColor * 1.1
-					this.borderColor = this.bgColor
-					this.x -= 2.
-					this.x2 += 2.
-					this.x3 += 2.
-					this.w += 4.
-					this.y += this.level * 1.
-					this.h -= this.level * 2.
-					this.borderRadius -= this.level
-				}
+			Marker: require('shaders/bg').extend({
+				borderRadius:4,
 			}), 			
 			ErrorMarker: require('shaders/codemarker').extend({
 				order:4,
@@ -476,6 +466,19 @@ module.exports = class Code extends require('views/edit'){
 		}
 	}
 
+	drawStackMarker(start, end, color){
+		var rds = this.$readOffsetText(clamp(start, 0, this.lengthText() - 1) ) 			
+		var rde = this.$readOffsetText(clamp(end, 0, this.lengthText() - 1) ) 			
+		if(!rde) return
+		this.drawMarker({
+			x:rds.x,
+			y:rds.y,
+			w:rde.x-rds.x,
+			h:rds.fontSize * rds.lineSpacing,
+			color:color
+		})
+	}
+
 	drawError(error, id){
 		var epos = clamp(error.pos, 0, this.lengthText() - 1) 
 		
@@ -520,7 +523,7 @@ module.exports = class Code extends require('views/edit'){
 		if(this.$textClean) { 
 			this.reuseDrawSize()
 			this.reuseBlock()
-			this.reuseMarker()
+			//this.reuseMarker()
 			this.reuseText()
 		}
 		else {
@@ -607,6 +610,37 @@ module.exports = class Code extends require('views/edit'){
 				this.drawError(this.parseErrors[i], 'parse'+i)
 			}
 		}
+
+
+		if(this.stackMarkers){
+			var stack = this.stackMarkers.__unwrap__
+			for(var i = 0; i < stack.length; i++){
+				var item = stack[i]
+
+				if(this.resource.path !== item.path) continue
+
+				var text = this._text
+				var line = item.line - 1
+				var col = item.column
+				var j = 0, tl = text.length;
+				for(; j < tl; j++){
+					if(text.charCodeAt(j) === 10) line--
+					if(line<=0) break
+				}
+				var start = j+col
+				var end = start+1
+				for(;end<text.length;end++){
+					if(!text.charAt(end).match(/\w/))break
+				}
+				var col = i/stack.length
+
+				this.drawStackMarker(start, end, [1-col,col,0.,1])
+			}
+		}
+		// draw code markers
+		// we have a bunch of line/row/size markers
+		// lets draw em
+
 
 		if(this.hasFocus) { // draw cursors
 

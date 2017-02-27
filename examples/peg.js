@@ -1,28 +1,28 @@
-
+var LOG = true
 var def = {
-	Start   :p=>p.Form,
-	//ws      :p=>p.fold(p=>p.any(p=>p.eat(' ') || p.eat('\t'))),
-	Form    :p=>p('form') && p.many(p=>p.eat(' ')) && p.Id && p.ws && p.Body,
-	Body    :p=>p.ws && p('{') && p.eat('\n') && 
-		p.any(p=>p.Answer || p.Question || p.If) && 
-		p.ws && p('}') && p.ws && p.many(p=>p.eat('\n')),
-	Question:p=>p.ws && p.String && p.ws && p.eat('\n') && 
-		p.ws && p.Id && p.eat(':') && p.ws && p.Type && p.eat('\n'),
-	Answer  :p=>p.ws && p.String && p.ws && p.eat('\n') && 
-		p.ws && p.Id && p.eat(':') && p.ws && p.Type && p.ws && p.eat('=') && p.ws && p.eat('\n') && 
-		p.ws && p.Expr && p.eat('\n'),
-	If      :p=>p.ws && p('if') && p.ws && p('(') && p.ws && p.Logic && p.ws && p(')') && p.Body,
-	String  :p=>p('"') && p.any(p=>p.not('"')) && p('"'),
-	Type    :p=>(p('boolean') || p('money')),
-	Id      :p=>(p('a', 'z') || p('A', 'Z')) && p.any(p=>p('a', 'z') || p('A', 'Z') || p('0', '9')),
-	Logic   :p=>p.fold(p=>p.Or),
-	Or      :p=>p.fold(p=>p.And && p.any(p=>p.ws && p('||') && p.ws && p.And)),
-	And     :p=>p.fold(p=>p.LogicS && p.any(p=>p.ws && p('&&') && p.ws && p.LogicS)),
-	LogicS  :p=>p.fold(p=>p.Id || p('(') && p.Logic && p(')')),
-	Expr    :p=>p.fold(p=>p.Sum),
-	Sum     :p=>p.fold(p=>p.Prod && p.any(p=>p.ws && (p('+') || p('-')) && p.ws && p.Prod)),
-	Prod    :p=>p.fold(p=>p.ExprS && p.any(p=>p.ws && (p('*') || p('/')) && p.ws && p.ExprS)),
-	ExprS   :p=>p.fold(p=>p.Id || p('(') && p.Expr && p(')'))
+	Start   :o=>o.Form,
+	//ws      :o=>o.fold(o=>o.any(o=>o.eat(' ') || o.eat('\t'))),
+	Form    :o=>o('form') && o.many(o=>o.eat(' ')) && o.Id && o.ws && o.Body,
+	Body    :o=>o.ws && o('{') && o.eat('\n') && 
+		o.any(o=>o.Answer || o.Question || o.If) && 
+		o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
+	Question:o=>o.ws && o.String && o.ws && o.eat('\n') && 
+		o.ws && o.Id && o.eat(':') && o.ws && o.Type && o.eat('\n'),
+	Answer  :o=>o.ws && o.String && o.ws && o.eat('\n') && 
+		o.ws && o.Id && o.eat(':') && o.ws && o.Type && o.ws && o.eat('=') && o.ws && o.eat('\n') && 
+		o.ws && o.Expr && o.eat('\n'),
+	If      :o=>o.ws && o('if') && o.ws && o('(') && o.ws && o.Logic && o.ws && o(')') && o.Body,
+	String  :o=>o('"') && o.any(o=>o.inv('"')) && o('"'),
+	Type    :o=>(o('boolean') || o('money')),
+	Id      :o=>(o('a', 'z') || o('A', 'Z')) && o.any(o=>o('a', 'z') || o('A', 'Z') || o('0', '9')),
+	Logic   :o=>o.fold(o=>o.Or),
+	Or      :o=>o.fold(o=>o.And && o.any(o=>o.ws && o('||') && o.ws && o.And)),
+	And     :o=>o.fold(o=>o.LogicS && o.any(o=>o.ws && o('&&') && o.ws && o.LogicS)),
+	LogicS  :o=>o.fold(o=>o.Id || o('(') && o.Logic && o(')')),
+	Expr    :o=>o.fold(o=>o.Sum),
+	Sum     :o=>o.fold(o=>o.Prod && o.any(o=>o.ws && (o('+') || o('-')) && o.ws && o.Prod)),
+	Prod    :o=>o.fold(o=>o.ExprS && o.any(o=>o.ws && (o('*') || o('/')) && o.ws && o.ExprS)),
+	ExprS   :o=>o.fold(o=>o.Id || o('(') && o.Expr && o(')'))
 }
 
 new require('styles/dark')
@@ -50,7 +50,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		if(!ast) {
 			this.drawText({
 				fontSize:20,
-				text    :"Parse error in " + p.fail[0] + "\nat: ..." + this.form.slice(p.max - 10, p.max) + '^' + this.form.slice(p.max, p.max + 10) + '...'
+				text    :"Parse error in " + p.fail[0] + "\nat: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
 			})
 			return
 		}
@@ -71,14 +71,15 @@ module.exports = class extends require('base/drawapp'){ //top
 
 function makeParser(rules) {
 	
-	function p(a, b, eat, not) {
+	function p(a, b, eat, inv) {
 		var input = p.input
 		if(p.pos > input.length) return false
 		if(typeof b === 'string') { // range
 			var c = input.charCodeAt(p.pos)
 			var cin = c >= a.charCodeAt(0) && c <= b.charCodeAt(0)
-			if(not && !cin || !not && cin) {
+			if(inv && !cin || !inv && cin) {
 				if(!eat) p.ast.value += input.charAt(p.pos)
+				if(LOG) _='[' + input.charAt(p.pos) + ']' + input.slice(p.pos + 1)
 				p.pos++
 				return true
 			}
@@ -88,20 +89,30 @@ function makeParser(rules) {
 		for(var i = 0, pos = p.pos;i < a.length;i++,pos++){ // string match
 			s += input.charAt(pos)
 			var cin = input.charCodeAt(pos) !== a.charCodeAt(i)
-			if(not && !cin || !not && cin) {
+			if(inv && !cin || !inv && cin) {
 				return false
 			}
 		}
+		if(LOG) _='[' + s + ']' + input.slice(p.pos + s.length)
+		
 		if(!eat) p.ast.value += s
-		if(pos > p.max) p.max = pos
+		if(pos > p.last) p.last = pos
 		p.pos = pos
 		return true
+	}
+	
+	p.eat = function(a, b) {
+		return p(a, b, true)
+	}
+	
+	p.inv = function(a, b) {
+		return p(a, b, false, true)
 	}
 	
 	p.parse = function(input) {
 		p.input = input
 		p.pos = 0
-		p.max = 0
+		p.last = 0
 		var ast = p.ast = {n:[]}
 		p.fail = []
 		p.stack = []
@@ -117,12 +128,9 @@ function makeParser(rules) {
 		return false
 	}
 	
-	p.eat = function(a, b) {
-		return p(a, b, true)
-	}
-	
 	p.__defineGetter__('ws', function() {
-		while(p.input.charCodeAt(p.pos) === 32 || p.input.charCodeAt(p.pos) === 9){
+		var input = p.input
+		while(p.pos < input.length && (input.charCodeAt(p.pos) === 32 || input.charCodeAt(p.pos) === 9)){
 			p.pos++
 		}
 		return true
@@ -139,8 +147,8 @@ function makeParser(rules) {
 		return c !== 0
 	}
 	
+	
 	p.not = function(fn, b) {
-		if(typeof fn === 'string') return p(fn, b, false, true)
 		var pos = p.pos, ret = fn(p)
 		p.pos = pos
 		return !ret
@@ -165,7 +173,6 @@ function makeParser(rules) {
 			var mine = p.ast = {type:key, n:[], value:'', start:pos}
 			var pos = p.pos
 			p.stack.push(key)
-			
 			var ret = rule(p)
 			p.ast = parent
 			if(ret === true) {
@@ -180,11 +187,9 @@ function makeParser(rules) {
 				p.stack.pop()
 				return true
 			}
-			else {
-				p.fail.push(p.stack.join('/'))
-				p.stack.pop()
-				p.pos = pos
-			}
+			p.fail.push(p.stack.join('/'))
+			p.stack.pop()
+			p.pos = pos
 			return false
 		}.bind(this, key))
 	}

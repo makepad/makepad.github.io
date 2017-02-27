@@ -229,11 +229,11 @@ module.exports = class Source extends require('base/view'){
 		//runtimeErrors.forEach((e, i)=>{
 		//	errors.push(e)
 		//})
-		
 		this.drawCode({
 			order:2,
 			resource:this.resource,
-			runtimeErrors:runtimeErrors
+			runtimeErrors:runtimeErrors,
+			stackMarkers:this.resource.stackMarkers
 		})
 	}
 }
