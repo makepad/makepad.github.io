@@ -43,11 +43,12 @@ module.exports = class extends require('base/drawapp'){ //top
 			'        (sellingPrice - privateDebt)\n' + 
 			'  }\n' + 
 			'}\n'
+		this.parser = makeParser(def)
+		this.ast = this.parser.parse(this.form)
 	}
 	onDraw() {
-		var p = makeParser(def)
-		var ast = p.parse(this.form)
-		if(!ast) {
+		var p = this.parser
+		if(!this.ast) {
 			this.drawText({
 				fontSize:20,
 				text    :"Parse error in " + p.fail[0] + "\nat: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
@@ -65,7 +66,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				recur(node.n[i], d + 1)
 			}
 		}
-		recur(ast, 0)
+		recur(this.ast, 0)
 	}
 }
 
@@ -83,6 +84,7 @@ function makeParser(rules) {
 				p.pos++
 				return true
 			}
+			if(LOG) _='!' + input.charAt(p.pos) + '!' + input.slice(p.pos + 1)
 			return false
 		}
 		var s = ''
@@ -90,6 +92,7 @@ function makeParser(rules) {
 			s += input.charAt(pos)
 			var cin = input.charCodeAt(pos) !== a.charCodeAt(i)
 			if(inv && !cin || !inv && cin) {
+				if(LOG) _='!' + s + '!' + input.slice(p.pos + s.length)
 				return false
 			}
 		}

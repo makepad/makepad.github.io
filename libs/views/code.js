@@ -614,7 +614,7 @@ module.exports = class Code extends require('views/edit'){
 
 		if(this.stackMarkers){
 			var stack = this.stackMarkers.__unwrap__
-			for(var i = 0; i < stack.length; i++){
+			for(var i = stack.length-1; i >= 0; i--){
 				var item = stack[i]
 
 				if(this.resource.path !== item.path) continue
