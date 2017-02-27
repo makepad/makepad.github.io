@@ -632,7 +632,7 @@ module.exports = class Code extends require('views/edit'){
 				for(;end<text.length;end++){
 					if(!text.charAt(end).match(/\w/))break
 				}
-				var col = i/stack.length
+				var col = i/(stack.length-1)
 
 				this.drawStackMarker(start, end, [1-col,col,0.,1])
 			}

@@ -93,6 +93,9 @@ module.exports = class UserProcess extends require('views/draw'){
 			this.process.runtimeErrors.length = 0
 		})
 
+		this.store.act("clearLog",store=>{
+			this.process.logs.length = 0
+		})
 		this.worker.init(
 			this.process.path,
 			deltaDeps
