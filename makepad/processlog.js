@@ -224,6 +224,7 @@ class Log extends require('base/view'){
 		this.tail = false
 		this.parent.tail = false
 		this.redraw() 
+		this.doScroll = true
 	}
 
 	// compute the selection ID
@@ -267,15 +268,17 @@ class Log extends require('base/view'){
 		if(newRow!==this.selectedRow){
 			this.selectedRow = newRow
 			// lets scroll it into view
-			this.scrollIntoView(
+			if(this.scrollIntoView(
 				0,
 				this.selectedRow * this.lineHeight + this.shiftY,
 				0,
 				this.lineHeight,
 				1.
-			)
+			)){
+				this.doScroll = true
+				this.redraw()
+			}
 			this.onSelectedChange()
-			this.redraw()
 		}
 	}
 
@@ -338,7 +341,7 @@ class Log extends require('base/view'){
 			}
 
 			// compute the start i and end i
-			var safeWin = 50
+			var safeWin = 20
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
 			
