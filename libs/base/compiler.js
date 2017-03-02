@@ -134,8 +134,12 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		// compile shaders
-		var litFloats = []
-		var litInts = []
+		var litFloats
+		var litInts
+		if(this.$literalToUniform){
+			litFloats = []
+			litInts = []
+		}
 		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions, litFloats, litInts)
 		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions, litFloats, litInts)
 

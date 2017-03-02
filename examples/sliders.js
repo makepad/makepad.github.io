@@ -8,7 +8,6 @@ module.exports = class extends require('base/drawapp'){
 		
 	}
 	onSlide(sld) {
-		console.error(1)
 		_=[sld.id, sld.value]
 	}
 	onDraw() {
