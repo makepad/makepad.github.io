@@ -441,7 +441,7 @@ module.exports = class Compiler extends require('base/class'){
 		var numLitFloats = ceil(litFloats.length/4)
 		var numLitInts = ceil(litInts.length/4)
 		var litUbo = uboDefs['literals'] = {}
-		for(var i = 0; i < numLitFloats; i++){
+		for(let i = 0; i < numLitFloats; i++){
 			var name = '_litFloat' + i
 			litUbo[name] = {
 				type: types.vec4,
@@ -454,7 +454,7 @@ module.exports = class Compiler extends require('base/class'){
 				]
 			}
 		}
-		for(var i = 0; i < numLitInts; i++){
+		for(let i = 0; i < numLitInts; i++){
 			litUbo['_litInt' + i] = {
 				type: types.ivec4,
 				name: '_litInt'+i,
