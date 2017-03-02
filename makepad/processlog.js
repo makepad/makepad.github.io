@@ -269,7 +269,7 @@ class Log extends require('base/view'){
 			this.selectedRow = newRow
 			// lets scroll it into view
 			if(this.scrollIntoView(
-				0,
+				undefined,
 				this.selectedRow * this.lineHeight + this.shiftY,
 				0,
 				this.lineHeight,

@@ -5,7 +5,7 @@ var painter = require('services/painter')
 
 module.exports = class ShaderInfer extends require('base/class'){
 
-	static generateGLSL(root, fn, varyIn, mapexception){
+	static generateGLSL(root, fn, varyIn, mapexception, litFloats, litInts){
 		var gen = new this()
 
 		// geometry props
@@ -18,6 +18,11 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 		// all uniforms found
 		gen.uniforms = {}
+
+		// literal values
+		gen.literalFloats = litFloats
+		gen.literalInts = litInts
+
 		// all structs used
 		gen.structs = {}
 		//  varyIngs found
@@ -208,12 +213,36 @@ module.exports = class ShaderInfer extends require('base/class'){
 			if(!types.colorFromString(node.value, 1.0, v4, 0)){
 				throw this.SyntaxErr(node,'Cant parse color '+node.value)
 			}
+			if(this.literalFloats){
+				var i = this.literalFloats.length
+
+				this.literalFloats.push(
+					v4[0],
+					v4[1],
+					v4[2],
+					v4[3]
+				)
+
+				return 'vec4('+
+					'_litFloat'+ litComp(i+0)+
+					',_litFloat'+litComp(i+1)+
+					',_litFloat'+litComp(i+2)+
+					',_litFloat'+litComp(i+3)+
+				')'
+			}
 			return 'vec4('+v4[0]+','+v4[1]+','+v4[2]+','+v4[3]+')'
 		}
 		if(node.kind === 'num'){
 			if(node.raw.indexOf('.') !== -1){
 				infer.type = types.float
 				var dotidx = node.raw.indexOf('.')
+
+				if(this.literalFloats){
+					var i = this.literalFloats.length
+					this.literalFloats.push(node.value)
+					return '_litFloat'+litComp(i)
+				}
+
 				if(dotidx === 0){
 					return '0'+node.raw
 				}
@@ -224,9 +253,20 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 			else if(node.raw.indexOf('e') !== -1){
 				infer.type = types.float
+				if(this.literalFloats){
+					var i = this.literalFloats.length
+					this.literalFloats.push(node.value)
+					return '_litFloat'+litComp(i)
+				}
 				return node.raw
 			}
 			infer.type = types.int
+			//if(this.literalInts){
+			//	var i = this.literalInts.length
+			//	this.literalInts.push(node.value)
+			//	return '_litInt'+litComp(i)
+			//}
+			
 			return node.raw
 		}
 		if(node.kind === 'boolean'){
@@ -1499,6 +1539,11 @@ var uniformslotmap = {
 	2:types.vec2,
 	3:types.vec3,
 	4:types.vec4
+}
+var literalComponents = ['x','y','z','w']
+
+function litComp(i){
+	return (i>>2)+'.'+literalComponents[i&3]
 }
 
 // the swizzle lookup tables

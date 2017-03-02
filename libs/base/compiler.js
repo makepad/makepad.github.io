@@ -11,6 +11,7 @@ module.exports = class Compiler extends require('base/class'){
 
 	prototype(){
 		this.$mapExceptions = true
+		this.$literalToUniform = true
 		this.$uniformHeader = ""
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
@@ -133,8 +134,10 @@ module.exports = class Compiler extends require('base/class'){
 		}
 
 		// compile shaders
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions)
+		var litFloats = []
+		var litInts = []
+		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions, litFloats, litInts)
+		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions, litFloats, litInts)
 
 		if(vtx.exception || pix.exception) return
 
@@ -424,13 +427,43 @@ module.exports = class Compiler extends require('base/class'){
 		}
 		if(curslot) vpost += ');\n'
 
+		var uboDefs = {}
+
 		vhead += this.$uniformHeader
 		vhead += '\n// uniforms\n'
 		phead += this.$uniformHeader
 		phead += '\n// uniforms\n'
+		// lets make the literal uniform block
+		var numLitFloats = ceil(litFloats.length/4)
+		var numLitInts = ceil(litInts.length/4)
+		var litUbo = uboDefs['literals'] = {}
+		for(var i = 0; i < numLitFloats; i++){
+			var name = '_litFloat' + i
+			litUbo[name] = {
+				type: types.vec4,
+				name: name,
+				value:[
+					litFloats[i*4],
+					litFloats[i*4+1],
+					litFloats[i*4+2],
+					litFloats[i*4+3]
+				]
+			}
+		}
+		for(var i = 0; i < numLitInts; i++){
+			litUbo['_litInt' + i] = {
+				type: types.ivec4,
+				name: '_litInt'+i,
+				value:[
+					litInts[i*4],
+					litInts[i*4+1],
+					litInts[i*4+2],
+					litInts[i*4+3]
+				]
+			}
+		}
 
 		// create uniformBlocks
-		var uboDefs = {}
 		var props = this._props
 		for(let key in props){
 			var prop = props[key]
@@ -457,7 +490,6 @@ module.exports = class Compiler extends require('base/class'){
 				phead += 'uniform ' + uniform.type.name + ' ' + key + ';\n'
 			}
 		}
-
 		// the sampler uniforms
 		var hassamplers = 0
 		var samplers = {}
@@ -774,6 +806,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'	$todo.ubo('+painter.nameId('painter')+', $view.app.painterUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('literals')+', $shader.$literalsUbo)\n'
 
 		for(let key in uniforms){
 			var uniform = uniforms[key]

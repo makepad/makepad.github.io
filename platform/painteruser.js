@@ -42,7 +42,10 @@ module.exports = function painterUser(proto){
 		//	this.shaderIds[shaderid] = shader
 		//	return
 		//}
-		shader = gl.globalShaderCache[cacheid] || (gl.globalShaderCache[cacheid] = this.compileShader(vertexcode, pixelcode))
+		shader = gl.globalShaderCache[cacheid] 
+		if(!shader){
+			shader = gl.globalShaderCache[cacheid] = this.compileShader(vertexcode, pixelcode)
+		}
 		if(!shader) return
 		//shader.refCount = 1
 		shader.name = msg.name

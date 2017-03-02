@@ -306,8 +306,21 @@ module.exports = class Tools extends require('base/class'){
 		var shaderOrder = shaders[classname] || (shaders[classname] = {})
 
 		var shader = shaderOrder[order] = new painter.Shader(info)
+	
+		var litDef = info.uboDefs.literals
+		var litUbo = shader.$literalsUbo = new painter.Ubo(info.uboDefs.literals)
+		// lets fill the literals ubo
+		for(var litKey in litDef){
+			if(litKey.indexOf('_litFloat') === 0){
+				litUbo.vec4(painter.nameId(litKey), litDef[litKey].value)
+			}
+			else{
+				litUbo.ivec4(painter.nameId(litKey), litDef[litKey].value)
+			}
+		}
 
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
+
 		var props = shader.$props = new painter.Mesh(info.propSlots)
 		props.shaderProto = proto
 		// create a vao
