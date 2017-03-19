@@ -117,24 +117,20 @@ module.exports = class Tools extends require('base/class'){
 
 			if(!mesh || start === -1) continue
 
-			let proto = mesh.shaderProto
-			let info = proto.$compileInfo
-			let instanceProps = info.instanceProps
-			let interrupt = info.interrupt
+			let shaderProto = mesh.shader.shaderProto
+			let info = shaderProto.$compileInfo
 			let slots = mesh.slots
 
-			let animStateOff = instanceProps.thisDOTanimState.offset
-			let animNextOff = instanceProps.thisDOTanimNext.offset
-			let animStartOff = instanceProps.thisDOTanimStart.offset
-
-			let newState = info.stateIds[state] || 1
-			let newDelay = (info.stateDelay[newState] || 0)
-			let newDuration = (info.stateDuration[newState] || 0)
-	
-			let newTotal = time + newDelay + newDuration
-
+			let instanceProps = info.instanceProps
 			let array = mesh.array
-
+			// let interrupt = info.interrupt
+			// let animStateOff = instanceProps.thisDOTanimState.offset
+			// let animNextOff = instanceProps.thisDOTanimNext.offset
+			// let animStartOff = instanceProps.thisDOTanimStart.offset
+			// let newState = info.stateIds[state] || 1
+			// let newDelay = (info.stateDelay[newState] || 0)
+			// let newDuration = (info.stateDuration[newState] || 0)
+			// let newTotal = time + newDelay + newDuration
 			for(let j = start; j < end; j++){
 				let o = j * slots
 				if(props) for(let key in props){
@@ -145,38 +141,9 @@ module.exports = class Tools extends require('base/class'){
 					if(prop.hasFrom) off += prop.slots
 					array[o + off] = props[key]
 				}
-
-				if(queue){ // alright. we have to mask in the next state.
-					let animStart = array[o + animStartOff]
-					let animState = array[o + animStateOff]
-					let animNext = array[o + animNextOff]
-					let animDuration = info.stateDuration[animState] || 0
-					if(animNext && time > animStart + animDuration){ // we have a next anim
-						var animNextDuration = info.stateDuration[animNext] || 0
-
-						interrupt(array, o, animStart+animDuration)
-						// and now shift it
-						array[o + animStateOff] = animNext
-						array[o + animNextOff] = newState
-						array[o + animStartOff] = animStart + animDuration
-						// we have to com
-						let shiftTotal = animStart + animDuration + animNextDuration + newDuration
-						if(shiftTotal>todo.timeMax) todo.timeMax = shiftTotal
-						continue
-					}
-					else if(time < animStart + animDuration){ // previous anim still playing
-						array[o + animNextOff] = newState
-						let nextTotal = animStart + animDuration + newDuration
-						if(nextTotal>todo.timeMax) todo.timeMax = nextTotal
-						continue
-					}
-				}
-				// just interrupt and start a new anim
-				interrupt(array, o, time, proto)
-				array[o + animStateOff] = newState // set new state
-				array[o + animStartOff] = time + newDelay // new start
-				array[o + animNextOff] = 0 // wipe next
-				if(newTotal>todo.timeMax) todo.timeMax = newTotal
+				var total = shaderProto.setState(state, queue, time, array, j, array, j)
+				//console.log("HI", total, queue)
+				if(total > todo.timeMax) todo.timeMax = total
 			}
 			// alright so how do we declare this thing dirty
 			if(!mesh.dirty){
@@ -320,9 +287,11 @@ module.exports = class Tools extends require('base/class'){
 		}
 
 		shader.$drawUbo = new painter.Ubo(info.uboDefs.draw)
-
+		shader.shaderProto = proto
 		var props = shader.$props = new painter.Mesh(info.propSlots)
-		props.shaderProto = proto
+		props.shader = shader
+		props.order = order
+		props.hook = this
 		// create a vao
 		var vao = shader.$vao = new painter.Vao(shader)
 
@@ -347,7 +316,7 @@ module.exports = class Tools extends require('base/class'){
 			vao.indices(proto.indices)
 		}
 
-		props.name = this.name + "-"+classname
+		props.name = this.id + "-"+classname
 		var xProp = info.instanceProps.thisDOTx
 		props.xOffset = xProp && xProp.offset
 		var yProp = info.instanceProps.thisDOTy 

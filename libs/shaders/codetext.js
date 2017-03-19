@@ -12,11 +12,10 @@ module.exports = class CodeText extends require('shaders/text'){
 			color:{value:'black'},
 			fontSize:12,
 			boldness:0, 
-			group:0,
 			unicode:{mask:0, value:0},
 			italic:{value:0.},
 
-			groupHighlightId:{kind:'uniform', value:0},
+			group:0,
 
 			outlineColor:{kind:'uniform', value:'white'},
 			shadowColor: {kind:'uniform', value:[0,0,0,0.5]},
@@ -260,13 +259,7 @@ module.exports = class CodeText extends require('shaders/text'){
 		this.indices.push(0,1,2,2,1,3)
 	}
 	
-	vertexStyle(){$
-		if(this.group == this.groupHighlightId){
-			this.boldness += 0.5
-			this.color *= 1.5
-		}
-	}
-
+	
 	pixel(){$
 		//this.pixelStyle()
 		//var adjust = length(vec2(length(dFdx(this.textureCoords.x)), length(dFdy(this.textureCoords.y))))

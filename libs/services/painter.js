@@ -191,6 +191,8 @@ painter.Todo = class Todo extends require('base/class'){
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
 		this.ordering = []
+		this.props = []
+		this.props2 = []
 		this.xScroll = 0
 		this.yScroll = 0
 		this.timeMax = 0
@@ -227,6 +229,9 @@ painter.Todo = class Todo extends require('base/class'){
 		if(this.orderSort){
 			// copy it
 			var ordering = this.ordering
+			
+			if(this.onFinalizeTodoOrder) this.onFinalizeTodoOrder(this)
+
 			var i32 = this.i32
 			var o32 = new Int32Array(i32)
 			var o = this.orderStart
@@ -238,6 +243,7 @@ painter.Todo = class Todo extends require('base/class'){
 				}
 			}
 			buffer = o32.buffer
+
 		}
 
 		return [{
@@ -328,6 +334,10 @@ painter.Todo = class Todo extends require('base/class'){
 		this.length = 0
 		this.deps = {}
 		this.children = []
+		var props2 = this.props2
+		this.props2 = this.props
+		this.props = props2
+		this.props.length = 0
 		this.ordering.length = 0
 		this.orderStart = -1
 		this.orderSort = false
@@ -355,8 +365,9 @@ painter.Todo = class Todo extends require('base/class'){
 		todo.rootId = this.root.todoId
 	}
 
-	beginOrder(order){
+	beginOrder(order, prop){
 		var ordering = this.ordering
+		var props = this.props
 		if(ordering.length){ // make sure there are no holes
 			if(ordering[ordering.length - 1].end !== this.length){
 				ordering.length = 0
@@ -365,7 +376,8 @@ painter.Todo = class Todo extends require('base/class'){
 		}
 		if(order) this.orderSort = true
 		if(this.orderStart<0) this.orderStart = this.length
-		ordering.push({order:order,start:this.length})
+		if(prop) props.push(prop)
+		ordering.push({order:order, start:this.length})
 	}
 
 	endOrder(order){
@@ -653,10 +665,15 @@ painter.Mesh = class Mesh extends require('base/class'){
 		this.type = type
 		this.arraytype = type.array
 		this.slots = slots || type.slots
-
+		this.lutStart = {}
+		this.lutEnd = {}
+		this.lutStart2 = {}
+		this.lutEnd2 = {}
 		this.allocated = 0
+		this.allocated2 = 0
 		this.array = undefined
 		this.length = 0
+		this.length2 = 0
 		this.dirty = true
 		if(initalloc){
 			this.allocated = initalloc
@@ -684,6 +701,38 @@ painter.Mesh = class Mesh extends require('base/class'){
 		}
 		this.array = newarray
 		this.dirty = true
+	}
+
+	// double buffering the buffers
+	flip(clear){
+		var array = this.array
+		var allocated = this.allocated
+		var length = this.length
+		var lutStart = this.lutStart
+		var lutEnd = this.lutEnd
+
+		if(clear){
+			this.length = 0
+			this.array = this.array2
+			this.allocated = this.allocated2 //|| 0
+			this.lutStart = {}
+			this.lutEnd = {}
+		}
+		else{
+			this.length = this.length2// || 0
+			this.array = this.array2
+			this.allocated = this.allocated2 //|| 0
+			this.lutStart = this.lutStart2// || {}
+			this.lutEnd = this.lutEnd2// || {}
+		}
+
+		this.array2 = array
+		this.allocated2 = allocated
+		this.length2 = length
+		this.lutStart2 = lutStart
+		this.lutEnd2 = lutEnd
+		this.dirty = true
+		this.updateMesh()
 	}
 
 	push(){
@@ -1001,7 +1050,7 @@ painter.Ubo = class Ubo extends require('base/class'){
 			uboId: this.uboId,
 			order: order
 		})
-
+		this.layout = layoutDef
 		this.size = size
 		this.f32 = new Float32Array(size)
 		this.i32 = new Int32Array(this.f32.buffer)
@@ -1018,14 +1067,26 @@ painter.Ubo = class Ubo extends require('base/class'){
 		this.uboId = undefined
 	}
 
+	ints(name, x){
+		this.int(painter.nameId(name), x)
+	}
+
 	int(nameId, x){
 		if(!this.updating) this.update()
 		this.i32[this.offsets[nameId]] = x
 	}
 
+	floats(name, x){
+		this.float(painter.nameId(name), x)
+	}
+
 	float(nameId, x){
 		if(!this.updating) this.update()
 		this.f32[this.offsets[nameId]] = x
+	}
+
+	vec2s(name, v){
+		this.vec2(painter.nameId(name), v)
 	}
 
 	vec2(nameId, v){
@@ -1036,6 +1097,10 @@ painter.Ubo = class Ubo extends require('base/class'){
 		f32[o+1] = v[1]
 	}
 
+	vec3s(name, v){
+		this.vec3(painter.nameId(name), v)
+	}
+
 	vec3(nameId, v){
 		if(!this.updating) this.update()
 		var o = this.offsets[nameId]
@@ -1043,6 +1108,10 @@ painter.Ubo = class Ubo extends require('base/class'){
 		f32[o  ] = v[0]
 		f32[o+1] = v[1]
 		f32[o+2] = v[2]
+	}
+
+	vec4s(name, v){
+		this.vec4(painter.nameId(name), v)
 	}
 
 	vec4(nameId, v){ // id:6
@@ -1061,6 +1130,10 @@ painter.Ubo = class Ubo extends require('base/class'){
 			f32[o+2] = v[2]
 			f32[o+3] = v[3]
 		}
+	}
+
+	mat4s(name, m){
+		this.mat4(painter.nameId(name), m)
 	}
 
 	mat4(nameId, m){

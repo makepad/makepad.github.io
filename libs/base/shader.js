@@ -8,35 +8,36 @@ module.exports = class Shader extends require('base/compiler'){
 		// default shader properties
 		this.props = {
 			// painter uniforms
-			time:{kind:'uniform', block:'painter', value:1.0},
-
-			pixelRatio:{kind:'uniform', block:'painter', type:types.float},
-			workerId:{kind:'uniform', block:'painter', type:types.float},
-			fingerInfo:{kind:'uniform', block:'painter', type:types.mat4},
-			vertexPostMatrix:{kind:'uniform', block:'painter', type:types.mat4},
-			camPosition:{kind:'uniform', block:'painter', type:types.mat4},
-			camProjection:{kind:'uniform', block:'painter', type:types.mat4},
-			// todo uniforms (also modified by painter)
-			viewScroll:{kind:'uniform', block:'todo', type:types.vec2},
-			viewSpace:{kind:'uniform', block:'todo', type:types.vec4},
-			viewPosition:{kind:'uniform', block:'todo', type:types.mat4},
-			viewInverse:{kind:'uniform', block:'todo', type:types.mat4},
-			todoId:{kind:'uniform', block:'todo', value:0.},
-			// draw uniforms 
-			viewClip:{kind:'uniform', value:[0, 0, 0, 0]},
-			pickAlpha:{kind:'uniform', value:0.5},
+			time            :{kind:'uniform', block:'painter', value:1.0},
 			
-			pickId:{mask:0, value:0.},
-			animStart:{mask:0, value:1.0},
-			animState:{mask:0, value:0.},
-			animNext:{mask:0, value:0.},
-		
-			state:{value:'default'},
-
+			pixelRatio      :{kind:'uniform', block:'painter', type:types.float},
+			workerId        :{kind:'uniform', block:'painter', type:types.float},
+			fingerInfo      :{kind:'uniform', block:'painter', type:types.mat4},
+			vertexPostMatrix:{kind:'uniform', block:'painter', type:types.mat4},
+			camPosition     :{kind:'uniform', block:'painter', type:types.mat4},
+			camProjection   :{kind:'uniform', block:'painter', type:types.mat4},
+			// todo uniforms (also modified by painter)
+			viewScroll      :{kind:'uniform', block:'todo', type:types.vec2},
+			viewSpace       :{kind:'uniform', block:'todo', type:types.vec4},
+			viewPosition    :{kind:'uniform', block:'todo', type:types.mat4},
+			viewInverse     :{kind:'uniform', block:'todo', type:types.mat4},
+			todoId          :{kind:'uniform', block:'todo', value:0.},
+			// draw uniforms 
+			viewClip        :{kind:'uniform', value:[0, 0, 0, 0]},
+			pickAlpha       :{kind:'uniform', value:0.5},
+			
+			pickId          :{mask:0, value:0.},
+			animStart       :{mask:0, value:1.0},
+			animState       :{mask:0, value:0.},
+			animNext        :{mask:0, value:0.},
+			
+			state           :'default',
+			queue           :0,
+			id              :0,
 			// clipping ordering and scrolling
-			order:0,
-			moveScroll:1,
-			turtleClip:[-50000, -50000, 50000, 50000],
+			order           :0,
+			moveScroll      :1,
+			turtleClip      :[-50000, -50000, 50000, 50000],
 		}
 		
 		this.defines = {
@@ -55,14 +56,14 @@ module.exports = class Shader extends require('base/compiler'){
 		for(let key in this._props){
 			var prop = this._props[key]
 			if(prop.kind === 'uniform') {
-				if( ! prop.block || prop.block === 'draw') continue
+				if(!prop.block || prop.block === 'draw') continue
 				painter.nameId('thisDOT' + key)
 			}
 		}
 		
 		// safety for infinite loops
 		this.propAllocLimit = 1500000
-				
+		
 		this.tweenTime = this.tweenAll
 		
 		this.verbs = {
@@ -74,22 +75,26 @@ module.exports = class Shader extends require('base/compiler'){
 			//	this.ALLOCDRAW(overload, 0)
 			//	return $props
 			//},
-			reuse:function(overload, length) {
+			reuse :function(overload, length) {
 				this.ALLOCDRAW(overload, 0)
+				// lets flip it again since we are reusing
+				$props.flip()
 				//return $props
 				// alright so. now what.
 				// make sure we are drawn
 				//var $props = this.orderNAME(overload)
 				//var $props = this.$shaders.NAME.$props
-				if(length!== undefined){
-					$props.oldLength = 
-					$props.length = length
+				if(length !== undefined) {
+					console.error("LENGTH NOT ZERO")
 				}
-				else if($props.oldLength !== undefined) {
-					$props.length = $props.oldLength
-					$props.oldLength = undefined
-					$props.dirty = false
-				}
+				//	$props.oldLength = 
+				//	$props.length = length
+				//}
+				//else if($props.oldLength !== undefined) {
+				//	$props.length = $props.oldLength
+				//	$props.oldLength = undefined
+				//	$props.dirty = false
+				//}
 			}
 		}
 		
@@ -121,7 +126,7 @@ module.exports = class Shader extends require('base/compiler'){
 		//	)
 		//}
 		$INITIALIZEVARIABLES
-
+		
 		var position = this.vertex()
 		if(this.vertexPostMatrix[0][0] != 1. || this.vertexPostMatrix[1][1] != 1.) {
 			gl_Position = position * this.vertexPostMatrix
@@ -147,23 +152,23 @@ module.exports = class Shader extends require('base/compiler'){
 	// Timing functions
 	//
 	//
-		
-	linear(t){
+	
+	linear(t) {
 		return clamp(t, 0., 1.)
 	}
-
+	
 	ease(t, begin, end) {
-		if(t<0.) return 0.
-		if(t>1.) return 1.
-		var a =  - 1. / max(1., (begin * begin))
+		if(t < 0.) return 0.
+		if(t > 1.) return 1.
+		var a = -1. / max(1., (begin * begin))
 		var b = 1. + 1. / max(1., (end * end))
-		var t2 = pow(((a - 1.) *  - b) / (a * (1. - b)), t)
-		return ( - a * b + b * a * t2) / (a * t2 - b)
+		var t2 = pow(((a - 1.) * -b) / (a * (1. - b)), t)
+		return (-a * b + b * a * t2) / (a * t2 - b)
 	}
 	
 	bounce(t, dampen) {
-		if(t<0.) return 0.
-		if(t>1.) return 1.
+		if(t < 0.) return 0.
+		if(t > 1.) return 1.
 		// add bounciness
 		var it = t * (1. / (1. - dampen)) + 0.5
 		var inlog = (dampen - 1.) * it + 1.
@@ -174,11 +179,11 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	elastic(t, duration, frequency, decay, ease) {
-		if(t<0.) return 0.
-		if(t>1.) return 1.
+		if(t < 0.) return 0.
+		if(t > 1.) return 1.
 		var easein = ease
 		var easeout = 1.
-		if(ease < 0.) easeout =  - ease,easein = 1.
+		if(ease < 0.) easeout = -ease,easein = 1.
 		
 		if(t < duration) {
 			return this.easeTiming(t / duration, easein, easeout)
@@ -193,8 +198,8 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	bezier(t, cp0, cp1, cp2, cp3) {
-		if(t<0.) return 0.
-		if(t>1.) return 1.
+		if(t < 0.) return 0.
+		if(t > 1.) return 1.
 		if(abs(cp0 - cp1) < 0.001 && abs(cp2 - cp3) < 0.001) return t
 		
 		var epsilon = 1.0 / 200.0 * t
@@ -206,7 +211,7 @@ module.exports = class Shader extends require('base/compiler'){
 		var ay = 1.0 - cy - by
 		var u = t
 		
-		for(let i = 0;i < 6;i ++ ){
+		for(let i = 0;i < 6;i++){
 			var x = ((ax * u + bx) * u + cx) * u - t
 			if(abs(x) < epsilon) return ((ay * u + by) * u + cy) * u
 			var d = (3.0 * ax * u + 2.0 * bx) * u + cx
@@ -219,7 +224,7 @@ module.exports = class Shader extends require('base/compiler'){
 		
 		var l = 0, w = 0.0, v = 1.0
 		u = t
-		for(let i = 0;i < 8;i ++ ){
+		for(let i = 0;i < 8;i++){
 			var x = ((ax * u + bx) * u + cx) * u
 			if(abs(x - t) < epsilon) return ((ay * u + by) * u + cy) * u
 			if(t > x) w = u
@@ -257,10 +262,10 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	checkFingerOver(f, pos) {
 		var f2 = abs(f[2])
-		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)	
+		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
 		return (abs(this.workerId) == floor(f2 / 256.) && this.todoId == mod(f2, 256.) && (this.pickId < 0. || this.pickId == f[3]))?true:false
 	}
-
+	
 	isFingerOver(pos) {$
 		pos = vec2(0.)
 		if(this.checkFingerOver(this.fingerInfo[0], pos)) return 1
@@ -269,15 +274,15 @@ module.exports = class Shader extends require('base/compiler'){
 		if(this.checkFingerOver(this.fingerInfo[3], pos)) return 4
 		return 0
 	}
-
+	
 	//
 	//
 	// Simple vector API
 	//
 	//
-		
+	
 	antialias(p) {
-		return 1. / length(vec2(length(dFdx(p.x)), length(dFdy(p.y))))
+		return 1. / length(vec2(length(dFdx(p)), length(dFdy(p))))
 	}
 	
 	premulAlpha(color) {
@@ -296,13 +301,13 @@ module.exports = class Shader extends require('base/compiler'){
 		this._scale = 1.
 		return pos
 	}
-
+	
 	translate(x, y) {$
 		this.pos -= vec2(x, y)
 	}
 	
 	rotate(a, x = 0., y = 0.) {$
-		var ca = cos( - a), sa = sin( - a)
+		var ca = cos(-a), sa = sin(-a)
 		var p = this.pos - vec2(x, y)
 		this.pos = vec2(p.x * ca - p.y * sa, p.x * sa + p.y * ca) + vec2(x, y)
 	}
@@ -318,8 +323,8 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	_calcBlur(w) {
 		var f = w - this.blur
-		var wa = clamp( - w * this._aa, 0., 1.)
-		var wb = this.blur<0.0001?1.0:clamp( - w / this.blur, 0., 1.)
+		var wa = clamp(-w * this._aa, 0., 1.)
+		var wb = this.blur < 0.0001?1.0:clamp(-w / this.blur, 0., 1.)
 		return wa * wb
 	}
 	
@@ -351,7 +356,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	glowKeep(color, width, displace = 0.) {$
-		var f = this._calcBlur(abs(this.shape+displace) - width / this._scale)
+		var f = this._calcBlur(abs(this.shape + displace) - width / this._scale)
 		var source = vec4(color.rgb * color.a, color.a)
 		var dest = this.result
 		this.result = vec4(source.rgb * f, 0.) + dest
@@ -372,7 +377,7 @@ module.exports = class Shader extends require('base/compiler'){
 	}
 	
 	subtract() {
-		this._oldShape = this.shape = max( - this.field, this._oldShape)
+		this._oldShape = this.shape = max(-this.field, this._oldShape)
 	}
 	
 	gloop(k) {
@@ -426,9 +431,60 @@ module.exports = class Shader extends require('base/compiler'){
 	closePath() {$
 		this.lineTo(this._startPos.x, this._startPos.y)
 	}
+	
+	hsv2rgb(c) { //http://gamedev.stackexchange.com/questions/59797/glsl-shader-change-hue-saturation-brightness
+		var K = vec4(1., 2. / 3., 1. / 3., 3.)
+		var p = abs(fract(c.xxx + K.xyz) * 6. - K.www)
+		return vec4(c.z * mix(K.xxx, clamp(p - K.xxx, 0., 1.), c.y), c.w)
+	}
+	
+	hsv2rgbJS(c) { // simply devectorized
+		return [
+			c[2] * mix(1, clamp(abs(fract(c[0] + 1) * 6. - 3) - 1, 0., 1.), c[1]),
+			c[2] * mix(1, clamp(abs(fract(c[0] + 2/3.) * 6. - 3) - 1, 0., 1.), c[1]),
+			c[2] * mix(1, clamp(abs(fract(c[0] + 1/3.) * 6. - 3) - 1, 0., 1.), c[1]),
+			c[3]
+		]
+	}
+	
+	rgb2hsv(c) {
+		var K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0)
+		var p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g))
+		var q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r))
+		
+		var d = q.x - min(q.w, q.y)
+		var e = 1.0e-10
+		return vec4(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x, c.w)
+	}
+
+	rgb2hsvJS(c){ // devectorized 
+
+		var pc = c[1]<c[2]//step(c[2],c[1])
+		var p0 = pc?c[2]:c[1]//mix(c[2],c[1],pc)
+		var p1 = pc?c[1]:c[2]//mix(c[1],c[2],pc)
+		var p2 = pc?-1:0//mix(-1,0,pc)
+		var p3 = pc?2/3:-1/3//mix(2/3,-1/3,pc)
+
+		var qc = c[0]<p0//step(p0, c[0])
+		var q0 = qc?p0:c[0]//mix(p0, c[0], qc)
+		var q1 = p1
+		var q2 = qc?p3:p2//mix(p3, p2, qc)
+		var q3 = qc?c[0]:p0//mix(c[0], p0, qc)
+
+		var d = q0 - min(q3, q1)
+		var e = 1.0e-10
+		return [
+			abs(q2 + (q3 - q1) / (6.0 * d + e)), 
+			d / (q0 + e), 
+			q0, 
+			c[3]
+		]
+	}
+
+
 	//
-//
-// Default macros
-//
-//
+	//
+	// Default macros
+	//
+	//
 }

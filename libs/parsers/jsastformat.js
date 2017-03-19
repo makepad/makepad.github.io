@@ -104,7 +104,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		// }
 		if(!colorScheme) colorScheme = this.styles.DefaultBlock
 		//colorScheme = this.styles.
-		var blStart = this.fastText('{', colorScheme.curly)
+		let parenId = this.$parenGroupId++
+		var blStart = this.fastText('{', colorScheme.curly, undefined, parenId)
 		
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
@@ -164,8 +165,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		//}
 		//else this.trace += '}'
 		var startx = turtle.wx
-		var blEnd = this.fastText('}', colorScheme.curly)
-		
+		var blEnd = this.fastText('}', colorScheme.curly, undefined, parenId)
+		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 		var pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
@@ -189,7 +190,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		var turtle = this.turtle
 		
 		var starty = turtle.wy
-		var blStart = this.fastText('[', this.styles.Array.bracket)
+		let parenId = this.$parenGroupId++
+		var blStart = this.fastText('[', this.styles.Array.bracket, undefined, parenId)
 		//this.trace += '['
 		var elems = node.elements
 		var elemslen = elems.length - 1
@@ -252,8 +254,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		//this.$fastTextDelta += dy
 		//this.trace += ']'
 		var startx = turtle.wx
-		var blEnd = this.fastText(']', this.styles.Array.bracket)
-		
+		var blEnd = this.fastText(']', this.styles.Array.bracket, undefined, parenId)
+		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 		var pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
@@ -401,8 +403,8 @@ module.exports = class JSFormatter extends require('base/class'){
 	ClassBody(node) {
 		var turtle = this.turtle
 		var starty = turtle.wy
-		
-		var blStart = this.fastText('{', this.styles.Class.curly)
+		let parenId = this.$parenGroupId++
+		var blStart = this.fastText('{', this.styles.Class.curly, undefined, parenId)
 		//this.trace += '{'
 		
 		var endx = turtle.wx, lineh = turtle.mh
@@ -427,7 +429,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		this.$fastTextIndent--
 		//this.trace += '}'
 		var startx = turtle.wx
-		var blEnd = this.fastText('}', this.styles.Class.curly)
+		var blEnd = this.fastText('}', this.styles.Class.curly, undefined, parenId)
+		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 		// store endx endy
 		var blockh = turtle.wy
 		
@@ -465,6 +468,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var exps = node.expressions
 		var expslength = exps.length - 1
 		for(var i = 0;i <= expslength;i++){
+			console.log(expslength)
 			var exp = exps[i]
 			if(exp) this[exp.type](exp)
 			if(i < expslength) {

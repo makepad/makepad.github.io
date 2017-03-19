@@ -16,6 +16,7 @@ module.exports = class Compiler extends require('base/class'){
 		this.$pixelHeader = ""
 		this.$vertexHeader = ""
 		this.$interruptCache = {}
+		this.$copyCache = {}
 
 		this.inheritable('props', function(){
 			var props = this.props
@@ -191,12 +192,15 @@ module.exports = class Compiler extends require('base/class'){
 				initvars += '\t'+prop.type.name + ' from_' +key+' = ' + unpackProp(prop, propOff, lastSlot, totalSlots) + ';\n'
 				propOff += slots
 			}
+			var toUnpack = null
 			if(prop.hasTo){
-				initvars += '\t'+key+' = ' + unpackProp(prop, propOff, lastSlot, totalSlots) + ';\n'
+				toUnpack = unpackProp(prop, propOff, lastSlot, totalSlots)
+				initvars += '\t'+key+' = ' + toUnpack + ';\n'
 			}
 
 			let propStates = prop.states
 			for(var stateName in propStates){
+
 				var propState = propStates[stateName]
 				var state = states[stateName]
 				var frames = propState.frames
@@ -205,7 +209,6 @@ module.exports = class Compiler extends require('base/class'){
 				var last = undefined
 				var duration = state.duration || 0.
 				var name = prop.name
-			
 				for(let i = frames.length - 1; i>=0; i--){
 					var next = frames[i]
 					var isFirst = i == 0
@@ -216,7 +219,7 @@ module.exports = class Compiler extends require('base/class'){
 					}
 					if(last){
 						firstCode = 'mix('+decodeKeyFrame(name, value, isFirst)+','+firstCode+','
-						nextCode = 'mix('+decodeKeyFrame(name, value, false)+','+nextCode+','
+						nextCode = 'mix('+decodeKeyFrame(name, value, false, true)+','+(toUnpack?toUnpack:nextCode)+','
 						// call function on this with named arguments.
 						// alright lets get the time object
 						var T = '(T-'+forceDot(next.at)+')/'+forceDot(last.at-next.at)
@@ -280,7 +283,8 @@ module.exports = class Compiler extends require('base/class'){
 			else initvars += '\t\tif(T<=1.)thisDOTanimNext = 0.;\n'
 			//if(state.duration)
 			initvars += '' // do loop/bounce/duration on T
-			initvars += firstStateCode[key]
+			var firstState = firstStateCode[key]
+			if(firstState) initvars += firstState
 			initvars += '\t}\n'
 		}
 		
@@ -311,7 +315,8 @@ module.exports = class Compiler extends require('base/class'){
 			}
 			//else initvars += '\t\t\tif(T <= 1.) thisDOTanimNext = 0.;\n'
 			initvars += '' // do loop/bounce/duration on T
-			initvars += nextStateCode[key]
+			var nextState = nextStateCode[key]
+			if(nextState) initvars += nextState
 			initvars += '\t\t}\n'
 		}
 	
@@ -569,6 +574,7 @@ module.exports = class Compiler extends require('base/class'){
 			stateDuration:stateDuration,
 			stateDelay:stateDelay,
 			stateIds:stateIds,
+			hasStates:stateId>1,
 			name:this.name || this.constructor.name,
 			trace:this.drawTrace,
 			instanceProps:instanceProps,
@@ -582,7 +588,8 @@ module.exports = class Compiler extends require('base/class'){
 			propSlots:totalSlots
 		}
 		info.interrupt = this.$generateAnimInterrupt(instanceProps)
-		
+		info.copy = this.$generateAnimCopy(instanceProps)
+
 		if(this.dump) console.log(vertex,pixel)
 
 		// push our compilation up the protochain as far as we can
@@ -598,6 +605,33 @@ module.exports = class Compiler extends require('base/class'){
 		}
 	}
 
+	$generateAnimCopy(instanceProps){
+		var cacheKey = this.$compileInfo.cacheKey
+		var cache = this.$copyCache[cacheKey]
+		if(cache) return cache
+
+		// what do we need to copy
+		// animoffset/state/next
+		// all from variables?
+		var code = ''
+		// copy animation state
+		code += '\tarray1[o1+'+instanceProps.thisDOTanimStart.offset+'] = array2[o2+'+instanceProps.thisDOTanimStart.offset+']\n'
+		code += '\tarray1[o1+'+instanceProps.thisDOTanimState.offset+'] = array2[o2+'+instanceProps.thisDOTanimState.offset+']\n'
+		code += '\tarray1[o1+'+instanceProps.thisDOTanimNext.offset+'] = array2[o2+'+instanceProps.thisDOTanimNext.offset+']\n'
+
+		for(let key in instanceProps){
+			var prop = instanceProps[key]
+			if(prop.hasFrom){
+				var off = prop.offset
+				for(var i = 0; i < prop.slots; i++){
+					code += '\tarray1[o1+'+(off+i)+'] = array2[o2+'+(off+i)+']\n'
+				}
+			}
+		}
+
+		return this.$copyCache[cacheKey] = new Function("array1","o1","array2","o2",code)
+	}
+
 	$generateAnimInterrupt(instanceProps){
 		var cacheKey = this.$compileInfo.cacheKey
 		var cache = this.$interruptCache[cacheKey]
@@ -610,9 +644,9 @@ module.exports = class Compiler extends require('base/class'){
 		var code = '' // args $a, $o, $t
 
 		// compute T from the array
-		code += '\tvar at = $t-$a[$o+'+instanceProps.thisDOTanimStart.offset+']\n'
-		code += '\tvar animState = $a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
-		code += '\tvar animNext = $a[$o+'+instanceProps.thisDOTanimNext.offset+']\n'
+		code += '\tvar at = time-array2[o2+'+instanceProps.thisDOTanimStart.offset+']\n'
+		code += '\tvar animState = array2[o2+'+instanceProps.thisDOTanimState.offset+']\n'
+		code += '\tvar animNext = array2[o2+'+instanceProps.thisDOTanimNext.offset+']\n'
 		
 		code += '\tfor(let i = 0; i < 2;i++){\n'
 		code += '\tvar state = i?animNext:animState\n'
@@ -626,12 +660,12 @@ module.exports = class Compiler extends require('base/class'){
 			if(!prop.hasFrom) continue // if we dont have a from, dont need to compute interrupt
 
 			for(let i = 0; i < slots; i++){
-				code += '\tvar from_'+key+'_'+i+' = $a[$o+' + (offset + i)+']\n'
+				code += '\tvar from_'+key+'_'+i+' = array2[o2+' + (offset + i)+']\n'
 			}
 
 			if(prop.hasTo){
 				for(let i = 0; i < slots; i++){
-					code += ' \tvar to_'+key+'_'+i+' = $a[$o+' + (offset + slots + i)+']\n'
+					code += ' \tvar to_'+key+'_'+i+' = array2[o2+' + (offset + slots + i)+']\n'
 				}
 			}
 
@@ -652,7 +686,7 @@ module.exports = class Compiler extends require('base/class'){
 						else frag += '\t\telse if(T>=' + next.at + '){\n'
 						// insert tweening code
 						if(last.time && last.call){
-							frag += 'T = $proto.'+ last.time.fn+last.call+'\n'
+							frag += 'T = proto.'+ last.time.fn+last.call+'\n'
 						}
 						frag += '\t\t\tlet D = (T - '+next.at+')/'+(last.at-next.at)+', ND = 1 - D\n'
 						let nvec = next.value
@@ -662,7 +696,7 @@ module.exports = class Compiler extends require('base/class'){
 						let lv = lvec
 						if(typeof lv === 'string') types.colorFromString(lv, 1.0, lvec=[], 0)
 						for(let i = 0; i < slots; i++){
-							frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+							frag += '\t\t\tarray1[o1+'+(offset+i)+'] = '
 							if(nv === null) frag += 'from_'+key+'_'+i
 							else frag += slots>1?nvec[i]:nvec
 							frag += '*ND + D*'
@@ -678,7 +712,7 @@ module.exports = class Compiler extends require('base/class'){
 						let nv = nvec
 						if(typeof nv === 'string') types.colorFromString(nv, 1.0, nvec=[], 0)
 						for(let i = 0; i < slots; i++){
-							frag += '\t\t\t$a[$o+'+(offset+i)+'] = '
+							frag += '\t\t\tarray1[o1+'+(offset+i)+'] = '
 							if(nv === null) frag += 'to_'+key+'_'+i	
 							else frag += slots>1?nvec[i]:nvec
 							frag += '\n'
@@ -724,7 +758,7 @@ module.exports = class Compiler extends require('base/class'){
 			code += '\t}\n'
 		}
 		code += '\tif(!animNext)break;\n\t}\n'
-		return this.$interruptCache[cacheKey] = new Function("$a","$o","$t","$proto",code)
+		return this.$interruptCache[cacheKey] = new Function("array1","o1","array2","o2", "time","proto",code)
 	}
 
 	// $STYLEPROPS(overload, mask)
@@ -752,6 +786,7 @@ module.exports = class Compiler extends require('base/class'){
 			if(inst && inst.hasFrom){
 				code += indent +'$turtle._from_'+name+' = '+args[0]+'.from_'+name+';\n'
 			}
+
 			if(name === 'order'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || $proto._order || 0\n'
 			}
@@ -780,7 +815,7 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$view = 'this.view'
 		scope.$todo = '$view.todo'
 		scope.$turtle = 'this.turtle'
-		scope.$shaderOrder = 'this.$shaders.'+className 
+		//scope.$shaderOrder = 'this.$shaders.'+className 
 		scope.$proto = 'this.' + className +'.prototype'
 		scope.$a = scope.$props = 1
 		//scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
@@ -789,16 +824,12 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+'var $shaderOrder = this.$shaders.'+className +'\n'
 		code += indent+'var $shader = $shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)\n'
 		code += indent+'var $props = $shader.$props\n'
-		code += indent+'var $a = $props.array\n'
 
-		code += indent+'if($props.$frameId !== $view._frameId){\n' 
+		code += indent+'if($props.$frameId !== $view._frameId){\n' // flip buffers
 		code += indent+'	$props.$frameId = $view._frameId\n'
-		code += indent+'	$props.oldLength = $props.length\n'
-		code += indent+'	$props.updateMesh()\n'
-		code += indent+'	$props.length = 0\n'
-		code += indent+'	$props.dirty = true\n'
+		code += indent+'	$props.flip(true)\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
-		code += indent+'	$todo.beginOrder($turtle._order|| $proto.order)\n'
+		code += indent+'	$todo.beginOrder($turtle._order|| $proto.order, $props)\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
 		//code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
@@ -839,13 +870,13 @@ module.exports = class Compiler extends require('base/class'){
 			code += indent +'	$todo.sampler('+painter.nameId(key)+','+source+',$proto.$compileInfo.samplers.'+key+')\n'
 		}
 		// lets draw it
-		code += indent + '	$todo.drawArrays('+painter.TRIANGLES+')\n'
+		code += indent+ '	$todo.drawArrays('+painter.TRIANGLES+')\n'
 		code += indent+'	$todo.endOrder()\n'
-		code += indent + '}\n'
-
+		code += indent+'}\n'
 		code += indent + 'var $propsLength = $props.length\n\n'
 		code += indent + 'var $need = min($propsLength + '+allocNeeded+',$proto.propAllocLimit)\n'
-		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need), $a = $props.array\n'
+		code += indent + 'if($need > $props.allocated && $need) $props.alloc($need)\n'
+		code += indent+ 'var $a = $props.array\n'
 
 		if(!this.$noWriteList){
 			code += indent + '$view.$writeList.push($props, $propsLength, $need)\n'
@@ -859,7 +890,7 @@ module.exports = class Compiler extends require('base/class'){
 	}
 	
 	DUMPPROPS(args, indent, className, scope){
-		var code = ''
+		var code = 'var out = {}\n'
 		var instanceProps = this.$compileInfo.instanceProps
 		for(let key in instanceProps){
 			var prop = instanceProps[key]
@@ -868,16 +899,19 @@ module.exports = class Compiler extends require('base/class'){
 
 			if(prop.hasFrom){
 				for(let i = 0; i < slots; i++){
-					code += 'console.log("'+(prop.name+(slots>1?i:''))+' from: "+$a[$o+'+(o+i)+'])\n'
+					code += 'out["from_'+(prop.name+(slots>1?i:''))+'"]=$a[$o+'+(o+i)+']\n'
+					//code += 'console.log("'+(prop.name+(slots>1?i:''))+' from: "+$a[$o+'+(o+i)+'])\n'
 				}
 				o += slots
 			}
 			if(prop.hasTo){
 				for(let i = 0; i < slots; i++){
-					code += 'console.log("'+(prop.name+(slots>1?i:''))+' to: "+$a[$o+'+(o+i)+'])\n'
+					code += 'out["'+(prop.name+(slots>1?i:''))+'"]=$a[$o+'+(o+i)+']\n'
+					//code += 'console.log("'+(prop.name+(slots>1?i:''))+' to: "+$a[$o+'+(o+i)+'])\n'
 				}
 			}
 		}
+		code += 'console.log(out)\n'
 		return code
 	}
 	/*
@@ -963,17 +997,58 @@ module.exports = class Compiler extends require('base/class'){
 			//scope.$a = '$props.array'
 		}
 		
-		code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'
+		//code += indent + 'var $stateId = $info.stateIds[$turtle._state] || 1\n'
+		// if we have states
+		var firstDraw
+		if(info.hasStates){
+			code += indent + 'var $propOffset = $turtle.$propOffset++\n'
+			code += indent + 'var $id = $turtle._id || $propOffset\n'
+			code += indent + 'if($props.lutStart[$id] === undefined) $props.lutStart[$id] = $propOffset\n'
+			code += indent + '$props.lutEnd[$id] = $propOffset\n'
+			code += indent + 'var $lastOffset = $props.lutStart2[$id]\n'
+			code += indent + 'var $lastEnd = $props.lutEnd2[$id]\n'
+			code += indent + 'var $delta = $propOffset - $props.lutStart[$id]\n'
+			code += indent + 'var $o = $propOffset * ' + info.propSlots +'\n'
+			code += indent + 'var $max, $firstDraw = false\n'
+			code += indent + 'if($lastOffset !== undefined && $delta <= $lastEnd - $lastOffset){\n'// already existed
+			code += indent + '	$max = $proto.setState($turtle._state, $turtle._queue, $view._time, $props.array, $propOffset, $props.array2, $lastOffset+$delta)\n'
+			code += indent + '} else {\n'
+			code += indent + '	$firstDraw = true\n'
+			// check if we have create state
+			code += indent + '	var $stateId = $info.stateIds[$turtle._state] || 1\n'
+			// if we have a create state take that first
+			if(info.stateIds.create){
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = $view._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' +
+					info.stateIds.create + '\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimNext.offset + '] = ' +
+					'$stateId\n'
+				//	console.log(info.stateDuration[1])
+				code += indent + '	$max = $view._time+'+
+					info.stateDuration[info.stateIds.create]+ ' + $info.stateDuration[$stateId]\n'
+				//console.log(code)
+			}
+			else{
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = $view._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' + 
+					'$stateId\n'
+				code += indent + '	$max = $view._time+' +
+					info.stateDuration[info.stateIds.create] + ' + $info.stateDuration[$stateId]\n' 
+			}
+			//code += indent + '	$a[$o+'+instanceProps.thisDOTanimState.offset+']\n'
+			code += indent + '	\n'// new entry, write create + default state queue 
+			code += indent + '}\n'
+			code += indent + 'if($max > $todo.timeMax) $todo.timeMax = $max\n'
+
+		}
+		else{
+			code += indent + 'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
+		}
 		code += indent + '$props.dirty = true\n'
-		code += indent +'var $o = $turtle.$propOffset++ * ' + info.propSlots +'\n'
-		// lets execute
-		code += indent + 'var $last = $a[$o+' + instanceProps.thisDOTanimState.offset+']\n'
-		code += indent + 'if($last) $info.interrupt($a, $o, $view._time, $proto)\n'
-		code += indent + 'var $max = $view._time + $info.stateDuration[$stateId]\n'
-		code += indent + 'if($max>$todo.timeMax) $todo.timeMax = $max\n'
 
 		// write properties.
-		var last = 'if(!$last){\n'
+		firstDraw = 'if($firstDraw){\n'
+
 		let args0 = args[0]
 		for(let key in instanceProps){
 			let prop = instanceProps[key]
@@ -986,33 +1061,13 @@ module.exports = class Compiler extends require('base/class'){
 				if(!source) throw new Error('Unknown key with mask 0 ' + key)
 			}
 			else if(!prop.config.mask){ // system value
-				if(key === 'thisDOTanimStart'){ // now?
-					source = '$view._time + ($info.stateDelay[$stateId] || 0)'
-				}
-				else if(key === 'thisDOTanimState'){ // decode state prop
-					source = '$stateId'
-				}
-				else if(key === 'thisDOTpickId'){ 
-					source = '$turtle._pickId'
-				}
-				else if(key === 'thisDOTorder'){ 
-					source = '$turtle._order'
-				}
-				else if(key === 'thisDOTanimNext'){
+				if(key === 'thisDOTanimStart' || key === 'thisDOTanimState' || key === 'thisDOTanimNext'){
 					continue
 				}
 			}
-			// if(key === 'thisDOTx'){
-			// 	source += '- $turtle.$xAbs'
-			// }
-			// else if(key === 'thisDOTy'){
-			// 	source += '- $turtle.$yAbs'
-			// }
 
 			if(prop.hasFrom){ // initialize from from the write value if first write
-				last += packProp(indent, prop, 0, source)
-			}
-			if(prop.hasFrom){ // we need to check for from_ passed in
+				firstDraw += packProp(indent, prop, 0, source)
 				code += indent + 'if($turtle._from_'+name+' !== undefined){\n'
 				code += packProp(indent, prop, 0, '$turtle._from_'+name)
 				code += '}'
@@ -1021,13 +1076,73 @@ module.exports = class Compiler extends require('base/class'){
 				code += packProp(indent, prop, prop.hasFrom?prop.slots:0, source)
 			}
 		}
-		last += '}'
-		code += last
+
+		firstDraw += '}'
+
+		if(info.hasStates){
+			code += firstDraw
+		}
+
 		code += 'if($turtle._debug){\n'
 		code += this.DUMPPROPS(args, indent, className, scope, target, source)
 		code += '}'
 		return code
 	}
+
+		// keep/interrupt/queue animation state
+	setState(state, queue, time, array1, offset1, array2, offset2){
+		//console.log("SETSTATE", state, queue)
+		let info = this.$compileInfo
+		let instanceProps = info.instanceProps
+		let animStateOff = instanceProps.thisDOTanimState.offset
+		let animNextOff = instanceProps.thisDOTanimNext.offset
+		let animStartOff = instanceProps.thisDOTanimStart.offset
+		let o1 = offset1 * info.propSlots
+		let o2 = offset2 * info.propSlots
+		let newState = info.stateIds[state] || 1
+		let newDelay = (info.stateDelay[newState] || 0)
+		let newDuration = (info.stateDuration[newState] || 0)
+		//var array = mesh.array
+		if(queue === 0){ // copy previous state/time and from values
+			info.copy(array1, o1, array2, o2)
+			// whats our max time? should be unchanged
+			return 0
+		}		
+
+		let animStart = array2[o2 + animStartOff]
+		let animState = array2[o2 + animStateOff]
+		let animNext = array2[o2 + animNextOff]
+		let animDuration = info.stateDuration[animState] || 0
+		if(queue){ // 
+			if(animNext && time > animStart + animDuration){ // shift the queue
+				var animNextDuration = info.stateDuration[animNext] || 0
+				// compute last value
+				//console.log(info.interrupt)
+				info.interrupt(array1, o1, array2, o2, animStart + animDuration, this)
+				// and now shift it
+				array1[o1 + animStateOff] = animNext
+				array1[o1 + animNextOff] = newState
+				array1[o1 + animStartOff] = animStart + animDuration
+				// we have to com
+				return animStart + animDuration + animNextDuration + newDuration
+			}
+			else if(time < animStart + animDuration){ // previous anim still playing
+				info.copy(array1, o1, array2, o2)
+				//array1[o1 + animStateOff] = animState
+				array1[o1 + animNextOff] = newState
+				//array1[o1 + animStartOff] = animNext
+				return animStart + animDuration + newDuration
+			}
+		}
+		// else check if we have to interrupt the state
+		// just interrupt and start a new anim
+		info.interrupt(array1, o1, array2, o2, time, this)
+		array1[o1 + animStateOff] = newState // set new state
+		array1[o1 + animStartOff] = time + newDelay // new start
+		array1[o1 + animNextOff] = 0 // wipe next
+		return time + newDelay + newDuration
+	}
+
 }
 
 
@@ -1280,6 +1395,8 @@ function computePropStates(states, instanceProps){
 			}
 		}
 	}
+
+
 }
 
 function defineStructs(structs){

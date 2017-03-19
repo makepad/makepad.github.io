@@ -238,6 +238,10 @@ module.exports = class Edit extends require('base/view'){
 		return this._text.charAt(offset)
 	}
 
+	slice(start, end){
+		return this._text.slice(start, end)
+	}
+
 	charCodeAt(offset){
 		return this._text.charCodeAt(offset)
 	}
@@ -872,40 +876,67 @@ class Cursor extends require('base/class'){
 		this.max = -1
 	}
 
+
 	toggleSlashComment(){
+
 		// toggle a line comment on or off
-		var start = this.end
-		var ct = 0
-		// lets find the end of the line
-		for(var i = this.end, l = this.editor.textLength();i<l;i++){
-			var code = this.editor.charCodeAt(i)
-			if(code === 10){
-				i--
-				break
+		var toggleLine = (pos)=>{
+			// lets find the end of the line
+			for(var last = pos, l = this.editor.textLength();last<l;last++){
+				var code = this.editor.charCodeAt(last)
+				if(code === 10 || code === 13 || last === l - 1){
+					last--
+					break
+				}
 			}
+
+			// scan backwards to tab, newline or start
+			var slashes = 0
+			for(var i = last; i >= 0; i--){
+				var code = this.editor.charCodeAt(i)
+				if(code === 9 || code === 10 || code === 13){
+					break
+				}
+				if(code === 47) slashes++
+				else slashes = 0
+			}
+
+			var delta = 0
+			if(slashes > 1){ // remove //
+				this.editor.addUndoInsert(i+1, i+3)
+				this.editor.removeText(i+1, i+3)
+				delta = -2//min(abs(i-this.end), 2.)
+			}
+			else{ // add //
+				this.editor.insertText(i+1, '//')
+				this.editor.addUndoDelete(i+1, i+3)
+				delta = 2
+			}
+	
+			this.cursorSet.delta += delta
+			// ok if we are going from start to end
+			// or from end to start determines which one gets moved
+			if(this.start>this.end){
+				if(this.end > i && this.end < last){
+					this.end += delta
+				}
+				this.start += delta
+			}
+			else{
+				if(this.start > i && this.start < last){
+					this.start += delta
+				}
+				this.end += delta
+			}
+			return last + delta + 2
 		}
-		for(;i >= 0; i--){
-			var code = this.editor.charCodeAt(i)
-			if(code === 47) ct++
-			else ct = 0
-			if(ct === 2) break
-			if(code === 9 || code === 10 || code === 13) break
-		}
-		var d = 0
-		if(ct === 2){
-			this.editor.addUndoInsert(i, i+2)
-			this.editor.removeText(i, i+2)
-			d = -min(abs(i-this.end), 2.)
-		}
-		else{
-			this.editor.insertText(i+1, '//')
-			this.editor.addUndoDelete(i+1, i+3)
-			d = 2
+		// lets start with toggle line on end
+		var lo = this.lo() + this.cursorSet.delta
+		var hi = this.hi() + this.cursorSet.delta
+		for(var i = lo; i <= hi;){
+			i = toggleLine(i)
 		}
 
-		this.cursorSet.delta += d
-		this.start += d
-		this.end += d
 		this.editor.cursorChanged()
 	}
 }
@@ -917,12 +948,15 @@ class CursorSet extends require('base/class'){
 				this.delta = 0
 				var cursors = this.cursors
 				let dirty = false
+
+
 				for(let i = 0; i < cursors.length; i++){
 					var cursor = cursors[i]
 					let start = cursor.start, end = cursor.end, max = cursor.max
 					cursor.start += this.delta
 					cursor.end += this.delta
 					cursor[key].apply(cursor, arguments)
+					//console.log("DISPATCHING", key, cursor.start)
 					if(start !== cursor.start || end !== cursor.end || max !== cursor.max) dirty = true
 				}
 				if(dirty)this.updateSet()

@@ -38,7 +38,14 @@ module.exports = class extends require('base/app'){
 	}
 
 	onDraw(){
-		this.drawBg({borderRadius:8,w:100,h:100})
+		this.drawBg({
+			debug:1,
+			borderRadius:8,
+			color:'red',
+			w:100,
+			h:100
+		})
+		console.log(this.drawBg.toString())
 		for(var i=0;i<1000;i++)
 		this.drawButton({
 			id:i,

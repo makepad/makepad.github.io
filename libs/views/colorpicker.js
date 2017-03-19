@@ -1,3 +1,4 @@
+var types = require('base/types')
 module.exports = class Tree extends require('base/view'){
 	
 	// default style sheet
@@ -16,23 +17,13 @@ module.exports = class Tree extends require('base/view'){
 				font :fonts.regular,
 				color:colors.textNormal
 			}),
-			Wheel :require('shaders/shadowquad').extend({
-				hsv2rgb:function(c) { //inspiration http://gamedev.stackexchange.com/questions/59797/glsl-shader-change-hue-saturation-brightness
-					var K = vec4(1., 2. / 3., 1. / 3., 3.)
-					var p = abs(fract(c.xxx + K.xyz) * 6. - K.www)
-					return vec4(c.z * mix(K.xxx, clamp(p - K.xxx, 0., 1.), c.y), c.w)
-				},
-				rgb2hsv:function(c) {
-					var K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0)
-					var p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g))
-					var q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r))
-					
-					var d = q.x - min(q.w, q.y)
-					var e = 1.0e-10
-					return vec4(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x, c.w)
-				},
-				color  :'#bfe08cff',
-				pixel  :function() {$
+			Center:require('shaders/quad').extend({}),
+			Wheel :require('shaders/quad').extend({
+				hue  :0,
+				sat  :0,
+				val  :0,
+				//hue  :'#bfe78cff',
+				pixel:function() {$
 					this.viewport()
 					var cx = this.w * .5
 					var cy = this.h * .5
@@ -46,30 +37,28 @@ module.exports = class Tree extends require('base/view'){
 					// pos on the circle
 					var hsv = this.rgb2hsv(this.color)
 					
-					var colAngle = (hsv.r - .5) * 2. * PI
+					var colAngle = (this.hue - .25) * 2. * PI
 					var circlePuk = vec2(sin(colAngle) * radius + cx, cos(colAngle) * radius + cy)
 					
 					var normRect = vec2(this.pos.x - (cx - inner), this.pos.y - (cy - inner)) / (2. * inner)
 					this.rect(cx - inner, cy - inner, inner * 2., inner * 2.)
-					this.fill(this.hsv2rgb(vec4(hsv.r, normRect.x, normRect.y, 1.)))
+					this.fill(this.hsv2rgb(vec4(this.hue, normRect.x, normRect.y, 1.)))
 					
+					var rectPuk = vec2(cx - inner + inner * 2. * this.sat, cy - inner + inner * 2. * this.val)
+					this.circle(rectPuk.x, rectPuk.y, 8.)
+					this.circle(rectPuk.x, rectPuk.y, 5.)
+					this.subtract()
+					this.fill('white')
+					//
 					this.circle(circlePuk.x, circlePuk.y, 8.)
 					this.circle(circlePuk.x, circlePuk.y, 5.)
 					this.subtract()
 					this.fill('white')
 					
-					var rectPuk = vec2(cx - inner + inner * 2. * hsv.g, cy - inner + inner * 2. * hsv.b)
-					this.circle(rectPuk.x, rectPuk.y, 8.)
-					this.circle(rectPuk.x, rectPuk.y, 5.)
-					this.subtract()
-					this.fill('white')
-					
-					
 					//this.circle(p.x, p.y, 8.)
 					//this.circle(p.x, p.y, 5.)
-					this.subtract()
-					this.fill('white')
-					
+					//this.subtract()
+					//this.fill('white')					
 					return this.result
 				}
 			}),
@@ -81,14 +70,30 @@ module.exports = class Tree extends require('base/view'){
 	
 	onFingerDown(e) {
 		this.setFocus()
+		_=this.wheelPos
 	}
 	
 	onDraw(debug) {
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
+		var col = []
+		types.colorFromString('blue', 1, col, 0)
+		var hsv = this.Wheel.prototype.rgb2hsvJS(col)
+		var out = this.Wheel.prototype.hsv2rgbJS(hsv)
+		_=out
+		//_=hsv
 		this.drawWheel({
-			w:200,
-			h:200
+			hue:hsv[0],
+			sat:hsv[1],
+			val:hsv[2],
+			w  :200,
+			h  :200
+		})
+		this.wheelPos = this.turtle.geom()
+		this.drawBg({
+			w    :100,
+			h    :100,
+			color:out
 		})
 		this.endBg(true)
 	}

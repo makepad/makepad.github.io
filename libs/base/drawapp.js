@@ -15,7 +15,8 @@ module.exports = class DrawApp extends require('base/app'){
 			}),
 			Icon:require('shaders/icon').extend({
 				font:require('fonts/fontawesome.font')
-			})
+			}),
+			Button:require('stamps/button')
 		}
 	}
 }

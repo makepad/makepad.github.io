@@ -473,10 +473,43 @@ module.exports = class View extends require('base/class'){
 		return false
 	}
 
+	// called by painter to finalize a todo
+	onFinalizeTodoOrder(todo){
+		// trigger a not drawn callback so system can 
+		// process things not drawing
+		var props = todo.props
+		var props2 = todo.props2
+		for(let i = 0, l = props2.length; i < l; i++){
+			var lastProp = props2[i]
+		
+			if(props.indexOf(lastProp) === -1 ){ // we didnt use props at all
+				lastProp.flip(true)
+			}
+
+			// otherwise we have to see if we have a destroy state
+			var shaderProto = lastProp.shader.shaderProto
+			var order = lastProp.order
+			var drawUbo = lastProp.shader.$drawUbo
+
+			if(shaderProto.states && shaderProto.states.destroy){
+				// has destroy state. lets process it.
+			}
+			// set the lazy uniforms
+			for(var key in this.lazyUniforms){
+				var propName = 'thisDOT'+key
+				var propType = drawUbo.layout[propName]
+				if(propType){
+					drawUbo[propType.type.name+'s'](propName, this[key])
+				}
+			}
+		}
+	}
 
 	$createTodo(){
 		var todo = new painter.Todo()
-
+		
+		todo.onFinalizeTodoOrder = this.onFinalizeTodoOrder.bind(this)
+		
 		var todoUboDef = this.Pass.prototype.$compileInfo.uboDefs.todo
 		
 		todo.todoUbo = new painter.Ubo(todoUboDef)//this.$todoUboDef)

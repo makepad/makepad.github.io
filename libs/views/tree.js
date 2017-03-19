@@ -52,11 +52,13 @@ module.exports = class Tree extends require('base/view'){
 		}
 		this.tools = {
 			Bg:require('shaders/quad').extend({
+				queue:false,
 				wrap:false,
 				padding:[6,0,0,9],
 				color:colors.bgHi
 			}),
 			Cursor:require('shaders/hover').extend({
+				queue:false,
 				wrap:false,
 				displace:[0,-1],
 				color:colors.bgHi,
@@ -66,12 +68,15 @@ module.exports = class Tree extends require('base/view'){
 				w:'100%-2'
 			}),
 			Text:require('shaders/text').extend({
+				queue:false,
 				font:fonts.regular,
 				color:colors.textNormal
 			}),
 			Icon:require('shaders/icon').extend({
+				queue:false,
 			}),
 			TreeLine:require('shaders/shadowquad').extend({
+				queue:false,
 				isLast:0,
 				isFirst:0,
 				isFolder:0,

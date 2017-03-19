@@ -1,6 +1,6 @@
 var parser = require('parsers/js') 
 var storage = require('services/storage') 
-
+var types = require('base/types')
 module.exports = class Code extends require('views/edit'){ 
 
 	// mixin the formatter
@@ -15,6 +15,12 @@ module.exports = class Code extends require('views/edit'){
 		this.$fastTextIndent = 0
 		this._onText |= 32
 		this.serializeIndent = '\t'
+				
+		this.lazyUniforms = {
+			groupHighlightId: true,
+			blockHighlightPickId: true
+		}
+
 		this.props = {
 			errors:undefined
 		}
@@ -32,6 +38,13 @@ module.exports = class Code extends require('views/edit'){
 			Text: require('shaders/codetext').extend({
 				font: module.style.fonts.mono,
 				order:3,
+				groupHighlightId:{kind:'uniform', value:0},
+				vertexStyle:function(){$
+					if(this.group == this.groupHighlightId){
+						this.boldness += 0.5
+						this.color *= 1.5
+					}
+				}
 			}),
 			Block: require('shaders/codeblock').extend({
 				pickAlpha: 0.,
@@ -61,19 +74,23 @@ module.exports = class Code extends require('views/edit'){
 				borderRadius:4,
 			}), 			
 			ErrorMarker: require('shaders/codemarker').extend({
-				order:4,
-				vertexStyle: function() {$
-					//this.errorTime = max(0., .1 - this.errorTime) 
-					//if(this.errorAnim.z < this.errorAnim.w) this.errorTime = 1. 
-					this.x2 -= 2. 
-					this.x3 += 2. 
-					this.opColor = this.bgColor * 2.3 
-					this.borderColor = this.bgColor * 1.4 
-				} 
+				order:4
 			}),
 			ErrorMessage: require('base/stamp').extend({
 				order:8,
 				margin:[6,0,0,0],
+				states:{
+					default:{
+						to:{Text:{opacity:1.},Bg:{opacity:1}},
+						duration:0.
+					},
+					create:{
+						0:{Text:{opacity:0.},Bg:{opacity:0}},
+						99:{Text:{opacity:0.},Bg:{opacity:0}},
+						to:{Text:{opacity:1.},Bg:{opacity:1}},
+						duration:0.5
+					}
+				},
 				props:{
 					errorPos:0,
 					text:'error'
@@ -407,7 +424,6 @@ module.exports = class Code extends require('views/edit'){
 	
 	constructor(...args) { 
 		super(...args) 
-
 		//this.oldText = '' 
 		this.$textClean = false 
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3 
@@ -430,41 +446,14 @@ module.exports = class Code extends require('views/edit'){
 	// serialize all selections, lazily
 	cursorChanged(){
 		super.cursorChanged()
-		// lets take the last cursor and figure out the highlight
-		// range
-		var cursor = this.cs.cursors[0]
-		var pos = cursor.start
-		var blocks = this.$blockRanges
-		if(!blocks) return
-		var minsize = Infinity
-		var found
-		for(var i = 0, l = blocks.length; i < l; i++){
-			var block = blocks[i]
-			if(pos >= block.start && pos < block.end){
-				var size = block.end - block.start
-				if(size <= minsize) minsize = size, found = block
-			}
-		}
-		this.blockHighlightPickId = found?found.id:0
-		
-		// scan for paren ranges
-		var parens = this.$parenRanges
-		minsize = Infinity
-		found = undefined
-		for(var i = 0, l = parens.length; i < l; i++){
-			var paren = parens[i]
-			if(pos >= paren.start && pos < paren.end){
-				var size = paren.end - paren.start
-				if(size <= minsize) minsize = size, found = paren
-			}
-		}
-		this.groupHighlightId = found?found.id:0
 		// trigger some kind of signal for our editor to redraw
 		var visualEditor = this.app.find('VisualEdit')
 		if(visualEditor){
 			visualEditor.onCursorMove(this)
 		}
 	}
+	
+	
 
 	drawStackMarker(start, end, color){
 		var rds = this.$readOffsetText(clamp(start, 0, this.lengthText() - 1) ) 			
@@ -480,20 +469,29 @@ module.exports = class Code extends require('views/edit'){
 	}
 
 	drawError(error, id){
-		var epos = clamp(error.pos, 0, this.lengthText() - 1) 
+		var epos = clamp(error.pos, 0, this.lengthText() - 1)
 		
-		var rd = this.$readOffsetText(epos) 			
+		var rd = this.$readOffsetText(epos)
 		if(!rd) return
+		
+		//if(!this.hasErrorMarker) this.hasErrorMarker = {}
 
-		var marker = { 
+		// ok so when do we want to animate
+		// 
+		var marker = {
 			x1: 0, 
 			x2: rd.x, 
 			x3: rd.x + abs(rd.w), 
 			x4: 100000, 
 			y: rd.y, 
 			h: rd.fontSize * rd.lineSpacing, 
-			closed: 0 
+			id:id
+			//state: ((this.hasErrorMarker[id]||0) < this._frameId-2)?'fadein' :'default'
 		}
+
+		//console.log(marker.state, (this.hasErrorMarker[id]||0), this._frameId)
+		//this.hasErrorMarker[id] = this._frameId
+
 		this.drawErrorMarker(marker)
 		// if cursor is at same epos (or mouse hovers over dot?..)
 		// draw ErrorMessage
@@ -576,15 +574,15 @@ module.exports = class Code extends require('views/edit'){
 			else {
 
 				//var ann = this.ann
-				this.reuseBlock(null, 0)
-				this.reuseMarker()
+				//this.reuseBlock()
+				//this.reuseMarker()
 				this.jsTokenFormat(this._text)
 
 			} 
 			//require('base/perf')
 
 			//require.perf()
-			this.$fastTextDelta = 0 
+			this.$fastTextDelta = 0
 		} 
 
 		if(this.runtimeErrors){
@@ -675,6 +673,40 @@ module.exports = class Code extends require('views/edit'){
 				}) 
 				//this.showLastCursor()
 			} 
+
+			// lets take the last cursor and figure out the highlight
+			// range
+			var cursor = this.cs.cursors[0]
+			var pos = cursor.start
+			var blocks = this.$blockRanges
+			if(!blocks) return
+			var minsize = Infinity
+			var found
+			for(var i = 0, l = blocks.length; i < l; i++){
+				var block = blocks[i]
+				if(pos >= block.start && pos < block.end){
+					var size = block.end - block.start
+					if(size <= minsize) minsize = size, found = block
+				}
+			}
+			this.blockHighlightPickId = found?found.id:0
+			
+			// scan for paren ranges
+			var parens = this.$parenRanges
+			minsize = Infinity
+			found = undefined
+			for(var i = 0, l = parens.length; i < l; i++){
+				var paren = parens[i]
+				if(pos >= paren.start && pos < paren.end){
+					var size = paren.end - paren.start
+					if(size <= minsize) minsize = size, found = paren
+				}
+			}
+			this.groupHighlightId = found?found.id:0
+			// k so this is a problem.
+			// how do we fix it.
+
+
 		} 
 		
 		this.endBg(true) 
@@ -843,12 +875,13 @@ module.exports = class Code extends require('views/edit'){
 	} 
 	
 	onKeySingleQuote(k) {
-		if(!k.meta) return true
-		storage.save("/debug.json", JSON.stringify({step: this.ann.step, ann: this.ann}))
+		//if(!k.meta) return true
+		//storage.save("/debug.json", JSON.stringify({step: this.ann.step, ann: this.ann}))
 	}
 	
 	onKeySemiColon(k) {
-		if(!k.meta) return true
+		//if(!k.meta) return true
+		/*
 		storage.load("/debug.json").then(result=>{
 			this.parseError = {}
 			var res = JSON.parse(result)
@@ -858,7 +891,7 @@ module.exports = class Code extends require('views/edit'){
 			this.ast = undefined
 			this.debugShow = true
 			this.redraw()
-		}) 
+		})*/ 
 	} 
 	
 	onFingerDown(f) { 

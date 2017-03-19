@@ -16,7 +16,7 @@ module.exports = class Text extends require('base/shader'){
 			color:'white',
 			outlineColor:'white',
 			shadowColor:[0,0,0,0.5],
-
+			opacity:1.,
 			fontSize:12,
 
 			italic:0.,
@@ -373,7 +373,7 @@ module.exports = class Text extends require('base/shader'){
 			this.fillKeep(this.color)
 			return this.stroke(this.outlineColor, this.outlineWidth)
 		}
-		return this.fill(this.color)
+		return this.fill(this.color)*this.opacity
 	}
 
 	onCompileVerbs(){

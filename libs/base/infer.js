@@ -97,7 +97,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			var off = 0, realcol = 0
 			for(var line = 0; line < lines.length; line++){
 				if(off >= node.start){
-					realcol = off - node.start - 3
+					realcol = off - node.start +4
 					break
 				}
 				off += lines[line].length + 1

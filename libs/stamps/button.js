@@ -23,6 +23,9 @@ module.exports = class Button extends require('base/stamp'){
 						glowSize   :0,
 						borderColor:colors.textLo
 					},
+					Text:{
+						color:colors.textMed
+					},
 					Icon:{
 						color:colors.textMed
 					}
@@ -36,6 +39,9 @@ module.exports = class Button extends require('base/stamp'){
 						color      :colors.textMed,
 						glowSize   :0,
 						borderColor:colors.textLo
+					},
+					Text:{
+						color:'#0'
 					},
 					Icon:{
 						color:'#0'

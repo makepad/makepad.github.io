@@ -93,6 +93,7 @@ module.exports = require('base/stamp').extend({
 	},
 	tools:{
 		Bg:require('shaders/quad').extend({
+			queue:false,
 			borderRadius:4,
 			color:colors.bgNormal,
 			split:colors.bgTop,
@@ -127,10 +128,12 @@ module.exports = require('base/stamp').extend({
 			}
 		}),
 		Text:require('shaders/text').extend({
+			queue:false,
 			font:fonts.regular,
 			color:colors.textNormal
 		}),
 		Icon:require('shaders/icon').extend({
+			queue:false,
 			color:'#7'
 		})
 	},
@@ -153,14 +156,16 @@ module.exports = require('base/stamp').extend({
 		this.view.onTabSlide(this, e.y - this.yStart, e)
 	},
 	onDraw(){
+		//console.log(this.id)
 		if(this.from_dx) this.state = 'sliding'
 		if(this.xStart>=0) this.state = 'selectedDrag'
-		this.beginBg({from_dx:this.from_dx, dx:this.dx, lineL:this.lineL,lineR:this.lineR})
+
+		this.beginBg({id:this.id,from_dx:this.from_dx, dx:this.dx, lineL:this.lineL,lineR:this.lineR})
 		if(this.text){
-			this.drawText({from_dx:this.from_dx, dx:this.dx, text:this.text})
+			this.drawText({debug:this.text === '1.js'?1:0,id:this.id,from_dx:this.from_dx, dx:this.dx, text:this.text})
 		}
 		if(this.icon){
-			this.drawIcon({from_dx:this.from_dx, dx:this.dx, text:this.lookupIcon[this.icon]})
+			this.drawIcon({id:this.id,from_dx:this.from_dx, dx:this.dx, text:this.lookupIcon[this.icon]})
 		}
 		this.endBg()
 	}

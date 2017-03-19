@@ -12,6 +12,8 @@ module.exports = class Slider extends require('base/stamp'){
 			step        :0,
 			onSlide     :undefined
 		}
+
+		this.innerPadding=[0,0,0,0]
 	
 		this.states = { // animation!
 			default         :{
@@ -98,7 +100,7 @@ module.exports = class Slider extends require('base/stamp'){
 					this.box(0., 0., this.w, this.h, 1.)
 					this.fill(this.bgColor)
 					if(this.vertical < 0.5) {
-						this.box(0., 0., 10., 10., 1.)
+						this.box(this.slide, 0., this.knobSize, this.h, 1.)
 						this.fill(this.knobColor)
 					}
 					else {
@@ -140,14 +142,14 @@ module.exports = class Slider extends require('base/stamp'){
 
 		}
 		else {
-			var xp = this.dragSize * pos + this.innerPadding[3]
+			var xp = this.dragSize * pos// + this.innerPadding[3]
 			
 			if(e.x > xp && e.x < xp + this.knobSize) {
-				this.dragOffset = e.x - xp + this.innerPadding[3]
+				this.dragOffset = e.x - xp// + this.innerPadding[3]
 			}
 			else {
 				// compute pos
-				this.dragOffset = 0.5 * this.knobSize + this.innerPadding[3]
+				this.dragOffset = 0.5 * this.knobSize// + this.innerPadding[3]
 				this.value = this.mapValue((e.x - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
 				if(this.onSlide) this.onSlide.call(this.view, this)
@@ -165,6 +167,7 @@ module.exports = class Slider extends require('base/stamp'){
 		}
 		else {
 			this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
+			console.log(this.dragOffset)
 		}
 		this.setState('down', false, {value:this.value})
 		if(this.onSlide) this.onSlide.call(this.view, this)
@@ -184,7 +187,13 @@ module.exports = class Slider extends require('base/stamp'){
 	
 	onDraw() {
 		//var pos = (this.value - this.range[0])/(this.range[1]-this.range[0])
-		this.dragSize = this.turtle.height - this.knobSize
+		if(this.vertical){
+			this.dragSize = this.turtle.height - this.knobSize
+		}
+		else{
+			this.dragSize = this.turtle.width - this.knobSize
+		}
+
 		this.drawSlider({
 			w       :'100%',
 			h       :'100%',

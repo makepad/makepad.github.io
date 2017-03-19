@@ -7,7 +7,7 @@ module.exports = class Quad extends require('base/shader'){
 		// special
 		this.props = {
 			visible: 1.,
-
+			opacity:1.,
 			x: NaN,
 			y: NaN,
 			dx:0,
@@ -95,6 +95,6 @@ module.exports = class Quad extends require('base/shader'){
 	}
 
 	pixel(){$
-		return this.color
+		return this.color * this.opacity
 	}
 }

@@ -14,12 +14,14 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.floatUbo = function(ubo, nameId, x){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o] = x
 	}
 
 	proto.vec2Ubo = function(ubo, nameId, v){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = v[0]
@@ -27,6 +29,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.vec2fUbo = function(ubo, nameId, x, y){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = x
@@ -34,6 +37,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.vec3Ubo = function(ubo, nameId, v){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = v[0]
@@ -42,6 +46,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.vec3fUbo = function(ubo, nameId, x, y, z){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = x
@@ -50,6 +55,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.vec4Ubo = function(ubo, nameId, v){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = v[0]
@@ -59,6 +65,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.vec4fUbo = function(ubo, nameId, x, y, z, w){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = x
@@ -68,6 +75,7 @@ module.exports = function painterUbos(proto){
 	}
 
 	proto.mat4Ubo = function(ubo, nameId, m){
+		if(!ubo) return
 		var o = ubo.offsets[nameId]
 		var f32 = ubo.f32
 		f32[o+0] = m[0]
