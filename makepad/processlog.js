@@ -246,7 +246,7 @@ class Log extends require('base/view'){
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
 		if(!logs) return
 		var item = logs[this.selectedRow]
-		if(!item) return
+	//	if(!item) return
 		// ok so now the next query.
 		// callstack markers.. how do we do them
 		// well first off we have to find the right editor
@@ -256,7 +256,7 @@ class Log extends require('base/view'){
 		// lets update our resources with callstacks we wanna viz
 		this.store.act('stackMarkers',store=>{
 			var res = this.resource
-			res.stackMarkers = item.stack.stack
+			res.stackMarkers = item && item.stack.stack
 		})
 	}
 
@@ -323,6 +323,12 @@ class Log extends require('base/view'){
 		var charWidth = tproto.font.fontmap.glyphs[32].advance * this.$fastTextFontSize
 		// how would we virtual viewport this thing?
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
+
+		if(this.selectedRow>=logs.length && this.selectedRow>0){
+			console.log("SELECTIN")
+			this.selectRow(0)
+		}
+
 		if(logs){
 			//this.turtle.sx = this.shiftX
 			//this.turtle.sy = this.shiftY

@@ -468,7 +468,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		var exps = node.expressions
 		var expslength = exps.length - 1
 		for(var i = 0;i <= expslength;i++){
-			console.log(expslength)
 			var exp = exps[i]
 			if(exp) this[exp.type](exp)
 			if(i < expslength) {

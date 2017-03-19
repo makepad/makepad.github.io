@@ -1,4 +1,4 @@
-var LOG = 1
+var LOG = 0
 // GRAMMAR
 var def = {
 	Start   :o=>o.Form,
@@ -17,7 +17,7 @@ var def = {
 	String  :o=>o('"') && o.any(o=>o.inv('"')) && o('"'),
 	Type    :o=>(o('boolean') || o('money')),
 	Id      :o=>(o('a', 'z') || o('A', 'Z')) && o.any(o=>o('a', 'z') || o('A', 'Z') || o('0', '9')),
-	Number  :o=>(o.many(o=>o('0', '9')) && o.zeroOrOne(o=>o('.') && o.many(o=>o('0', '9')))),
+	Number  :o=>(o.zeroOrOne(o=>o('-')) && o.many(o=>o('0', '9')) && o.zeroOrOne(o=>o('.') && o.many(o=>o('0', '9')))),
 	Logic   :o=>o.fold(o=>o.Cmp),
 	Cmp     :o=>o.fold(o=>o.Or && o.zeroOrOne(o=>o.ws && (o('<=') || o('<') || o('>=') || o('>') || o('!=')) && o.ws && o.Or)),
 	Or      :o=>o.fold(o=>o.And && o.any(o=>o.ws && o('||') && o.ws && o.And)),
@@ -57,7 +57,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			'    "Value residue:"\n' + 
 			'      valueResidue: money = \n' + 
 			'        (sellingPrice - privateDebt)\n' + 
-			'    if(valueResidue<0) {\n' + 
+			'    if(valueResidue < 0) {\n' + 
 			'         "You lost money!"\n' + 
 			'      }\n' + 
 			'  }\n' + 
@@ -128,7 +128,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				else if(node.Type.value === 'money') {
 					
 					this.drawSlider({
-						margin :[4, 0, 0, 0],
+						margin :[4, 0, 7, 0],
 						range  :[10000, 500000],
 						id     :path + 'M',
 						w      :100,
@@ -150,16 +150,16 @@ module.exports = class extends require('base/drawapp'){ //top
 			Answer  :(node, path) =>{
 				this.drawText({
 					fontSize:12,
-					margin  :[4, 0, 0, 0],
+					margin  :[0, 0, 0, 0],
 					text    :'A: ' + node.String.value.slice(1, -1) + ' '
 				})
 				var nExpr = node.n[3]
 				var val = process[nExpr.type](nExpr, path + '.Expr')
 				this.vars[node.Id.value] = val
 				this.drawText({
-					margin:[4, 0, 0, 0],
+					margin:[0, 0, 0, 0],
 					color :val > 0?'#0f0':'#f00',
-					text  :'$' + val
+					text  :'$' + parseInt(val)
 				})
 				this.lineBreak()
 			},
@@ -263,26 +263,6 @@ module.exports = class extends require('base/drawapp'){ //top
 		dumpAst(this.ast.n[0], 0)
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function makeParser(rules) {
 	
