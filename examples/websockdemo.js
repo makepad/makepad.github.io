@@ -21,14 +21,22 @@ module.exports = class extends require('base/drawapp'){ //top
 				name:'test',
 				c   :[
 					{name:'a'},
-					{name:'b'},
+					{name:'b', c:[
+						{name:'n'},
+						{name:'m'},
+						{name:'p', c:[
+							{name:'q'},
+							{name:'r'},
+						]},
+					]},
 					{
 						name:'c',
 						c   :[
 							{name:'x'},
+							{name:'x'},
 							{name:'y', c:[
 								{name:'1'},
-								{id:'2'},
+								{name:'2'},
 							]},
 						]
 					}
@@ -50,7 +58,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	drawNode(node, x, st, ht, d) {
 		this.turtle.wx = x
-		this.turtle.wy = st + 0.5 * ht
+		this.turtle.wy = node.x * 20 + 10
 		var scale = 1 // 4 / (d + 1)
 		var scale2 = 1 // 4 / (d + 2)
 		
@@ -75,12 +83,12 @@ module.exports = class extends require('base/drawapp'){ //top
 		let ly = 9 * scale2
 		if(c) for(var i = 0;i < c.length;i++){
 			let step = ht / c.length
-			let ny = st + step * i
+			let ny = c[i].x * 20 + 20
 			this.drawLine({
 				sx       :ex,
 				sy       :ey + ly,
 				x        :nx - 2 * scale,
-				y        :ny + 0.5 * step + ly,
+				y        :ny,
 				lineWidth:1 * scale,
 			})
 			this.drawNode(c[i], nx, ny, step, d + 1)
@@ -88,6 +96,45 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
+		var setup = (node, depth, nexts, offset) =>{
+			if(!nexts) nexts = {}
+			if(!offset) offset = {}
+			if(nexts[depth] === undefined) nexts[depth] = 0
+			if(offset[depth] === undefined) offset[depth] = 0
+			var c = node.c
+			if(c) for(var i = 0;i < c.length;i++){
+				setup(c[i], depth + 1, nexts, offset)
+			}
+			node.y = depth
+			var place
+			if(!c || !c.length) {
+				place = nexts[depth]
+				node.x = place
+			}
+			else if(c.length === 1) {
+				place = c[0].x - 1
+			}
+			else {
+				place = (c[0].x + c[1].x) / 2
+			}
+			offset[depth] = max(offset[depth], nexts[depth] - place)
+			if(c && c.length) {
+				node.x = place + offset[depth]
+			}
+			nexts[depth] += 2
+			node.mod = offset[depth]
+		}
+		setup(this.data[0], 0)
+		var addMods = (node, modsum) =>{
+			node.x = node.x + modsum
+			modsum += node.mod
+			var c = node.c
+			if(c) for(var i = 0;i < c.length;i++){
+				addMods(c[i], modsum)
+			}
+		}
+		addMods(this.data[0], 0)
+		_=this.data[0]
 		this.drawNode(this.data[0], 20, 0, this.turtle.height * .8, 0)
 	}
 }
