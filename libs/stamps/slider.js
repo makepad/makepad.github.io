@@ -150,7 +150,7 @@ module.exports = class Slider extends require('base/stamp'){
 			else {
 				// compute pos
 				this.dragOffset = 0.5 * this.knobSize// + this.innerPadding[3]
-				this.value = this.mapValue((e.x - this.dragOffset) / this.dragSize)
+				this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
 				if(this.onSlide) this.onSlide.call(this.view, this)
 			}

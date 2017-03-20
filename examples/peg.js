@@ -165,7 +165,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					processQL[n.type](n, path + '.' + n.type + '[' + i + ']')
 				}
 			},
-			Question:(node, path, widget) =>{
+			Question:(node, path, qls) =>{
 				this.drawText({
 					fontSize:12,
 					text    :'Q: ' + node.String.value.slice(1, -1)
@@ -176,10 +176,10 @@ module.exports = class extends require('base/drawapp'){ //top
 				var type = 'radio', args = ['yes', 'no']
 				if(node.Type.value === 'boolean') type = 'radio'
 				if(node.Type.value === 'money') type = 'spinbox'
-				if(widget) {
-					type = widget.Id.value
+				if(qls) {
+					type = qls.Id.value
 					args = []
-					for(var i = 1;i < widget.n.length;i++){args.push(widget.n[i].value.slice(1, -1))}
+					for(var i = 1;i < qls.n.length;i++){args.push(qls.n[i].value.slice(1, -1))}
 				}
 				if(type === 'radio') {
 					
@@ -363,7 +363,6 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		
 		this.beginBg({
-			//w      :250,
 			color  :'#5',
 			padding:16
 		})

@@ -278,6 +278,7 @@ class Log extends require('base/view'){
 				this.doScroll = true
 				this.redraw()
 			}*/
+			this.scrollAtDraw = true
 			this.onSelectedChange()
 		}
 	}
@@ -347,13 +348,17 @@ class Log extends require('base/view'){
 				this.scrollTo(undefined,scroll, -1)
 			}
 
-			this.scrollIntoView(
-				undefined,
-				this.selectedRow * this.lineHeight + this.shiftY,
-				0,
-				this.lineHeight,
-				1.
-			)
+			if(this.scrollAtDraw){
+				this.scrollIntoView(
+					undefined,
+					this.selectedRow * this.lineHeight + this.shiftY,
+					0,
+					this.lineHeight,
+					1.
+				)
+				this.scrollAtDraw=false
+			}
+
 
 			// compute the start i and end i
 			var safeWin = 20
