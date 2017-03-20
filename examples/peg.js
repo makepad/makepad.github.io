@@ -18,11 +18,12 @@ var def = {
 	Type    :o=>(o('boolean') || o('money')),
 	Id      :o=>(o('a', 'z') || o('A', 'Z')) && o.any(o=>o('a', 'z') || o('A', 'Z') || o('0', '9')),
 	Number  :o=>(o.zeroOrOne(o=>o('-')) && o.many(o=>o('0', '9')) && o.zeroOrOne(o=>o('.') && o.many(o=>o('0', '9')))),
-	Logic   :o=>o.fold(o=>o.Cmp),
-	Cmp     :o=>o.fold(o=>o.Or && o.zeroOrOne(o=>o.ws && (o('<=') || o('<') || o('>=') || o('>') || o('!=')) && o.ws && o.Or)),
+	Logic   :o=>o.fold(o=>o.Or),
 	Or      :o=>o.fold(o=>o.And && o.any(o=>o.ws && o('||') && o.ws && o.And)),
-	And     :o=>o.fold(o=>o.LogicS && o.any(o=>o.ws && o('&&') && o.ws && o.LogicS)),
-	LogicS  :o=>o.fold(o=>o.Id || o.Number || o('(') && o.Logic && o(')')),
+	And     :o=>o.fold(o=>o.Cmp && o.any(o=>o.ws && o('&&') && o.ws && o.Cmp)),
+	Cmp     :o=>o.fold(o=>o.LogicS && o.zeroOrOne(o=>o.ws && (o('<=') || o('<') || o('>=') || o('>') || o('!=')) && o.ws && o.LogicS)),
+	LogicS  :o=>o.fold(o=>o.NotId || o.Number || o('(') && o.Logic && o(')')),
+	NotId   :o=>o.empty(o=>o.zeroOrOne(o=>o('!')) && o.ws && o.Id, 1),
 	Expr    :o=>o.fold(o=>o.Sum),
 	Sum     :o=>o.fold(o=>o.Prod && o.any(o=>o.ws && (o('+') || o('-')) && o.ws && o.Prod)),
 	Prod    :o=>o.fold(o=>o.ExprS && o.any(o=>o.ws && (o('*') || o('/')) && o.ws && o.ExprS)),
@@ -64,6 +65,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			'}\n'
 		this.parser = makeParser(def)
 		this.ast = this.parser.parse(this.form)
+		this.wrap = false
 	}
 	onDraw() {
 		var p = this.parser
@@ -76,6 +78,27 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		
 		// Process 
+		
+		var opTable = (table, one) =>{
+			return (node, path) =>{
+				var n0 = node.n[0]
+				var L = process[n0.type](n0, path + '[0]')
+				var steps = one?[node.value]:node.value.split('')
+				for(let i = 0;i < steps.length;i++){
+					var j = i + 1
+					var nX = node.n[j]
+					var R = process[nX.type](nX, path + '[' + j + ']')
+					var op = steps[i]
+					for(var key in table){
+						if(op === key) {
+							L = table[key](L, R)
+							break
+						}
+					}
+				}
+				return L
+			}
+		}
 		
 		var process = {
 			Form    :(node) =>{
@@ -170,45 +193,6 @@ module.exports = class extends require('base/drawapp'){ //top
 					text    :'Message: ' + node.String.value.slice(1, -1)
 				})
 			},
-			Sum     :(node, path) =>{
-				var nA = node.n[0]
-				var vA = process[nA.type](nA, path + '.A')
-				var steps = node.value.split('')
-				for(let i = 0;i < steps.length;i++){
-					var nB = node.n[i + 1]
-					var vB = process[nB.type](nB, path + '.B' + i)
-					var op = steps[i]
-					if(op === '-') vA = vA - vB
-					if(op === '+') vA = vA + vB
-				}
-				return vA
-			},
-			Prod    :(node, path) =>{
-				var nA = node.n[0]
-				var vA = process[nA.type](nA, path + '.A')
-				var steps = node.value.split('')
-				for(let i = 0;i < steps.length;i++){
-					var nB = node.n[i + 1]
-					var vB = process[nB.type](nB, path + '.B' + i)
-					var op = steps[i]
-					if(op === '*') vA = vA * vB
-					if(op === '/') vA = vA / vB
-				}
-				return vA
-			},
-			Cmp     :(node, path) =>{
-				var nA = node.n[0]
-				var nB = node.n[1]
-				var vA = process[nA.type](nA, path + '.A')
-				var vB = process[nB.type](nB, path + '.B')
-				var op = node.value
-				if(op === '<') return vA < vB
-				if(op === '<=') return vA <= vB
-				if(op === '>') return vA > vB
-				if(op === '>=') return vA >= vB
-				if(op === '!=') return vA != vB
-				return vA
-			},
 			If      :(node, path) =>{
 				var nLogic = node.n[0]
 				var ret = process[nLogic.type](nLogic, path + '.Logic')
@@ -222,6 +206,10 @@ module.exports = class extends require('base/drawapp'){ //top
 			Number  :(node, path) =>{
 				return parseFloat(node.value)
 			},
+			NotId   :(node, path) =>{
+				var n0 = node.n[0]
+				return !process[n0.type](n0, path + '!')
+			},
 			Id      :(node, path) =>{
 				if(this.vars[node.value] === undefined) {
 					this.drawText({
@@ -231,7 +219,28 @@ module.exports = class extends require('base/drawapp'){ //top
 					})
 				}
 				return this.vars[node.value]
-			}
+			},
+			Sum     :opTable({
+				'+':(L, R) =>L + R,
+				'-':(L, R) =>L - R,
+			}),
+			Prod    :opTable({
+				'*':(L, R) =>L * R,
+				'/':(L, R) =>L / R,
+			}),
+			And     :opTable({
+				'&&':(L, R) =>L && R
+			}, 1),
+			Or      :opTable({
+				'||':(L, R) =>L || R
+			}, 1),
+			Cmp     :opTable({
+				'<':(L, R) =>L < R,
+				'<=':(L, R) =>L <= R,
+				'>':(L, R) =>L < R,
+				'>=':(L, R) =>L >= R,
+				'!=':(L, R) =>L != R
+			}, 1),
 		}
 		
 		this.beginBg({
@@ -240,11 +249,11 @@ module.exports = class extends require('base/drawapp'){ //top
 		})
 		process.Form(this.ast.n[0])
 		this.endBg()
-		
-		this.lineBreak()
-		this.turtle.wy += 10
+		this.turtle.mh = 0
+		//this.lineBreak()
+		var px = this.turtle.wx + 5
 		var dumpAst = (node, d) =>{
-			this.turtle.wx = d * 10
+			this.turtle.wx = px + d * 10
 			this.drawText({
 				color   :'#a',
 				fontSize:8,
@@ -325,6 +334,13 @@ function makeParser(rules) {
 		return false
 	}
 	
+	p.empty = function(fn) {
+		if(fn(p)) {
+			if(p.ast.value.length == 0) return 0
+			return true
+		}
+		return false
+	}
 	p.__defineGetter__('ws', function() {
 		var input = p.input
 		while(p.pos < input.length && (input.charCodeAt(p.pos) === 32 || input.charCodeAt(p.pos) === 9)){

@@ -167,7 +167,6 @@ module.exports = class Slider extends require('base/stamp'){
 		}
 		else {
 			this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
-			console.log(this.dragOffset)
 		}
 		this.setState('down', false, {value:this.value})
 		if(this.onSlide) this.onSlide.call(this.view, this)
