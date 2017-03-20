@@ -16,6 +16,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				}
 			}
 		}
+		this.wrap = false
 		this.props = {
 			data:[{
 				name    :'test1434',
