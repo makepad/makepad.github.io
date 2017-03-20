@@ -18,23 +18,22 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		this.props = {
 			data:[{
-				name:'test',
-				c   :[
+				name    :'test1434',
+				children:[
 					{name:'a'},
-					{name:'b', c:[
-						{name:'n'},
+					{name:'b', children:[
 						{name:'m'},
-						{name:'p', c:[
+						{name:'p', children:[
 							{name:'q'},
 							{name:'r'},
 						]},
 					]},
 					{
-						name:'c',
-						c   :[
+						name    :'t',
+						children:[
 							{name:'x'},
 							{name:'x'},
-							{name:'y', c:[
+							{name:'y', children:[
 								{name:'1'},
 								{name:'2'},
 							]},
@@ -58,7 +57,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	drawNode(node, x, st, ht, d) {
 		this.turtle.wx = x
-		this.turtle.wy = node.x * 20 + 10
+		this.turtle.wy = node.x * 20 + 50
 		var scale = 1 // 4 / (d + 1)
 		var scale2 = 1 // 4 / (d + 2)
 		
@@ -70,20 +69,22 @@ module.exports = class extends require('base/drawapp'){ //top
 			margin:[0, 5 * scale, 0, 0],
 			color :[1, d / 3, d / 6, 1]
 		})
-		
+		var text = node.name
+		if(text.length > 8) text = text.slice(0, 8) + '..'
 		this.drawText({
 			fontSize:12 * scale,
-			text    :node.name
+			text    :text
 		})
 		
-		let c = node.c
+		let c = node.children
 		let ex = this.turtle.wx + 5 * scale
 		let ey = this.turtle.wy
 		let nx = ex + 50
 		let ly = 9 * scale2
 		if(c) for(var i = 0;i < c.length;i++){
 			let step = ht / c.length
-			let ny = c[i].x * 20 + 20
+			let ny = c[i].x * 20 + 60
+			nx = c[i].y * 120
 			this.drawLine({
 				sx       :ex,
 				sy       :ey + ly,
@@ -91,50 +92,173 @@ module.exports = class extends require('base/drawapp'){ //top
 				y        :ny,
 				lineWidth:1 * scale,
 			})
-			this.drawNode(c[i], nx, ny, step, d + 1)
+			this.drawNode(c[i], c[i].y * 120, ny, step, d + 1)
 		}
 	}
 	
 	onDraw() {
-		var setup = (node, depth, nexts, offset) =>{
-			if(!nexts) nexts = {}
-			if(!offset) offset = {}
-			if(nexts[depth] === undefined) nexts[depth] = 0
-			if(offset[depth] === undefined) offset[depth] = 0
-			var c = node.c
+		var left_brother = (v) =>{
+			if(!v.parent) return
+			return v.parent.children[v.number - 1]
+		}
+		var left = (v) =>{
+			return v.thread || v.children && v.children[0]
+		}
+		var right = (v) =>{
+			return v.thread || v.children && v.children[v.children.length - 1]
+		}
+		var leftmost_sibling = (v) =>{
+			return v.parent && v.parent.children[0]
+		}
+		var init = (v, parent, depth = 0, number = 0) =>{
+			v.x = -1
+			v.y = depth
+			v.mod = 0
+			v.parent = parent
+			v.thread = null
+			v.ancestor = v
+			v.change = v.shift = 0
+			v.number = number
+			var c = v.children
 			if(c) for(var i = 0;i < c.length;i++){
-				setup(c[i], depth + 1, nexts, offset)
+				init(c[i], v, depth + 1, i)
 			}
-			node.y = depth
-			var place
+		}
+		
+		var firstwalk = (v, distance = 1.) =>{
+			var c = v.children
 			if(!c || !c.length) {
-				place = nexts[depth]
-				node.x = place
-			}
-			else if(c.length === 1) {
-				place = c[0].x - 1
+				if(left_brother(v)) {
+					v.x = left_brother(v).x + distance
+				}
+				else {
+					v.x = 0
+				}
 			}
 			else {
-				place = (c[0].x + c[1].x) / 2
+				var def_ancestor = c[0]
+				for(var i = 0;i < c.length;i++){
+					var child = c[i]
+					firstwalk(child)
+					def_ancestor = apportion(child, def_ancestor, distance)
+				}
+				execute_shifts(v)
+				var ell = c[0]
+				var arr = c[c.length - 1]
+				var midpoint = (ell.x + arr.x) / 2
+				var w = left_brother(v)
+				if(w) {
+					v.x = w.x + distance
+					v.mod = v.x - midpoint
+				}
+				else {
+					v.x = midpoint
+				}
 			}
-			offset[depth] = max(offset[depth], nexts[depth] - place)
-			if(c && c.length) {
-				node.x = place + offset[depth]
-			}
-			nexts[depth] += 2
-			node.mod = offset[depth]
+			return v
 		}
-		setup(this.data[0], 0)
-		var addMods = (node, modsum) =>{
-			node.x = node.x + modsum
-			modsum += node.mod
-			var c = node.c
+		
+		var apportion = (v, def_ancestor, distance) =>{
+			var w = left_brother(v)
+			if(!w) return def_ancestor
+			var vir = v
+			var vor = v
+			var vil = w
+			var vol = leftmost_sibling(v)
+			var sir = v.mod
+			var sor = v.mod
+			var sil = vil.mod
+			var sol = vol.mod
+			while(right(vil) && left(vir)){
+				vil = right(vil)
+				vir = left(vir)
+				vol = left(vol)
+				vor = right(vor)
+				vor.ancestor = v
+				var shift = (vil.x + sil) - (vir.x + sir) + distance
+				if(shift > 0) {
+					move_subtree(ancestor(vil, v, def_ancestor), v, shift)
+					sir = sir + shift
+					sor = sor + shift
+				}
+				sil += vil.mod
+				sir += vir.mod
+				sol += vol.mod
+				sor += vor.mod
+			}
+			if(right(vil) && !right(vor)) {
+				vor.thread = right(vil)
+				vor.mod += sil - sor
+			}
+			else {
+				if(left(vir) && !left(vol)) {
+					vol.thread = left(vir)
+					vol.mod += sir - sol
+				}
+				def_ancestor = v
+			}
+			
+			return def_ancestor
+		}
+		
+		var move_subtree = (wl, wr, shift) =>{
+			var subtrees = wr.number - wl.number
+			wr.change -= shift / subtrees
+			wr.shift += shift
+			wl.change += shift / subtrees
+			wr.x += shift
+			wr.mod += shift
+		}
+		
+		var execute_shifts = (v) =>{
+			var shift = 0
+			var change = 0
+			var c = v.children
+			if(c) for(var i = 0;i < c.length - 1;i++){
+				var w = c[i]
+				w.x += shift
+				w.mod += shift
+				change += w.change
+				shift += w.shift + change
+			}
+		}
+		
+		var ancestor = (vil, v, def_ancestor) =>{
+			if(v.parent.children.indexOf(vil.ancestor) !== -1) {
+				return vil.ancestor
+			}
+			return def_ancestor
+		}
+		
+		var secondwalk = (v, m = 0, depth = 0, min = null) =>{
+			v.x += m
+			if(min === null || v.x < min) min = v.x
+			var c = v.children
 			if(c) for(var i = 0;i < c.length;i++){
-				addMods(c[i], modsum)
+				var w = c[i]
+				min = secondwalk(w, m + v.mod, depth + 1, min)
+			}
+			return min
+		}
+		
+		var thirdwalk = (v, n) =>{
+			var c = v.children
+			v.x += n
+			if(c) for(var i = 0;i < c.length;i++){
+				thirdwalk(c[i], n)
 			}
 		}
-		addMods(this.data[0], 0)
-		_=this.data[0]
+		init(
+			this.data[0]
+		)
+		
+		var layout = (v) =>{
+			firstwalk(v)
+			var shift = secondwalk(v)
+			if(shift < 0) thirdwalk(v, -shift)
+		}
+		
+		layout(this.data[0])
 		this.drawNode(this.data[0], 20, 0, this.turtle.height * .8, 0)
 	}
 }
