@@ -194,7 +194,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		var randomize = (depth = 0) =>{
 			var node = {}
 			node.name = parseInt(random() * 10000) + ''
-			var nchild = 3 // parseInt(random() * 8)
+			var nchild = parseInt(random() * 8)
 			if(depth > 4) return node
 			node.children = []
 			for(var i = 0;i < nchild;i++){
