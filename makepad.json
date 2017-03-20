@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/peg.js"],
-	"run":["/examples/peg.js"],
+	"open":["/examples/websockdemo.js"],
+	"run":["/examples/websockdemo.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[

@@ -15,6 +15,8 @@ module.exports = class Line extends require('base/shader'){
 			// end x / y line x /y
 			x: NaN,
 			y: NaN,
+			dx:0,
+			dy:0,
 			first: false,
 
 			point:{mask:0,value:0},
@@ -27,6 +29,10 @@ module.exports = class Line extends require('base/shader'){
 			shadowBlur:0.,
 			shadowOffset:[0,0],
 			
+			turtleClip:{value:[-50000,-50000,50000,50000]},
+			viewClip:{kind:'uniform', value:[-50000,-50000,50000,50000]},
+			moveScroll:{value:1.},
+
 			mesh:{kind:'geometry', type:types.vec3},
 			// internal props
 			ax: {mask:0, value:NaN},
@@ -189,6 +195,16 @@ module.exports = class Line extends require('base/shader'){
 			mix(b,c,f) + nbc * side.y
 		)
 		
+		var shift = vec2(this.viewScroll.x*this.moveScroll, this.viewScroll.y*this.moveScroll)
+		
+		this.pos.xy-=shift
+		/*
+		this.pos = (clamp(
+			this.pos - shift, 
+			max(this.turtleClip.xy, this.viewClip.xy),
+			min(this.turtleClip.zw, this.viewClip.zw)
+		))*/
+
 		if(this.mesh.z < 0.5){
 			this.pos.xy += this.shadowOffset.xy
 		}

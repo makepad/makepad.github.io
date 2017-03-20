@@ -9,7 +9,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				pixel:function() {$
 					this.viewport()
 					this.circle(this.w * .5, this.h * .5, this.w * .5)
-					this.circle(this.w * .5, this.h * .5, this.w * .4)
+					this.circle(this.w * .5, this.h * .5, this.w * .4 - this.depth)
 					this.subtract()
 					this.fill(this.color)
 					return this.result
@@ -25,6 +25,56 @@ module.exports = class extends require('base/drawapp'){ //top
 					{name:'b', children:[
 						{name:'m'},
 						{name:'p', children:[
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r', children:[
+								{name:'x'},
+								{name:'x'},
+								{name:'y', children:[
+									{name:'1'},
+									{name:'2'},
+								]},
+							]},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q', children:[
+								{name:'x'},
+								{name:'x'},
+								{name:'y', children:[
+									{name:'1'},
+									{name:'2'},
+								]},
+							]},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
+							{name:'q'},
+							{name:'r'},
 							{name:'q'},
 							{name:'r'},
 						]},
