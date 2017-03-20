@@ -268,7 +268,7 @@ class Log extends require('base/view'){
 		if(newRow!==this.selectedRow){
 			this.selectedRow = newRow
 			// lets scroll it into view
-			if(this.scrollIntoView(
+			/*if(this.scrollIntoView(
 				undefined,
 				this.selectedRow * this.lineHeight + this.shiftY,
 				0,
@@ -277,7 +277,7 @@ class Log extends require('base/view'){
 			)){
 				this.doScroll = true
 				this.redraw()
-			}
+			}*/
 			this.onSelectedChange()
 		}
 	}
@@ -329,6 +329,7 @@ class Log extends require('base/view'){
 			this.selectRow(0)
 		}
 
+
 		if(logs){
 			//this.turtle.sx = this.shiftX
 			//this.turtle.sy = this.shiftY
@@ -345,6 +346,14 @@ class Log extends require('base/view'){
 				scroll = (logs.length+1)* lineHeight- this.turtle.height
 				this.scrollTo(undefined,scroll, -1)
 			}
+
+			this.scrollIntoView(
+				undefined,
+				this.selectedRow * this.lineHeight + this.shiftY,
+				0,
+				this.lineHeight,
+				1.
+			)
 
 			// compute the start i and end i
 			var safeWin = 20
