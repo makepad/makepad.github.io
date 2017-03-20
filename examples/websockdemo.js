@@ -3,160 +3,16 @@ let socket = require('services/socket')
 let http = require('services/http')
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
-		this.tools = {
-			Quad:{
-				depth:0,
-				pixel:function() {$
-					this.viewport()
-					this.circle(this.w * .5, this.h * .5, this.w * .5)
-					this.circle(this.w * .5, this.h * .5, this.w * .4 - this.depth)
-					this.subtract()
-					this.fill(this.color)
-					return this.result
-				}
-			}
-		}
-		this.wrap = false
-		this.props = {
-			data:[{
-				name    :'test1434',
-				children:[
-					{name:'a'},
-					{name:'b', children:[
-						{name:'m'},
-						{name:'p', children:[
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r', children:[
-								{name:'x'},
-								{name:'x'},
-								{name:'y', children:[
-									{name:'1'},
-									{name:'2'},
-								]},
-							]},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q', children:[
-								{name:'x'},
-								{name:'x'},
-								{name:'y', children:[
-									{name:'1'},
-									{name:'2'},
-								]},
-							]},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-							{name:'q'},
-							{name:'r'},
-						]},
-					]},
-					{
-						name    :'t',
-						children:[
-							{name:'x'},
-							{name:'x'},
-							{name:'y', children:[
-								{name:'1'},
-								{name:'2'},
-							]},
-						]
-					}
-				]
-			}]
-		}
-	}
-	
-	constructor() {
-		super()
-		socket.postMessage({msg:"CONNECT"})
-		socket.onMessage = msg=>{
-			this.msg = JSON.stringify(msg)
-			this.redraw()
-		}
-		http.get('https://localhost:2001/makepad.html').then(result=>{
-		})
-	}
-	
-	drawNode(node, x, st, ht, d) {
-		this.turtle.wx = x
-		this.turtle.wy = node.x * 20 + 50
-		var scale = 1 // 4 / (d + 1)
-		var scale2 = 1 // 4 / (d + 2)
 		
-		this.drawQuad({
-			depth :d,
-			dy    :-2,
-			w     :20 * scale,
-			h     :20 * scale,
-			margin:[0, 5 * scale, 0, 0],
-			color :[1, d / 3, d / 6, 1]
-		})
-		var text = node.name
-		if(text.length > 8) text = text.slice(0, 8) + '..'
-		this.drawText({
-			fontSize:12 * scale,
-			text    :text
-		})
-		
-		let c = node.children
-		let ex = this.turtle.wx + 5 * scale
-		let ey = this.turtle.wy
-		let nx = ex + 50
-		let ly = 9 * scale2
-		if(c) for(var i = 0;i < c.length;i++){
-			let step = ht / c.length
-			let ny = c[i].x * 20 + 60
-			nx = c[i].y * 120
-			this.drawLine({
-				sx       :ex,
-				sy       :ey + ly,
-				x        :nx - 2 * scale,
-				y        :ny,
-				lineWidth:1 * scale,
-			})
-			this.drawNode(c[i], c[i].y * 120, ny, step, d + 1)
-		}
-	}
-	
-	onDraw() {
 		var left_brother = (v) =>{
 			if(!v.parent) return
 			return v.parent.children[v.number - 1]
 		}
 		var left = (v) =>{
-			return v.thread || v.children && v.children[0]
+			return v.children && v.children[0] || v.thread
 		}
 		var right = (v) =>{
-			return v.thread || v.children && v.children[v.children.length - 1]
+			return v.children && v.children[v.children.length - 1] || v.thread
 		}
 		var leftmost_sibling = (v) =>{
 			return v.parent && v.parent.children[0]
@@ -241,11 +97,9 @@ module.exports = class extends require('base/drawapp'){ //top
 				vor.thread = right(vil)
 				vor.mod += sil - sor
 			}
-			else {
-				if(left(vir) && !left(vol)) {
-					vol.thread = left(vir)
-					vol.mod += sir - sol
-				}
+			if(left(vir) && !left(vol)) {
+				vol.thread = left(vir)
+				vol.mod += sir - sol
 				def_ancestor = v
 			}
 			
@@ -254,6 +108,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		var move_subtree = (wl, wr, shift) =>{
 			var subtrees = wr.number - wl.number
+			//_=[wl.number, wr.number]
 			wr.change -= shift / subtrees
 			wr.shift += shift
 			wl.change += shift / subtrees
@@ -265,9 +120,10 @@ module.exports = class extends require('base/drawapp'){ //top
 			var shift = 0
 			var change = 0
 			var c = v.children
-			if(c) for(var i = 0;i < c.length - 1;i++){
+			if(c) for(var i = c.length - 1;i >= 0;i--){
 				var w = c[i]
 				w.x += shift
+				
 				w.mod += shift
 				change += w.change
 				shift += w.shift + change
@@ -299,17 +155,101 @@ module.exports = class extends require('base/drawapp'){ //top
 				thirdwalk(c[i], n)
 			}
 		}
-		init(
-			this.data[0]
-		)
 		
-		var layout = (v) =>{
+		this.layout = (v) =>{
+			init(v)
 			firstwalk(v)
 			var shift = secondwalk(v)
 			if(shift < 0) thirdwalk(v, -shift)
 		}
 		
-		layout(this.data[0])
+		this.tools = {
+			Quad:{
+				depth:0,
+				pixel:function() {$
+					this.viewport()
+					this.circle(this.w * .5, this.h * .5, this.w * .5)
+					this.circle(this.w * .5, this.h * .5, this.w * .4 - this.depth)
+					this.subtract()
+					this.fill(this.color)
+					return this.result
+				}
+			}
+		}
+		this.wrap = false
+		this.props = {
+			data:[]
+		}
+	}
+	
+	constructor() {
+		super()
+		socket.postMessage({msg:"CONNECT"})
+		socket.onMessage = msg=>{
+			this.msg = JSON.stringify(msg)
+			this.redraw()
+		}
+		http.get('https://localhost:2001/makepad.html').then(result=>{
+		})
+		var randomize = (depth = 0) =>{
+			var node = {}
+			node.name = parseInt(random() * 10000) + ''
+			var nchild = 3 // parseInt(random() * 8)
+			if(depth > 4) return node
+			node.children = []
+			for(var i = 0;i < nchild;i++){
+				node.children.push(randomize(depth + 1))
+			}
+			return node
+		}
+		this.data = [randomize()]
+	}
+	
+	drawNode(node, x, st, ht, d) {
+		this.turtle.wx = x
+		this.turtle.wy = node.x * 20 + 50
+		var scale = 1 // 4 / (d + 1)
+		var scale2 = 1 // 4 / (d + 2)
+		
+		this.drawQuad({
+			depth :d,
+			dy    :-2,
+			w     :20 * scale,
+			h     :20 * scale,
+			margin:[0, 5 * scale, 0, 0],
+			color :[1, d / 3, d / 16, 1]
+		})
+		var text = node.name
+		if(text.length > 8) text = text.slice(0, 8) + '..'
+		this.drawText({
+			fontSize:12 * scale,
+			text    :text
+		})
+		
+		let c = node.children
+		let ex = this.turtle.wx + 5 * scale
+		let ey = this.turtle.wy
+		let nx = ex + 50
+		let ly = 9 * scale2
+		if(c) for(var i = 0;i < c.length;i++){
+			let step = ht / c.length
+			let ny = c[i].x * 20 + 60
+			nx = c[i].y * 120
+			this.drawLine({
+				sx       :ex,
+				sy       :ey + ly,
+				x        :nx - 2 * scale,
+				y        :ny,
+				lineWidth:1 * scale,
+			})
+			this.drawNode(c[i], c[i].y * 120, ny, step, d + 1)
+		}
+	}
+	
+	onDraw() {
+		
+		this.layout(this.data[0])
 		this.drawNode(this.data[0], 20, 0, this.turtle.height * .8, 0)
+		//this.redraw(true)
 	}
 }
