@@ -1,10 +1,10 @@
 var LOG = 0
 // GRAMMAR
-var def = {
+var defQL = {
 	Start   :o=>o.Form,
 	ws      :o=>o.fold(o=>o.any(o=>o.eat(' ') || o.eat('\t'))),
 	Form    :o=>o('form') && o.many(o=>o.eat(' ')) && o.Id && o.ws && o.Body,
-	Body    :o=>o.ws && o('{') && o.eat('\n') && 
+	Body    :o=>o.ws && o('{') && o.ws && o.eat('\n') && 
 		o.any(o=>o.Answer || o.Question || o.Message || o.If) && 
 		o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
 	Question:o=>o.ws && o.String && o.ws && o.eat('\n') && 
@@ -28,6 +28,27 @@ var def = {
 	Sum     :o=>o.fold(o=>o.Prod && o.any(o=>o.ws && (o('+') || o('-')) && o.ws && o.Prod)),
 	Prod    :o=>o.fold(o=>o.ExprS && o.any(o=>o.ws && (o('*') || o('/')) && o.ws && o.ExprS)),
 	ExprS   :o=>o.fold(o=>o.Id || o.Number || o('(') && o.Expr && o(')'))
+}
+
+var defQLS = {
+	Start     :o=>o.Stylesheet,
+	Stylesheet:o=>o('stylesheet') && o.many(o=>o.eat(' ')) && o.Id && o.ws && o('{') && o.eat('\n') && o.any(o=>o.Page) && o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
+	Page      :o=>o.ws && o('page') && o.ws && o.Id && o.ws && o('{') && o.ws && o.eat('\n') && o.any(o=>o.Section) && o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
+	Body      :o=>o.ws && o('{') && o.ws && o.eat('\n') && o.any(o=>o.Section || o.Question || o.Default) && o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
+	Props     :o=>o.ws && o('{') && o.ws && o.eat('\n') && o.any(o=>o.ws && (o.StrProp || o.NumProp || o.ColProp || o.WidgetProp)) && o.ws && o('}') && o.ws && o.many(o=>o.eat('\n')),
+	StrProp   :o=>o.Id && o.ws && o.eat(':') && o.ws && o.String && o.ws && o.eat('\n'),
+	NumProp   :o=>o.Id && o.ws && o.eat(':') && o.ws && o.Number && o.ws && o.eat('\n'),
+	ColProp   :o=>o.Id && o.ws && o.eat(':') && o.ws && o.Color && o.ws && o.eat('\n'),
+	WidgetProp:o=>o('widget') && o.ws && o.Id && o.ws && o.eat('\n'),
+	String    :o=>o('"') && o.any(o=>o.inv('"')) && o('"'),
+	Id        :o=>(o('a', 'z') || o('A', 'Z')) && o.any(o=>o('a', 'z') || o('A', 'Z') || o('0', '9')),
+	Number    :o=>(o.zeroOrOne(o=>o('-')) && o.many(o=>o('0', '9')) && o.zeroOrOne(o=>o('.') && o.many(o=>o('0', '9')))),
+	Color     :o=>o('#') && o.many(o=>o('0', '9') || o('a', 'f') || o('A', 'F')),
+	Section   :o=>o.ws && o('section') && o.ws && o.String && o.ws && o.Body,
+	Question  :o=>o.ws && o('question') && o.ws && o.Id && o.ws && o.eat('\n') && o.zeroOrOne(o=>o.Widget),
+	Widget    :o=>o.ws && o('widget') && o.ws && o.Id && o.zeroOrOne(o=>o.ws && o('(') && o.ws && 
+			o.any(o=>o.String && o.zeroOrOne(o=>o.ws && o.eat(',') && o.ws)) && o.ws && o(')') && o.ws) && o.ws && o.eat('\n'),
+	Default   :o=>o.ws && o('default') && o.ws && o.Id && o.Props
 }
 
 new require('styles/dark')
@@ -63,16 +84,44 @@ module.exports = class extends require('base/drawapp'){ //top
 			'      }\n' + 
 			'  }\n' + 
 			'}\n'
-		this.parser = makeParser(def)
-		this.ast = this.parser.parse(this.form)
+		
+		this.style = 
+		'stylesheet MainForm{\n' + 
+			' page Selling { \n' + 
+			'  section "Selling" { \n' + 
+			'   question hasSoldHouse \n' + 
+			'    widget radio("Yes", "No") \n' + 
+			'  section "You sold a house" { \n' + 
+			'   question sellingPrice \n' + 
+			'    widget spinbox \n' + 
+			'   question privateDebt \n' + 
+			'    widget spinbox  \n' + 
+			'   question valueResidue \n' + 
+			'    default money { \n' + 
+			'     width: 400 \n' + 
+			'     font: "Arial"  \n' + 
+			'     fontsize: 14 \n' + 
+			'     color: #999999 \n' + 
+			'     widget spinbox \n' + 
+			'    } \n' + 
+			'   } \n' + 
+			'  } \n' + 
+			' }\n' + 
+			'}\n'
+		
+		this.parserQL = makeParser(defQL)
+		this.astQL = this.parserQL.parse(this.form)
+		this.parserQLS = makeParser(defQLS)
+		this.astQLS = this.parserQLS.parse(this.style)
+		
 		this.wrap = false
 	}
 	onDraw() {
-		var p = this.parser
-		if(!this.ast) {
+		var p = this.parserQL
+		if(!this.astQL) {
 			this.drawText({
 				fontSize:20,
-				text    :"Parse error in " + p.fail[0] + "\nat: ..." + this.form.slice(p.last - 10, p.last) + '^' + this.form.slice(p.last, p.last + 10) + '...'
+				text    :"Parse error in " + p.fail[0] + "\nat: ..." + p.input.slice(p.last - 10, p.last) + '^' + p.input.slice(p.last, p.last + 10) + '...'
 			})
 			return
 		}
@@ -82,12 +131,12 @@ module.exports = class extends require('base/drawapp'){ //top
 		var opTable = (table, one) =>{
 			return (node, path) =>{
 				var n0 = node.n[0]
-				var L = process[n0.type](n0, path + '[0]')
+				var L = processQL[n0.type](n0, path + '[0]')
 				var steps = one?[node.value]:node.value.split('')
 				for(let i = 0;i < steps.length;i++){
 					var j = i + 1
 					var nX = node.n[j]
-					var R = process[nX.type](nX, path + '[' + j + ']')
+					var R = processQL[nX.type](nX, path + '[' + j + ']')
 					var op = steps[i]
 					for(var key in table){
 						if(op === key) {
@@ -100,23 +149,23 @@ module.exports = class extends require('base/drawapp'){ //top
 			}
 		}
 		
-		var process = {
+		var processQL = {
 			Form    :(node) =>{
 				this.drawText({
 					fontSize:15,
-					margin  :[4, 0, 4, 0],
+					margin  :[0, 0, 8, 0],
 					text    :node.Id.value
 				})
 				this.lineBreak()
-				process.Body(node.Body, '')
+				processQL.Body(node.Body, '')
 			},
 			Body    :(node, path) =>{
 				for(let i = 0;i < node.n.length;i++){
 					var n = node.n[i]
-					process[n.type](n, path + '.' + n.type + '[' + i + ']')
+					processQL[n.type](n, path + '.' + n.type + '[' + i + ']')
 				}
 			},
-			Question:(node, path) =>{
+			Question:(node, path, widget) =>{
 				this.drawText({
 					fontSize:12,
 					text    :'Q: ' + node.String.value.slice(1, -1)
@@ -124,11 +173,19 @@ module.exports = class extends require('base/drawapp'){ //top
 				this.lineBreak()
 				// check type
 				var id = node.Id.value
-				if(node.Type.value === 'boolean') {
+				var type = 'radio', args = ['yes', 'no']
+				if(node.Type.value === 'boolean') type = 'radio'
+				if(node.Type.value === 'money') type = 'spinbox'
+				if(widget) {
+					type = widget.Id.value
+					args = []
+					for(var i = 1;i < widget.n.length;i++){args.push(widget.n[i].value.slice(1, -1))}
+				}
+				if(type === 'radio') {
 					
 					this.drawButton({
 						id     :path + 'Y',
-						text   :'Yes',
+						text   :args[0],
 						onClick:c=>{
 							this.vars[id] = true
 							this.redraw()
@@ -136,7 +193,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					})
 					this.drawButton({
 						id     :path + 'N',
-						text   :'No',
+						text   :args[1],
 						onClick:c=>{
 							this.vars[id] = false
 							this.redraw()
@@ -148,7 +205,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					})
 					this.lineBreak()
 				}
-				else if(node.Type.value === 'money') {
+				else if(type === 'spinbox') {
 					
 					this.drawSlider({
 						margin :[4, 0, 7, 0],
@@ -177,7 +234,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					text    :'A: ' + node.String.value.slice(1, -1) + ' '
 				})
 				var nExpr = node.n[3]
-				var val = process[nExpr.type](nExpr, path + '.Expr')
+				var val = processQL[nExpr.type](nExpr, path + '.Expr')
 				this.vars[node.Id.value] = val
 				this.drawText({
 					margin:[0, 0, 0, 0],
@@ -195,9 +252,9 @@ module.exports = class extends require('base/drawapp'){ //top
 			},
 			If      :(node, path) =>{
 				var nLogic = node.n[0]
-				var ret = process[nLogic.type](nLogic, path + '.Logic')
+				var ret = processQL[nLogic.type](nLogic, path + '.Logic')
 				if(ret) {
-					process.Body(node.Body, path + '.Body')
+					processQL.Body(node.Body, path + '.Body')
 				}
 				else {
 					
@@ -208,7 +265,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			},
 			NotId   :(node, path) =>{
 				var n0 = node.n[0]
-				return !process[n0.type](n0, path + '!')
+				return !processQL[n0.type](n0, path + '!')
 			},
 			Id      :(node, path) =>{
 				if(this.vars[node.value] === undefined) {
@@ -243,11 +300,75 @@ module.exports = class extends require('base/drawapp'){ //top
 			}, 1),
 		}
 		
+		function findQuestion(id, node) {
+			if(node.type === 'If') {
+				var nLogic = node.n[0]
+				var ret = processQL[nLogic.type](nLogic, 'Logic')
+				if(!ret) return
+			}
+			if(node.type === 'Question' || node.type === 'Answer') {
+				if(node.Id.value === id) return node
+			}
+			for(var i = 0;i < node.n.length;i++){
+				var ret = findQuestion(id, node.n[i])
+				if(ret) return ret
+			}
+		}
+		
+		var processQLS = {
+			Stylesheet:(node) =>{
+				for(var i = 1;i < node.n.length;i++){
+					var n = node.n[i]
+					processQLS[n.type](n, '[' + i + ']', 0)
+				}
+			},
+			Page      :(node, path, depth) =>{
+				for(var i = 1;i < node.n.length;i++){
+					var n = node.n[i]
+					processQLS[n.type](n, path + '[' + i + ']', depth + 1)
+				}
+			},
+			Question  :(node, path, depth) =>{
+				var q = findQuestion(node.Id.value, this.astQL)
+				if(q) processQL[q.type](q, path, node.Widget)
+			},
+			Default   :(node, path, depth) =>{
+			},
+			Section   :(node, path, depth) =>{
+				var nodes = node.Body.n
+				var quest = 0
+				for(var i = 0;i < nodes.length;i++){
+					var n = nodes[i]
+					if(n.type === 'Question' && findQuestion(n.Id.value, this.astQL)) {
+						quest++
+					}
+				}
+				if(!quest) return
+				this.beginBg({
+					color  :[depth / 4, depth / 4, depth / 4, 1],
+					padding:6
+				})
+				this.drawText({
+					fontSize:20 - depth * 3,
+					text    :node.String.value.slice(1, -1),
+					margin  :[0, 0, 10, -0]
+				})
+				this.lineBreak()
+				for(var i = 0;i < nodes.length;i++){
+					var n = nodes[i]
+					processQLS[n.type](n, path + '[' + i + ']', depth + 1)
+				}
+				this.endBg()
+			}
+		}
+		
 		this.beginBg({
+			//w      :250,
 			color  :'#5',
-			padding:6
+			padding:16
 		})
-		process.Form(this.ast.n[0])
+		processQLS.Stylesheet(this.astQLS.n[0])
+		//processQL.Form(this.astQL.n[0])
 		this.endBg()
 		this.turtle.mh = 0
 		//this.lineBreak()
@@ -269,7 +390,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				dumpAst(node.n[i], d + 1)
 			}
 		}
-		dumpAst(this.ast.n[0], 0)
+		dumpAst(this.astQL.n[0], 0)
 	}
 }
 
