@@ -384,6 +384,10 @@ module.exports = class Shader extends require('base/compiler'){
 		var h = clamp(.5 + .5 * (this._oldShape - this.field) / k, 0., 1.)
 		this._oldShape = this.shape = mix(this._oldShape, this.field, h) - k * h * (1.0 - h)
 	}
+
+	blend(k){
+		this._oldShape = this.shape = mix(this._oldShape, this.field, k)
+	}
 	
 	circle(x, y, r) {$
 		var c = this.pos - vec2(x, y)

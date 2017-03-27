@@ -17,6 +17,25 @@ module.exports = class Tree extends require('base/view'){
 				font :fonts.regular,
 				color:colors.textNormal
 			}),
+			Slider:require('stamps/slider').extend({
+				tools:{Slider:{
+					pixel:function() {$
+						return 'red'
+						this.viewport()
+						this.box(0., 0., this.w, this.h, 1.)
+						this.fill(mix('black', 'white', this.mesh.y))
+						if(this.vertical < 0.5) {
+							this.box(this.slide, 0., this.knobSize, this.h, 1.)
+							this.fill(this.knobColor)
+						}
+						else {
+							this.box(0., this.slide, this.w, this.knobSize, 1.)
+							this.fill(this.knobColor)
+						}
+						return this.result
+					}
+				}}
+			}),
 			Center:require('shaders/quad').extend({}),
 			Wheel :require('shaders/quad').extend({
 				hue      :0,
@@ -58,7 +77,9 @@ module.exports = class Tree extends require('base/view'){
 					var circlePuk = vec2(sin(colAngle) * radius + cx, cos(colAngle) * radius + cy)
 					
 					this.circle(cx, cy, inner)
-					
+					var rsize = inner / sqrt(2.)
+					this.rect(cx - rsize, cy - rsize, rsize * 2., rsize * 2.)
+					this.blend(0.35)
 					// compute circle colors
 					var normRect = vec2(this.pos.x - (cx - inner), this.pos.y - (cy - inner)) / (2. * inner)
 					var circ = clamp(this.circ2Rect(normRect.x * 2. - 1., normRect.y * 2. - 1.), vec2(-1.), vec2(1.))
@@ -96,7 +117,7 @@ module.exports = class Tree extends require('base/view'){
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		var col = []
-		types.colorFromString('#0d188eff', 1, col, 0)
+		types.colorFromString('#513a59ff', 1, col, 0)
 		var hsv = this.Wheel.prototype.rgb2hsvJS(col)
 		var out = this.Wheel.prototype.hsv2rgbJS(hsv)
 		_=out
@@ -109,6 +130,12 @@ module.exports = class Tree extends require('base/view'){
 			h  :200
 		})
 		this.wheelPos = this.turtle.geom()
+		this.drawSlider({
+			id      :'alpha',
+			vertical:true,
+			w       :20,
+			h       :200
+		})
 		this.drawBg({
 			w    :100,
 			h    :100,
