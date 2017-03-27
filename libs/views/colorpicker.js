@@ -66,7 +66,7 @@ module.exports = class Tree extends require('base/view'){
 					var cx = this.w * .5
 					var cy = this.h * .5
 					var radius = this.w * .42
-					var inner = this.w * .3
+					var inner = this.w * .33
 					this.circle(cx, cy, this.w * .5)
 					this.circle(cx, cy, this.w * .34)
 					this.subtract()
