@@ -793,6 +793,9 @@ module.exports = class Compiler extends require('base/class'){
 			else if(name === 'state'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
 			}
+			else if(name === 'queue'){
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._queue = this.queue!==undefined?this.queue:$proto.queue\n'
+			}
 			else{
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
 			}

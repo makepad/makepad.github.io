@@ -9,8 +9,8 @@ module.exports = class Button extends require('base/stamp'){
 			id          :'',
 			index       :0,
 			onClick     :undefined,
+			onTap		:undefined,
 			toggle      :false,
-			toggled     :false,
 			margin      :[2, 0, 2, 0],
 			debug       :0
 		}
@@ -30,7 +30,7 @@ module.exports = class Button extends require('base/stamp'){
 						color:colors.textMed
 					}
 				},
-				duration :0.8,
+				duration :0.1,
 				interrupt:false
 			},
 			toggled         :{
@@ -142,17 +142,24 @@ module.exports = class Button extends require('base/stamp'){
 	}
 	
 	onFingerOver() {
+		this.isOver = true
 		this.setState(this.toggled?'toggledOver':'over')
 	}
 	
 	onFingerOut() {
+		this.isOver = false
 		this.setState(this.toggled?'toggled':'default', true)
 	}
 	
 	onFingerDown(e) {
+		//if(this.onTap) this.onTap.call(this.view, this, e)
 		if(this.toggle) {
 			this.toggled = !this.toggled
-			if(this.onClick) this.onClick.call(this.view, this, e)
+			if(this.onClick){
+				if(this.onClick.call(this.view, this, e) !== undefined){
+					this.redraw()
+				}
+			}
 		}
 		if(this.toggled) {
 			this.setState('toggledDown')
@@ -161,17 +168,48 @@ module.exports = class Button extends require('base/stamp'){
 	}
 	
 	onFingerUp(e) {
-		this.setState(e.samePick?this.toggled?'toggledOver':'over':this.toggled?'toggled':'default', true)
-		if(e.samePick && this.onClick) this.onClick.call(this.view, this, e)
+		var state
+		if(e.samePick){
+			if(this.toggled) state = 'toggledOver'
+			else state = 'over'
+			this.isOver = true
+		}
+		else {
+			this.isOver = false
+			if(this.toggled) state = 'toggled'
+			else state = 'default'
+		}
+		this.setState(state, true)
+		if(!this.toggle && e.samePick && this.onClick){
+			if(this.onClick.call(this.view, this, e)!== undefined){
+				this.redraw()
+			}
+		}
 	}
 	
 	constructor(args) {
 		super(args)
-		if(args) {
-			if(args.toggled) this.state = 'toggled'
-		}
 	}
 	
+	onStyle(args){
+		if(args) {
+			if(this.toggle && 'toggled' in args){
+				if(args.toggled && !this.toggled){
+					// check if we are Over?
+					if(this.isOver) this.state = 'toggledOver'
+					else this.state = 'toggled'
+				}
+				else if(!args.toggled && this.toggled){
+					if(this.isOver) this.state = 'over'
+					else this.state = 'default'
+				}
+				this.toggled = args.toggled
+				// how do we set the draw queueing
+				this.queue = false
+			}
+		}
+	}
+
 	onDraw() {
 		this.beginBg(this.wrap())
 		if(this.icon) {

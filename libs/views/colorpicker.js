@@ -19,46 +19,66 @@ module.exports = class Tree extends require('base/view'){
 			}),
 			Center:require('shaders/quad').extend({}),
 			Wheel :require('shaders/quad').extend({
-				hue  :0,
-				sat  :0,
-				val  :0,
+				hue      :0,
+				sat      :0,
+				val      :0,
 				//hue  :'#bfe78cff',
-				pixel:function() {$
+				circ2Rect:function(u, v) {
+					var u2 = u * u
+					var v2 = v * v
+					return vec2(
+						0.5 * sqrt(2. + 2. * sqrt(2.) * u + u2 - v2) - 
+							0.5 * sqrt(2. - 2. * sqrt(2.) * u + u2 - v2),
+						0.5 * sqrt(2. + 2. * v * sqrt(2.) - u2 + v2) - 
+							0.5 * sqrt(2. - 2. * sqrt(2.) * v - u2 + v2)
+					)
+				},
+				rect2Circ:function(u, v) {
+					return vec2(
+						(u * sqrt(1. - .5 * (v * v))),
+						(v * sqrt(1. - .5 * (u * u)))
+					)
+				},
+				pixel    :function() {$
+					
+					var rgbv = this.hsv2rgb(vec4(this.hue, this.sat, this.val, 1.))
+					
 					this.viewport()
 					var cx = this.w * .5
 					var cy = this.h * .5
 					var radius = this.w * .42
-					var inner = this.w * .2
+					var inner = this.w * .3
 					this.circle(cx, cy, this.w * .5)
 					this.circle(cx, cy, this.w * .34)
 					this.subtract()
 					var ang = atan(this.pos.x - cx, this.pos.y - cy) / PI * .5 + .5
 					this.fill(this.hsv2rgb(vec4(ang, 1., 1, 1.)))
-					// pos on the circle
-					var hsv = this.rgb2hsv(this.color)
 					
-					var colAngle = (this.hue - .25) * 2. * PI
+					var colAngle = (this.hue - .5) * 2. * PI
 					var circlePuk = vec2(sin(colAngle) * radius + cx, cos(colAngle) * radius + cy)
 					
+					this.circle(cx, cy, inner)
+					
+					// compute circle colors
 					var normRect = vec2(this.pos.x - (cx - inner), this.pos.y - (cy - inner)) / (2. * inner)
-					this.rect(cx - inner, cy - inner, inner * 2., inner * 2.)
-					this.fill(this.hsv2rgb(vec4(this.hue, normRect.x, normRect.y, 1.)))
+					var circ = this.circ2Rect(normRect.x * 2. - 1., normRect.y * 2. - 1.)
 					
-					var rectPuk = vec2(cx - inner + inner * 2. * this.sat, cy - inner + inner * 2. * this.val)
-					this.circle(rectPuk.x, rectPuk.y, 8.)
-					this.circle(rectPuk.x, rectPuk.y, 5.)
-					this.subtract()
-					this.fill('white')
-					//
-					this.circle(circlePuk.x, circlePuk.y, 8.)
-					this.circle(circlePuk.x, circlePuk.y, 5.)
-					this.subtract()
-					this.fill('white')
+					this.fill(this.hsv2rgb(vec4(this.hue, (circ.x * .5 + .5), 1 - (circ.y * .5 + .5), 1.)))
 					
-					//this.circle(p.x, p.y, 8.)
-					//this.circle(p.x, p.y, 5.)
-					//this.subtract()
-					//this.fill('white')					
+					// compute position of rect puk
+					var rect = this.rect2Circ(this.sat * 2. - 1., 2. - this.val * 2. - 1.)
+					var rectPuk = vec2(cx + inner * rect.x, cy + inner * rect.y)
+					
+					this.circle(rectPuk.x, rectPuk.y, 10.)
+					this.fill('white')
+					this.circle(rectPuk.x, rectPuk.y, 9.)
+					this.fill(rgbv)
+					
+					this.circle(circlePuk.x, circlePuk.y, 14.)
+					this.fill('white')
+					this.circle(circlePuk.x, circlePuk.y, 12.)
+					this.fill(rgbv)
+					
 					return this.result
 				}
 			}),
@@ -77,7 +97,7 @@ module.exports = class Tree extends require('base/view'){
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		var col = []
-		types.colorFromString('blue', 1, col, 0)
+		types.colorFromString('#00a689ff', 1, col, 0)
 		var hsv = this.Wheel.prototype.rgb2hsvJS(col)
 		var out = this.Wheel.prototype.hsv2rgbJS(hsv)
 		_=out

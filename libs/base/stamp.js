@@ -22,6 +22,7 @@ module.exports = class Stamp extends require('base/class'){
 			margin:[0,0,0,0],
 			align:[0,0],
 			down:0,
+			queue:undefined,
 			cursor:undefined,
 			id:''
 		}
@@ -36,8 +37,9 @@ module.exports = class Stamp extends require('base/class'){
 		this.verbs = {
 			draw: function(overload, click) {
 				var stamp = this.ALLOCSTAMP(overload)
+				if(stamp.onStyle) stamp.onStyle(overload)
 				this.STYLESTAMP(stamp, overload)
-				stamp.drawStamp()
+				stamp.drawStamp(overload)
 				return stamp
 			}
 		}
@@ -87,7 +89,7 @@ module.exports = class Stamp extends require('base/class'){
 		}
 	}
 
-	drawStamp(){
+	drawStamp(args){
 		var view = this.view
 		var $writeList = view.$writeList
 		this.$writeStart = $writeList.length
@@ -99,7 +101,7 @@ module.exports = class Stamp extends require('base/class'){
 			let order = turtle._order
 			turtle._pickId = this.$pickId
 			turtle._order = this._order
-			this.onDraw()
+			this.onDraw(args)
 			turtle._pickId = pickId
 			turtle._order = order
 		}
@@ -118,7 +120,7 @@ module.exports = class Stamp extends require('base/class'){
 			this.turtle._order = this._order
 			//var order = this.order
 			//this.turtle._order = order !== 0? order: view.$order++
-			this.onDraw()
+			this.onDraw(args)
 			var ot = this.endTurtle()
 			turtle.walk(ot)
 		}

@@ -17,10 +17,7 @@ module.exports = class extends require('base/app'){
 
 		//this.code = new this.Code(this, {text:require('/examples/tiny.js').__module__.source})
 		let code = 
-		'let a = [//A\n'+
-		//'	a[0],//B\n\n'+
-		'	b[1]//C\n'+
-		']//D\n'
+		'var x=(1,2,)\n'
 		
 		this.code = new this.Code(this, {text:code})
 		//this.code = new this.Code(this, {text:module.source})

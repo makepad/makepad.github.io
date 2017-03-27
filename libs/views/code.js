@@ -24,7 +24,6 @@ module.exports = class Code extends require('views/edit'){
 		this.props = {
 			errors:undefined
 		}
-		
 		var colors = module.style.colors
 
 		this.tools = {
@@ -425,6 +424,8 @@ module.exports = class Code extends require('views/edit'){
 	constructor(...args) { 
 		super(...args) 
 		//this.oldText = '' 
+		this.runtimeErrors = []
+		this.parseErrors = []
 		this.$textClean = false 
 		this.indentSize = this.Text.prototype.font.fontmap.glyphs[32].advance * 3 
 		this.$fastTextWhitespace = this.styles.whitespace
@@ -440,6 +441,7 @@ module.exports = class Code extends require('views/edit'){
 			})
 		}
 		catch(e) {
+			console.log(e)
 			this.parseErrors.push(e)
 		} 
 	} 

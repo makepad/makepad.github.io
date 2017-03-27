@@ -8,6 +8,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	constructor(...args) {
+		
 		super(...args)
 	}
 	

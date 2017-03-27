@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/peg.js"],
-	"run":["/examples/peg.js"],
+	"open":["/examples/tiny.js","views/colorpicker.js"],
+	"run":["/examples/tiny.js"],
 	"name":"",
 	"folder":[
 		{"name":"libs","folder":[

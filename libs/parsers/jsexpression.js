@@ -83,6 +83,9 @@ pp.parseExpression = function(noIn, refDestructuringErrors) {
 		var node = this.startNodeAt(startPos)
 		node.expressions = [expr]
 		while (this.eat(tt.comma)){
+			if(this.type === tt.parenR){
+				this.unexpected()
+			}
 			node.expressions.push(this.parseMaybeAssign(noIn, refDestructuringErrors))
 		}
 
@@ -451,6 +454,9 @@ pp.parseParenAndDistinguishExpression = function(canBeArrow) {
 			if(this.eat(tt.comma)){
 				if(this.storeComments){
 					this.commentEndSplit(expr, above, tt.parenR, tt.comma)
+				}
+				if(this.type === tt.parenR){
+					this.unexpected()
 				}
 			}
 			else if(this.type !== tt.parenR){
