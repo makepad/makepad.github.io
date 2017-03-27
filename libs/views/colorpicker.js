@@ -61,9 +61,8 @@ module.exports = class Tree extends require('base/view'){
 					
 					// compute circle colors
 					var normRect = vec2(this.pos.x - (cx - inner), this.pos.y - (cy - inner)) / (2. * inner)
-					var circ = this.circ2Rect(normRect.x * 2. - 1., normRect.y * 2. - 1.)
-					
-					this.fill(this.hsv2rgb(vec4(this.hue, (circ.x * .5 + .5), 1 - (circ.y * .5 + .5), 1.)))
+					var circ = this.circ2Rect(clamp(normRect.x * 2. - 1., -1., 1.), clamp(normRect.y * 2. - 1., -1., 1.))
+					this.fill(this.hsv2rgb(vec4(this.hue, (circ.x * .5 + .5), 1. - (circ.y * .5 + .5), 1.)))
 					
 					// compute position of rect puk
 					var rect = this.rect2Circ(this.sat * 2. - 1., 2. - this.val * 2. - 1.)
@@ -97,7 +96,7 @@ module.exports = class Tree extends require('base/view'){
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		var col = []
-		types.colorFromString('#00a689ff', 1, col, 0)
+		types.colorFromString('#0d188eff', 1, col, 0)
 		var hsv = this.Wheel.prototype.rgb2hsvJS(col)
 		var out = this.Wheel.prototype.hsv2rgbJS(hsv)
 		_=out
