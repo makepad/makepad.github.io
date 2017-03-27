@@ -61,7 +61,7 @@ module.exports = class Tree extends require('base/view'){
 					
 					// compute circle colors
 					var normRect = vec2(this.pos.x - (cx - inner), this.pos.y - (cy - inner)) / (2. * inner)
-					var circ = this.circ2Rect(clamp(normRect.x * 2. - 1., -1., 1.), clamp(normRect.y * 2. - 1., -1., 1.))
+					var circ = clamp(this.circ2Rect(normRect.x * 2. - 1., normRect.y * 2. - 1.), vec2(-1.), vec2(1.))
 					this.fill(this.hsv2rgb(vec4(this.hue, (circ.x * .5 + .5), 1. - (circ.y * .5 + .5), 1.)))
 					
 					// compute position of rect puk
