@@ -92,7 +92,6 @@ module.exports = class Slider extends require('base/stamp'){
 						this.slide = ((v-this.range.x)/rw)*rs
 						*/
 					//}
-					//else 
 					this.slide = ((this.value - this.range.x) / rw) * rs
 				},
 				pixel      :function() {$
@@ -105,7 +104,6 @@ module.exports = class Slider extends require('base/stamp'){
 					}
 					else {
 						this.box(0., this.slide, this.w, this.knobSize, 1.)
-						//this.box(0.,0.,10.,10.,1.)
 						this.fill(this.knobColor)
 					}
 					return this.result

@@ -95,6 +95,6 @@ module.exports = class Quad extends require('base/shader'){
 	}
 
 	pixel(){$
-		return this.color * this.opacity
+		return this.color*this.color.a * this.opacity
 	}
 }

@@ -11,9 +11,9 @@ module.exports = class Tree extends require('base/view'){
 		this.hasRootLine = false
 		this.hasFolderButtons = false
 		this.openWithText = true
-		this.cursorMargin = [0,0,2,1]
+		this.cursorMargin = [0, 0, 2, 1]
 		this.fontSize = fonts.size
-
+		
 		this.props = {
 			data:[
 				{name:'folder1', folder:[
@@ -27,73 +27,73 @@ module.exports = class Tree extends require('base/view'){
 		this.states = {
 			default:{
 				duration:0.3,
-				time:{fn:'ease',begin:0,end:10},
-				to:{
-					Text:{
-						x:null,
-						y:null,
+				time    :{fn:'ease', begin:0, end:10},
+				to      :{
+					Text    :{
+						x       :null,
+						y       :null,
 						fontSize:null
 					},
-					Cursor:{
+					Cursor  :{
 						x:null,
 						y:null,
 						w:null,
 						h:null
 					},
 					TreeLine:{
-						x:null,
-						y:null,
-						w:null,
-						h:null,
+						x     :null,
+						y     :null,
+						w     :null,
+						h     :null,
 						isOpen:null
 					}
 				}
 			}
 		}
 		this.tools = {
-			Bg:require('shaders/quad').extend({
-				queue:false,
-				wrap:false,
-				padding:[6,0,0,9],
-				color:colors.bgHi
+			Bg      :require('shaders/quad').extend({
+				queue  :false,
+				wrap   :false,
+				padding:[6, 0, 0, 9],
+				color  :colors.bgHi
 			}),
-			Cursor:require('shaders/hover').extend({
-				queue:false,
-				wrap:false,
-				displace:[0,-1],
-				color:colors.bgHi,
+			Cursor  :require('shaders/hover').extend({
+				queue        :false,
+				wrap         :false,
+				displace     :[0, -1],
+				color        :colors.bgHi,
 				selectedColor:colors.accentNormal,
-				hoverColor:colors.accentGray,
-				pickAlpha: - 1,
-				w:'100%-2'
+				hoverColor   :colors.accentGray,
+				pickAlpha    :-1,
+				w            :'100%-2'
 			}),
-			Text:require('shaders/text').extend({
+			Text    :require('shaders/text').extend({
 				queue:false,
-				font:fonts.regular,
+				font :fonts.regular,
 				color:colors.textNormal
 			}),
-			Icon:require('shaders/icon').extend({
+			Icon    :require('shaders/icon').extend({
 				queue:false,
 			}),
 			TreeLine:require('shaders/shadowquad').extend({
-				queue:false,
-				isLast:0,
-				isFirst:0,
-				isFolder:0,
-				isOpen:1,
-				isSide:0,
+				queue           :false,
+				isLast          :0,
+				isFirst         :0,
+				isFolder        :0,
+				isOpen          :1,
+				isSide          :0,
 				
-				isFiller:0,
-				pickAlpha:{kind:'uniform', value: - 1},
-				w:12.6,
-				h:16,
+				isFiller        :0,
+				pickAlpha       :{kind:'uniform', value:-1},
+				w               :12.6,
+				h               :16,
 				
 				hasFolderButtons:{kind:'uniform', value:0},
-				lineColor:{kind:'uniform', value:colors.accentGray},
-				folderBase:{kind:'uniform', value:colors.textMed},
-				folderHighlight:{kind:'uniform', value:colors.textAccent},
-				vertexStyle:function() {},
-				pixel:function() {$
+				lineColor       :{kind:'uniform', value:colors.accentGray},
+				folderBase      :{kind:'uniform', value:colors.textMed},
+				folderHighlight :{kind:'uniform', value:colors.textAccent},
+				vertexStyle     :function() {},
+				pixel           :function() {$
 					this.viewport()
 					
 					var hh = this.h + 4
@@ -120,7 +120,7 @@ module.exports = class Tree extends require('base/view'){
 					//var B=0.
 					var cen = this.h * .5
 					if(this.isFirst < 0.5 || this.hasFolderButtons > .5) {
-						this.box(4.,  - 2, 2., hh, 0.5)
+						this.box(4., -2, 2., hh, 0.5)
 					}
 					else {
 						this.box(4., cen, 2., hh, 0.5)
@@ -150,10 +150,10 @@ module.exports = class Tree extends require('base/view'){
 	
 	computePath(find) {
 		function walker(nodes) {
-			for(let i = 0;i < nodes.length;i ++ ){
+			for(let i = 0;i < nodes.length;i++){
 				var node = nodes[i]
 				if(node === find) return [node]
-				if(node.folder &&  ! node.closed) {
+				if(node.folder && !node.closed) {
 					var path = walker(node.folder)
 					if(path) {
 						path.unshift(node)
@@ -168,12 +168,12 @@ module.exports = class Tree extends require('base/view'){
 	onFingerDown(e) {
 		this.setFocus()
 		var pick = this.pickMap[e.pickId]
-		if( ! pick) return
+		if(!pick) return
 		var node = pick.node
 		
 		if(pick.node.folder && (this.openWithText || pick.type === 'tree' || e.tapCount > 0)) {
 			this.store.act('treeToggle', store=>{
-				node.open =  ! node.open
+				node.open = !node.open
 			})
 			this.redraw()
 		}
@@ -193,7 +193,7 @@ module.exports = class Tree extends require('base/view'){
 	onKeyDown(e) {
 		var list = []
 		function flattenTree(nodes) {
-			for(let i = 0;i < nodes.length;i ++ ){
+			for(let i = 0;i < nodes.length;i++){
 				var node = nodes[i]
 				list.push(nodes[i])
 				if(node.folder && node.open) {
@@ -236,7 +236,7 @@ module.exports = class Tree extends require('base/view'){
 	
 	onDraw(debug) {
 		//alright so how are we going to select things
-		this.beginBg({moveScroll:0,x:'0',y:'0',w:'100%',h:'100%'})
+		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		this.pickMap = {}
 		this.clearPickIds()
 		var p = this
@@ -244,7 +244,7 @@ module.exports = class Tree extends require('base/view'){
 		var iterFolder = (node, depth, closed) =>{
 			var folder = node.folder
 			
-			for(var i = 0, len = folder.length - 1;i <= len;i ++ ){
+			for(var i = 0, len = folder.length - 1;i <= len;i++){
 				var iter = folder[i]
 				drawNode(iter.name, folder[i], i, len, depth, closed)
 			}
@@ -259,43 +259,43 @@ module.exports = class Tree extends require('base/view'){
 			this.setPickId(textPick)
 			
 			this.setPickId(treePick)
-			for(let j = 0, dl = depth.length - 1;j <= dl;j ++ ){
+			for(let j = 0, dl = depth.length - 1;j <= dl;j++){
 				var isFolder = j == dl && node.folder?1:0
 				if(this.hasRootLine || j > 0) 
 				this.drawTreeLine({
-					isFiller:j == dl?0:depth[j + 1],
-					isLast:j == dl && i === len,
-					isFolder:isFolder,
-					isSide:j < dl,
-					dump:1,
+					isFiller        :j == dl?0:depth[j + 1],
+					isLast          :j == dl && i === len,
+					isFolder        :isFolder,
+					isSide          :j < dl,
+					dump            :1,
 					hasFolderButtons:this.hasFolderButtons,
-					isOpen:node.open?1:0,
-					h:closed?0:this.fontSize + 6
+					isOpen          :node.open?1:0,
+					h               :closed?0:this.fontSize + 6
 				})
 				if(isFolder) { // add the first line from a folder
 					//var x=this.turtle.wx// make sure the turtle doesnt move
 					this.drawTreeLine({
-						isFiller: ! node.open,
-						isOpen:node.open?1:0,
-						isFirst:1,
-						isSide:1,
+						isFiller        :!node.open,
+						isOpen          :node.open?1:0,
+						isFirst         :1,
+						isSide          :1,
 						hasFolderButtons:0,
-						h:closed?0:this.fontSize + 6
+						h               :closed?0:this.fontSize + 6
 					})
 					//this.turtle.wx=x
 				}
 			}
 			if(node.folder && this.hasFolderButtons || node.icon) {
 				//this.drawFolder({
-			//	w:this.fontSize+2,
-			//	h:closed?0:this.fontSize+4
-			//})
-			//this.drawIcon({
-			//	fontSize:closed?0:this.fontSize+1,
-			//	text:node.icon?this.lookupIcon[node.icon]:node.folder?
-			//		this.lookupIcon['folder-open']:
-			//		this.lookupIcon.fileO
-			//})
+				//	w:this.fontSize+2,
+				//	h:closed?0:this.fontSize+4
+				//})
+				//this.drawIcon({
+				//	fontSize:closed?0:this.fontSize+1,
+				//	text:node.icon?this.lookupIcon[node.icon]:node.folder?
+				//		this.lookupIcon['folder-open']:
+				//		this.lookupIcon.fileO
+				//})
 			}
 			else this.turtle.wx += 2
 			this.setPickId(textPick)
@@ -308,17 +308,17 @@ module.exports = class Tree extends require('base/view'){
 			})
 			
 			this.drawText({
-				margin:closed?0:this.cursorMargin,
+				margin  :closed?0:this.cursorMargin,
 				fontSize:closed?0:this.fontSize,
-				color:this.selected === node?this.selectedTextColor:node.folder?this.folderTextColor:this.fileTextColor,
-				text:name
+				color   :this.selected === node?this.selectedTextColor:node.folder?this.folderTextColor:this.fileTextColor,
+				text    :name
 			})
 			
 			this.endCursor()
 			this.lineBreak()
 			if(node.folder) {
 				depth.push(i == len)
-				iterFolder(node, depth, closed ||  ! node.open)
+				iterFolder(node, depth, closed || !node.open)
 				depth.pop()
 			}
 		}

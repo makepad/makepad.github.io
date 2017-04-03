@@ -797,7 +797,7 @@ module.exports = class Compiler extends require('base/class'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._queue = this.queue!==undefined?this.queue:$proto.queue\n'
 			}
 			else{
-				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = $proto.' + name + '\n'
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._' + name + ' = this._props.' + name + ' && this._props.'+name+'.override?this.'+name+':$proto.'+name+'\n'
 			}
 		}
 		return code
@@ -1377,7 +1377,10 @@ function computePropStates(states, instanceProps){
 				if(prop === 'time'){
 					continue
 				}
-				if(!ip) throw new Error("Property "+prop+" keyframed but not found in shader")
+				if(!ip){
+					//throw new Error("Property "+prop+" keyframed but not found in shader")
+					continue
+				}
 				// store our timing info
 				statedProps[prop] = 1
 				if(!ip.states) ip.states = {}

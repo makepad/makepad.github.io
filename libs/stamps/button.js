@@ -195,7 +195,6 @@ module.exports = class Button extends require('base/stamp'){
 		if(args) {
 			if(this.toggle && 'toggled' in args){
 				if(args.toggled && !this.toggled){
-					// check if we are Over?
 					if(this.isOver) this.state = 'toggledOver'
 					else this.state = 'toggled'
 				}
@@ -204,9 +203,9 @@ module.exports = class Button extends require('base/stamp'){
 					else this.state = 'default'
 				}
 				this.toggled = args.toggled
-				// how do we set the draw queueing
 				this.queue = false
 			}
+			else this.queue = undefined
 		}
 	}
 

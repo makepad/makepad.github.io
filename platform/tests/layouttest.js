@@ -46,7 +46,7 @@ module.exports = class extends require('base/app'){
 			h:100
 		})
 		console.log(this.drawBg.toString())
-		for(var i=0;i<1000;i++)
+		for(var i=0;i<100;i++)
 		this.drawButton({
 			id:i,
 			icon:'search'

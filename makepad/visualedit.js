@@ -16,6 +16,9 @@ module.exports = class extends require('base/view'){
 				padding:[0,5,0,5],
 				wrap:false,
 				color:module.style.colors.bgNormal
+			}),
+			ColorPicker:require('views/colorpicker').extend({
+
 			})
 		}
 		this.props = {
@@ -28,26 +31,12 @@ module.exports = class extends require('base/view'){
 
 	constructor(...args){
 		super(...args)
+		this.colorPicker = new this.ColorPicker(this,{})
 	}
 
 	onCursorMove(editor){
 		this.editor = editor
 		this.redraw()
-	}
-
-	onColorSlide(sld){
-		var ar = this.colorArray
-		ar[parseInt(sld.id)] = sld.value
-		// now modify the node
-		var s = "'#"+
-		('00'+(ar[0]*255|0).toString(16)).slice(-2)+
-		('00'+(ar[1]*255|0).toString(16)).slice(-2)+
-		('00'+(ar[2]*255|0).toString(16)).slice(-2)+
-		('00'+(ar[3]*255|0).toString(16)).slice(-2)+
-		"'"
-		this.astNode.raw = s
-		this.editor.$textClean = null
-		this.editor.redraw()
 	}
 
 	onDraw(){
@@ -59,6 +48,7 @@ module.exports = class extends require('base/view'){
 		var scan = this.editor.cs.cursors[0].end
 		// lets scan for it
 		var nodes = this.editor.$nodeRanges
+
 		if(!nodes) return
 		for(var i = 0; i < nodes.length; i+=2){
 			// check if we are in range
@@ -67,13 +57,31 @@ module.exports = class extends require('base/view'){
 			if(node.type === 'Literal' && scan >= pos-node.raw.length && scan <= pos){
 				// maybe color?
 				var ar =  []
+
 				if(node.kind === 'string' && types.colorFromString(node.raw.slice(1,-1),1,ar,0)){
+
 					// lets parse a color
 					this.astNode = node
 					this.colorArray = ar
 					// lets draw 3 sliders
 					// lets make a bunch of slides w live coded 
 					// example code that 'survives' reload!
+					this.colorPicker.draw(this,{
+						rgba:ar,
+						onColor:v=>{
+							var ar = v.rgba
+							var s = "'#"+
+							('00'+(ar[0]*255|0).toString(16)).slice(-2)+
+							('00'+(ar[1]*255|0).toString(16)).slice(-2)+
+							('00'+(ar[2]*255|0).toString(16)).slice(-2)+
+							('00'+(ar[3]*255|0).toString(16)).slice(-2)+
+							"'"
+							this.astNode.raw = s
+							this.editor.$textClean = null
+							this.editor.redraw()
+						}
+					})
+					/*
 					this.drawSlider({
 						id:0,
 						value:ar[0],
@@ -93,7 +101,7 @@ module.exports = class extends require('base/view'){
 						id:3,
 						value:ar[3],
 						onSlide:this.onColorSlide
-					})
+					})*/
 				}
 				// maybe 
 				break

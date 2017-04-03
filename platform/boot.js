@@ -832,6 +832,7 @@ function mathLib(g){
 	g.LOG10E = Math.LOG10E
 	g.LOG10 = Math.LOG10
 	g.PI = Math.PI
+	g.TORAD = 0.017453292519943295
 	g.SQRT2 = Math.SQRT2
 	g.SQRT1_2 = Math.SQRT1_2
 

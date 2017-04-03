@@ -529,9 +529,11 @@ module.exports = class Code extends require('views/edit'){
 		else {
 			this.$fastTextDelay = 0 
 			this.parseErrors = []
+			var dontMove = false
 			if(this.$textClean !== null){
 				this.parseText()
-			}		
+			}
+			else dontMove = true
 			this.pickIdCounter = 1 
 			this.pickIds = [0] 
 			this.$textClean = true 
@@ -568,7 +570,7 @@ module.exports = class Code extends require('views/edit'){
 					this.addUndoDelete(start, newend+1, undefined, "format") 
 				}
 				
-				this.cs.scanChange(oldtext, newtext) 
+				if(!dontMove) this.cs.scanChange(oldtext, newtext) 
 				this.cs.clampCursor(0, newlen) 
 				
 				if(this.onParsed) setImmediate(this.onParsed.bind(this))

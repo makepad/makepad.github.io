@@ -276,58 +276,61 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		this.teams = [
 			{name:"Team1", color:'#7', players:[
-				{name:"Player1", ctrl:0, buzzer:1, button:0, sound:0, score:0, color:'#c33'},
-				{name:"Player2", ctrl:0, buzzer:2, button:0, sound:1, score:0, color:'#3c3'},
-				{name:"Player3", ctrl:0, buzzer:3, button:0, sound:2, score:0, color:'#33c'},
+				{name:"Sjoerd", ctrl:0, buzzer:1, button:0, sound:0, score:0, color:'#c33'},
+				{name:"Stijn", ctrl:0, buzzer:2, button:0, sound:1, score:0, color:'#3c3'},
+				{name:"Gerbert", ctrl:0, buzzer:3, button:0, sound:2, score:0, color:'#33c'},
 			]},
 			{name:"Team2", color:'#6', players:[
-				{name:"Player4", ctrl:1, buzzer:0, button:0, sound:3, score:0, color:'#cc3'},
-				{name:"Player5", ctrl:1, buzzer:1, button:0, sound:4, score:0, color:'#3cc'},
-				{name:"Player6", ctrl:1, buzzer:2, button:0, sound:5, score:0, color:'#c3c'}
+				{name:"Dana", ctrl:1, buzzer:1, button:0, sound:3, score:0, color:'#cc3'},
+				{name:"Norbert", ctrl:1, buzzer:2, button:0, sound:4, score:0, color:'#3cc'},
+				{name:"Vincent", ctrl:1, buzzer:3, button:0, sound:5, score:0, color:'#c3c'}
 			]}
 		]
 		
-		this.controller = {
+		this.controllerA = {
+			id    :0,
 			ctrl  :0,
 			buzzer:0,
-			button:0
+			reset :0,
+			shift :1,
+			p1    :4,
+			p2    :3,
+			p3    :2,
 		}
+		this.controllerB = {
+			id    :1,
+			ctrl  :1,
+			buzzer:0,
+			reset :0,
+			shift :1,
+			p1    :4,
+			p2    :3,
+			p3    :2,
+		}
+		
 		this.page = 0
 		this.questions = [
-			{h:"Classes", q:""},
-			{h:"Classes", q:"Explain prototypes\nin 2 sentences"},
-			{h:"Classes", q:"Whats classy about prototypes"},
-			{h:"Classes", q:"Examples"},
-			{h:"Syntax", q:""},
-			{h:"Syntax", q:"What is hoisting?"},
-			{h:"Syntax", q:"arguments ...what?"},
-			{h:"Syntax", q:"Examples"},
-			{h:"Arrow functions", q:""},
-			{h:"Arrow functions", q:"Say lambda 5 times real fast"},
-			{h:"Arrow functions", q:"What is this?"},
-			{h:"Arrow functions", q:"Examples"},
-			{h:"Promises", q:""},
-			{h:"Promises", q:"What is christmas tree\nprogramming?"},
-			{h:"Promises", q:"Whats exceptional about a promise?"},
-			{h:"Promises", q:"Examples"},
-			{h:"Iterators", q:""},
-			{h:"Iterators", q:"Act out a for loop"},
-			{h:"Iterators", q:"Examples"},
-			{h:"Generators", q:""},
-			{h:"Generators", q:"Whats the promise of a generator"},
-			{h:"Generators", q:"Generate something"},
-			{h:"Generators", q:"Examples"},
-			{h:"Template literals", q:""},
-			{h:"Template literals", q:"Whats literal about\na template literal?"},
-			{h:"Template literals", q:"Whats the next biggest\nuse of the backtick"},
-			{h:"Template literals", q:"Examples"},
-			{h:"Modules", q:""},
-			{h:"Modules", q:"How do you analyse static"},
-			{h:"Modules", q:"Examples"},
-			{h:"Structures", q:""},
-			{h:"Structures", q:"Whats weak about a WeakMap"},
-			{h:"Structures", q:"Examples"},
-			{h:"Final Score", q:""},
+			{h:"Service workers", q:"Make a fitting analogy"},
+			{h:"React", q:"Reduce redux for us"},
+			{h:"Functional", q:"Why is state bad"},
+			{h:"CSS", q:"Who knows the CSS priority list?"},
+			{h:"CSS", q:"!important\ninline\nmedia type\nuser defined\nspecific selector\nrule order\nparent inheritance\ncss in html\nbrowser default"},
+			{h:"CSS", q:"Cascading Shit Sideways\nhow do webcomponents help?"},
+			{h:"JS-the-wrong-way", q:"Why should we not be (trans)compiling JS"},
+			{h:"Promises", q:"Why is a promise resolved next cycle\nif it already has a value"},
+			{h:"PWA", q:"What makes a webapp progressive?"},
+			{h:"Fantasy API", q:"Whats the most useless web API\nyou can come up with"},
+			{h:"Tools", q:"Why do we call HTML/CSS programming\nand why is it not automated"},
+			{h:"AI", q:"Whats deep about deep learning"},
+			{h:"AI", q:"When a future AI will do your job,\nwhat would you tell it"},
+			{h:"Bug", q:"What is the worst bug you shipped"},
+			{h:"Future", q:"How do you debug JS in VR"},
+			{h:"WebAsm", q:"What do we lose when compiling to webasm"},
+			{h:"What if", q:"undefined WAS a function, but still falsey"},
+			{h:"Exception", q:"Describe your most exceptional exception"},
+			{h:"Debugging", q:"What is jiggle debugging"},
+			{h:"Contest", q:"30 seconds button mashing!", speedrun:true},
+			{h:"Thank you,", q:"lets have beer!\n\nFor makepad follow @rikarends"}
 		]
 		
 		this.recFlow.start()
@@ -335,15 +338,44 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.show = ""
 		
 		this.winner = null
-		
+		var states = [
+			[[], [], [], [], []],
+			[[], [], [], [], []]
+		]
 		socket.onMessage = msg=>{
+			_=msg
+			states[msg.controller][msg.buzzer][msg.button] = msg.state
+			var q = this.questions[this.page - 1]
+			if(q && q.speedrun && msg.state) {
+				for(let t = 0;t < this.teams.length;t++){
+					let team = this.teams[t]
+					for(let i = 0;i < team.players.length;i++){
+						let player = team.players[i]
+						if(player.ctrl == msg.controller && player.buzzer == msg.buzzer && player.button == msg.button) {
+							if(player) this.playerScore(player, 1, 1)
+							break
+						}
+					}
+				}
+				return
+			}
 			if(!msg.state) return
-			console.log(msg)
-			let ctrl = this.controller
-			if(msg.controller === ctrl.ctrl && msg.buzzer === ctrl.buzzer && msg.button === ctrl.button) {
+			// keep state
+			let ctrlA = this.controllerA
+			let ctrlB = this.controllerB
+			// reset
+			var ctrl = msg.controller === ctrlA.ctrl?ctrlA:ctrlB
+			if(msg.controller === ctrl.ctrl && msg.buzzer === ctrl.buzzer && msg.button === ctrl.reset) {
 				this.lightsOff()
 				return
 			}
+			// add score to team A
+			if(msg.controller === ctrl.ctrl && msg.buzzer === ctrl.buzzer) {
+				let team = this.teams[ctrl.id]
+				let player = team && team.players[msg.button === ctrl.p1?0:msg.button === ctrl.p2?1:msg.button === ctrl.p3?2:-1]
+				if(player) this.playerScore(player, states[ctrl.id][ctrl.buzzer][ctrl.shift]?-1:1, 1)
+			}
+			
 			// fix player selector based on buzzer
 			for(let t = 0;t < this.teams.length;t++){
 				let team = this.teams[t]
@@ -384,9 +416,11 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 	}
 	
-	playerScore(player, add) {
-		if(add > 0) this.coinUp.play()
-		else this.coinDown.play()
+	playerScore(player, add, play) {
+		if(play) {
+			if(add > 0) this.coinUp.play()
+			else this.coinDown.play()
+		}
 		if(player) player.score += add
 		this.redraw()
 	}
@@ -414,7 +448,7 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
-		var scale = 0.4
+		var scale = 0.9
 		var panel = 300
 		//for(var i=0;i<1;i++)
 		let team = 0
@@ -477,7 +511,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				color   :'#7',
 				margin  :[0, 0, 0, 10],
 				fontSize:16 * scale,
-				text    :"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
+				text2   :"Arrow keys for pages\nQ W E R simulate buzzer\n1 2 3 4 add points\nOther keys reset buzzer"
 			})
 		}
 		else {
@@ -491,7 +525,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			this.lineBreak()
 			this.turtle.wy += 40
 			this.drawText({
-				fontSize:32 * scale,
+				fontSize:22 * scale,
 				margin  :[0, 0, 0, 40],
 				text    :this.questions[this.page - 1].q
 			})
