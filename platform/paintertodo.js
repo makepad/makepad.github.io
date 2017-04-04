@@ -68,6 +68,9 @@ module.exports = function painterTodo(proto){
 
 		var lastTodo = this.currentTodo
 		this.currentTodo = todo
+		
+		var repaint = this.processScrollState(todo)
+		
 		// set todoId
 		var nameIds = this.nameIds
 		var todoUbo = this.uboIds[todo.uboId]
@@ -100,7 +103,6 @@ module.exports = function painterTodo(proto){
 		var i32 = todo.i32
 		var len = todo.length
 		var last = 0
-		var repaint = false
 		var todofn = this.todofn
 		for(let o = 0; o < len; o += argc + 2){
 			var fnid = i32[o]
@@ -112,7 +114,7 @@ module.exports = function painterTodo(proto){
 			if(ret) repaint = true
 		}
 		this.currentTodo = lastTodo
-		if(!this.inPickPass && this.processScrollState(todo))return true
+		if(!this.inPickPass || repaint)return true
 		if(repaint || todo.animLoop || todo.timeMax >= this.repaintTime)return true
 	}
 

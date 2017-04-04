@@ -21,7 +21,7 @@ module.exports = class extends require('base/drawapp'){ //top
 							this.translate(.5, .5)
 							this.circle(0., 0., .35) //+sin(this.time*8))
 							let p = this.pos
-							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 4 + this.time * 1))
+							this.shape += 0.05 * abs(sin(atan(p.y, p.x) * 8 + this.time * 1))
 							this.fillKeep(this.fillColor)
 							this.strokeKeep('#44ffff', .02)
 							this.shape += 0.08
@@ -36,15 +36,16 @@ module.exports = class extends require('base/drawapp'){ //top
 						align       :[0.5, 0.5],
 						boldness    :0.,
 						outlineWidth:0.04,
-						shadowColor :'#0009',
+						color       :'#ffffffff',
+						shadowColor :'#00000099',
 						shadowBlur  :1.0,
 						shadowSpread:0.,
 						shadowOffset:[2., 2],
 						dy          :-4.1,
 						lineSpacing :0.9,
-						outlineColor:'black',
+						outlineColor:'#000000ff',
 						vertexStyle :function() {$
-							let b = this.bouncy = 0.4 // abs(sin(this.time))
+							let b = this.bouncy = abs(sin(this.time))
 							this.shadowOffset = vec2(b * 10, b * 10)
 						},
 						vertexPos   :function(pos) {$
@@ -69,9 +70,12 @@ module.exports = class extends require('base/drawapp'){ //top
 	
 	constructor() {
 		super()
+		/*
+		Makepad
 		
+		*/
 		this.pages = [
-			{h:"Demos", q:"- Sliders\n- Windtree\n- Gameshow\n"},
+			{h:"Demos", q:"- Sliders\n- Windtree\n- Peg\n"},
 			{h:"Overview", q:"- All in web-browser\n- Multithreaded\n- Type Inference JS to shaders\n- AST Code editor\n- Class composition\n- Layout\n- Future\n"},
 			{h:"Multithreading", q:"- Main browser thread: renderer\n- Worker 1: Editor\n- Worker 2: User programs\n\nUses commandbuffer trees cross thread\nCan recover from user process\n\nMain thread implements services\nworkers get message passing\nservice interface"},
 			{h:"Type inferencing JS", q:"- JS class backbone with pixel and vertex methods\n- Use type information to generate JS as well\n", c:'vec4 thisDOTpixel_T(){\n' + 
@@ -107,6 +111,11 @@ module.exports = class extends require('base/drawapp'){ //top
 	}
 	
 	onDraw() {
+		this.beginBg({
+			color:'#1e191eff',
+			w    :'100%',
+			h    :'100%'
+		})
 		var scale = 0.6
 		var panel = 300
 		_=this.page
@@ -135,5 +144,6 @@ module.exports = class extends require('base/drawapp'){ //top
 				text    :this.pages[this.page - 1].c
 			})
 		}
+		this.endBg()
 	}
 }

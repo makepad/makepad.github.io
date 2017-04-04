@@ -20,6 +20,7 @@
 				{"name":"mat3.js"},
 				{"name":"mat4.js"},
 				{"name":"perf.js"},
+				{"name":"random.js"},
 				{"name":"props.js"},
 				{"name":"quat.js"},
 				{"name":"sha256.js"},

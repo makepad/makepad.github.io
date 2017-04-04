@@ -11,7 +11,8 @@ module.exports = class Tree extends require('base/view'){
 		this.sat = 1
 		this.val = 1
 		this.alpha = 1
-		
+		this.w = '100%'
+		this.h = '100%'
 		this.tools = {
 			Bg    :require('shaders/quad').extend({
 				wrap   :false,
@@ -202,7 +203,7 @@ module.exports = class Tree extends require('base/view'){
 	
 	onDraw(debug) {
 		//alright so how are we going to select things
-		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
+		//this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		var col = []
 		if(this.rgba !== this.rgbaConverted && (
 			this.rgba[0] !== this.rgbaConverted[0] || this.rgba[1] !== this.rgbaConverted[1] || 
@@ -217,13 +218,12 @@ module.exports = class Tree extends require('base/view'){
 		}
 		
 		var out = this.Wheel.prototype.hsv2rgbJS([this.hue, this.sat, this.val, 1])
-		
 		this.drawWheel({
 			hue:this.hue,
 			sat:this.sat,
 			val:this.val,
-			w  :200,
-			h  :200
+			w  :125,
+			h  :125
 		})
 		this.wheel = this.turtle.geom()
 		this.drawSlider({
@@ -234,7 +234,7 @@ module.exports = class Tree extends require('base/view'){
 			id      :'alpha',
 			vertical:true,
 			w       :20,
-			h       :200,
+			h       :125,
 			onSlide :v=>{
 				this.alpha = v.value
 				this.doColorChange()
@@ -247,6 +247,6 @@ module.exports = class Tree extends require('base/view'){
 			h     :100,
 			color :[out[0], out[1], out[2], this.alpha]
 		})
-		this.endBg(true)
+		//this.endBg(true)
 	}
 }

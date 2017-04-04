@@ -1,6 +1,8 @@
 new require('styles/dark')
 let socket = require('services/socket')
 let http = require('services/http')
+var Random = require('base/random')
+var gen = new Random(6)
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
 		
@@ -171,7 +173,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					this.circle(this.w * .5, this.h * .5, this.w * .5)
 					this.circle(this.w * .5, this.h * .5, this.w * .4 - this.depth)
 					this.subtract()
-					this.fill(this.color)
+					this.fill('#0054ffff')
 					return this.result
 				}
 			}
@@ -193,8 +195,8 @@ module.exports = class extends require('base/drawapp'){ //top
 		})
 		var randomize = (depth = 0) =>{
 			var node = {}
-			node.name = parseInt(random() * 10000) + ''
-			var nchild = parseInt(random() * 8)
+			node.name = parseInt(gen.random() * 10000) + ''
+			var nchild = parseInt(gen.random() * 8)
 			if(depth > 4) return node
 			node.children = []
 			for(var i = 0;i < nchild;i++){

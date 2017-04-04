@@ -65,20 +65,20 @@ module.exports = class Makepad extends require('base/app'){
 						locked  :false,
 						position:0.5,
 						vertical:true,
-						pane1   :{
+						pane2   :{
 							selected:0,
 							tabs    :[
-								{type:'HomeScreen', id:'HomeSource', icon:'puzzle-piece'}
+								{type:'HomeScreen', id:'HomeProcess', icon:'television'}
 							]
 						},
-						pane2   :{
+						pane1   :{
 							selected:0,
 							vertical:false,
 							locked  :true,
 							position:-150,
 							pane1   :{
 								tabs:[
-									{type:'HomeScreen', id:'HomeProcess', icon:'television'}
+									{type:'HomeScreen', id:'HomeSource', icon:'puzzle-piece'}
 								]
 							},
 							pane2   :{

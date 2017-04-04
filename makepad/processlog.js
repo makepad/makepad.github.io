@@ -293,7 +293,7 @@ class Log extends require('base/view'){
 	}
 
 	onKeyDown(e){
-		var row
+		var row = this.selectedRow
 		if(e.name == 'downArrow'){
 			row = this.selectedRow+1
 		}
@@ -368,7 +368,7 @@ class Log extends require('base/view'){
 
 
 			// compute the start i and end i
-			var safeWin = 20
+			var safeWin = 40
 			this.safeHeight = safeWin * lineHeight
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)

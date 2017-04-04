@@ -221,7 +221,7 @@ module.exports = class extends require('base/drawapp'){ //top
 					})
 					this.drawText({
 						margin:[5, 0, 0, 5],
-						color :'yellow',
+						color :'#fff400ff',
 						text  :'$' + this.vars[id]
 					})
 					this.lineBreak()
