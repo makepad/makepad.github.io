@@ -221,10 +221,19 @@ class Log extends require('base/view'){
 	}
 
 	onScroll(e) { 
-		this.tail = false
-		this.parent.tail = false
-		this.redraw() 
-		this.doScroll = true
+		// lets check if we overflow the safety window, ifso redraw.
+		if(this.todo.yScroll < this.todo.yVisible+0.5*this.safeHeight || 
+			this.todo.yScroll+this.todo.yView > this.todo.yVisible + this.todo.hVisible - 0.5*this.safeHeight){
+			this.tail = false
+			this.parent.tail = false
+			this.redraw() 
+			this.doScroll = true
+		}
+		else{
+			// lets return a scroll sync
+			this.todo.scrollSync()
+		}
+
 	}
 
 	// compute the selection ID
@@ -317,7 +326,7 @@ class Log extends require('base/view'){
 		this.$fastTextStyles = []
 		this.$fastTextFontSize = 10
 		
-		this.scrollMode(2)
+		//this.scrollMode(0)
 		
 		var tproto = this.Text.prototype
 		var lineHeight = this.lineHeight = tproto.lineSpacing * this.$fastTextFontSize
@@ -325,11 +334,9 @@ class Log extends require('base/view'){
 		// how would we virtual viewport this thing?
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
 
-		if(this.selectedRow>=logs.length && this.selectedRow>0){
-			console.log("SELECTIN")
+		if(this.selectedRow >= logs.length && this.selectedRow > 0){
 			this.selectRow(0)
 		}
-
 
 		if(logs){
 			//this.turtle.sx = this.shiftX
@@ -362,6 +369,7 @@ class Log extends require('base/view'){
 
 			// compute the start i and end i
 			var safeWin = 20
+			this.safeHeight = safeWin * lineHeight
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
 			
@@ -371,10 +379,10 @@ class Log extends require('base/view'){
 			
 			// set scroll area for async scrolling
 			this.scrollArea(
-				this.turtle.wx,
+				0,
 				this.turtle.wy,
-				(iEnd-iStart)*lineHeight,
-				charWidth*1000
+				charWidth*1000,
+				(iEnd-iStart)*lineHeight
 			)
 
 			// lets draw a cursor

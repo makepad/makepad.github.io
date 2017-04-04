@@ -245,6 +245,7 @@ painter.Todo = class Todo extends require('base/class'){
 			buffer = o32.buffer
 
 		}
+		this.batched = false
 
 		return [{
 			fn:'updateTodo',
@@ -293,10 +294,19 @@ painter.Todo = class Todo extends require('base/class'){
 		}]
 	}
 
+	scrollSync(){
+		service.batchMessage({
+			fn:'scrollSync',
+			todoId:this.todoId,
+			x:this.xScroll,
+			y:this.yScroll
+		})
+	}
+
 	scrollTo(x, y, scrollToSpeed){
 		if(x !== undefined) this.xScroll = x
 		if(y !== undefined) this.yScroll = y
-
+		//if(this.batched) return
 		service.batchMessage({
 			fn:'scrollTo',
 			todoId:this.todoId,
@@ -344,6 +354,7 @@ painter.Todo = class Todo extends require('base/class'){
 		this.last = -1
 		this.w = painter.w
 		this.h = painter.h
+		this.batched = true
 		service.batchMessage(this)
 	}
 

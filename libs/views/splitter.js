@@ -67,11 +67,13 @@ module.exports=class Splitter extends require('base/view'){
 							this.blur = 4.
 							return this.glow(this.glowColor, 2.,0.)
 						},
+						queue:false,
 						glowColor:'#30f',
 						color:'#7'
 					}),
 					GripBg:require('shaders/rounded').extend({
-						color:'#7'
+						color:'#7',
+						queue:false,
 					}),
 					Lock:require('base/stamp').extend({
 						states:{

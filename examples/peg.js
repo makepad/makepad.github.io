@@ -1,4 +1,4 @@
-var LOG = 0
+var LOG = 1
 // GRAMMAR
 var defQL = {
 	Start   :o=>o.Form,

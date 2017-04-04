@@ -276,7 +276,7 @@ module.exports = function painterUser(proto){
 		todo.yScrollSync = msg.yScrollSync
 		todo.scrollMode = msg.scrollMode
 		todo.xVisible = msg.xVisible
-		todo.yVisible = msg.hVisible
+		todo.yVisible = msg.yVisible
 		todo.wVisible = msg.wVisible
 		todo.hVisible = msg.hVisible
 				todo.scrollToSpeed = msg.scrollToSpeed || .5
@@ -305,6 +305,12 @@ module.exports = function painterUser(proto){
 		todo.yScrollTo = msg.y
 		todo.scrollToSpeed = msg.scrollToSpeed
 		this.requestRepaint()
+	}
+
+	proto.user_scrollSync = function(msg){
+		var todo = this.todoIds[msg.todoId]
+		todo.xScrollSync = msg.x
+		todo.yScrollSync = msg.y
 	}
 
 	proto.user_scrollSet = function(msg){
