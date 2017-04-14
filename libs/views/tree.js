@@ -172,7 +172,7 @@ module.exports = class Tree extends require('base/view'){
 		var node = pick.node
 		
 		if(pick.node.folder && (this.openWithText || pick.type === 'tree' || e.tapCount > 0)) {
-			this.store.act('treeToggle', store=>{
+			this.app.store.act('treeToggle', store=>{
 				node.open = !node.open
 			})
 			this.redraw()
@@ -216,14 +216,14 @@ module.exports = class Tree extends require('base/view'){
 		}
 		else if(e.name === 'rightArrow') {
 			if(sel && sel.folder) {
-				this.store.act('treeToggle', store=>{
+				this.app.store.act('treeToggle', store=>{
 					sel.open = true
 				})
 			}
 		}
 		else if(e.name === 'leftArrow') {
 			if(sel && sel.folder) {
-				this.store.act('treeToggle', store=>{
+				this.app.store.act('treeToggle', store=>{
 					sel.open = false
 				})
 			}
@@ -238,7 +238,7 @@ module.exports = class Tree extends require('base/view'){
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
 		this.pickMap = {}
-		this.clearPickIds()
+		//this.clearPickIds()
 		var p = this
 		
 		var iterFolder = (node, depth, closed) =>{
@@ -252,13 +252,13 @@ module.exports = class Tree extends require('base/view'){
 		
 		var drawNode = (name, node, i, len, depth, closed) =>{
 			//var node=nodes[i]
-			var treePick = this.allocPickId()
-			var textPick = this.allocPickId()
+			var treePick = 0//this.allocPickId()
+			var textPick = 0//this.allocPickId()
 			this.pickMap[treePick] = {node:node, type:'tree'}
 			this.pickMap[textPick] = {node:node, type:'text'}
-			this.setPickId(textPick)
+			//this.setPickId(textPick)
 			
-			this.setPickId(treePick)
+			//this.setPickId(treePick)
 			for(let j = 0, dl = depth.length - 1;j <= dl;j++){
 				var isFolder = j == dl && node.folder?1:0
 				if(this.hasRootLine || j > 0) 

@@ -228,6 +228,7 @@ module.exports = function painterUser(proto){
 	proto.user_newTodo = function(msg){
 		this.todoIds[msg.todoId] = {
 			todoId:msg.todoId,
+			workerId:this.worker.workerId,
 			xScroll:0,
 			yScroll:0,
 			xScrollFlick:0,

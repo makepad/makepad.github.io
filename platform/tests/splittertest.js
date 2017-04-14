@@ -8,7 +8,7 @@ module.exports = class extends require('base/app'){
 				w:'100%',
 				h:'100%'
 			}),
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 			}),
 			View:require('views/draw').extend({
 				xOverflow:'none',
@@ -49,14 +49,15 @@ module.exports = class extends require('base/app'){
 		var view3 = new this.View(this, {tabName:'myfile3.js',id:'v3', br:30})
 		var view4 = new this.View2(this, {id:'v4',subview:view3})
 		this.view4 = view4
-		//this.split2 = new this.Splitter(this, {id:'s2', panes:[view1, view4]})
+		this.split2 = new this.Splitter(this, {id:'s2', panes:[view1, view4]})
 		//this.split1 = new this.Splitter(this, {id:'s1', panes:[this.split2,view2]})
 	}
 
 	onDraw(){
-		this.view4.draw(this)
+		//this.view4.draw(this)
 		//this.drawButton({id:2,text:'hi'})
 		//this.split1.draw(this)
+		this.split2.draw(this)
 		//this.drawTabs({id:1,w:'100%',h:'100%',tabs:[this.myView,this.myView,this.myView,this.myView]})
 	}
 }

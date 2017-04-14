@@ -1,6 +1,7 @@
 let colors = module.style.colors
 let fonts = module.style.fonts
-module.exports = require('base/stamp').extend({
+module.exports = require('base/view').extend({
+	heavy:false,
 	props:{
 		selected:false,
 		lineL:true,

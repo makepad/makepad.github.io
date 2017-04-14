@@ -99,6 +99,10 @@ module.exports = function painterTodo(proto){
 		}
 		this.vec4fUbo(todoUbo, nameIds.thisDOTviewSpace, todo.xView, todo.yView, todo.xTotal, todo.yTotal)
 
+		var paintId = this.paintIds.id++
+		this.paintIds[paintId] = todo
+		this.floatUbo(todoUbo, nameIds.thisDOTpaintId, paintId)
+
 		var f32 = todo.f32
 		var i32 = todo.i32
 		var len = todo.length
@@ -114,7 +118,7 @@ module.exports = function painterTodo(proto){
 			if(ret) repaint = true
 		}
 		this.currentTodo = lastTodo
-		if(!this.inPickPass || repaint)return true
+		
 		if(repaint || todo.animLoop || todo.timeMax >= this.repaintTime)return true
 	}
 
@@ -172,7 +176,7 @@ module.exports = function painterTodo(proto){
 			if(!this.inPickPass){
 				gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
 			} else {
-				gl.clearColor(this.currentTodo.todoId/255,0,0,this.worker.workerId/255)
+				gl.clearColor(this.paintIds.id/255.,0,0,1./255.)
 			}
 			clr |= gl.COLOR_BUFFER_BIT
 		}

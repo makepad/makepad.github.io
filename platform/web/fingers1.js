@@ -192,6 +192,7 @@ module.exports = class extends require('/platform/service'){
 				f.pickId = pick.pickId
 				f.todoId = pick.todoId
 				f.workerId = pick.workerId
+				f.paintId = pick.paintId
 				f.xDown = f.x
 				f.yDown = f.y
 				// compute tapcount
@@ -274,6 +275,7 @@ module.exports = class extends require('/platform/service'){
 			f.pickId = oldf.pickId
 			f.todoId = oldf.todoId
 			f.workerId = oldf.workerId
+			f.paintId = oldf.paintId
 			var dx = f.xDown - f.x
 			var dy = f.yDown - f.y
 			var isTap = f.time - oldf.time < this.TAP_TIME && Math.sqrt(dx*dx+dy*dy) < (f.touch?this.TAP_DIST_TOUCH:this.TAP_DIST_MOUSE)

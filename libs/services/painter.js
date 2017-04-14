@@ -171,6 +171,15 @@ painter.Todo = class Todo extends require('base/class'){
 	constructor(initalloc){
 		super()
 
+		// var keys = Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+		// for(let key of keys){
+		// 	let fn = this[key]
+		// 	this[key] = function(){
+		// 		console.log(key, arguments)
+		// 		return fn.apply(this, arguments)
+		// 	}
+		// }
+
 		this.initalloc = 256
 
 		this.todoId = todoIds.alloc(this)
@@ -191,6 +200,7 @@ painter.Todo = class Todo extends require('base/class'){
 		this.f32 = new Float32Array(this.allocated)
 		this.i32 = new Int32Array(this.f32.buffer)
 		this.ordering = []
+
 		this.props = []
 		this.props2 = []
 		this.xScroll = 0
@@ -245,6 +255,7 @@ painter.Todo = class Todo extends require('base/class'){
 			buffer = o32.buffer
 
 		}
+
 		this.batched = false
 
 		return [{

@@ -98,21 +98,21 @@ module.exports = class Makepad extends require('base/app'){
 				}
 			}
 		})
-		
-		this.store.act("init", store=>{
+
+		this.app.store.act("init", store=>{
 			store.projectTree = {}
 			store.resourceMap = new Map()
 			store.processList = []
 		})
 		
-		this.store.observe(this.store.resourceMap, e=>{
-			var store = this.store
+		this.app.store.observe(this.app.store.resourceMap, e=>{
+			var store = this.app.store
 			// we wanna know if dirty on a resource is flipped
-			if(this.store.anyChanges(e, 1, 'dirty')) {
+			if(this.app.store.anyChanges(e, 1, 'dirty')) {
 				this.processTabTitles()
 			}
 			// data or trace modified
-			var source = this.store.anyChanges(e, 1, ['data', 'trace'])
+			var source = this.app.store.anyChanges(e, 1, ['data', 'trace'])
 			if(source) {
 				var resource = source.object
 				// find all processes
@@ -129,15 +129,15 @@ module.exports = class Makepad extends require('base/app'){
 		})
 		
 		// the setter of data makes it autobind to the store
-		this.find('FileTree1').data = this.store.projectTree
+		this.find('FileTree1').data = this.app.store.projectTree
 		
 		this.loadProject(projectFile).then(store=>{
 			
 			if(this.destroyed) return  // technically possible
 			
-			var resources = this.store.resourceMap
-			var proj = this.store.projectTree
-			var x = this.store.projectTree.open
+			var resources = this.app.store.resourceMap
+			var proj = this.app.store.projectTree
+			var x = this.app.store.projectTree.open
 			
 			if(proj.open) {
 				for(var i = 0;i < proj.open.length;i++){
@@ -205,7 +205,7 @@ module.exports = class Makepad extends require('base/app'){
 					})
 				}
 				// lets store it
-				this.store.act("loadProject", store=>{
+				this.app.store.act("loadProject", store=>{
 					store.projectTree = projectTree
 					store.resourceMap = resourceMap
 					store.processList = []
@@ -223,9 +223,9 @@ module.exports = class Makepad extends require('base/app'){
 		code.replace(/require\s*\(\s*(?:['"](.*?)["']|(\/(?![*+?])(?:[^\r\n\[/\\]|\\.|\[(?:[^\r\n\]\\]|\\.)*\])+\/))/g, (m, path, regex) =>{
 			if(regex) {
 				var wildcard = matchCache[mypath] || (matchCache[mypath] = new RegExp(regex.slice(1, -1)))
-				for(var key of this.store.resourceMap.keys()){
+				for(var key of this.app.store.resourceMap.keys()){
 					if(key.match(wildcard)) {
-						var dep = this.store.resourceMap.get(key)
+						var dep = this.app.store.resourceMap.get(key)
 						if(!deps[dep.path]) {
 							this.findResourceDeps(dep, deps)
 						}
@@ -234,7 +234,7 @@ module.exports = class Makepad extends require('base/app'){
 				return
 			}
 			var mypath = module.buildPath(path, resource.path)
-			var dep = this.store.resourceMap.get(mypath)
+			var dep = this.app.store.resourceMap.get(mypath)
 			if(dep && !deps[dep.path]) {
 				this.findResourceDeps(dep, deps)
 			}
@@ -332,8 +332,8 @@ module.exports = class Makepad extends require('base/app'){
 			return 
 		}
 		
-		var processList = this.store.processList
-		this.store.act("addProcess", store=>{
+		var processList = this.app.store.processList
+		this.app.store.act("addProcess", store=>{
 			processList.push({
 				path         :resource.path,
 				runtimeErrors:[],

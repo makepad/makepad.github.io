@@ -55,7 +55,7 @@ new require('styles/dark')
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
 		this.tools = {
-			Slider:require('stamps/slider.js')
+			Slider:require('views/slider.js')
 		}
 	}
 	constructor() {

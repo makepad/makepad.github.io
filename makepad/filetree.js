@@ -12,7 +12,7 @@ module.exports = class FileTree extends require('base/view'){
 					this.parent.onNodeSelect(...args)
 				}
 			}),
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -34,7 +34,7 @@ module.exports = class FileTree extends require('base/view'){
 			if(i > 0) p += '/'
 			p += path[i].name
 		}
-		this.app.addSourceTab(this.store.resourceMap.get(p))
+		this.app.addSourceTab(this.app.store.resourceMap.get(p))
 	}
 	
 	onDraw() {

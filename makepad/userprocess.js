@@ -8,7 +8,7 @@ module.exports = class UserProcess extends require('views/draw'){
 			resource:null
 		}
 		this.tools = {
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -89,11 +89,11 @@ module.exports = class UserProcess extends require('views/draw'){
 			} 
 		} 
 		// send new init message to worker
-		this.store.act("clearRuntimeError",store=>{
+		this.app.store.act("clearRuntimeError",store=>{
 			this.process.runtimeErrors.length = 0
 		})
 
-		this.store.act("clearLog",store=>{
+		this.app.store.act("clearLog",store=>{
 			this.process.logs.length = 0
 		})
 		
@@ -111,14 +111,17 @@ module.exports = class UserProcess extends require('views/draw'){
 		
 		// OK so lets compose all deps
 		this.deps = {} 
+
+		console.log("HERE!", this.id, this.deps)
+
 		//this.main = this.resource 
 		this.app.findResourceDeps(this.resource, this.deps)
 		// lets add our process to all the deps
 
-		this.store.act("addProcessToResources", store=>{
+		this.app.store.act("addProcessToResources", store=>{
 			//var resmap = store.resourceList
 			var process = this.process
-			var resourceMap = this.store.resourceMap
+			var resourceMap = this.app.store.resourceMap
 			for(var key in this.deps){
 				var res = resourceMap.get(key)
 				res.processes.push(process)
@@ -154,7 +157,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		}
 
 		this.worker.onLog = e=>{
-			this.store.act("addLog", store=>{
+			this.app.store.act("addLog", store=>{
 				var logs = this.process.logs
 				// check if we are the same as the last
 				logs.push(e)
@@ -170,7 +173,7 @@ module.exports = class UserProcess extends require('views/draw'){
 
 		this.worker.onError = e => {
 			// we haz error, update the process
-			this.store.act("addRuntimeError",store=>{
+			this.app.store.act("addRuntimeError",store=>{
 
 				//throw "WHAT"
 				var rt = this.process.runtimeErrors
@@ -207,7 +210,7 @@ module.exports = class UserProcess extends require('views/draw'){
 			console.log("TERMINATING")
 			this.worker.terminate()
 			this.app.findAll(/^Source/).forEach(s=>{
-				this.store.act("addRuntimeError",store=>{
+				this.app.store.act("addRuntimeError",store=>{
 					this.process.runtimeErrors.push({
 						message:"Infinite loop detected, restarting"
 					})

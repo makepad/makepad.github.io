@@ -106,7 +106,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		//colorScheme = this.styles.
 		let parenId = this.$parenGroupId++
 		var blStart = this.fastText('{', colorScheme.curly, undefined, parenId)
-		
+		var nRange = {type:node, parent:parent}
+		this.$nodeRanges.push(blStart, nRange)
 		var endx = turtle.wx, lineh = turtle.mh
 		// lets indent
 		this.$fastTextIndent++
@@ -166,6 +167,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		//else this.trace += '}'
 		var startx = turtle.wx
 		var blEnd = this.fastText('}', colorScheme.curly, undefined, parenId)
+		nRange.end = blEnd
 		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 		var pickId = this.pickIdCounter++
 		this.pickIds[pickId] = node

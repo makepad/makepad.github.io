@@ -151,7 +151,9 @@ Object.defineProperty(module.exports.prototype, '__initproto__', {
 			} 
 			var cb = inherit.cb 
 			for(let i = stack.length - 1; i >= 0; i--) { 
-				cb.call(stack[i]) 
+				proto = stack[i]
+				//inheritReady.set(proto, true) 
+				cb.call(proto) 
 			} 
 		} 
 		proto = this 

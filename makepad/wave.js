@@ -27,11 +27,11 @@ module.exports = class Wave extends require('views/draw'){
 			Bg:{
 				color:colors.bgHi
 			},
-			Slider: require('stamps/slider').extend({ 
+			Slider: require('views/slider').extend({ 
 				Bg: {moveScroll: 0,test:2},
 				Knob: {moveScroll: 0}
 			}), 
-			Button: require('stamps/button').extend({ 
+			Button: require('views/button').extend({ 
 				Bg: {moveScroll: 0,test:1}, 
 				Text: {moveScroll: 0},
 				Icon: {moveScroll: 0} 
@@ -173,7 +173,7 @@ module.exports = class Wave extends require('views/draw'){
 		//write it
 		var wavout = wav.serialize16(this.recording[0])
 
-		this.store.act('changeWave', store=>{
+		this.app.store.act('changeWave', store=>{
 			this.resource.data = wavout
 		})
 
@@ -184,7 +184,7 @@ module.exports = class Wave extends require('views/draw'){
 	undo(){
 		this.undoRedo(this.undoStack, this.redoStack)
 		if(!this.undoStack.length){
-			this.store.act('undoWave',store=>{
+			this.app.store.act('undoWave',store=>{
 				this.resource.dirty = false
 			})
 		}
@@ -297,7 +297,7 @@ module.exports = class Wave extends require('views/draw'){
 	}
 
 	editWave(newSize, cb, noUndo){
-		this.store.act('editWave',store=>{
+		this.app.store.act('editWave',store=>{
 			this.resource.dirty = true
 		})
 

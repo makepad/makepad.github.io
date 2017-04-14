@@ -13,7 +13,7 @@ module.exports=class Dock extends require('base/view'){
 					this.owner.onTabRip(this, e)
 				}
 			}),
-			Tab:require('stamps/tab').extend({
+			Tab:require('views/tab').extend({
 
 			}),
 			Drop:require('shaders/bg').extend({

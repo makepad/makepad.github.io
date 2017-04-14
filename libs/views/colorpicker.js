@@ -23,7 +23,7 @@ module.exports = class Tree extends require('base/view'){
 				font :fonts.regular,
 				color:colors.textNormal
 			}),
-			Slider:require('stamps/slider').extend({
+			Slider:require('views/slider').extend({
 				props :{
 					color:{override:true, value:'red'}
 				},

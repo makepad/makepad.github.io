@@ -1,16 +1,18 @@
-module.exports = class Button extends require('base/stamp'){
+module.exports = class Button extends require('base/view'){
 	
 	prototype() {
 		let colors = module.style.colors
 		
 		this.props = {
 			text        :'',
+			heavy       :false,
 			icon        :'',
 			id          :'',
 			index       :0,
 			onClick     :undefined,
 			onTap		:undefined,
 			toggle      :false,
+			toggled     :false,
 			margin      :[2, 0, 2, 0],
 			debug       :0
 		}
@@ -106,9 +108,9 @@ module.exports = class Button extends require('base/stamp'){
 				}
 			}
 		}
-		
-		this.wrapped = false
+
 		this.toggled = false
+
 		this.tools = {
 			Bg  :require('shaders/quad').extend({
 				padding     :[6, 14, 6, 14],
@@ -210,13 +212,15 @@ module.exports = class Button extends require('base/stamp'){
 	}
 
 	onDraw() {
-		this.beginBg(this.wrap())
+
+		this.beginBg(this.layout())
+
 		if(this.icon) {
 			this.drawIcon({
 				text:this.lookupIcon[this.icon]
 			})
+			if(this.text)this.turtle.wx+=5
 		}
-		
 		if(this.text) {
 			this.drawText({
 				text:this.text

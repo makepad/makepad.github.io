@@ -25,9 +25,11 @@
 				{"name":"quat.js"},
 				{"name":"sha256.js"},
 				{"name":"shader.js"},
+				{"name":"states.js"},
 				{"name":"stamp.js"},
 				{"name":"store.js"},
 				{"name":"style.js"},
+				{"name":"styles.js"},
 				{"name":"tools.js"},
 				{"name":"turtle.js"},
 				{"name":"types.js"},
@@ -57,13 +59,11 @@
 				{"name":"shadowquad.js"},
 				{"name":"text.js"}
 			]},
-			{"name":"stamps","folder":[
+			{"name":"views","folder":[
 				{"name":"button.js"},
 				{"name":"slider.js"},
 				{"name":"scrollbar.js"},
-				{"name":"tab.js"}
-			]},
-			{"name":"views","folder":[
+				{"name":"tab.js"},
 				{"name":"code.js"},
 				{"name":"colorpicker.js"},
 				{"name":"dock.js"},

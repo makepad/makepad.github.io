@@ -1,8 +1,8 @@
-module.exports = class Slider extends require('base/stamp'){
+module.exports = class Slider extends require('base/view'){
 	
 	prototype() {
 		let colors = module.style.colors
-
+		this.heavy = false
 		this.props = {
 			id          :'',
 			vertical    :false,

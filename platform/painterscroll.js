@@ -83,7 +83,7 @@ module.exports = function painterScroll(proto){
 
 		fingerInfo[o + 0] = f.x - args.x
 		fingerInfo[o + 1] = f.y - args.y
-		fingerInfo[o + 2] = f.workerId * 256 + f.todoId
+		fingerInfo[o + 2] = f.paintId
 		fingerInfo[o + 3] = f.pickId
 
 		// check if we are down on a scrollbar
@@ -179,7 +179,7 @@ module.exports = function painterScroll(proto){
 		var o = (f.digit-1) * 4
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
-		fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
+		fingerInfo[o+2] = -(f.paintId)
 		fingerInfo[o+3] = f.pickId
 
 		var todo = this.todoIds[f.todoId]
@@ -199,7 +199,7 @@ module.exports = function painterScroll(proto){
 		//console.log(f.x, f.y)
 		fingerInfo[o+0] = f.x - args.x
 		fingerInfo[o+1] = f.y - args.y
-		fingerInfo[o+2] = -(f.workerId*256 + f.todoId)
+		fingerInfo[o+2] = -(f.paintId)
 		fingerInfo[o+3] = f.pickId
 
 		this.requestRepaint()

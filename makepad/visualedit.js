@@ -2,10 +2,10 @@ var types = require('base/types')
 module.exports = class extends require('base/view'){
 	prototype(){
 		this.tools = {
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 				order:4,
 			}),
-			Slider:require('stamps/slider').extend({
+			Slider:require('views/slider').extend({
 				vertical:true,
 				range:[1,0],
 				w:10,
@@ -18,7 +18,6 @@ module.exports = class extends require('base/view'){
 				color:module.style.colors.bgNormal
 			}),
 			ColorPicker:require('views/colorpicker').extend({
-
 			})
 		}
 		this.props = {
@@ -54,7 +53,9 @@ module.exports = class extends require('base/view'){
 			// check if we are in range
 			var node = nodes[i+1]
 			var pos = nodes[i]
+			console.log()
 			if(node.type === 'Literal' && scan >= pos-node.raw.length && scan <= pos){
+
 				// maybe color?
 				var ar =  []
 

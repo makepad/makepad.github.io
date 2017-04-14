@@ -295,6 +295,7 @@ module.exports = class Text extends require('base/shader'){
 		}
 
 		// clip mesh
+		
 		this.mesh.xy = (clamp(
 			mix(minPos, maxPos, this.mesh.xy) + shift, 
 			max(this.turtleClip.xy, this.viewClip.xy),

@@ -72,20 +72,30 @@ module.exports = function painterPaint(proto){
 		})	
 	}
 
-	proto.renderChildColor = function(time, fid){
+	proto.renderChildColor = function(time, fid, paintIds){
 		this.repaintTime = time
 		this.frameId = fid
+		this.paintIds = paintIds
 		if(!this.mainFramebuffer || !this.mainFramebuffer.todoId) return
 		// render the main scene
 		return this.renderColor(this.mainFramebuffer)
 	}
 
-	proto.renderChildPick = function(time, fid){
+	proto.renderChildPick = function(time, fid, paintIds){
 		this.repaintTime = time
 		this.frameId = fid
+		this.paintIds = paintIds
 		if(!this.mainFramebuffer || !this.mainFramebuffer.todoId) return
 		// render the main scene
-		return this.renderPickDep(this.mainFramebuffer)
+		var start = paintIds.id
+		var space = (256-paintIds.id)>>1
+		var ret = this.renderPickDep(this.mainFramebuffer)
+		// clamp it!
+		if(paintIds.id>start+space){
+			console.log("PAINT ID CLAMPING FOR CHILD")
+			paintIds.id = start+space
+		}
+		return ret
 	}
 
 	proto.onRepaint = function(){
@@ -108,6 +118,7 @@ module.exports = function painterPaint(proto){
 		for(let digit in this.pickPromises){
 			var pick = this.pickPromises[digit]
 			if(!pick) continue
+			this.paintIds = {id:1}
 			var res = this.renderPickWindow(digit, pick.x, pick.y)
 			pick.callback(res)
 		}
@@ -118,6 +129,7 @@ module.exports = function painterPaint(proto){
 		this.worker.onAfterEntry()
 
 		// render the main scene
+		this.paintIds = {id:1}
 		if(this.renderColor(this.mainFramebuffer)){
 			this.requestRepaint()
 		}
@@ -141,7 +153,7 @@ module.exports = function painterPaint(proto){
 		}
 	}
 
-	proto.renderColor = function(framebuffer, todoId){
+	proto.renderColor = function(framebuffer){
 		var gl = this.gl
 		var todo = this.todoIds[framebuffer.todoId]
 		if(!todo) return
@@ -155,7 +167,7 @@ module.exports = function painterPaint(proto){
 			var fb = this.framebufferIds[deps[i]]
 			var ret
 			if(fb.child){
-				ret = fb.child.renderChildColor(this.repaintTime, this.frameId)
+				ret = fb.child.renderChildColor(this.repaintTime, this.frameId, this.paintIds)
 			}
 			else ret = this.renderColor(fb)
 			if(ret) repaint = true
@@ -250,6 +262,7 @@ module.exports = function painterPaint(proto){
 		this.pickPromises[digit] = undefined
 
 		if(immediate){
+			this.paintIds = {id:1}
 			pick.callback(this.renderPickWindow(digit, pick.x, pick.y))
 		}
 		else{
@@ -288,6 +301,8 @@ module.exports = function painterPaint(proto){
 		gl.viewport(0, 0, pick.w, pick.h)
 		// and draw it
 		this.inPickPass = true
+		this.paintId = 1
+		this.paintIds = {}
 		this.runTodo(todo)
 	}
 
@@ -330,7 +345,7 @@ module.exports = function painterPaint(proto){
 			for(let i = 0; i < deps.length; i++){
 				var fb = this.framebufferIds[deps[i]]
 				if(fb.child){
-					fb.child.renderChildPick(this.repaintTime, this.frameId)
+					fb.child.renderChildPick(this.repaintTime, this.frameId, this.paintIds)
 				}
 				else this.renderPickDep()
 			}
@@ -353,7 +368,7 @@ module.exports = function painterPaint(proto){
 			for(let i = 0; i < deps.length; i++){
 				var fb = this.framebufferIds[deps[i]]
 				if(fb.child){
-					fb.child.renderChildPick(this.repaintTime, this.frameId)
+					fb.child.renderChildPick(this.repaintTime, this.frameId, this.paintIds)
 				}
 				else this.renderPickDep()
 			}
@@ -366,7 +381,6 @@ module.exports = function painterPaint(proto){
 		var painterUbo = this.setPainterUbo(this.mainFramebuffer, true)
 		this.mat4Ubo(painterUbo, this.nameIds.thisDOTvertexPostMatrix, pickMat)
 		this.inPickPass = true
-
 		this.runTodo(todo)
 
 		// force a sync readpixel, could also choose to delay a frame?
@@ -377,11 +391,12 @@ module.exports = function painterPaint(proto){
 		// store last xy
 		pick.xlast = x
 		pick.ylast = y
-
+		var todo = this.paintIds[pick.buf[0]]
 		return {
-			todoId:pick.buf[0],
-			pickId:(pick.buf[1]<<8) | pick.buf[2],
-			workerId:pick.buf[3]
+			todoId:todo && todo.todoId || 0,
+			workerId:todo && todo.workerId || 0,
+			paintId:pick.buf[0],
+			pickId:(pick.buf[1]<<16) |(pick.buf[2]<<8) | pick.buf[3],
 		}
 	}
 }

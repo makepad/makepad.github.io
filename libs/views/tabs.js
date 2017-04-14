@@ -7,7 +7,7 @@ module.exports=class Tabs extends require('base/view'){
 		this.selected = 0
 		this.wrap = false
 		this.tools = {
-			Tab:require('stamps/tab').extend({
+			Tab:require('views/tab').extend({
 			}),
 			Bg:require('shaders/bg').extend({
 				color:colors.bgTop,
@@ -97,7 +97,7 @@ module.exports=class Tabs extends require('base/view'){
 			let tab = tabs[i]
 			// console.log(sel === i?'selected':'default')
 			let stamp = tab.$tabStamp = this.drawTab({
-				id:tab.id, // utilize some kind of unique id
+				id:'Tab'+tab.id, // utilize some kind of unique id
 				order:sel === i?2:1,
 				state:sel === i?'selected':'default',
 				lineL:i!==0 && sel !== i-1,

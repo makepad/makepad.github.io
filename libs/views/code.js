@@ -75,7 +75,8 @@ module.exports = class Code extends require('views/edit'){
 			ErrorMarker: require('shaders/codemarker').extend({
 				order:4
 			}),
-			ErrorMessage: require('base/stamp').extend({
+			ErrorMessage: require('base/view').extend({
+				heavy:false,
 				order:8,
 				margin:[6,0,0,0],
 				states:{

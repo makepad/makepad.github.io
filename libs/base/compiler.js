@@ -815,24 +815,22 @@ module.exports = class Compiler extends require('base/class'){
 		var allocNeeded = args[1] || 1
 
 		// define scope vars
-		scope.$view = 'this.view'
-		scope.$todo = '$view.todo'
+		//scope.$view = 'this.view'
+		scope.$todo = 'this.todo'
 		scope.$turtle = 'this.turtle'
-		//scope.$shaderOrder = 'this.$shaders.'+className 
 		scope.$proto = 'this.' + className +'.prototype'
 		scope.$a = scope.$props = 1
-		//scope.$shader = '$shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)' 
-		//scope.$props = '$shader.$props'
-		//scope.$a = '$props.array'
-		code += indent+'var $shaderOrder = this.$shaders.'+className +'\n'
-		code += indent+'var $shader = $shaderOrder && $shaderOrder[$turtle._order || $proto.order] || this.$allocShader("'+className+'", $turtle._order|| $proto.order)\n'
+
+		code += indent+'var $shaderOrder = $todo.$shaders.'+className +'\n'
+		code += indent+'var $order = $turtle._order || $proto.order\n'
+		code += indent+'var $shader = $shaderOrder && $shaderOrder[$order] || this.$allocShader("'+className+'", $order)\n'
 		code += indent+'var $props = $shader.$props\n'
 
-		code += indent+'if($props.$frameId !== $view._frameId){\n' // flip buffers
-		code += indent+'	$props.$frameId = $view._frameId\n'
+		code += indent+'if($props.$frameId !== this._frameId){\n' // flip buffers
+		code += indent+'	$props.$frameId = this._frameId\n'
 		code += indent+'	$props.flip(true)\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
-		code += indent+'	$todo.beginOrder($turtle._order|| $proto.order, $props)\n'
+		code += indent+'	$todo.beginOrder($order, $props)\n'
 		code += indent+'	$todo.useShader($shader)\n'
 		// lets set the blendmode
 		//code += indent+'	$todo.blending($proto.blending, $proto.constantColor)\n'
@@ -841,7 +839,7 @@ module.exports = class Compiler extends require('base/class'){
 		// set uniforms
 		var uniforms = info.uniforms
 		var drawUboDef = info.uboDefs.draw
-		code += indent+'	$todo.ubo('+painter.nameId('painter')+', $view.app.painterUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('painter')+', this.app.painterUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('literals')+', $shader.$literalsUbo)\n'
@@ -856,7 +854,11 @@ module.exports = class Compiler extends require('base/class'){
 			if(!drawUboDef || !(key in drawUboDef)) continue
 
 			var thisname = key.slice(7)
-			var source = (args[0]!=='null'?args[0]+' && '+args[0]+'.'+thisname+' || ':'')+'$view.'+ thisname +'|| $proto.'+thisname
+
+			var source = (args[0]!=='null'?args[0]+' && '+args[0]+'.'+thisname+' || ':'')+'this.'+ thisname +'|| $proto.'+thisname
+			if(thisname === 'viewClip'){
+				source = '$todo.$viewClip'
+			}
 			var typename = uniform.type.name
 			//code += indent+'	console.log("'+key+'",'+source+')\n'
 			code += indent+'	$drawUbo.'+typename+'('+painter.nameId(key)+','+source+')\n'
@@ -882,7 +884,7 @@ module.exports = class Compiler extends require('base/class'){
 		code += indent+ 'var $a = $props.array\n'
 
 		if(!this.$noWriteList){
-			code += indent + '$view.$writeList.push($props, $propsLength, $need)\n'
+			code += indent + '$todo.$writes.push($props, $propsLength, $need)\n'
 		}
 
 		code += indent + '$props.dirty = true\n'
@@ -945,7 +947,7 @@ module.exports = class Compiler extends require('base/class'){
 
 	PROPLEN(args, indent, className, scope){
 		scope.$proto = 'this.' + className +'.prototype'
-		if(!scope.$props) scope.$props = 'this.$shaders.'+className+' && this.$shaders.'+className+'[$proto.order].$props'
+		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+' && $todo.$shaders.'+className+'[$proto.order].$props'
 		return '$props.length'
 	}
 
@@ -955,7 +957,7 @@ module.exports = class Compiler extends require('base/class'){
 		var info = this.$compileInfo
 		
 		scope.$proto = 'this.' + className +'.prototype'
-		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'[$proto.order].$props'
+		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+'[$proto.order].$props'
 		if(!scope.$a) scope.$a = '$props.array'
 		
 		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
@@ -967,7 +969,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-		if(!scope.$props) scope.$props = 'this.$shaders.'+className+'.$props'
+		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+'.$props'
 		if(!scope.$a) scope.$a = '$props.array'
 		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
 		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
@@ -980,8 +982,7 @@ module.exports = class Compiler extends require('base/class'){
 		var info = this.$compileInfo
 		var instanceProps = info.instanceProps
 
-		scope.$view = 'this.view'
-		scope.$todo = '$view.todo'
+		scope.$todo = 'this.todo'
 		scope.$proto = 'this.' + className +'.prototype'
 		scope.$info = '$proto.$compileInfo'
 		
@@ -989,7 +990,7 @@ module.exports = class Compiler extends require('base/class'){
 		var code = ''
 		if(source.indexOf('this.endTurtle') !== -1){ // fetch from turtle
 			code += indent + 'var $turtle = this.turtle\n'
-			code += indent + 'var $shader = this.$shaders.'+className+'[$turtle._order || $proto.order]\n'
+			code += indent + 'var $shader = $todo.$shaders.'+className+'[$turtle._order || $proto.order]\n'
 			code += indent + 'var $props = $shader.$props\n'
 			code += indent + 'var $a = $props.array\n'
 		}
@@ -1014,28 +1015,28 @@ module.exports = class Compiler extends require('base/class'){
 			code += indent + 'var $o = $propOffset * ' + info.propSlots +'\n'
 			code += indent + 'var $max, $firstDraw = false\n'
 			code += indent + 'if($lastOffset !== undefined && $delta <= $lastEnd - $lastOffset){\n'// already existed
-			code += indent + '	$max = $proto.setState($turtle._state, $turtle._queue, $view._time, $props.array, $propOffset, $props.array2, $lastOffset+$delta)\n'
+			code += indent + '	$max = $proto.setState($turtle._state, $turtle._queue, this._time, $props.array, $propOffset, $props.array2, $lastOffset+$delta)\n'
 			code += indent + '} else {\n'
 			code += indent + '	$firstDraw = true\n'
 			// check if we have create state
 			code += indent + '	var $stateId = $info.stateIds[$turtle._state] || 1\n'
 			// if we have a create state take that first
 			if(info.stateIds.create){
-				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = $view._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this._time\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' +
 					info.stateIds.create + '\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimNext.offset + '] = ' +
 					'$stateId\n'
 				//	console.log(info.stateDuration[1])
-				code += indent + '	$max = $view._time+'+
+				code += indent + '	$max = this._time+'+
 					info.stateDuration[info.stateIds.create]+ ' + $info.stateDuration[$stateId]\n'
 				//console.log(code)
 			}
 			else{
-				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = $view._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this._time\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' + 
 					'$stateId\n'
-				code += indent + '	$max = $view._time+' +
+				code += indent + '	$max = this._time+' +
 					info.stateDuration[info.stateIds.create] + ' + $info.stateDuration[$stateId]\n' 
 			}
 			//code += indent + '	$a[$o+'+instanceProps.thisDOTanimState.offset+']\n'

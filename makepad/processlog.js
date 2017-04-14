@@ -12,8 +12,8 @@ class Log extends require('base/view'){
 			tail:true
 		}
 		var colors = module.style.colors
-		this.order = 2,
-		this.shiftX = 5,
+		this.order = 2
+		this.shiftX = 5
 		this.shiftY = 5
 		this.selectedRow = 0
 		this.tools = {
@@ -110,7 +110,7 @@ class Log extends require('base/view'){
 			return
 		}
 		if(type === types.number){
-			if(buf.off&1)buf.off++
+			if(buf.off&1) buf.off++
 			var s = String(buf.f64[buf.off>>1])
 			if(this.writeText(s, this.styles.Value.num)>buf.MAXTEXT) return true
 			buf.off += 2
@@ -263,7 +263,7 @@ class Log extends require('base/view'){
 		//console.log(item.stack)
 
 		// lets update our resources with callstacks we wanna viz
-		this.store.act('stackMarkers',store=>{
+		this.app.store.act('stackMarkers',store=>{
 			var res = this.resource
 			res.stackMarkers = item && item.stack.stack
 		})
@@ -402,16 +402,16 @@ class Log extends require('base/view'){
 				var item = log.stack && log.stack.stack && log.stack.stack[1]
 				var path = 'undefined'
 				if(item.path){
-					path = item.path.slice(item.path.lastIndexOf('/')+1)+':'
+					path = item.path.slice(item.path.lastIndexOf('/') + 1)+':'
 				}
 				this.writeText(path, this.styles.Function)
-				this.writeText(item.line+' ', this.styles.Value.regexp)
+				this.writeText(item.line + ' ', this.styles.Value.regexp)
 				var buf = {
 					MAXTEXT:(this.lengthText() || 0) + 1000,
 					str:'',
 					max:256,
 					off:0,
-					size:log.data.byteLength>>2,
+					size:log.data.byteLength >> 2,
 					u32: new Uint32Array(log.data),
 					f64: new Float64Array(log.data),
 					u16: new Uint16Array(log.data),
@@ -429,7 +429,7 @@ module.exports = class extends require('base/view'){
 	prototype(){
 		this.tools = {
 			Log:Log,
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 				order:4,
 			}),
 			Bg:require('shaders/quad').extend({
@@ -454,7 +454,7 @@ module.exports = class extends require('base/view'){
 	
 	onTrash(){
 		// send new init message to worker
-		this.store.act("clearLog",store=>{
+		this.app.store.act("clearLog",store=>{
 			console.log("CLEAR LOG")
 			this.resource.processes[0].logs.length = 0
 		})

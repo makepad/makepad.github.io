@@ -25,7 +25,7 @@ module.exports = class Source extends require('base/view'){
 		} 
 
 		this.tools = {
-			Button: require('stamps/button').extend({
+			Button: require('views/button').extend({
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -106,7 +106,7 @@ module.exports = class Source extends require('base/view'){
 					var text = this._text
 
 					storage.save(this.resource.path, text) 
-					this.store.act('setDirty',store=>{
+					this.app.store.act('setDirty',store=>{
 						this.resource.dirty = false
 					})
 				} 
@@ -128,7 +128,7 @@ module.exports = class Source extends require('base/view'){
 				}*/
 
 				onParsed() {
-					this.store.act('parseCode',store=>{
+					this.app.store.act('parseCode',store=>{
 						var res = this.resource
 						res.dirty = this.inputDirty
 						res.data = this.text 

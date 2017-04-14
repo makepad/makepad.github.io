@@ -17,11 +17,11 @@ module.exports = class Shader extends require('base/compiler'){
 			camPosition     :{kind:'uniform', block:'painter', type:types.mat4},
 			camProjection   :{kind:'uniform', block:'painter', type:types.mat4},
 			// todo uniforms (also modified by painter)
+			paintId         :{kind:'uniform', block:'todo', value:0.},
 			viewScroll      :{kind:'uniform', block:'todo', type:types.vec2},
 			viewSpace       :{kind:'uniform', block:'todo', type:types.vec4},
 			viewPosition    :{kind:'uniform', block:'todo', type:types.mat4},
 			viewInverse     :{kind:'uniform', block:'todo', type:types.mat4},
-			todoId          :{kind:'uniform', block:'todo', value:0.},
 			// draw uniforms 
 			viewClip        :{kind:'uniform', value:[0, 0, 0, 0]},
 			pickAlpha       :{kind:'uniform', value:0.5},
@@ -140,7 +140,7 @@ module.exports = class Shader extends require('base/compiler'){
 		var color = this.pixel()
 		if(this.workerId < 0.) {
 			if(color.a < this.pickAlpha) discard
-			gl_FragColor = vec4(this.todoId / 255., floor(this.pickId / 256.0) / 255., mod(this.pickId, 256.0) / 255., abs(this.workerId) / 255.)
+			gl_FragColor = vec4(this.paintId / 255., floor(this.pickId / 65536.0)/255., floor(this.pickId / 256.0) / 255., mod(this.pickId, 256.0) / 255.)
 		}
 		else {
 			gl_FragColor = color
@@ -248,7 +248,7 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	checkFingerDown(f, pos) {
 		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
-		return (f[2] > 0. && this.todoId == mod(f[2], 256.) && abs(this.workerId) == floor(f[2] / 256.) && (this.pickId < 0. || this.pickId == f[3]))?true:false
+		return (f[2] > 0. && this.paintId == f[2] && (this.pickId < 0. || this.pickId == f[3]))?true:false
 	}
 	
 	isFingerDown(pos) {$
@@ -263,7 +263,7 @@ module.exports = class Shader extends require('base/compiler'){
 	checkFingerOver(f, pos) {
 		var f2 = abs(f[2])
 		pos = (vec4(f.xy, 0., 1.) * this.viewInverse).xy + vec2(this.moveScroll * this.viewScroll.x, this.moveScroll * this.viewScroll.y)
-		return (abs(this.workerId) == floor(f2 / 256.) && this.todoId == mod(f2, 256.) && (this.pickId < 0. || this.pickId == f[3]))?true:false
+		return (this.paintId == f2 && (this.pickId < 0. || this.pickId == f[3]))?true:false
 	}
 	
 	isFingerOver(pos) {$
