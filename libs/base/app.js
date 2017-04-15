@@ -15,7 +15,9 @@ module.exports = class App extends View{
 	// lets define some props
 	prototype(){
 		this.Turtle = require('base/turtle')
-		this.ScrollBar = require('views/scrollbar')
+		this.ScrollBar = require('views/scrollbar').extend({
+			order:99
+		})
 		this.name = 'App'
 		this.cursor = 'default'
 		this.x = 0
@@ -27,7 +29,7 @@ module.exports = class App extends View{
 
 	destroy(){
 		super.destroy()
-		this.painterUbo.destroyUbo()
+		this.$painterUbo.destroyUbo()
 	}
 
 	constructor(){
@@ -38,24 +40,24 @@ module.exports = class App extends View{
 		var app = this.app = this
 
 		// pick Ids
-		this.pickAlloc = 2
-		this.pickFree = []
-		var pickIds = this.pickIds = {
+		this.$pickAlloc = 2
+		this.$pickFree = []
+		var pickIds = this.$pickIds = {
 			1:this
 		}
 		
 		this.$turtleStack = []
-		this.turtle = this.appTurtle = new this.Turtle(this)
-		this.$turtleStack.push(this.appTurtle)
+		this.turtle = this.$appTurtle = new this.Turtle(this)
+		this.$turtleStack.push(this.$appTurtle)
 		this.$turtleStack.len = 1
 
-		this.camPosition = mat4.create()
-		this.camProjection = mat4.create()
+		this.$camPosition = mat4.create()
+		this.$camProjection = mat4.create()
 		
 		var painterUboDef = this.Pass.prototype.$compileInfo.uboDefs.painter
-		this.painterUbo = new painter.Ubo(painterUboDef)
+		this.$painterUbo = new painter.Ubo(painterUboDef)
 
-		this._frameId = 0
+		this.frameId = 0
 
 		// lets do our first redraw
 		this.app = app
@@ -220,10 +222,10 @@ module.exports = class App extends View{
 
 
 		painter.onResize = function(){
-			app._x = 0
-			app._y = 0
-			app._w = painter.w
-			app._h = painter.h
+			app.x = 0
+			app.y = 0
+			app.w = painter.w
+			app.h = painter.h
 			app.redraw()
 		}
 		
@@ -267,11 +269,11 @@ module.exports = class App extends View{
 	}
 
 	$updateTime(){
-		this._time = this.getTime()
-		this._frameId++
+		this.time = this.getTime()
+		this.frameId++
 	}
 
-	redraw(force){
+	_redraw(force){
 		if(this.redrawTimer === undefined || force){
 			if(this.redrawTimer === null){ // make sure we dont flood the main thread
 				this.redrawTimer = setTimeout(_=>{
@@ -293,28 +295,27 @@ module.exports = class App extends View{
 	$redrawViews(){
 		this.$updateTime()
 		// we can submit a todo now
-		mat4.ortho(this.camProjection, 0, painter.w, 0, painter.h, -100, 100)
+		mat4.ortho(this.$camProjection, 0, painter.w, 0, painter.h, -100, 100)
 
 		// copy to turtle
 		this.$turtleStack.len = 0
 		//this.$writeList.length = 0
 
 		// set up our root turtle
-		var turtle = this.appTurtle
+		var turtle = this.$appTurtle
 		turtle._x = 0
 		turtle._y = 0
 		turtle.wy = 0
 		turtle.wx = 0
 		turtle.ix = 0
 		turtle.iy = 0
-		turtle._w = turtle.width = this._w
-		turtle._h = turtle.height = this._h
+		turtle._w = turtle.width = this.w
+		turtle._h = turtle.height = this.h
 
-		this.painterUbo.mat4(painter.nameId('thisDOTcamPosition'), this.camPosition)
-		this.painterUbo.mat4(painter.nameId('thisDOTcamProjection'), this.camProjection)
+		this.$painterUbo.mat4(painter.nameId('thisDOTcamPosition'), this.$camPosition)
+		this.$painterUbo.mat4(painter.nameId('thisDOTcamProjection'), this.$camProjection)
 
 		this.draw()
-
 		View.recomputeTodoMatrices(this.$todos[0], 0, 0)
 		//this.$recomputeMatrix(0,0)
 	}

@@ -788,7 +788,7 @@ module.exports = class Compiler extends require('base/class'){
 			}
 
 			if(name === 'order'){
-				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this._order || $proto._order || 0\n'
+				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._order = this.order || $proto.order || 0\n'
 			}
 			else if(name === 'state'){
 				code += indent+'if(($turtle._'+name+' = ' + args[0]+'.'+name+') === undefined) $turtle._state = this.state\n'
@@ -822,12 +822,12 @@ module.exports = class Compiler extends require('base/class'){
 		scope.$a = scope.$props = 1
 
 		code += indent+'var $shaderOrder = $todo.$shaders.'+className +'\n'
-		code += indent+'var $order = $turtle._order || $proto.order\n'
+		code += indent+'var $order = $proto.order || $turtle._order \n'
 		code += indent+'var $shader = $shaderOrder && $shaderOrder[$order] || this.$allocShader("'+className+'", $order)\n'
 		code += indent+'var $props = $shader.$props\n'
 
-		code += indent+'if($props.$frameId !== this._frameId){\n' // flip buffers
-		code += indent+'	$props.$frameId = this._frameId\n'
+		code += indent+'if($props.$frameId !== this.frameId){\n' // flip buffers
+		code += indent+'	$props.$frameId = this.frameId\n'
 		code += indent+'	$props.flip(true)\n'
 		code += indent+'	var $drawUbo = $shader.$drawUbo\n'
 		code += indent+'	$todo.beginOrder($order, $props)\n'
@@ -839,7 +839,7 @@ module.exports = class Compiler extends require('base/class'){
 		// set uniforms
 		var uniforms = info.uniforms
 		var drawUboDef = info.uboDefs.draw
-		code += indent+'	$todo.ubo('+painter.nameId('painter')+', this.app.painterUbo)\n'
+		code += indent+'	$todo.ubo('+painter.nameId('painter')+', this.app.$painterUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('todo')+', $todo.todoUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('draw')+', $drawUbo)\n'
 		code += indent+'	$todo.ubo('+painter.nameId('literals')+', $shader.$literalsUbo)\n'
@@ -946,6 +946,7 @@ module.exports = class Compiler extends require('base/class'){
 
 
 	PROPLEN(args, indent, className, scope){
+		scope.$todo = 'this.$mainTodo'
 		scope.$proto = 'this.' + className +'.prototype'
 		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+' && $todo.$shaders.'+className+'[$proto.order].$props'
 		return '$props.length'
@@ -955,7 +956,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-		
+		scope.$todo = 'this.$mainTodo'
 		scope.$proto = 'this.' + className +'.prototype'
 		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+'[$proto.order].$props'
 		if(!scope.$a) scope.$a = '$props.array'
@@ -969,7 +970,10 @@ module.exports = class Compiler extends require('base/class'){
 		if(!this.$compileInfo) return ''
 		var code = ''
 		var info = this.$compileInfo
-		if(!scope.$props) scope.$props = '$todo.$shaders.'+className+'.$props'
+		if(!scope.$props){
+			scope.$todo = 'this.$mainTodo'
+			scope.$props = '$todo.$shaders.'+className+'.$props'
+		}
 		if(!scope.$a) scope.$a = '$props.array'
 		var prop = info.instanceProps['thisDOT'+args[1].slice(1,-1)]
 		return '$a[(' + args[0] + ')*'+ info.propSlots +'+'+(prop.offset+prop.type.slots)+']'
@@ -1015,28 +1019,28 @@ module.exports = class Compiler extends require('base/class'){
 			code += indent + 'var $o = $propOffset * ' + info.propSlots +'\n'
 			code += indent + 'var $max, $firstDraw = false\n'
 			code += indent + 'if($lastOffset !== undefined && $delta <= $lastEnd - $lastOffset){\n'// already existed
-			code += indent + '	$max = $proto.setState($turtle._state, $turtle._queue, this._time, $props.array, $propOffset, $props.array2, $lastOffset+$delta)\n'
+			code += indent + '	$max = $proto.setState($turtle._state, $turtle._queue, this.time, $props.array, $propOffset, $props.array2, $lastOffset+$delta)\n'
 			code += indent + '} else {\n'
 			code += indent + '	$firstDraw = true\n'
 			// check if we have create state
 			code += indent + '	var $stateId = $info.stateIds[$turtle._state] || 1\n'
 			// if we have a create state take that first
 			if(info.stateIds.create){
-				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this.time\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' +
 					info.stateIds.create + '\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimNext.offset + '] = ' +
 					'$stateId\n'
 				//	console.log(info.stateDuration[1])
-				code += indent + '	$max = this._time+'+
+				code += indent + '	$max = this.time+'+
 					info.stateDuration[info.stateIds.create]+ ' + $info.stateDuration[$stateId]\n'
 				//console.log(code)
 			}
 			else{
-				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this._time\n'
+				code += indent + '	$a[$o+' + instanceProps.thisDOTanimStart.offset + '] = this.time\n'
 				code += indent + '	$a[$o+' + instanceProps.thisDOTanimState.offset + '] = ' + 
 					'$stateId\n'
-				code += indent + '	$max = this._time+' +
+				code += indent + '	$max = this.time+' +
 					info.stateDuration[info.stateIds.create] + ' + $info.stateDuration[$stateId]\n' 
 			}
 			//code += indent + '	$a[$o+'+instanceProps.thisDOTanimState.offset+']\n'

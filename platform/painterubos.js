@@ -9,7 +9,7 @@ module.exports = function painterUbos(proto){
 		this.mat4Ubo(ubo, nameIds.thisDOTfingerInfo, this.fingerInfo)
 		this.floatUbo(ubo, nameIds.thisDOTtime, this.repaintTime)
 		this.floatUbo(ubo, nameIds.thisDOTpixelRatio, this.args.pixelRatio)
-		this.floatUbo(ubo, nameIds.thisDOTworkerId, (pick?-1:1)*this.worker.workerId)
+		this.floatUbo(ubo, nameIds.thisDOTpickPass, (pick?1:0))
 		return ubo
 	}
 

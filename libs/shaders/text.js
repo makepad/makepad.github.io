@@ -76,7 +76,7 @@ module.exports = class Text extends require('base/shader'){
 			$readOffset:function(o){
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
-				if(!this.$shaders.NAME) return {}
+				if(!this.$mainTodo.$shaders.NAME) return {}
 				var len = this.PROPLEN
 				if(o < 0 || o >= len) return
 				var read = {
@@ -93,7 +93,7 @@ module.exports = class Text extends require('base/shader'){
 			},
 			$seekPos:function(x, y){
 				// lets find where we are inbetween
-				if(!this.$shaders.NAME) return {}
+				if(!this.$mainTodo.$shaders.NAME) return {}
 				var len = this.PROPLEN
 				var lineSpacing = this.NAME.prototype.lineSpacing
 				if(len === 0){
@@ -122,7 +122,7 @@ module.exports = class Text extends require('base/shader'){
 				return len
 			},
 			$boundRects:function(start, end){
-				if(!this.$shaders.NAME) return {}
+				if(!this.$mainTodo.$shaders.NAME) return {}
 				var proto = this.NAME.prototype
 				var glyphs = proto.font.fontmap.glyphs
 				var lineSpacing = proto.lineSpacing

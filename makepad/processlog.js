@@ -83,6 +83,10 @@ class Log extends require('base/view'){
 	
 	constructor(...args){
 		super(...args)
+		// send new init message to worker
+		this.app.store.observe(this.resource,_=>{
+			this.redraw()
+		})
 	}
 	
 	onDestroy(){
@@ -221,9 +225,10 @@ class Log extends require('base/view'){
 	}
 
 	onScroll(e) { 
+		var todo = this.$mainTodo
 		// lets check if we overflow the safety window, ifso redraw.
-		if(this.todo.yScroll < this.todo.yVisible+0.5*this.safeHeight || 
-			this.todo.yScroll+this.todo.yView > this.todo.yVisible + this.todo.hVisible - 0.5*this.safeHeight){
+		if(todo.yScroll < todo.yVisible+0.5*this.safeHeight || 
+			todo.yScroll+todo.yView > todo.yVisible + todo.hVisible - 0.5*this.safeHeight){
 			this.tail = false
 			this.parent.tail = false
 			this.redraw() 
@@ -231,7 +236,7 @@ class Log extends require('base/view'){
 		}
 		else{
 			// lets return a scroll sync
-			this.todo.scrollSync()
+			todo.scrollSync()
 		}
 
 	}
@@ -267,6 +272,7 @@ class Log extends require('base/view'){
 			var res = this.resource
 			res.stackMarkers = item && item.stack.stack
 		})
+		this.redraw()
 	}
 
 	selectRow(row){
@@ -368,7 +374,7 @@ class Log extends require('base/view'){
 
 
 			// compute the start i and end i
-			var safeWin = 40
+			var safeWin = 5
 			this.safeHeight = safeWin * lineHeight
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
@@ -455,7 +461,6 @@ module.exports = class extends require('base/view'){
 	onTrash(){
 		// send new init message to worker
 		this.app.store.act("clearLog",store=>{
-			console.log("CLEAR LOG")
 			this.resource.processes[0].logs.length = 0
 		})
 	}

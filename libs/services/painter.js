@@ -4,7 +4,6 @@ var IdAlloc = require('base/idalloc')
 
 class Painter extends require('base/class'){
 	prototype(){
-		this.mixin(require('base/events'))
 	}
 }
 

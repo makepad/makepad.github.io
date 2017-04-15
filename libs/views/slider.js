@@ -121,7 +121,6 @@ module.exports = class Slider extends require('base/view'){
 	}
 	
 	onFingerDown(e) {
-		
 		var le = this.toLocal(e)
 		// check where we clicked
 		var pos = (this.value - this.range[0]) / (this.range[1] - this.range[0])
@@ -135,7 +134,7 @@ module.exports = class Slider extends require('base/view'){
 				this.dragOffset = 0.5 * this.knobSize// + this.innerPadding[0]
 				this.value = this.mapValue((le.y - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
-				if(this.onSlide) this.onSlide.call(this.view, this) //this.value)
+				if(this.onSlide) this.onSlide(this) //this.value)
 			}
 
 		}
@@ -150,7 +149,7 @@ module.exports = class Slider extends require('base/view'){
 				this.dragOffset = 0.5 * this.knobSize// + this.innerPadding[3]
 				this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
 				//if(this.onValueStamp) this.onValueStamp({value:this.value})
-				if(this.onSlide) this.onSlide.call(this.view, this)
+				if(this.onSlide) this.onSlide(this)
 			}
 		}
 
@@ -167,7 +166,7 @@ module.exports = class Slider extends require('base/view'){
 			this.value = this.mapValue((le.x - this.dragOffset) / this.dragSize)
 		}
 		this.setState('down', false, {value:this.value})
-		if(this.onSlide) this.onSlide.call(this.view, this)
+		if(this.onSlide) this.onSlide(this)
 	}
 	
 	onFingerOver() {

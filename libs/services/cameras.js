@@ -6,7 +6,6 @@ var cameraIds = {}
 var cameraLabels = {}
 class Cameras extends require('base/class'){
 	prototype(){
-		this.mixin(require('base/events'))
 
 		this.Camera = class Camera extends require('base/class'){
 			constructor(label){

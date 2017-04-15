@@ -8,10 +8,10 @@ module.exports = class Edit extends require('base/view'){
 
 		this.props = {
 			cursorTrim:0.,
-			text:''
+			text:'',
+			cursor:'text'
 		}
 
-		this.cursor = 'text'
 		//
 		//
 		// Shaders
@@ -34,7 +34,7 @@ module.exports = class Edit extends require('base/view'){
 			Selection:require('shaders/selection').extend({
 				bgColor:colors.textSelect,
 				fieldPush:0.8,
-				order:1,
+				order:2,
 				gloopiness:6,
 				borderRadius:3,
 				borderColor:'#458',
@@ -111,7 +111,7 @@ module.exports = class Edit extends require('base/view'){
 		this.drawText({
 			wrapping: 'line',
 			$editMode: true,
-			text: this._text
+			text: this.text
 		})
 
 		if(this.hasFocus){
@@ -182,7 +182,7 @@ module.exports = class Edit extends require('base/view'){
 				return {}
 			}
 			if(offset < 0) return this.cursorRect(0, 1)
-			var last = this.lengthText() - 1//this._text.length - 1
+			var last = this.lengthText() - 1//this.text.length - 1
 			if(last <0){ // first cursor, make it up from initial props
 				var ls = this.Text.prototype.lineSpacing
 				var fs = this.Text.prototype.fontSize
@@ -197,7 +197,7 @@ module.exports = class Edit extends require('base/view'){
 			}
 			var cr = this.cursorRect(last, 1)
 
-			if(this._text.charCodeAt(last) === 10){
+			if(this.text.charCodeAt(last) === 10){
 				cr.y += cr.fontSize * cr.lineSpacing
 				cr.x = 0
 			}
@@ -231,34 +231,34 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	textLength(){
-		return this._text.length
+		return this.text.length
 	}
 
 	charAt(offset){
-		return this._text.charAt(offset)
+		return this.text.charAt(offset)
 	}
 
 	slice(start, end){
-		return this._text.slice(start, end)
+		return this.text.slice(start, end)
 	}
 
 	charCodeAt(offset){
-		return this._text.charCodeAt(offset)
+		return this.text.charCodeAt(offset)
 	}
 
 	insertText(offset, text){
-		this._text = this._text.slice(0, offset) + text + this._text.slice(offset)
+		this.text = this.text.slice(0, offset) + text + this.text.slice(offset)
 		this.redraw()
 	}
 
 	removeText(start, end){
-		this._text = this._text.slice(0, start) + this._text.slice(end)
+		this.text = this.text.slice(0, start) + this.text.slice(end)
 		this.redraw()
 		return 0
 	}
 
 	serializeSlice(start, end, arg){
-		return this._text.slice(start, end)
+		return this.text.slice(start, end)
 	}
 
 	scanWordLeft(start){
@@ -271,7 +271,7 @@ module.exports = class Edit extends require('base/view'){
 
 	scanWordRight(start){
 		var i = start, type = 2, len = this.textLength()
-		if(this._text.charCodeAt(start) === 10) return start
+		if(this.text.charCodeAt(start) === 10) return start
 		while(i < len && type === 2) type = charType(this.charAt(i++))
 		while(i < len && type === charType(this.charAt(i))) i++
 		return i
@@ -285,7 +285,7 @@ module.exports = class Edit extends require('base/view'){
 	}
 
 	scanLineRight(start){
-		for(var i = start; i < this._text.length; i++){
+		for(var i = start; i < this.text.length; i++){
 			if(this.charCodeAt(i) === 10) break
 		}
 		return i
@@ -303,8 +303,8 @@ module.exports = class Edit extends require('base/view'){
 
 		//console.log(rd.y - this.todo.yScroll, this.todo.yView)
 		this.app.setCharacterAccentMenuPos(
-			this.$xAbs + rd.x + 0.5 * rd.advance - this.todo.xScroll, 
-			this.$yAbs + rd.y - this.todo.yScroll 
+			this.$xAbs + rd.x + 0.5 * rd.advance - this.$mainTodo.xScroll, 
+			this.$yAbs + rd.y - this.$mainTodo.yScroll 
 		)
 	}
 
@@ -320,7 +320,7 @@ module.exports = class Edit extends require('base/view'){
 			var txt = ''
 			for(let i = 0; i < this.cs.cursors.length; i++){
 				var cursor = this.cs.cursors[i]
-				txt += this._text.slice(cursor.lo(), cursor.hi())
+				txt += this.text.slice(cursor.lo(), cursor.hi())
 			}
 
 			this.app.setClipboardText(txt)

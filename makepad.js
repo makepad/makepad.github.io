@@ -43,7 +43,7 @@ module.exports = class Makepad extends require('base/app'){
 	constructor() {
 		super()
 		this.typeCounter = {}
-		
+
 		this.dock = new this.Dock(this, {
 			data:{
 				locked  :true,
@@ -108,11 +108,11 @@ module.exports = class Makepad extends require('base/app'){
 		this.app.store.observe(this.app.store.resourceMap, e=>{
 			var store = this.app.store
 			// we wanna know if dirty on a resource is flipped
-			if(this.app.store.anyChanges(e, 1, 'dirty')) {
+			if(store.anyChanges(e, 1, 'dirty')) {
 				this.processTabTitles()
 			}
 			// data or trace modified
-			var source = this.app.store.anyChanges(e, 1, ['data', 'trace'])
+			var source = store.anyChanges(e, 1, ['data', 'trace'])
 			if(source) {
 				var resource = source.object
 				// find all processes
@@ -129,8 +129,12 @@ module.exports = class Makepad extends require('base/app'){
 		})
 		
 		// the setter of data makes it autobind to the store
-		this.find('FileTree1').data = this.app.store.projectTree
-		
+		var tree = this.find('FileTree1')
+		this.app.store.observe(this.app.store.projectTree, _=>{
+			tree.data = this.app.store.projectTree
+			tree.redraw()
+		})
+
 		this.loadProject(projectFile).then(store=>{
 			
 			if(this.destroyed) return  // technically possible

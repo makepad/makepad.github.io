@@ -9,6 +9,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		}
 		this.tools = {
 			Button: require('views/button').extend({
+				heavy:true
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -50,7 +51,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.drawButton({
 			id:3,
 			align:[1,0],
-			onClick:this.onClose,
+			onClick:this.onClose.bind(this),
 			icon:'close'
 		})
 		this.endBg()
@@ -111,8 +112,6 @@ module.exports = class UserProcess extends require('views/draw'){
 		
 		// OK so lets compose all deps
 		this.deps = {} 
-
-		console.log("HERE!", this.id, this.deps)
 
 		//this.main = this.resource 
 		this.app.findResourceDeps(this.resource, this.deps)

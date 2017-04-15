@@ -167,7 +167,7 @@ module.exports = class Tree extends require('base/view'){
 	
 	onFingerDown(e) {
 		this.setFocus()
-		var pick = this.pickMap[e.pickId]
+		var pick = this.pickIds[e.pickId]
 		if(!pick) return
 		var node = pick.node
 		
@@ -237,7 +237,7 @@ module.exports = class Tree extends require('base/view'){
 	onDraw(debug) {
 		//alright so how are we going to select things
 		this.beginBg({moveScroll:0, x:'0', y:'0', w:'100%', h:'100%'})
-		this.pickMap = {}
+		this.freePickIds()
 		//this.clearPickIds()
 		var p = this
 		
@@ -252,13 +252,13 @@ module.exports = class Tree extends require('base/view'){
 		
 		var drawNode = (name, node, i, len, depth, closed) =>{
 			//var node=nodes[i]
-			var treePick = 0//this.allocPickId()
-			var textPick = 0//this.allocPickId()
-			this.pickMap[treePick] = {node:node, type:'tree'}
-			this.pickMap[textPick] = {node:node, type:'text'}
-			//this.setPickId(textPick)
-			
+			//var treePick = 0//this.allocPickId()
+			//var textPick = 0//this.allocPickId()
+			//this.pickMap[treePick] = {node:node, type:'tree'}
+			//this.pickMap[textPick] = {node:node, type:'text'}
+			//this.setPickId(textPick)			
 			//this.setPickId(treePick)
+			this.allocPickId({node:node, type:'tree'})
 			for(let j = 0, dl = depth.length - 1;j <= dl;j++){
 				var isFolder = j == dl && node.folder?1:0
 				if(this.hasRootLine || j > 0) 
@@ -298,7 +298,8 @@ module.exports = class Tree extends require('base/view'){
 				//})
 			}
 			else this.turtle.wx += 2
-			this.setPickId(textPick)
+			//this.setPickId(textPick)
+			this.allocPickId({node:node, type:'text'})
 			if(this.selected === node) {
 				//this.scrollIntoView(0,this.turtle.wy,1,10)
 			}

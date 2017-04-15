@@ -295,6 +295,7 @@ module.exports = function painterUser(proto){
 
 	proto.user_updateTodoTime = function(msg){
 		var todo = this.todoIds[msg.todoId]
+		if(!todo) return
 		//todo.timeStart = msg.timeStart
 		todo.timeMax = msg.timeMax
 		this.requestRepaint()
@@ -302,6 +303,7 @@ module.exports = function painterUser(proto){
 
 	proto.user_scrollTo = function(msg){
 		var todo = this.todoIds[msg.todoId]
+		if(!todo) return
 		todo.xScrollTo = msg.x
 		todo.yScrollTo = msg.y
 		todo.scrollToSpeed = msg.scrollToSpeed
@@ -310,12 +312,14 @@ module.exports = function painterUser(proto){
 
 	proto.user_scrollSync = function(msg){
 		var todo = this.todoIds[msg.todoId]
+		if(!todo) return
 		todo.xScrollSync = msg.x
 		todo.yScrollSync = msg.y
 	}
 
 	proto.user_scrollSet = function(msg){
 		var todo = this.todoIds[msg.todoId]
+		if(!todo) return
 		todo.xScroll = msg.x
 		todo.yScroll = msg.y
 		this.requestRepaint()

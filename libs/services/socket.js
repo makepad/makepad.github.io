@@ -2,7 +2,6 @@ var service = require('$socket1')
 
 class Socket extends require('base/class'){
 	prototype(){
-		this.mixin(require('base/events'))
 	}
 
 	postMessage(data){

@@ -2,12 +2,17 @@
 module.exports=class Splitter extends require('base/view'){
 	prototype(){
 		let colors = module.style.colors
+		
 		this.name = 'Splitter'
-		this.barSize = 2
-		this.locked = false
-		this.vertical = true
-		this.safety = 10
-		this.position = 0.5
+		
+		this.props = {
+			barSize: 2,
+			locked: false,
+			vertical: true,
+			safety: 10,
+			position: 0.5
+		}
+
 		this.tools = {
 			Split:require('base/view').extend({
 				heavy:false,
@@ -273,7 +278,6 @@ module.exports=class Splitter extends require('base/view'){
 	}
 
 	onDraw(){
-
 		this.$splitWidth = this.turtle.width
 		this.$splitHeight = this.turtle.height
 		let pos = this.getCoord()

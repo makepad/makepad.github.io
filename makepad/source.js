@@ -9,23 +9,21 @@ module.exports = class Source extends require('base/view'){
 		this.probes = []
 
 		// listen on the resource
-
-	}
-
-	onResource(e){
-		if(!this.app.store.anyChanges(e, 3, 'runtimeErrors', null) && 
-			!this.app.store.anyChanges(e, 0, 'parseErrors', null)) return
+		var store = this.app.store
+		store.observe(this.resource, e=>{
+			this.redraw()
+		})
+		//console.log(this.resource)
 	}
 
 	prototype() { 
-		this.name = 'Source' 
-		
 		this.props = { 
 			resource:null,
 		} 
 
 		this.tools = {
 			Button: require('views/button').extend({
+				heavy:true
 			}),
 			Bg:require('shaders/quad').extend({
 				w:'100%',
@@ -100,10 +98,18 @@ module.exports = class Source extends require('base/view'){
 					} 
 				}
 
+
+				constructor(...args){
+					super(...args)
+					this.text = this.resource.data
+					//console.log(this.text)
+				}
+
+
 				onKeyS(e) {
 					this.inputDirty = false
 					if(!e.meta && !e.ctrl) return true 
-					var text = this._text
+					var text = this.text
 
 					storage.save(this.resource.path, text) 
 					this.app.store.act('setDirty',store=>{
@@ -135,13 +141,7 @@ module.exports = class Source extends require('base/view'){
 					})
 				}
 				
-				onResource(e){
-					if(!this.initialized){
-						this.text = this.resource.data
-					}
-					else this.redraw()
-				}
-
+				
 				/*
 				onParseError(e){
 					this.store.act('setParseError',store=>{
@@ -207,14 +207,14 @@ module.exports = class Source extends require('base/view'){
 		this.drawButton({
 			id:'play',
 			icon:'play',
-			onClick:this.onPlay
+			onClick:this.onPlay.bind(this)
 		})
 
 		this.drawButton({
 			id:'close',
 			align:[1,0],
 			icon:'close',
-			onClick:this.onClose
+			onClick:this.onClose.bind(this)
 		})
 		this.endBg()
 		this.lineBreak()

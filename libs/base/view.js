@@ -10,13 +10,20 @@ module.exports = class View extends require('base/class'){
 
 	prototype(){
 		this.mixin(
-			require('base/props'),
-			require('base/events'),
 			require('base/states'),
 			require('base/tools'),
 			require('base/styles')
 		)
+		
+		this.inheritable('props', function(){
+			var props = this.props
+			for(let key in props){
+				this.$defineProp(key, props[key])
+			}
+		})
+
 		this.viewClip = [-50000,-50000,50000,50000]
+
 		this.props = {
 			heavy:true,
 			visible:true,
@@ -45,6 +52,7 @@ module.exports = class View extends require('base/class'){
 			down:0,
 			wrap:1
 		}
+
 		this.tools = {
 			Debug:require('shaders/quad'),
 			Pass:require('shaders/quad').extend({
@@ -57,7 +65,7 @@ module.exports = class View extends require('base/class'){
 					end:null,					
 				},
 				pixelMain(){$
-					if(this.workerId < 0.){
+					if(this.pickPass > .5){
 						gl_FragColor = texture2D(this.pickSampler, vec2(this.mesh.x, 1.-this.mesh.y))
 					}
 					else{
@@ -67,15 +75,9 @@ module.exports = class View extends require('base/class'){
 			})
 		}
 
-		//this.viewId = 0
-		this._onVisible = 8
-
 		this.$scrollBarSize = 8
 		this.$scrollBarBg = '#0000'
-		this.onFlag4 = function(){
-			this.redraw()
-		}
-
+	
 		this.verbs = {
 			draw:function(overload){
 				var id = overload.id
@@ -89,6 +91,7 @@ module.exports = class View extends require('base/class'){
 				if(view.onStyle) view.onStyle(overload)
 				
 				view.draw(this, overload)
+				return view
 			}
 		}
 
@@ -129,14 +132,32 @@ module.exports = class View extends require('base/class'){
  		
 		// Allocate a pickId from the app
 		if(!this.pickId){
-			var pickId = app.pickFree.pop()
-			if(!pickId) app.pickIds[pickId = app.pickAlloc++] = this
-			else app.pickIds[pickId] = this
+			var pickId = app.$pickFree.pop()
+			if(!pickId) app.$pickIds[pickId = app.$pickAlloc++] = this
+			else app.$pickIds[pickId] = this
 			// store our numeric id
 			this.pickId = pickId
 		}
 	}
 	
+	allocPickId(prop){
+		if(!this.pickIds) this.pickIds = {}
+		var app = this.app
+		var pickId = app.$pickFree.pop()
+		if(!pickId) app.$pickIds[pickId = app.$pickAlloc++] = this
+		else app.$pickIds[pickId] = this
+		this.pickIds[pickId] = prop
+		this.turtle._pickId = pickId
+	}
+
+	freePickIds(){
+		var pickFree = this.app.$pickFree
+		for(var key in this.pickIds){
+			pickFree.push(parseInt(key))
+		}
+		this.pickIds = {}
+	}
+
 	destroy(){
 		if(this.destroyed) return
 		this.destroyed = true
@@ -149,17 +170,16 @@ module.exports = class View extends require('base/class'){
 			ownedViews[key].destroy()
 		}
 
-		this.app.pickFree.push(this.pickId)
+		this.app.$pickFree.push(this.pickId)
 		
 		this.pickId = undefined
 
 		// clean out resources
-		var todo = this.$todo
-		if(todo){
+		if(this.$todos) for(var i = 0; i < this.$todos.length; i++){
+			var todo = this.$todos[i]
 			todo.destroyTodo()
+			recurDestroyShaders(todo.$shaders)
 		}
-
-		recurDestroyShaders(this.$shaders)
 
 		// destroy framebuffers
 		for(var name in this.$renderpasses){
@@ -171,7 +191,7 @@ module.exports = class View extends require('base/class'){
 			pass.framebuffer.destroyFramebuffer()
 		}
 		// remove it
-		if(this.owner) delete this.owner.$views[this.id]
+		if(this.owner) delete this.owner.$ownedViews[this.id]
 	}
 
 	setState(state, queue, props){
@@ -255,15 +275,15 @@ module.exports = class View extends require('base/class'){
 		var outer = this.turtle
 		if(ref){
 			// set input props
-			outer._margin = ref._margin
-			outer._padding = ref._padding
-			outer._align = ref._align
-			outer._down = ref._down
-			outer._wrap = ref._wrap
-			outer._x = ref._x
-			outer._y = ref._y
-			outer._w = ref._w
-			outer._h = ref._h
+			outer._margin = ref.margin
+			outer._padding = ref.padding
+			outer._align = ref.align
+			outer._down = ref.down
+			outer._wrap = ref.wrap
+			outer._x = ref.x
+			outer._y = ref.y
+			outer._w = ref.w
+			outer._h = ref.h
 		}
 		// add a turtle to the stack
 		var ts = this.app.$turtleStack
@@ -333,7 +353,7 @@ module.exports = class View extends require('base/class'){
 
 			// lets check if we need to connect it to the main framebuffer
 			if(todoCt === 0 && this.app === this){
-				painter.mainFramebuffer.assignTodoAndUbo(todo, this.painterUbo)
+				painter.mainFramebuffer.assignTodoAndUbo(todo, this.$painterUbo)
 			}
 		}
 		else{
@@ -346,18 +366,18 @@ module.exports = class View extends require('base/class'){
 		todo.$parent = parent
 
 		// copy over the props used to calc the matrix
-		todo.$xCenter = ref._xCenter
-		todo.$yCenter = ref._yCenter
-		todo.$xScale = ref._xScale
-		todo.$yScale = ref._yScale
-		todo.$rotate = ref._rotate
+		todo.$xCenter = ref.xCenter
+		todo.$yCenter = ref.yCenter
+		todo.$xScale = ref.xScale
+		todo.$yScale = ref.yScale
+		todo.$rotate = ref.rotate
 
 		this.todo = todo
 
 		// push the todo into the parent
 		if(parent){
 			parent.$writes.push(todo, -1, -1)
-			parent.beginOrder(ref._order)
+			parent.beginOrder(ref.order)
 			parent.addChildTodo(todo)
 			parent.endOrder()
 		}
@@ -412,11 +432,11 @@ module.exports = class View extends require('base/class'){
 		// needed for the matrix stack stuff.
 		todo.$w = turtle.wBound()
 		todo.$h = turtle.hBound()
+		
 		todo.$vw = turtle.x2// - nt.$xAbs //- turtle._margin[3]
 		todo.$vh = turtle.y2// - nt.$yAbs //- turtle._margin[0]
 		todo.$xReuse = turtle.x2
 		todo.$yReuse = turtle.y2
-
 		// drawing scrollbars?
 		this.$drawScrollBars(todo.$w, todo.$h, todo.$vw, todo.$vh, ref)
 
@@ -430,11 +450,16 @@ module.exports = class View extends require('base/class'){
 
 	toLocal(msg, noScroll){
 		var xy = [0,0,0,0]
-		vec4.transformMat4(xy, [msg.x, msg.y, 0, 1.], this.viewInverse)
-		return {
-			x:xy[0] + (noScroll?0:(this.todo.xScroll || 0)),
-			y:xy[1] + (noScroll?0:(this.todo.yScroll || 0))
+		vec4.transformMat4(xy, [msg.x, msg.y, 0, 1.], this.$mainTodo.$viewInverse)
+		var ret = {
+			x:xy[0] + (noScroll?0:(this.$mainTodo.xScroll || 0)),
+			y:xy[1] + (noScroll?0:(this.$mainTodo.yScroll || 0))
 		}
+		if(!this.heavy){
+			ret.x -= this.$x
+			ret.y -= this.$y
+		}
+		return ret
 	}
 
 
@@ -451,7 +476,7 @@ module.exports = class View extends require('base/class'){
 			node = node.parent
 		}
 		let app = this.app
-		if(app && !app.redrawTimer) app.redraw(force)
+		if(app && !app.redrawTimer) app._redraw(force)
 	}
 	
 	layout(){
@@ -475,10 +500,10 @@ module.exports = class View extends require('base/class'){
 			todo = this.todo = parent.todo
 		}
 		else{
-			this.turtle = this.appTurtle
+			this.turtle = this.$appTurtle
 		}
-		this._time = this.app._time
-		this._frameId = this.app._frameId
+		this.time = this.app.time
+		this.frameId = this.app.frameId
 		//this._order = 0.
 		this.$todoCounter = 0
 		// verify if we need this
@@ -487,11 +512,10 @@ module.exports = class View extends require('base/class'){
 		if(overload){
 			for(var key in overload){
 				var value = overload[key]
-				if(this.__lookupSetter__(key)){
-					this['_'+key] = value
-				}
-				else {
+				var old = this[key]
+				if(value !== this[key]){
 					this[key] = value
+					this.$dirty = true
 				}
 			}
 		}
@@ -502,42 +526,42 @@ module.exports = class View extends require('base/class'){
 			
 			// dirty check to bail on drawing for incremental
 			var mainTodo = this.$mainTodo
-			var check = this.$dirty_check
+			var check = this.$dirtyCheck
 			var turtle = this.turtle
 			var parent = this.todo
-			if(!check) this.$dirty_check = check = {}
+			if(!check) this.$dirtyCheck = check = {}
 			if(mainTodo && 
 			  !this.$dirty &&
 			  check.width === turtle.width &&  
 			  check.height === turtle.height &&
-			  check.w === this._w &&  
-			  check.h === this._h &&
+			  check.w === this.w &&  
+			  check.h === this.h &&
 			  check.wx === turtle.wx &&
 			  check.wy === turtle.wy){
 				// lets just walk the turtle
 				// and not run draw
-				turtle._margin = this._margin
-				turtle._padding = this._padding
-				turtle._align = this._align
-				turtle._down = this._down
-				turtle._wrap = this._wrap
-				turtle._x = this._x
-				turtle._y = this._y
+				turtle._margin = this.margin
+				turtle._padding = this.padding
+				turtle._align = this.align
+				turtle._down = this.down
+				turtle._wrap = this.wrap
+				turtle._x = this.x
+				turtle._y = this.y
 				turtle._w = mainTodo.$w // for computed size last time
 				turtle._h = mainTodo.$h
 				turtle.walk()
 				// lets add our todo to the parent
 				if(parent){
 					parent.$writes.push(mainTodo, -1, -1)
-					parent.beginOrder(this._order)
+					parent.beginOrder(this.order)
 					parent.addChildTodo(mainTodo)
 					parent.endOrder()
 				}
 				return
 			}
 			// store our current state checking against
-			check.w = this._w
-			check.h = this._h
+			check.w = this.w
+			check.h = this.h
 			check.wx = turtle.wx
 			check.wy = turtle.wy
 			check.width = turtle.width
@@ -561,10 +585,9 @@ module.exports = class View extends require('base/class'){
 		this.$mainTodo = this.todo
 		this.$writeStart = this.todo.$writes.length
 
+		this.$dirty = false
 		if(this.onDraw){
-			this.onFlag = 4
 			this.onDraw()
-			this.onFlag = 0
 		}
 
 		this.$writeEnd = this.todo.$writes.length
@@ -578,6 +601,8 @@ module.exports = class View extends require('base/class'){
 			if(this.wrapped){
 				this.endTurtle()
 			}
+			this.$x = this.turtle._x
+			this.$y = this.turtle._y
 		}
 
 		this.todo = undefined
@@ -649,7 +674,6 @@ module.exports = class View extends require('base/class'){
 		// store the draw width and height for layout if needed
 		var tw = wx//this.$wDraw = turtle._w
 		var th = wy//this.$hDraw = turtle._h
-		
 		var xOverflow = ref.xOverflow
 		var yOverflow = ref.yOverflow
 		var addHor, addVer
@@ -707,7 +731,6 @@ module.exports = class View extends require('base/class'){
 		if(yOverflow === 'scroll'){
 			if(addVer){//tw < this.$wDraw){ // we need a vertical scrollbar
 				if(!this.ScrollBar) this.ScrollBar = this.app.ScrollBar
-
 				if(!this.$yScroll) this.$yScroll = new this.ScrollBar(this,{
 					id:'vscroll',
 					moveScroll:0,
@@ -847,7 +870,7 @@ module.exports = class View extends require('base/class'){
 			pass.h = h
 			mat4.ortho(pass.projection, 0, pass.w, 0, pass.h, -100, 100)
 			// assign the todo to the framebuffe
-			pass.framebuffer.assignTodoAndUbo(pass.todo, this.app.painterUbo)
+			pass.framebuffer.assignTodoAndUbo(pass.todo, this.app.$painterUbo)
 
 			if(options.dx !== undefined || options.dy !== undefined){
 				let pp = this.$positionedPasses
@@ -947,28 +970,31 @@ module.exports = class View extends require('base/class'){
 
 	scrollIntoView(x, y, w, h,scrollToSpeed){
 		// we figure out the scroll-to we need
-		var todo = this.todo
+		var todo = this.$mainTodo
 		var sx = todo.xScroll, sy = todo.yScroll
 		if(x < todo.xScroll) sx = max(0., x)
 		if(x+w > todo.xScroll + todo.xView) sx = clamp(0.,x + w - todo.xView, todo.xTotal - todo.xView)
 		if(y < todo.yScroll) sy = max(0., y)
 		if(y+h > todo.yScroll + todo.yView) sy = clamp(0.,y + h - todo.yView, todo.yTotal - todo.yView)
-		this.todo.scrollTo(sx, sy,scrollToSpeed)
+		todo.scrollTo(sx, sy,scrollToSpeed)
 	}
 
 	scrollTo(x, y, scrollToSpeed){
-		this.todo.scrollTo(x,y,scrollToSpeed)
+		var todo = this.$mainTodo
+		todo.scrollTo(x,y,scrollToSpeed)
 	}
 
 	scrollMode(scrollMode){
-		this.todo.scrollMode = scrollMode
+		var todo = this.$mainTodo
+		todo.scrollMode = scrollMode
 	}
 
 	scrollArea(x,y,w,h){
-		this.todo.xVisible = x
-		this.todo.yVisible = y
-		this.todo.wVisible = w
-		this.todo.hVisible = h
+		var todo = this.$mainTodo
+		todo.xVisible = x
+		todo.yVisible = y
+		todo.wVisible = w
+		todo.hVisible = h
 	}
 
 	scrollAtDraw(dx, dy, delta){
@@ -988,8 +1014,8 @@ module.exports = class View extends require('base/class'){
 	}
 
 	reuseDrawSize(){
-		this.turtle.x2 = this.$xReuse
-		this.turtle.y2 = this.$yReuse
+		this.turtle.x2 = this.$mainTodo.$xReuse
+		this.turtle.y2 = this.$mainTodo.$yReuse
 	}
 
 
@@ -1032,7 +1058,27 @@ module.exports = class View extends require('base/class'){
 		if(this.app.onFocusChange) this.app.onFocusChange(undefined, old)
 	}
 
+	
+	$defineProp(key, value){
+		if(!this.hasOwnProperty('_props')){
+			this._props = this._props?Object.create(this._props):{}
+		}
 
+		var config = value
+		if(typeof config !== 'object' || !config || config.constructor !== Object){
+			config = {value:config}
+		}
+
+		var old = this._props[key]
+		if(old){
+			for(let key in old) if(!(key in config)){
+				config[key] = old[key]
+			}
+		}
+
+		this._props[key] = config
+		if(config.value !== undefined) this[key] = config.value
+	}
 
 	// Parse color
 
@@ -1107,12 +1153,12 @@ module.exports.recomputeTodoMatrices = function recomputeTodoMatrices(todo, px, 
 
 	//TODO FIX THIS
 	//console.log(painter.y)
-	//let pp =this.$positionedPasses
-	//if(pp){
-	//	for(let i = 0 ;i < pp.length;i++){
-	//		pp[i].framebuffer.position(x+painter.x + pp[i].dx, y+painter.y + pp[i].dy)
-	//	}
-	//}
+	let pp = todo.$view && todo.$view.$positionedPasses
+	if(pp){
+		for(let i = 0 ;i < pp.length;i++){
+			pp[i].framebuffer.position(x+painter.x + pp[i].dx, y+painter.y + pp[i].dy)
+		}
+	}
 
 	// lets set some globals
 	var todoUbo = todo.todoUbo

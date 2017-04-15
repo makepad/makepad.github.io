@@ -13,7 +13,7 @@ module.exports = class Button extends require('base/view'){
 			onTap		:undefined,
 			toggle      :false,
 			toggled     :false,
-			margin      :[2, 0, 2, 0],
+			//margin      :[2, 0, 2, 0],
 			debug       :0
 		}
 		
@@ -158,7 +158,7 @@ module.exports = class Button extends require('base/view'){
 		if(this.toggle) {
 			this.toggled = !this.toggled
 			if(this.onClick){
-				if(this.onClick.call(this.view, this, e) !== undefined){
+				if(this.onClick(this, e) !== undefined){
 					this.redraw()
 				}
 			}
@@ -183,7 +183,7 @@ module.exports = class Button extends require('base/view'){
 		}
 		this.setState(state, true)
 		if(!this.toggle && e.samePick && this.onClick){
-			if(this.onClick.call(this.view, this, e)!== undefined){
+			if(this.onClick(this, e)!== undefined){
 				this.redraw()
 			}
 		}

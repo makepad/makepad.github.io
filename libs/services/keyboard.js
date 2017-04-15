@@ -25,7 +25,6 @@ var idToKeyName = {
 
 class Keyboard extends require('base/class'){
 	prototype(){
-		this.mixin(require('base/events'))
 	}
 }
 

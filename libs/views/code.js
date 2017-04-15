@@ -7,22 +7,19 @@ module.exports = class Code extends require('views/edit'){
 	prototype() {
 		this.mixin(require('parsers/jsastformat'))
 		this.mixin(require('parsers/jstokenformat'))
-		
-		this.allowOperatorSpaces = 0
-		this.overflow = 'scroll'
-		this.padding = [0, 0, 0, 4]
-		this.$fastTextFontSize = 12
-		this.$fastTextIndent = 0
-		this._onText |= 32
-		this.serializeIndent = '\t'
-				
 		this.lazyUniforms = {
 			groupHighlightId: true,
 			blockHighlightPickId: true
 		}
 
 		this.props = {
-			errors:undefined
+			errors:undefined,
+			allowOperatorSpaces:0,
+			overflow:'scroll',
+			padding:[0, 0, 0, 4],
+			$fastTextFontSize:12,
+			$fastTextIndent:0,
+			serializeIndent:'\t'
 		}
 		var colors = module.style.colors
 
@@ -437,7 +434,7 @@ module.exports = class Code extends require('views/edit'){
 		try{
 			this.runtimeErrors.length = 0
 			this.parseErrors.length = 0
-			this.ast = parser.parse(this._text, { 
+			this.ast = parser.parse(this.text, { 
 				storeComments: [] 
 			})
 		}
@@ -518,7 +515,8 @@ module.exports = class Code extends require('views/edit'){
 	}
 
 	onDraw() { 
-		if(!this._text)this._text = ''
+		
+		if(!this.text)this.text = ''
 		this.beginBg() 
 		// ok lets parse the code
 		if(this.$textClean) { 
@@ -545,14 +543,14 @@ module.exports = class Code extends require('views/edit'){
 
 				this.jsASTFormat(this.indentSize, this.ast)
 
-				var oldtext = this._text 
-				this._text = this.$fastTextChunks.join('')
+				var oldtext = this.text 
+				this.text = this.$fastTextChunks.join('')
 
 				if(this.onEndFormatAST) this.onEndFormatAST()
 
 				//console.log(JSON.stringify(this.$fastTextChunks))
 				// deal with the autoformatter 
-				var newtext = this._text
+				var newtext = this.text
 				var oldlen = oldtext.length
 				var newlen = newtext.length
 				for(var start = 0; start < oldlen && start < newlen; start++) {
@@ -581,7 +579,7 @@ module.exports = class Code extends require('views/edit'){
 				//var ann = this.ann
 				//this.reuseBlock()
 				//this.reuseMarker()
-				this.jsTokenFormat(this._text)
+				this.jsTokenFormat(this.text)
 
 			} 
 			//require('base/perf')
@@ -593,7 +591,7 @@ module.exports = class Code extends require('views/edit'){
 		if(this.runtimeErrors){
 			for(var i = this.runtimeErrors.length - 1; i >= 0; --i){
 				var err = this.runtimeErrors[i]
-				var text = this._text
+				var text = this.text
 				var line = err.line - 1
 				var col = err.column
 				var j = 0, tl = text.length;
@@ -622,7 +620,7 @@ module.exports = class Code extends require('views/edit'){
 
 				if(this.resource.path !== item.path) continue
 
-				var text = this._text
+				var text = this.text
 				var line = item.line - 1
 				var col = item.column
 				var j = 0, tl = text.length;
@@ -654,7 +652,6 @@ module.exports = class Code extends require('views/edit'){
 				if(cursor.max < 0) cursor.max = t.x 
 				
 				var boxes = this.$boundRectsText(cursor.lo(), cursor.hi()) 
-
 				for(var j = 0; j < boxes.length; j++) { 
 					var box = boxes[j] 
 					var pbox = boxes[j - 1] 
@@ -713,7 +710,6 @@ module.exports = class Code extends require('views/edit'){
 
 
 		} 
-		
 		this.endBg(true) 
 	} 
 	
@@ -838,10 +834,10 @@ module.exports = class Code extends require('views/edit'){
 		}
 	}
 
-	onFlag32() { 
-		this.$textClean = false 
-		this.redraw() 
-	} 
+	//onFlag32() { 
+	//	this.$textClean = false 
+	//	this.redraw() 
+	//} 
 	
 	indentFindParenErrorPos() {
 		return -1
@@ -940,7 +936,7 @@ module.exports = class Code extends require('views/edit'){
 	
 	currentIndent(offset){
 		var prev = 0
-		var text = this._text
+		var text = this.text
 		for(var i = offset; i >=0; i--){
 			var char = text.charCodeAt(i)
 			if(i !== offset && (char === 10 || char === 13)) break
@@ -962,10 +958,10 @@ module.exports = class Code extends require('views/edit'){
 
 	insertText(offset, text, isUndo) { 
 		
-		var char = this._text.charAt(offset)
+		var char = this.text.charAt(offset)
 		var move = 0
-		var prev = this._text.charAt(offset - 1)
-		var next = this._text.charAt(offset+1)
+		var prev = this.text.charAt(offset - 1)
+		var next = this.text.charAt(offset+1)
 		if(!isUndo) { 
 			if(text === "'" && char === "'") return 0 
 			if(text === '"' && char === '"') return 0 
@@ -1000,14 +996,14 @@ module.exports = class Code extends require('views/edit'){
 			else this.wasNewlineChange = 0
 		}
 
-		if(this.wasNewlineChange && this._text.charAt(offset) !== '\n' && this._text.charAt(offset + 1) !== '\n') { 
+		if(this.wasNewlineChange && this.text.charAt(offset) !== '\n' && this.text.charAt(offset + 1) !== '\n') { 
 			this.wasFirstNewlineChange = 1 
 		}
 		else this.wasFirstNewlineChange = 0 
 		
 		this.$textClean = false 
 		this.inputDirty = true
-		this._text = this._text.slice(0, offset) + text + this._text.slice(offset) 
+		this.text = this.text.slice(0, offset) + text + this.text.slice(offset) 
 
 		this.redraw() 
 		return {
@@ -1032,7 +1028,7 @@ module.exports = class Code extends require('views/edit'){
 		this.$textClean = false 
 		var delta = 0 
 		this.wasNewlineChange = 0 
-		var text = this._text 
+		var text = this.text 
 		//console.log("REMOVE", isUndo, start, end)
 		if(!isUndo) {
 			if(end === start + 1) {  // its a single character
@@ -1059,7 +1055,7 @@ module.exports = class Code extends require('views/edit'){
 			} 
 		} 
 		
-		this._text = text.slice(0, start) + text.slice(end)
+		this.text = text.slice(0, start) + text.slice(end)
 	
 		this.redraw() 
 		return delta 
@@ -1067,7 +1063,7 @@ module.exports = class Code extends require('views/edit'){
 	
 	serializeSlice(start, end, arg) { 
 		if(arg) return arg.slice(start, end) 
-		return this._text.slice(start, end) 
+		return this.text.slice(start, end) 
 	} 
 } 
 

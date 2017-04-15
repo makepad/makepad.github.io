@@ -139,7 +139,7 @@ module.exports = require('base/view').extend({
 		})
 	},
 	onFingerDown(e){
-		this.view.onTabSelect(this)
+		this.parent.onTabSelect(this)
 		this.xStart = e.x
 		this.yStart = e.y
 		this.start = this.toLocal(e)
@@ -154,7 +154,7 @@ module.exports = require('base/view').extend({
 	onFingerMove(e){
 		this.dx = this.dxStart + (e.x - this.xStart)
 		this.setState('selectedDrag', false, {dx:this.dx})
-		this.view.onTabSlide(this, e.y - this.yStart, e)
+		this.parent.onTabSlide(this, e.y - this.yStart, e)
 	},
 	onDraw(){
 		//console.log(this.id)

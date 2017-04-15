@@ -2,7 +2,6 @@ var service = require('$fingers1')
 
 class Fingers extends require('base/class'){
 	prototype(){
-		this.mixin(require('base/events'))
 	}
 }
 

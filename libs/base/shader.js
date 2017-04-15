@@ -11,7 +11,7 @@ module.exports = class Shader extends require('base/compiler'){
 			time            :{kind:'uniform', block:'painter', value:1.0},
 			
 			pixelRatio      :{kind:'uniform', block:'painter', type:types.float},
-			workerId        :{kind:'uniform', block:'painter', type:types.float},
+			pickPass        :{kind:'uniform', block:'painter', type:types.float},
 			fingerInfo      :{kind:'uniform', block:'painter', type:types.mat4},
 			vertexPostMatrix:{kind:'uniform', block:'painter', type:types.mat4},
 			camPosition     :{kind:'uniform', block:'painter', type:types.mat4},
@@ -138,7 +138,7 @@ module.exports = class Shader extends require('base/compiler'){
 	
 	pixelMain() {$
 		var color = this.pixel()
-		if(this.workerId < 0.) {
+		if(this.pickPass > 0.5) {
 			if(color.a < this.pickAlpha) discard
 			gl_FragColor = vec4(this.paintId / 255., floor(this.pickId / 65536.0)/255., floor(this.pickId / 256.0) / 255., mod(this.pickId, 256.0) / 255.)
 		}
