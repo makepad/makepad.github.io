@@ -118,18 +118,20 @@ module.exports = class Wave extends require('views/draw'){
 	onFingerDown(e) { 
 		let l = this.toLocal(e)
 		this.setFocus()
-		if(e.pickId) return  
+		//if(e.pickId) return  
 		this.selEnd = 
 		this.selStart = clamp(this.xToTime(l.x), 0, this.samples) 
+		this.redraw()
 	} 
 	
 	onFingerMove(e) { 
-		if(e.pickId) return  
+		//if(e.pickId) return  
 		let l = this.toLocal(e)
 		let end = this.selEnd = clamp(this.xToTime(l.x), 0, this.samples) 
 		if(end < this.selStart) this.selEnd = this.selStart+100, this.selStart = end 
 		// lets scroll into view
 		this.scrollIntoView(this.selEnd	/ this.zoom,0,0,0)
+		this.redraw()
 	} 
 
 	onKeyS(e){
@@ -364,7 +366,7 @@ module.exports = class Wave extends require('views/draw'){
 			var smod = floor(scale) 
 			var minv = 0, maxv = 0. 
 			// we should draw it near the scroll position
-			var xmin = this.todo.xScroll - this.turtle.width
+			var xmin = this.$mainTodo.xScroll - this.turtle.width
 			var xmax = xmin + this.turtle.width * 3 
 			var t = 0
 			outer:
@@ -409,43 +411,43 @@ module.exports = class Wave extends require('views/draw'){
 			order:2,
 			align:[1,0],
 			icon: "close", 
-			onClick: this.onClose
+			onClick: this.onClose.bind(this)
 		}) 
 
 		this.drawButton({ 
 			id:'rec',
 			text: this.recFlow.running? "Stop": "Rec", 
-			onClick: this.rec
+			onClick: this.rec.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'play',
 			text: this.playFlow.running? "Stop": "Play", 
-			onClick: this.play
+			onClick: this.play.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'cut',
 			text: "Cut", 
-			onClick: this.cut
+			onClick: this.cut.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'undo',
 			text: "Undo", 
-			onClick: this.undo
+			onClick: this.undo.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'redo',
 			text: "Redo", 
-			onClick: this.redo
+			onClick: this.redo.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'fade',
 			text: "Fade", 
-			onClick: this.fade
+			onClick: this.fade.bind(this)
 		}) 
 		this.drawButton({ 
 			id:'norm',
 			text: "Norm", 
-			onClick: this.normalize
+			onClick: this.normalize.bind(this)
 		}) 
 
 		/*

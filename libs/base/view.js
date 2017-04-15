@@ -998,9 +998,10 @@ module.exports = class View extends require('base/class'){
 	}
 
 	scrollAtDraw(dx, dy, delta){
+		var todo = this.$mainTodo
 		this.$scrollAtDraw = {
-			x:delta?this.todo.xScroll+(dx||0):(dx||0),
-			y:delta?this.todo.yScroll+(dy||0):(dy||0)
+			x:delta?todo.xScroll+(dx||0):(dx||0),
+			y:delta?todo.yScroll+(dy||0):(dy||0)
 		}
 		this.redraw()
 	}
