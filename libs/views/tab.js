@@ -139,6 +139,8 @@ module.exports = require('base/view').extend({
 		})
 	},
 	onFingerDown(e){
+		this.from_dx = undefined
+		this.dx = 0
 		this.parent.onTabSelect(this)
 		this.xStart = e.x
 		this.yStart = e.y
