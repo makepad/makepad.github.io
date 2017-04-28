@@ -31,6 +31,7 @@ module.exports = class CodeMarker extends require('shaders/quad'){
 	}
 
 	pixel(){$
+		
 		var bg = '#09000000' // very faint read 
 		var pos = this.viewport()
 		this.result = bg

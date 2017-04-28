@@ -108,6 +108,7 @@ module.exports = class extends require('base/drawapp'){ //top
 		}
 		
 		module.worker.page = this.page
+		this.redraw()
 	}
 	
 	onDraw() {

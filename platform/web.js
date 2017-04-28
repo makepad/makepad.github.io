@@ -214,7 +214,7 @@
 	root.downloadResource(root.platformPath+'boot.js').then(function(result){
 		// start it up
 		try{
-			new Function("root", result)(root)
+			new Function("exports", result)(root)
 		}
 		catch(e){
 			root.showParseError(root.platformPath+'boot.js')

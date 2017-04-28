@@ -169,8 +169,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var blEnd = this.fastText('}', colorScheme.curly, undefined, parenId)
 		nRange.end = blEnd
 		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
-		var pickId = this.pickIdCounter++
-		this.pickIds[pickId] = node
+		var pickId = this.allocPickId(node)
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 		this.fastBlock(
 			startx,
@@ -258,8 +257,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		var startx = turtle.wx
 		var blEnd = this.fastText(']', this.styles.Array.bracket, undefined, parenId)
 		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
-		var pickId = this.pickIdCounter++
-		this.pickIds[pickId] = node
+		var pickId = this.allocPickId(node)
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 		// lets draw a block with this information
 		this.fastBlock(
@@ -380,8 +378,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		
 		var blockh = turtle.wy
 		
-		var pickId = this.pickIdCounter++
-		this.pickIds[pickId] = node
+		var pickId = this.allocPickId(node)
+
 		//if(top) 
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 		this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
@@ -436,9 +434,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		// store endx endy
 		var blockh = turtle.wy
 		
-		var pickId = this.pickIdCounter++
-		
-		this.pickIds[pickId] = node
+		var pickId = this.allocPickId(node)
+
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 		this.fastBlock(
 			startx,
@@ -703,7 +700,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	FunctionDeclaration(node, method) {
 		var id = node.id
 		if(id) {
-			this.scope[name] = 'fn'
+			this.scope[id.name] = 'fn'
 			//this.trace += 'function '
 			this.fastText('function ', this.styles.Function.function)
 			if(node.generator) {
@@ -1393,8 +1390,8 @@ module.exports = class JSFormatter extends require('base/class'){
 		// store endx endy
 		var blockh = turtle.wy
 		
-		var pickId = this.pickIdCounter++
-		this.pickIds[pickId] = node
+		var pickId = this.allocPickId(node)
+
 		this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 		this.fastBlock(
 			startx,

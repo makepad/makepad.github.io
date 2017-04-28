@@ -24,7 +24,7 @@ function Token(p){
 var pp = Parser.prototype
 
 // Are we running under Rhino?
-var isRhino = typeof Packages == "object" && Object.prototype.toString.call(Packages) == "[object JavaPackage]"
+var isRhino = false//typeof Packages == "object" && Object.prototype.toString.call(Packages) == "[object JavaPackage]"
 
 // Move to the next token
 

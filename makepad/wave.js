@@ -265,7 +265,7 @@ module.exports = class Wave extends require('views/draw'){
 			return  
 		} 
 		if(this.recording.length>1){
-			editWave(this.samples, sam=>sam, true)
+			this.editWave(this.samples, sam=>sam, true)
 		}		
 		this.playFlow.start({ 
 			buffer1: { 

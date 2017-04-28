@@ -538,7 +538,7 @@ pp.parseNew = function() {
 	// store newline after new?
 	var meta = this.parseIdent(true)
 	
-	this.commentAround(node, tt._new)
+	if(this.storeComments) this.commentAround(node, tt._new)
 	
 	if (this.options.ecmaVersion >= 6 && this.eat(tt.dot)) {
 		node.meta = meta
@@ -629,7 +629,7 @@ pp.parseObj = function(isPattern, refDestructuringErrors) {
 		if(this.eat(tt.comma) || (inserted = this.insertCommas && this.skippedNewlines)){
 			if(this.storeComments){
 				if(inserted) node.insCommas  = (node.insCommas || 0)+1
-				this.commentEndSplit(prop, above, close, tt.comma)
+				this.commentEndSplit(prop, above, tt.braceR, tt.comma)
 			}
 			if(this.eat(tt.braceR)){
 				node.trail = true

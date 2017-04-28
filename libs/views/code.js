@@ -5,6 +5,7 @@ module.exports = class Code extends require('views/edit'){
 
 	// mixin the formatter
 	prototype() {
+		this.blarp = true
 		this.mixin(require('parsers/jsastformat'))
 		this.mixin(require('parsers/jstokenformat'))
 		this.lazyUniforms = {
@@ -324,7 +325,17 @@ module.exports = class Code extends require('views/edit'){
 		} 
 
 		this._defaultScope ={ 
+			_:'global',
+			_$:'global',
+			$:'global',
 			console: 'global', 
+			setTimeout:'global',
+			setInterval:'global',
+			setImmediate:'global',
+			clearTimeout:'global',
+			clearInterval:'global',
+			clearImmediate:'global',
+			performance:'global',
 			eval: 'global', 
 			Infinity: 'global', 
 			NaN: 'global', 
@@ -346,6 +357,8 @@ module.exports = class Code extends require('views/edit'){
 			Set: 'global', 
 			WeakMap: 'global', 
 			WeakSet: 'global', 
+			Promise: 'global',
+			Proxy:'global',
 			SIMD: 'global', 
 			JSON: 'global', 
 			Generator: 'global', 
@@ -376,6 +389,7 @@ module.exports = class Code extends require('views/edit'){
 			exports: 'global', 
 			module: 'global', 
 			E: 'global', 
+			TORAD:'global',
 			LN10: 'global', 
 			LN2: 'global', 
 			LOG10E: 'global', 
@@ -533,8 +547,7 @@ module.exports = class Code extends require('views/edit'){
 				this.parseText()
 			}
 			else dontMove = true
-			this.pickIdCounter = 1 
-			this.pickIds = [0] 
+			this.freePickIds()
 			this.$textClean = true 
 			
 			if(this.ast) {
@@ -547,7 +560,6 @@ module.exports = class Code extends require('views/edit'){
 				this.text = this.$fastTextChunks.join('')
 
 				if(this.onEndFormatAST) this.onEndFormatAST()
-
 				//console.log(JSON.stringify(this.$fastTextChunks))
 				// deal with the autoformatter 
 				var newtext = this.text

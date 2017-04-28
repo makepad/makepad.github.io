@@ -108,9 +108,10 @@ module.exports = function painterTodo(proto){
 		var len = todo.length
 		var last = 0
 		var todofn = this.todofn
+		var argc = 0
 		for(let o = 0; o < len; o += argc + 2){
 			var fnid = i32[o]
-			var argc = i32[o + 1]
+			argc = i32[o + 1]
 			var fn = todofn[fnid]
 			if(!fn) console.error('cant find '+fnid+ ' last was ' + last)
 			last = fnid
@@ -176,7 +177,8 @@ module.exports = function painterTodo(proto){
 			if(!this.inPickPass){
 				gl.clearColor(f32[o+3],f32[o+4], f32[o+5], f32[o+6])
 			} else {
-				gl.clearColor(this.paintIds.id/255.,0,0,1./255.)
+				//gl.clearColor(this.paintIds.id/255.,0,0,1./255.)
+				gl.clearColor((this.paintIds.id-1)/255.,0,0,1./255.)
 			}
 			clr |= gl.COLOR_BUFFER_BIT
 		}
@@ -374,7 +376,6 @@ module.exports = function painterTodo(proto){
 		int:function intUbo(gl, uniVals, uniLocs, name, i32, f32, o){
 			var loc = uniLocs[name]
 			if(!loc)return
-			var o = offsets[name]
 			var v = i32[o]
 			if(uniVals[name] === v) return
 			uniVals[name] = v

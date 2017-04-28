@@ -104,7 +104,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			}
 			var realline = line + dec.line - 1
 			if(source.indexOf('{$') === -1) realline+='(missing $ after { for linenumbers)'
-
+				
 			this.exception = {
 				message:error.message,
 				path:dec.path,
@@ -280,7 +280,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 	Identifier(node){
 		var name = node.name
 
-		if(name === '$') return ''
+		if(name === '$' || name === '_$') return ''
 		// cant use $ in shaders so just return the value directly
 		if(name.indexOf('$') === 0) return name
 
@@ -516,7 +516,10 @@ module.exports = class ShaderInfer extends require('base/class'){
 				}
 
 				// turn it into a property
-				if(typeof value === 'object' && value.constructor === Object){
+				if(typeof value === 'object' && value.constructor === Object || 
+					typeof value === 'number' || typeof value === 'string' ||
+					Array.isArray(value)){
+					if(propname === 'mesh') console.log("WHAT")
 					this.root.$defineProp(propname, value)
 				}
 
@@ -593,6 +596,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 					else if(config.kind === 'output'){
 						// its already defined
 						var type = config.type
+						var prev = this.varyOut[fullname] || this.varyIn && this.varyIn[fullname]
 						if(prev){
 							node.infer = {
 								kind: 'value',
@@ -604,7 +608,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 							node.infer = {
 								kind: 'outundef',
 								lvalue:true,
-								name: name
+								name: propname
 							}
 						}
 						return fullname
@@ -614,13 +618,13 @@ module.exports = class ShaderInfer extends require('base/class'){
 				// use of unconfigured sampler
 				if(value instanceof painter.Texture){
 					this.samplers[fullname] = {
-						name:ret,
+						name:fullname,
 						sampler:sampler
 					}
 					var sampler = value.sampler || painter.SAMPLER2DNEAREST
 					node.infer = {
 						kind:'value',
-						name:ret,
+						name:fullname,
 						sampler:sampler,
 						type:sampler.type
 					}
@@ -647,7 +651,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				if(value === undefined){ // something undefined
 					// its already defined
 					var prev = this.varyOut[fullname] || this.varyIn && this.varyIn[fullname]
-
+					
 					if(prev){
 						this.varyOut[fullname] = prev
 						node.infer = {
@@ -706,7 +710,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 			}
 
-			throw this.InferErr(node, 'Cant determine type for this.'+propname)
+			throw this.InferErr(node, 'Cant determine type for '+objectstr+propname)
 		}
 	}
 
@@ -795,7 +799,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			var ast = parsecache[source] || (parsecache[source] = parser.parse(source))
 		}
 		catch(e){
-			throw this.SyntaxErr(node, "Cant parse function " + source)
+			throw this.SyntaxErr(callee, "Cant parse function " + source)
 		}
 		return ast
 	}
@@ -818,6 +822,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 		for(let i = params.length - 1; i >= 0; i--){
 			var name = params[i].name
+			if(name.charAt(0)==='_') name = name.slice(1)
 			var arg = args1[name]
 			if(arg === undefined) arg =  args2[name]
 			if(arg === undefined) throw new Error("Unmatched param "+name+" in named call "+fullname)
@@ -860,7 +865,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 			else if(arginfer.kind === 'function'){ // what do we do?...
 				fnname += '_' + arginfer.name
 			}
-			else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument") 
+			else throw this.SyntaxErr(node, "Cant use " +arginfer.kind+" as a function argument "+argstrs[i]) 
 		}
 
 		var prevfunction = lookupGenFunction(this.genFunctions, fnname)//this.genFunctions[fnname]
@@ -1095,7 +1100,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				type:initinfer.type
 			}
 		}
-		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable ' + initstr)
+		else throw this.InferErr(node, 'Cannot turn type '+initinfer.kind+' into local variable ' + node.id.name)
 
 		if(init.infer.kind === 'type'){
 			// just take the type, no constructor args
@@ -1173,6 +1178,10 @@ module.exports = class ShaderInfer extends require('base/class'){
 		var left = node.left
 		var right = node.right
 		var leftstr = this[left.type](left)//walk(node.left)
+		if(leftstr === ''){
+			_$ = right.value
+			return ''
+		}
 		var rightstr =  this[right.type](right)//this.walk(node.right)
 
 		var ret = leftstr + ' '+ node.operator +' '+  rightstr
@@ -1405,75 +1414,75 @@ module.exports = class ShaderInfer extends require('base/class'){
 			mat3:types.mat3,
 			mat4:types.mat4
 		}
-
+		var gen = types.gen
 		this.glslfunctions ={
-			typeof:{return:types.gen, params:[{name:'type',type:types.gen}]}, 
-			sizeof:{return:types.int, params:[{name:'type',type:types.gen}]},
+			typeof:{return:gen, params:[{n:'type',type:gen}]}, 
+			sizeof:{return:types.int, params:[{n:'type',type:gen}]},
 
-			radians:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			degrees:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			radians:{return:gen, params:[{n:'x', type:gen}]}, 
+			degrees:{return:gen, params:[{n:'x', type:gen}]},
 
-			sin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			cos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			tan:{return:types.gen, params:[{name:'x', type:types.gen}]},
-			asin:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			acos:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			atan:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.genopt}]},
+			sin:{return:gen, params:[{n:'x', type:gen}]}, 
+			cos:{return:gen, params:[{n:'x', type:gen}]}, 
+			tan:{return:gen, params:[{n:'x', type:gen}]},
+			asin:{return:gen, params:[{n:'x', type:gen}]}, 
+			acos:{return:gen, params:[{n:'x', type:gen}]}, 
+			atan:{return:gen, params:[{n:'x', type:gen},{n:'y', type:types.genopt}]},
 
-			pow:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]}, 
-			exp:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			log:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			exp2:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			log2:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			pow:{return:gen, params:[{n:'x', type:gen},{n:'y', type:gen}]}, 
+			exp:{return:gen, params:[{n:'x', type:gen}]}, 
+			log:{return:gen, params:[{n:'x', type:gen}]}, 
+			exp2:{return:gen, params:[{n:'x', type:gen}]}, 
+			log2:{return:gen, params:[{n:'x', type:gen}]},
 
-			sqrt:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			inversesqrt:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			sqrt:{return:gen, params:[{n:'x', type:gen}]}, 
+			inversesqrt:{return:gen, params:[{n:'x', type:gen}]},
 
-			abs:{return:types.gen, params:[{name:'x', type:types.gen}]},
-			sign:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			floor:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			ceil:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			fract:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			abs:{return:gen, params:[{n:'x', type:gen}]},
+			sign:{return:gen, params:[{n:'x', type:gen}]}, 
+			floor:{return:gen, params:[{n:'x', type:gen}]}, 
+			ceil:{return:gen, params:[{n:'x', type:gen}]}, 
+			fract:{return:gen, params:[{n:'x', type:gen}]},
 
-			mod:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			min:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			max:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			clamp:{return:types.gen, params:[{name:'x', type:types.gen},{name:'min', type:types.gen},{name:'max', type:types.gen}]},
+			mod:{return:gen, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			min:{return:gen, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			max:{return:gen, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			clamp:{return:gen, params:[{n:'x', type:gen},{n:'min', type:gen},{n:'max', type:gen}]},
 
-			mix:{return:types.gen, params:[{name:'x', type:types.gen},{name:'y', type:types.gen},{name:'t',type:types.genfloat}]},
-			step:{return:types.gen, params:[{name:'edge', type:types.gen},{name:'x', type:types.gen}]}, 
-			smoothstep:{return:types.gen, params:[{name:'edge0', type:types.genfloat}, {name:'edge1', type:types.genfloat}, {name:'x', type:types.gen}]},
+			mix:{return:gen, params:[{n:'x', type:gen},{n:'y', type:gen},{n:'t',type:types.genfloat}]},
+			step:{return:gen, params:[{n:'edge', type:gen},{n:'x', type:gen}]}, 
+			smoothstep:{return:gen, params:[{n:'edge0', type:types.genfloat}, {n:'edge1', type:types.genfloat}, {n:'x', type:gen}]},
 
-			length:{return:types.float, params:[{name:'x', type:types.gen}]}, 
-			distance:{return:types.float, params:[{name:'p0', type:types.gen}, {name:'p1', type:types.gen}]}, 
-			dot:{return:types.float, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			cross:{return:types.vec3, params:[{name:'x', type:types.vec3},{name:'y', type:types.vec3}]},
-			normalize:{return:types.gen, params:[{name:'x', type:types.gen}]},
-			faceforward:{return:types.gen, params:[{name:'n', type:types.gen}, {name:'i', type:types.gen}, {name:'nref', type:types.gen}]},
-			reflect:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}]}, 
-			refract:{return:types.gen, params:[{name:'i', type:types.gen}, {name:'n', type:types.gen}, {name:'eta', type:types.float}]},
-			matrixCompMult:{return:types.mat4,params:[{name:'a', type:types.mat4},{name:'b', type:types.mat4}]},
+			length:{return:types.float, params:[{n:'x', type:gen}]}, 
+			distance:{return:types.float, params:[{n:'p0', type:gen}, {n:'p1', type:gen}]}, 
+			dot:{return:types.float, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			cross:{return:types.vec3, params:[{n:'x', type:types.vec3},{n:'y', type:types.vec3}]},
+			normalize:{return:gen, params:[{n:'x', type:gen}]},
+			faceforward:{return:gen, params:[{n:'n', type:gen}, {n:'i', type:gen}, {n:'nref', type:gen}]},
+			reflect:{return:gen, params:[{n:'i', type:gen}, {n:'n', type:gen}]}, 
+			refract:{return:gen, params:[{n:'i', type:gen}, {n:'n', type:gen}, {n:'eta', type:types.float}]},
+			matrixCompMult:{return:types.mat4,params:[{n:'a', type:types.mat4},{n:'b', type:types.mat4}]},
 
-			lessThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			lessThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			greaterThan:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			greaterThanEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			equal:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			notEqual:{return:types.bvec, params:[{name:'x', type:types.gen},{name:'y', type:types.gen}]},
-			any:{return:types.bool, params:[{name:'x', type:types.bvec}]},
-			all:{return:types.bool, params:[{name:'x', type:types.bvec}]},
-			not:{return:types.bvec, params:[{name:'x', type:types.bvec}]},
+			lessThan:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			lessThanEqual:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			greaterThan:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			greaterThanEqual:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			equal:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			notEqual:{return:types.bvec, params:[{n:'x', type:gen},{n:'y', type:gen}]},
+			any:{return:types.bool, params:[{n:'x', type:types.bvec}]},
+			all:{return:types.bool, params:[{n:'x', type:types.bvec}]},
+			not:{return:types.bvec, params:[{n:'x', type:types.bvec}]},
 
-			dFdx:{return:types.gen, params:[{name:'x', type:types.gen}]}, 
-			dFdy:{return:types.gen, params:[{name:'x', type:types.gen}]},
-			fwidth:{return:types.gen, params:[{name:'x', type:types.gen}]},
+			dFdx:{return:gen, params:[{n:'x', type:gen}]}, 
+			dFdy:{return:gen, params:[{n:'x', type:gen}]},
+			fwidth:{return:gen, params:[{n:'x', type:gen}]},
 			
-			texture2DLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
-			texture2DProjLod:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'lod', type:types.float}]},
-			textureCubeLod:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'lod', type:types.float}]},
-			texture2D:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
-			texture2DProj:{return:types.vec4, params:[{name:'sampler', type:types.sampler2D}, {name:'coord', type:types.vec2}, {name:'bias', type:types.floatopt}]},
-			textureCube:{return:types.vec4, params:[{name:'sampler', type:types.samplerCube}, {name:'coord', type:types.vec3}, {name:'bias', type:types.floatopt}]},
+			texture2DLod:{return:types.vec4, params:[{n:'sampler', type:types.sampler2D}, {n:'coord', type:types.vec2}, {n:'lod', type:types.float}]},
+			texture2DProjLod:{return:types.vec4, params:[{n:'sampler', type:types.sampler2D}, {n:'coord', type:types.vec2}, {n:'lod', type:types.float}]},
+			textureCubeLod:{return:types.vec4, params:[{n:'sampler', type:types.samplerCube}, {n:'coord', type:types.vec3}, {n:'lod', type:types.float}]},
+			texture2D:{return:types.vec4, params:[{n:'sampler', type:types.sampler2D}, {n:'coord', type:types.vec2}, {n:'bias', type:types.floatopt}]},
+			texture2DProj:{return:types.vec4, params:[{n:'sampler', type:types.sampler2D}, {n:'coord', type:types.vec2}, {n:'bias', type:types.floatopt}]},
+			textureCube:{return:types.vec4, params:[{n:'sampler', type:types.samplerCube}, {n:'coord', type:types.vec3}, {n:'bias', type:types.floatopt}]},
 		}
 	}
 }

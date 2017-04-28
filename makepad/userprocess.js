@@ -117,6 +117,38 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.app.findResourceDeps(this.resource, this.deps)
 		// lets add our process to all the deps
 
+		// lets trace instrument everything
+		if(this.trace){
+			var code = require('views/code')
+			var parser = require('parsers/js')
+			var min = new require('parsers/jsminformat')
+			var deflate = require('parsers/deflate')
+			min.defaultScope = code.prototype.defaultScope
+			var deps = this.deps
+			var tracePaths = {}
+			for(var key in deps){
+				if(key === '/libs/base/log.js') continue
+				var value = deps[key]
+				if(typeof value !== 'string') continue
+				// lets parse and minimize the resource
+				var ast = parser.parse(value)
+				min.jsASTMinimize(ast, tracePaths, key, value)
+				try{
+					var ast = parser.parse(min.text)
+				}catch(e){
+					var set = min.text.split('\n')
+					var dump = ''
+					for(var i =0; i < set.length;i++){
+						dump += (i+1)+' '+set[i]+'\n'
+					}
+					console.log(e,dump)
+					break
+				}
+				deps[key] = min.text
+			
+			}
+		}
+
 		this.app.store.act("addProcessToResources", store=>{
 			//var resmap = store.resourceList
 			var process = this.process
@@ -153,6 +185,15 @@ module.exports = class UserProcess extends require('views/draw'){
 				return true
 			}
 			return a === b
+		}
+
+		this.worker.onTrace = e=>{
+			// lets store the trace so if someone packages
+			// it it can be used as a blockskipper
+			this.app.store.act("addTrace", store=>{
+				var trace = this.process.trace
+				trace.set(e.id, true)
+			})
 		}
 
 		this.worker.onLog = e=>{
@@ -204,7 +245,7 @@ module.exports = class UserProcess extends require('views/draw'){
 			})
 		}
 
-		this.worker.ping(4000)
+		this.worker.ping(40000)
 		this.worker.onPingTimeout = ()=>{
 			console.log("TERMINATING")
 			this.worker.terminate()

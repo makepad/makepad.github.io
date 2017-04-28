@@ -158,12 +158,6 @@ module.exports = class Source extends require('base/view'){
 					this.logs = {}
 				}
 
-				getNodeName(node){
-					if(!node) return ''
-					if(node.type === 'Identifier') node = lhs.name
-					if(node.type === 'MemberExpression') node = lhs.property.name
-				}
-
 				onLog(node, lhs){
 					// current line
 					var line = this.$fastTextLines.length
@@ -186,7 +180,7 @@ module.exports = class Source extends require('base/view'){
 
 				onEndFormatAST(){
 					// output probeset to my resource state
-					this.trace += '\n'+$P.toString()
+					//this.trace += '\n'+$P.toString()
 				}
 			},
 		}
@@ -200,6 +194,14 @@ module.exports = class Source extends require('base/view'){
 		this.app.closeTab(this)
 	}
 
+	onPackage(){
+		this.app.packageApp(this.resource)
+	}
+	
+	onTrace(){
+		this.app.addProcessTab(this.resource, true)
+	}
+	
 	onDraw(){
 		this.beginBg({
 		})
@@ -210,6 +212,17 @@ module.exports = class Source extends require('base/view'){
 			onClick:this.onPlay.bind(this)
 		})
 
+		this.drawButton({
+			id:'package',
+			icon:'archive',
+			onClick:this.onPackage.bind(this)
+		})
+
+		this.drawButton({
+			id:'trace',
+			icon:'filter',
+			onClick:this.onTrace.bind(this)
+		})
 		this.drawButton({
 			id:'close',
 			align:[1,0],
@@ -236,25 +249,4 @@ module.exports = class Source extends require('base/view'){
 			stackMarkers:this.resource.stackMarkers
 		})
 	}
-}
-
-function $P(id, arg){
-	if(!$P.onMessage){
-		function onMessage(){
-			$P.onMessage = false
-			return [{
-				fn:'onProbe',
-				msg:block
-			},[block]]
-		}
-		module.worker.batchMessage({
-			$:'worker1',
-			msg:{onMessage:onMessage}
-		})
-		$P.onMessage = true
-	}
-	// lets serialize arg into our typed array
-
-	console.log(arg)
-	return arg
 }

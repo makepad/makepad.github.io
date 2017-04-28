@@ -16,15 +16,15 @@ module.exports = class Turtle extends require('base/class'){
 	
 	dump() {
 		return (
-		'sx:' + this.sx + 
-				',sy:' + this.sy + 
-				',width:' + this.width + 
-				',height:' + this.height + 
-				',_x:' + this._x + 
-				',_y:' + this._y + 
-				',wx:' + this.wx + 
-				',wy:' + this.wy
-			)
+			'sx:' + this.sx + 
+			',sy:' + this.sy + 
+			',width:' + this.width + 
+			',height:' + this.height + 
+			',_x:' + this._x + 
+			',_y:' + this._y + 
+			',wx:' + this.wx + 
+			',wy:' + this.wy
+		)
 	}
 	
 	geom() {
@@ -104,6 +104,7 @@ module.exports = class Turtle extends require('base/class'){
 		
 		this.x1 = this.y1 = Infinity
 		this.x2 = this.y2 = -Infinity
+		this.$alignMx = this.$alignMy = -Infinity
 		//this.mx1 = this.my1 = 
 		this.mh = 0
 		// begin walking
@@ -121,13 +122,14 @@ module.exports = class Turtle extends require('base/class'){
 		var ax = this.$alignX, ay = this.$alignY
 		
 		if(ax !== 0 || ay !== 0) {
-			var dx = isNaN(this.width)?0:(this.width - (this.x2 - this.sx)) * ax
-			var dy = isNaN(this.height)?0:(this.height - (this.y2 - this.sy)) * ay
+			var dx = isNaN(this.width)?0:(this.width - (this.$alignMx - this.sx)) * ax
+			var dy = isNaN(this.height)?0:(this.height - (this.$alignMy - this.sy)) * ay
 			
 			//	dx = this.width - (this.x2 - this.sx  -15)
 			if(isNaN(dx) || dx === Infinity) dx = 0
 			if(isNaN(dy) || dy === Infinity) dy = 0
 			if(dx !== 0 || dy !== 0) {
+
 				this.view.$moveWritten(this.$writeCursor, dx, dy)
 				// update inner free delta when right/bottom aligning
 				// so the % width calc works
@@ -147,6 +149,7 @@ module.exports = class Turtle extends require('base/class'){
 			// reset walking position
 			this.wx = this.sx
 			this.wy = this.sy
+			this.$alignMx = this.$alignMy = -Infinity
 			this.mh = 0
 		}
 	}
@@ -216,8 +219,10 @@ module.exports = class Turtle extends require('base/class'){
 				}
 				
 				if(this.wy > this.y2) this.y2 = this.wy
+				if(this.wy > this.$alignMy) this.$alignMy = this.wy
 				var nx = this.wx + nh
 				if(nx > this.x2) this.x2 = nx
+				if(nx > this.$alignMx) this.$alignMx = nx
 			}
 			else { // walk horizontally
 				if(this.outer && (this.outer._wrap === 2 || 
@@ -250,14 +255,17 @@ module.exports = class Turtle extends require('base/class'){
 				// compute x bounds
 				// check if it wont wrap
 				if(this.wx > this.x2) this.x2 = this.wx
+				if(this.wx > this.$alignMx) this.$alignMx = this.wx
 				// compute y bounds
 				var ny = this.wy + nh
 				if(ny > this.y2) this.y2 = ny
+				if(ny > this.$alignMy) this.$alignMy = ny
 				
 			}
 		}
 		if(this._x < this.x1) this.x1 = this._x
 		if(this._y < this.y1) this.y1 = this._y
+
 	}
 	
 	displace(dx, dy, dw) {

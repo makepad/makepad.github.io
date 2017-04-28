@@ -117,7 +117,6 @@ module.exports = class View extends require('base/class'){
 			}
 		}
 
-
 		var app
 		if(owner){
 			this.owner = owner
@@ -140,14 +139,15 @@ module.exports = class View extends require('base/class'){
 		}
 	}
 	
-	allocPickId(prop){
+	allocPickId(prop, set){
 		if(!this.pickIds) this.pickIds = {}
 		var app = this.app
 		var pickId = app.$pickFree.pop()
 		if(!pickId) app.$pickIds[pickId = app.$pickAlloc++] = this
 		else app.$pickIds[pickId] = this
 		this.pickIds[pickId] = prop
-		this.turtle._pickId = pickId
+		if(set) this.turtle._pickId = pickId
+		return pickId
 	}
 
 	freePickIds(){
@@ -249,8 +249,8 @@ module.exports = class View extends require('base/class'){
 			if(begin < 0){ // its a view
 				// move the view
 				//console.log("MOVE", dx, dy)
-				props.$rx += dx
-				props.$ry += dy
+				props.$x += dx
+				props.$y += dy
 				continue
 			}
 			var end = writes[i + 2]
@@ -401,8 +401,8 @@ module.exports = class View extends require('base/class'){
 		nt.wy -= turtle.wy
 		nt.sx -= turtle.wx
 		nt.sy -= turtle.wy
-		todo.$rx = turtle.wx //+ turtle.$xAbs
-		todo.$ry = turtle.wy//+ turtle.$yAbs
+		todo.$x = turtle.wx //+ turtle.$xAbs
+		todo.$y = turtle.wy//+ turtle.$yAbs
 
 		var clip = todo.$viewClip
 		clip[0] = -50000
@@ -455,10 +455,8 @@ module.exports = class View extends require('base/class'){
 			x:xy[0] + (noScroll?0:(this.$mainTodo.xScroll || 0)),
 			y:xy[1] + (noScroll?0:(this.$mainTodo.yScroll || 0))
 		}
-		if(!this.heavy){
-			ret.x -= this.$x
-			ret.y -= this.$y
-		}
+		ret.x -= this.$x
+		ret.y -= this.$y
 		return ret
 	}
 
@@ -507,6 +505,7 @@ module.exports = class View extends require('base/class'){
 		//this._order = 0.
 		this.$todoCounter = 0
 		// verify if we need this
+		var oldPick = this.turtle._pickId
 		this.turtle._pickId = this.pickId
 
 		if(overload){
@@ -575,7 +574,9 @@ module.exports = class View extends require('base/class'){
 			var shaders = todo.$shaders
 			todo.$shaders = todo.$shaders[this.constructor.toolName] || 
 						(todo.$shaders[this.constructor.toolName] = {})
-			
+			// write this
+			this.todo.$writes.push(this, -1, -1)
+
 			// begin our own turtle
 			if(this.wrapped){
 				this.beginTurtle(this)
@@ -594,6 +595,10 @@ module.exports = class View extends require('base/class'){
 
 		if(this.heavy){
 			this.endTodo(this)
+			this.$x = 0
+			this.$y = 0
+			this.$w = this.$mainTodo.$w
+			this.$h = this.$mainTodo.$h
 		}
 		else{
 			// pop the shaders slot
@@ -603,9 +608,13 @@ module.exports = class View extends require('base/class'){
 			}
 			this.$x = this.turtle._x
 			this.$y = this.turtle._y
+			this.$w = this.turtle._w
+			this.$h = this.turtle._h
 		}
 
 		this.todo = undefined
+		this.turtle._pickId = oldPick
+
 	}
 
 	$allocShader(classname, order){
@@ -759,8 +768,8 @@ module.exports = class View extends require('base/class'){
 	}
 
 	isScrollBar(pickId){
-		if(this.$xScroll && this.$xScroll.$pickId === pickId) return true
-		if(this.$yScroll && this.$yScroll.$pickId === pickId) return true
+		if(this.$xScroll && this.$xScroll.pickId === pickId) return true
+		if(this.$yScroll && this.$yScroll.pickId === pickId) return true
 		return false
 	}
 
@@ -909,7 +918,7 @@ module.exports = class View extends require('base/class'){
 	}
 
 	transferFingerMove(digit, stamp){
-		this.app.transferFingerMove(digit, this.todo.todoId, typeof stamp === 'object'?stamp.$pickId:stamp)
+		this.app.transferFingerMove(digit, this.$mainTodo.todoId, typeof stamp === 'object'?stamp.$pickId:stamp)
 	}
 
 
@@ -1133,10 +1142,10 @@ module.exports.recomputeTodoMatrices = function recomputeTodoMatrices(todo, px, 
 
 	var hw = todo.$w * todo.$xCenter
 	var hh = todo.$h * todo.$yCenter
-	let rx = todo.$rx// - px
-	let ry = todo.$ry// - py
-	let x = todo.$x = rx + px
-	let y = todo.$y = ry + py
+	let rx = todo.$x// - px
+	let ry = todo.$y// - py
+	let ax = todo.$ax = rx + px
+	let ay = todo.$ay = ry + py
 
 	mat4.fromTSRT(todo.$viewPosition, -hw, -hh, 0, todo.$xScale, todo.$yScale, 1., 0, 0, radians(todo.$rotate), hw + rx, hh+ry, 0)
 
@@ -1149,15 +1158,15 @@ module.exports.recomputeTodoMatrices = function recomputeTodoMatrices(todo, px, 
 	}
 
 	// set the start of the scroll
-	todo.xsScroll = x + painter.x 
-	todo.ysScroll = y + painter.y 
+	todo.xsScroll = ax + painter.x 
+	todo.ysScroll = ay + painter.y 
 
 	//TODO FIX THIS
 	//console.log(painter.y)
 	let pp = todo.$view && todo.$view.$positionedPasses
 	if(pp){
 		for(let i = 0 ;i < pp.length;i++){
-			pp[i].framebuffer.position(x+painter.x + pp[i].dx, y+painter.y + pp[i].dy)
+			pp[i].framebuffer.position(ax+painter.x + pp[i].dx, ay+painter.y + pp[i].dy)
 		}
 	}
 
@@ -1170,6 +1179,7 @@ module.exports.recomputeTodoMatrices = function recomputeTodoMatrices(todo, px, 
 	var todoIds = todo.todoIds
 	for(var i = 0, l = children.length; i < l; i++){
 		var childTodo = todoIds[children[i]]
-		recomputeTodoMatrices(childTodo, x, y)
+		if(!childTodo) continue
+		recomputeTodoMatrices(childTodo, ax, ay)
 	}
 }

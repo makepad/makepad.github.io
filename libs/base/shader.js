@@ -153,47 +153,47 @@ module.exports = class Shader extends require('base/compiler'){
 	//
 	//
 	
-	linear(t) {
-		return clamp(t, 0., 1.)
+	linear(_t) {
+		return clamp(_t, 0., 1.)
 	}
 	
-	ease(t, begin, end) {
-		if(t < 0.) return 0.
-		if(t > 1.) return 1.
-		var a = -1. / max(1., (begin * begin))
-		var b = 1. + 1. / max(1., (end * end))
-		var t2 = pow(((a - 1.) * -b) / (a * (1. - b)), t)
+	ease(_t, _begin, _end) {
+		if(_t < 0.) return 0.
+		if(_t > 1.) return 1.
+		var a = -1. / max(1., (_begin * _begin))
+		var b = 1. + 1. / max(1., (_end * _end))
+		var t2 = pow(((a - 1.) * -b) / (a * (1. - b)), _t)
 		return (-a * b + b * a * t2) / (a * t2 - b)
 	}
 	
-	bounce(t, dampen) {
-		if(t < 0.) return 0.
-		if(t > 1.) return 1.
+	bounce(_t, _dampen) {
+		if(_t < 0.) return 0.
+		if(_t > 1.) return 1.
 		// add bounciness
-		var it = t * (1. / (1. - dampen)) + 0.5
-		var inlog = (dampen - 1.) * it + 1.
+		var it = _t * (1. / (1. - _dampen)) + 0.5
+		var inlog = (_dampen - 1.) * it + 1.
 		if(inlog <= 0.) return 1.
-		var k = floor(log(inlog) / log(dampen))
-		var d = pow(dampen, k)
-		return 1. - (d * (it - (d - 1.) / (dampen - 1.)) - pow((it - (d - 1.) / (dampen - 1.)), 2.)) * 4.
+		var k = floor(log(inlog) / log(_dampen))
+		var d = pow(_dampen, k)
+		return 1. - (d * (it - (d - 1.) / (_dampen - 1.)) - pow((it - (d - 1.) / (_dampen - 1.)), 2.)) * 4.
 	}
 	
-	elastic(t, duration, frequency, decay, ease) {
-		if(t < 0.) return 0.
-		if(t > 1.) return 1.
-		var easein = ease
+	elastic(_t, _duration, _frequency, _decay, _ease) {
+		if(_t < 0.) return 0.
+		if(_t > 1.) return 1.
+		var easein = _ease
 		var easeout = 1.
-		if(ease < 0.) easeout = -ease,easein = 1.
+		if(_ease < 0.) easeout = -_ease,easein = 1.
 		
-		if(t < duration) {
-			return this.easeTiming(t / duration, easein, easeout)
+		if(_t < _duration) {
+			return this.easeTiming(_t / _duration, easein, easeout)
 		}
 		else {
 			// we have to snap the frequency so we end at 0
-			var w = (floor(.5 + (1. - duration) * freq * 2.) / ((1. - duration) * 2.)) * PI * 2.
-			var velo = (this.easeTiming(1.001, easein, easeout) - this.easeTiming(1., easein, easeout)) / (0.001 * dur)
+			var w = (floor(.5 + (1. - _duration) * _frequency * 2.) / ((1. - _duration) * 2.)) * PI * 2.
+			var velo = (this.easeTiming(1.001, easein, easeout) - this.easeTiming(1., easein, easeout)) / (0.001 * _duration)
 			
-			return 1. + velo * ((sin((t - duration) * w) / exp((t - duration) * decay)) / w)
+			return 1. + velo * ((sin((_t - _duration) * w) / exp((_t - _duration) * _decay)) / w)
 		}
 	}
 	

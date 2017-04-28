@@ -1,13 +1,38 @@
 {
 	"project":"Makepad",
-	"open":["/examples/peg.js"],
-	"run":["/examples/peg.js"],
+	"open":["/examples/windtree.js"],
+	"run":["/examples/windtree.js"],
 	"name":"",
 	"folder":[
+		{"name":"platform","folder":[
+			{"name":"web","folder":[
+				{"name":"audio1.js"},
+				{"name":"cameras1.js"},
+				{"name":"debug1.js"},
+				{"name":"dropfiles1.js"},
+				{"name":"gamepad1.js"},
+				{"name":"http1.js"},
+				{"name":"fingers1.js"},
+				{"name":"keyboard1.js"},
+				{"name":"painter1.js"},
+				{"name":"socket1.js"},
+				{"name":"storage1.js"},
+				{"name":"worker1.js"}
+			]},
+			{"name":"boot.js"},
+			{"name":"web.js"},
+			{"name":"painterpaint.js"},
+			{"name":"painterscroll.js"},
+			{"name":"paintertodo.js"},
+			{"name":"painterubos.js"},
+			{"name":"painteruser.js"},
+			{"name":"service.js"}
+		]},
 		{"name":"libs","folder":[
 			{"name":"base","folder":[
 				{"name":"app.js"},
 				{"name":"log.js"},
+				{"name":"noise.js"},
 				{"name":"class.js"},
 				{"name":"compiler.js"},
 				{"name":"drawapp.js"},
@@ -90,13 +115,14 @@
 			]},
 			{"name":"parsers","folder":[
 				{"name":"font.js"},
-				{"name":"libjpegasm.js"},
-				{"name":"jpg.js"},
+				{"name":"base64.js"},
+				{"name":"base85.js"},
 				{"name":"js.js"},
 				{"name":"jscomments.js"},
 				{"name":"jsdefinitions.js"},
 				{"name":"jsexpression.js"},
 				{"name":"jsastformat.js"},
+				{"name":"jsminformat.js"},
 				{"name":"jstokenformat.js"},
 				{"name":"jsidentifier.js"},
 				{"name":"jslocation.js"},
@@ -112,7 +138,22 @@
 				{"name":"jstokentype.js"},
 				{"name":"jsutil.js"},
 				{"name":"jswhitespace.js"},
-				{"name":"wav.js"}
+				{"name":"inflate.js"},
+				{"name":"deflate.js"},
+				{"name":"wav.js"},
+				{"name":"zlibadler32.js"},
+				{"name":"zlibcommon.js"},
+				{"name":"zlibconstants.js"},
+				{"name":"zlibcrc32.js"},
+				{"name":"zlibdeflate.js"},
+				{"name":"zlibgzheader.js"},
+				{"name":"zlibinffast.js"},
+				{"name":"zlibinflate.js"},
+				{"name":"zlibinftrees.js"},
+				{"name":"zlibmessages.js"},
+				{"name":"zlibstrings.js"},
+				{"name":"zlibtrees.js"},
+				{"name":"zlibzstream.js"}
 			]}
 		]},
 		{"name":"examples", "open":true, "folder":[

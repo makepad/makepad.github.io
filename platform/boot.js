@@ -1,5 +1,5 @@
 
-
+var root = exports
 var loadServices = [
 	"debug1",
 	"fingers1",
@@ -58,7 +58,8 @@ var workerSrc =
 	timerLib.toString() + '\n' + 
 	promiseLib.toString() +'\n' + 
 	createOnMessage.toString() + '\n'+
-	workerBoot.toString() + ';workerBoot();\n' 
+	decodeException.toString() + '\n' + 
+	workerBoot.toString() + ';workerBoot(worker, global);\n' 
 
 
 root.createMainWorker = root.makeWorkerCreator(workerSrc, false)//root.hardwareConcurrency>=4?false:true)
@@ -226,7 +227,7 @@ allApps.push(Promise.all(allServices).then(function(){
 //
 //
 
-function workerBoot(){
+function workerBoot(worker, global){
 	var modules = {}
 
 	worker.services = {init:{}, ping:{}}
@@ -237,117 +238,7 @@ function workerBoot(){
 
 	createOnMessage(worker)
 
-	worker.decodeException = function(e){
-
-		if(e.number !== undefined){ // ms edge
-			//edge: e.message, e.description, e.number, e.stack
-			var lines = e.stack.split(/[\r\n]+/)
-			var stack = []
-			for(var i = 1; i < lines.length; i++){
-				var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
-				if(line){
-					stack.push({
-						method:line[1],
-						line:parseInt(line[3]),
-						path:line[2],
-						column:parseInt(line[4])
-					})
-				}
-			}
-			return {
-				message:e.message,
-				line:stack[0].line,
-				column:stack[0].column,
-				stack:stack
-			}
-		}
-		else if(e.fileName !== undefined){ // firefox
-			var lines = e.stack.split(/[\r\n]+/)
-			var stack = []
-			for(var i = 0; i < lines.length; i++){
-				var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
-				if(line){
-					stack.push({
-						method:line[1],
-						line:parseInt(line[3]),
-						path:line[2],
-						column:parseInt(line[4])
-					})
-				}
-			}
-			//firefox: e.message, e.fileName, e.lineNumber, e.columnNumber
-			return {
-				message:e.message,
-				line:e.lineNumber,
-				path:e.fileName,
-				column:e.columnNumber,
-				stack:stack
-			}
-		}
-		else if(e.line !== undefined){ // safari
-			var lines = e.stack.split(/\n/)
-			var stack = []
-			stack.push({
-				path:'unknown',
-				line:parseInt(e.line),
-				column:parseInt(e.column)
-			})
-			for(var i = 1; i < lines.length; i++){
-				var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
-				if(line){
-					stack.push({
-						method:line[1],
-						path:line[2] || 'unknown',
-						line:parseInt(line[3]),
-						column:parseInt(line[4])
-					})
-				}
-				else{
-					var method = lines[i]
-					if(method && method !== '[native code]') stack.push({
-						method:lines[i],
-						path:'unknown'
-					})
-				}
-			}
-			return {
-				message:e.message,
-				line:stack[0].line,
-				path:stack[0].path,
-				column:stack[0].column,
-				stack:stack
-			}
-
-		} 
-		else if(e.stack !== undefined){ // probably chrome
-			//chrome: e.message, e.stack (parse it)
-			var lines = e.stack.split(/\n/)
-			var stack = []
-			for(var i = 1; i < lines.length; i++){
-				var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
-				if(line){
-					stack.push({
-						method:line[1],
-						line:parseInt(line[3]) - 2,
-						path:line[2],
-						column:parseInt(line[4])
-					})
-				}
-			}
-			return {
-				message:lines[0],
-				line:stack[0].line,
-				path:stack[0].path,
-				column:stack[0].column,
-				stack:stack
-			}
-		}
-		else{ // amazing.
-			return {
-				message:JSON.stringify(e)
-			}
-		}
-	}
+	worker.decodeException = decodeException
 
 	class Module{
 
@@ -472,16 +363,17 @@ function workerBoot(){
 
 			if(worker.appMain && worker.appMain.destroy){
 				worker.appMain.destroy()
+				worker.appMain = undefined
 			}
 			worker.appMain = new module.exports()
 		}
 	}
 
 	// define math and promise globals
-	timerLib(global)
+	timerLib(global, worker)
 	mathLib(global)
-	promiseLib(global)
-	traceLib(global)
+	promiseLib(global, worker)
+	traceLib(global, worker)
 }
 
 
@@ -739,7 +631,7 @@ function traceLib(g){
 //
 //
 
-function timerLib(g){
+function timerLib(g, worker){
 	var _setTimeout = g.setTimeout
 	var _clearTimeout = g.clearTimeout
 	var _setInterval = g.setInterval
@@ -885,6 +777,118 @@ function mathLib(g){
 	//	}
 	//}
 }
+
+function decodeException(e){
+	if(e.number !== undefined){ // ms edge
+		//edge: e.message, e.description, e.number, e.stack
+		var lines = e.stack.split(/[\r\n]+/)
+		var stack = []
+		for(var i = 1; i < lines.length; i++){
+			var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
+			if(line){
+				stack.push({
+					method:line[1],
+					line:parseInt(line[3]),
+					path:line[2],
+					column:parseInt(line[4])
+				})
+			}
+		}
+		return {
+			message:e.message,
+			line:stack[0].line,
+			column:stack[0].column,
+			stack:stack
+		}
+	}
+	else if(e.fileName !== undefined){ // firefox
+		var lines = e.stack.split(/[\r\n]+/)
+		var stack = []
+		for(var i = 0; i < lines.length; i++){
+			var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
+			if(line){
+				stack.push({
+					method:line[1],
+					line:parseInt(line[3]),
+					path:line[2],
+					column:parseInt(line[4])
+				})
+			}
+		}
+		//firefox: e.message, e.fileName, e.lineNumber, e.columnNumber
+		return {
+			message:e.message,
+			line:e.lineNumber,
+			path:e.fileName,
+			column:e.columnNumber,
+			stack:stack
+		}
+	}
+	else if(e.line !== undefined){ // safari
+		var lines = e.stack.split(/\n/)
+		var stack = []
+		stack.push({
+			path:'unknown',
+			line:parseInt(e.line),
+			column:parseInt(e.column)
+		})
+		for(var i = 1; i < lines.length; i++){
+			var line = lines[i].match(/(.*?)\@(.*?)\:(\d+)\:(\d+)/)
+			if(line){
+				stack.push({
+					method:line[1],
+					path:line[2] || 'unknown',
+					line:parseInt(line[3]),
+					column:parseInt(line[4])
+				})
+			}
+			else{
+				var method = lines[i]
+				if(method && method !== '[native code]') stack.push({
+					method:lines[i],
+					path:'unknown'
+				})
+			}
+		}
+		return {
+			message:e.message,
+			line:stack[0].line,
+			path:stack[0].path,
+			column:stack[0].column,
+			stack:stack
+		}
+
+	} 
+	else if(e.stack !== undefined){ // probably chrome
+		//chrome: e.message, e.stack (parse it)
+		var lines = e.stack.split(/\n/)
+		var stack = []
+		for(var i = 1; i < lines.length; i++){
+			var line = lines[i].match(/\s*at\s*(.*?)\s\((.*?)\:(\d+)\:(\d+)\)/)
+			if(line){
+				stack.push({
+					method:line[1],
+					line:parseInt(line[3]) - 2,
+					path:line[2],
+					column:parseInt(line[4])
+				})
+			}
+		}
+		return {
+			message:lines[0],
+			line:stack[0].line,
+			path:stack[0].path,
+			column:stack[0].column,
+			stack:stack
+		}
+	}
+	else{ // amazing.
+		return {
+			message:JSON.stringify(e)
+		}
+	}
+}	
+
 
 //
 //

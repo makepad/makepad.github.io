@@ -35,7 +35,7 @@ module.exports = class Makepad extends require('base/app'){
 			HomeScreen :require('./makepad/homescreen'),
 			UserProcess:require('./makepad/userprocess'),
 			ProcessLog :require('./makepad/processlog'),
-			VisualEdit:require('./makepad/visualedit')
+			VisualEdit :require('./makepad/visualedit')
 			//Settings: require('./makepad/settings'),
 		}
 	}
@@ -43,13 +43,13 @@ module.exports = class Makepad extends require('base/app'){
 	constructor() {
 		super()
 		this.typeCounter = {}
-
+		
 		this.dock = new this.Dock(this, {
 			data:{
 				locked  :true,
 				position:-120,
 				vertical:false,
-				pane1:{
+				pane1   :{
 					locked  :true,
 					position:120,
 					vertical:true,
@@ -90,7 +90,7 @@ module.exports = class Makepad extends require('base/app'){
 						}
 					}
 				},
-				pane2:{
+				pane2   :{
 					selected:0,
 					tabs    :[
 						{type:'HomeScreen', id:'HomeLogs', icon:'info-circle'}
@@ -98,7 +98,7 @@ module.exports = class Makepad extends require('base/app'){
 				}
 			}
 		})
-
+		
 		this.app.store.act("init", store=>{
 			store.projectTree = {}
 			store.resourceMap = new Map()
@@ -134,7 +134,7 @@ module.exports = class Makepad extends require('base/app'){
 			tree.data = this.app.store.projectTree
 			tree.redraw()
 		})
-
+		
 		this.loadProject(projectFile).then(store=>{
 			
 			if(this.destroyed) return  // technically possible
@@ -147,14 +147,14 @@ module.exports = class Makepad extends require('base/app'){
 				for(var i = 0;i < proj.open.length;i++){
 					var open = proj.open[i]
 					var resource = resources.get(module.buildPath(open, '/'))
-					this.addSourceTab(resource, open)
+					this.addSourceTab(resource)
 				}
 			}
 			if(!module.worker.hasParent && proj.run) {
 				for(var i = 0;i < proj.run.length;i++){
 					var run = proj.run[i]
 					var resource = resources.get(module.buildPath(run, '/'))
-					this.addProcessTab(resource, run)
+					this.addProcessTab(resource)
 				}
 			}
 		})
@@ -198,14 +198,14 @@ module.exports = class Makepad extends require('base/app'){
 				// store all the data in the resource list
 				for(let i = 0;i < results.length;i++){
 					resourceMap.set(pathNames[i], {
-						node      :allNodes[i],
-						path      :pathNames[i],
-						data      :results[i],
-						trace     :'',
-						traceLines:null,
-						dirty     :false,
+						node        :allNodes[i],
+						path        :pathNames[i],
+						data        :results[i],
+						trace       :'',
+						traceLines  :null,
+						dirty       :false,
 						stackMarkers:null,
-						processes :[]
+						processes   :[]
 					})
 				}
 				// lets store it
@@ -243,6 +243,120 @@ module.exports = class Makepad extends require('base/app'){
 				this.findResourceDeps(dep, deps)
 			}
 		})
+	}
+	
+	packageApp(resource) {
+		// lets find the trace process
+		var trace = this.find('ProcessTrace' + resource.path)
+		
+		var rm = this.app.store.resourceMap
+		var list = [
+			'/platform/web/audio1.js',
+			// '/platform/web/cameras1.js',
+			//'/platform/web/debug1.js',
+			// '/platform/web/dropfiles1.js',
+			'/platform/web/fingers1.js',
+			//'/platform/web/gamepad1.js',
+			// '/platform/web/http1.js',
+			'/platform/web/keyboard1.js',
+			'/platform/web/painter1.js',
+			//'/platform/web/socket1.js',
+			'/platform/web/storage1.js',
+			'/platform/web/worker1.js',
+			//'/libs/base/compiler.min.js',
+			'/platform/boot.js',
+			'/platform/web.js',
+			'/platform/painterpaint.js',
+			'/platform/painterscroll.js',
+			'/platform/paintertodo.js',
+			'/platform/painterubos.js',
+			'/platform/painteruser.js',
+			'/platform/service.js'
+		]
+		var traceMap = trace.process.trace
+		var deps = {}
+		for(var i = 0;i < list.length;i++){
+			var path = list[i]
+			var thing = rm.get(path)
+			deps[path] = thing.data
+		}
+		var code = require('views/code')
+		var parser = require('parsers/js')
+		var min = new require('parsers/jsminformat')
+		var deflate = require('parsers/deflate')
+		var base64 = require('parsers/base64')
+		var base85 = require('parsers/base85')
+		min.defaultScope = Object.create(code.prototype.defaultScope)
+		min.defaultScope.window = 'global'
+		min.defaultScope.navigator = 'global'
+		min.defaultScope.document = 'global'
+		min.defaultScope.localStorage = 'global'
+		min.defaultScope.location = 'global'
+		
+		min.defaultScope.URL = 'global'
+		min.defaultScope.Blob = 'global'
+		min.defaultScope.XMLHttpRequest = 'global'
+		min.defaultScope.self = 'global'
+		min.defaultScope.Worker = 'global'
+		
+		this.findResourceDeps(resource, deps)
+		
+		// lets package the resources
+		var data = ''
+		var sizes = []
+		var stats = {}
+		for(var key in deps){
+			var value = deps[key]
+			// if(key === '/libs/base/infer.js')continue
+			// if(key.indexOf('/libs/parsers') === 0) continue
+			// if(key === '/libs/base/compiler.js') continue
+			if(typeof value !== 'string') continue
+			// lets parse and minimize the resource
+			var ast = parser.parse(value)
+			if(key.indexOf('/libs/base/types.js') == 0) {
+				ast.body[ast.body.length - 1] = {type:'Identifier', value:''}
+			}
+			if(key.indexOf('/platform/boot.js') == 0) {
+				//ast.body[ast.body.length - 1] = {type:'Identifier',value:''}
+				//ast.body[ast.body.length - 2] = {type:'Identifier',value:''}
+			}
+			if(key.indexOf('/platform') == 0) {
+				min.jsASTMinimize(ast, null, key, value, stats)
+			}
+			else {
+				
+				min.jsASTStrip(ast, traceMap, key, value, stats)
+			}
+			console.log(key, min.text)
+			
+			deps[key] = min.text
+			data += min.text
+			sizes.push({key:key, size:min.text.length})
+		}
+		var statsort = []
+		for(var key in stats){
+			statsort.push({key:key, size:stats[key]})
+		}
+		statsort = statsort.sort((a, b) =>{
+			if(a.size < b.size) return -1
+			if(a.size > b.size) return 1
+			return 0
+		})
+		sizes = sizes.sort((a, b) =>{
+			if(a.size < b.size) return -1
+			if(a.size > b.size) return 1
+			return 0
+		})
+		console.log(statsort)
+		//console.log(data)
+		var zip = deflate.gzip(data)
+		var b64 = base64.fromByteArray(zip)
+		var b85 = base85.encode(zip)
+		console.log(zip.length)
+		console.log(b64.length)
+		console.log(b85.length)
+		var zip2 = deflate.gzip(b64)
+		console.log(b64.length)
 	}
 	
 	// create uniquely identifyable tab titles
@@ -328,9 +442,9 @@ module.exports = class Makepad extends require('base/app'){
 		this.processTabTitles()
 	}
 	
-	addProcessTab(resource) {
-		
-		var old = this.find('Process' + resource.path)
+	addProcessTab(resource, trace) {
+		var title = 'Process' + (trace?'Trace':'')
+		var old = this.find(title + resource.path)
 		if(old) {
 			old.parent.selectTab(old)
 			return 
@@ -341,32 +455,35 @@ module.exports = class Makepad extends require('base/app'){
 			processList.push({
 				path         :resource.path,
 				runtimeErrors:[],
-				logs         :[]
+				logs         :[],
+				trace        :new Map()
 			})
 		})
 		
 		var tabs = this.find('HomeProcess').parent
 		let process = new this.UserProcess(this.dock, {
-			id      :'Process' + resource.path,
+			id      :title + resource.path,
 			tabTitle:resource.path,
+			tabIcon :trace?'filter':null,
 			resource:resource,
+			trace   :trace,
 			process :processList[processList.length - 1],
 		})
 		
 		tabs.selected = tabs.tabs.push(process) - 1
 		tabs.redraw()
-		
-		// add log
-		tabs = this.find('HomeLogs').parent
-		let log = new this.ProcessLog(this.dock, {
-			id      :'Log' + resource.path,
-			tabTitle:resource.path,
-			resource:resource,
-			process :processList[processList.length - 1]
-		})
-		tabs.selected = tabs.tabs.push(log) - 1
-		tabs.redraw()
-		
+		if(!trace) {
+			// add log
+			tabs = this.find('HomeLogs').parent
+			let log = new this.ProcessLog(this.dock, {
+				id      :'Log' + resource.path,
+				tabTitle:resource.path,
+				resource:resource,
+				process :processList[processList.length - 1]
+			})
+			tabs.selected = tabs.tabs.push(log) - 1
+			tabs.redraw()
+		}
 		this.processTabTitles()
 	}
 	

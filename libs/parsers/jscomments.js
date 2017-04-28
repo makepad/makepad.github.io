@@ -213,7 +213,6 @@ pp.commentsDump = function(){
 
 pp.commentAround = function(node, token){
 	var comments = this.storeComments
-	if(token === tt._var) console.log(comments)
 	for(var i = 0,l = comments.length;i < l; i++){
 		if(comments[i] == token){
 			var out = ''

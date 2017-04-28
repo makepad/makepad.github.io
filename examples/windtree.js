@@ -1,5 +1,5 @@
 new require('styles/dark')
-module.exports = require('base/drawapp').extend({
+module.exports = require('base/app').extend({
 	props       :{autumn:0},
 	tools       :{
 		Branch:require('shaders/quad').extend({

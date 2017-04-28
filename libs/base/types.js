@@ -114,6 +114,7 @@ types.samplerCube = Type({
 	sampler:true
 })
 
+types.g =
 types.gen = Type({
 	name:'gen'
 })

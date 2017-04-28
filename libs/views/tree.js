@@ -258,7 +258,7 @@ module.exports = class Tree extends require('base/view'){
 			//this.pickMap[textPick] = {node:node, type:'text'}
 			//this.setPickId(textPick)			
 			//this.setPickId(treePick)
-			this.allocPickId({node:node, type:'tree'})
+			this.allocPickId({node:node, type:'tree'}, true)
 			for(let j = 0, dl = depth.length - 1;j <= dl;j++){
 				var isFolder = j == dl && node.folder?1:0
 				if(this.hasRootLine || j > 0) 
@@ -299,7 +299,7 @@ module.exports = class Tree extends require('base/view'){
 			}
 			else this.turtle.wx += 2
 			//this.setPickId(textPick)
-			this.allocPickId({node:node, type:'text'})
+			this.allocPickId({node:node, type:'text'}, true)
 			if(this.selected === node) {
 				//this.scrollIntoView(0,this.turtle.wy,1,10)
 			}

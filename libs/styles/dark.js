@@ -1,3 +1,4 @@
+require('base/log')
 module.exports = class DarkStyle extends require('base/style'){
 	prototype(){
 		this.anims = {

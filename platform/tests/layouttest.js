@@ -6,6 +6,8 @@ module.exports = class extends require('base/app'){
 			Button: require('views/button').extend({
 			}),
 			Bg:require('shaders/bg').extend({
+			}),
+			Fill:require('shaders/bg').extend({
 			})
 		}
 	}
@@ -15,15 +17,43 @@ module.exports = class extends require('base/app'){
 	}
 
 	onDraw(){
+		// yeah our scroll area isnt filled. we need to fill it
+		this.beginBg({
+			w:'100%',
+			h:'100%'
+		})
 
+		
 		this.drawBg({
 			borderRadius:8,
 			color:'red',
+			align:[1,0],
+			margin:[0,0,0,5],
 			w:100,
 			h:100
 		})
-	
-		for(var i = 0; i < 500;i++){
+
+		this.drawButton({
+			id:'i1',
+			heavy:false,
+			text:'HELLO',
+		})
+		
+		this.drawButton({
+			id:'i2',
+			heavy:false,
+			text:'HELLO',
+		})
+		//this.turtle._x = 100
+		this.drawFill({
+			debug:1,
+			borderRadius:8,
+			color:'green',
+			w:'100#',
+			h:100
+		})
+		/*
+		for(var i = 0; i < 5;i++){
 			this.drawButton({
 				id:i,
 				heavy:i%2?true:false,
@@ -31,12 +61,7 @@ module.exports = class extends require('base/app'){
 				icon:'search'
 			})
 		}
-		this.drawBg({
-			borderRadius:8,
-			color:'red',
-			align:[0,1],
-			w:100,
-			h:100
-		})
+		*/
+		this.endBg()
 	}
 }

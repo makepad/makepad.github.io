@@ -8,7 +8,6 @@ var Worker = require('services/worker')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 var View = require('base/view')
-require('base/log')
 
 module.exports = class App extends View{
 	
@@ -92,7 +91,6 @@ module.exports = class App extends View{
 
 		// dispatch mouse events
 		fingers.onFingerDown = function(msg, localId){
-			
 			if(localId){
 				Worker.setFocus(localId)
 				var focusView = app.focusView
@@ -232,9 +230,9 @@ module.exports = class App extends View{
 		painter.onResize()
 	}
 
-	transferFingerMove(digit, todoId, pickId){
+	transferFingerMove(digit, pickId){
 		this.$fingerMove[digit] = {
-			todoId:todoId,
+			todoId:undefined,
 			pickId:pickId
 		}
 	}

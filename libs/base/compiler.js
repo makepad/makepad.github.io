@@ -342,7 +342,7 @@ module.exports = class Compiler extends require('base/class'){
 				vpre += '\t' + key + ' = ' + v1
 				for(let i = 0; i < slots; i++){
 					if(i) vpre += ', '
-					vpre += '\tATTR_' + (attrpid + Math.floor(i/4)) + '.' + compName[i%4]
+					vpre += '\tATTR_' + (attrid + Math.floor(i/4)) + '.' + compName[i%4]
 				}
 				vpre += ');\n'
 
@@ -774,7 +774,7 @@ module.exports = class Compiler extends require('base/class'){
 
 		scope.$turtle = 'this.turtle'
 		scope.$proto = 'this.'+className+'.prototype\n'
-		code += indent+'if(!overload) overload = {}\n'
+		code += indent+'if(!'+args[0]+') '+args[0]+' = {}\n'
 		var mask = args[1] || 1
 		// overload or class
 		for(let key in styleProps){
@@ -1090,7 +1090,7 @@ module.exports = class Compiler extends require('base/class'){
 		if(info.hasStates){
 			code += firstDraw
 		}
-
+		code += 'if($turtle._pickId == 0)console.error("HERE")\n'
 		code += 'if($turtle._debug){\n'
 		code += this.DUMPPROPS(args, indent, className, scope, target, source)
 		code += '}'
@@ -1282,7 +1282,7 @@ function decodeKeyFrame(name, value, first){
 	if(typeof value === 'string'){
 		var v4 = []
 		if(!types.colorFromString(value, 1.0, v4, 0)){
-			throw this.SyntaxErr(node,'Cant parse color '+node.value)
+			throw this.SyntaxErr(null,'Cant parse color '+value)
 		}
 		return 'vec4('+v4[0]+','+v4[1]+','+v4[2]+','+v4[3]+')'
 	}

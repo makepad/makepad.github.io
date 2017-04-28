@@ -156,6 +156,11 @@ painter.ALWAYS = 7
 var todoIds = new IdAlloc()
 
 function sortOrdering(a,b){
+	if(a.order === b.order){
+		if(a.index > b.index) return 1
+		if(a.index < b.index) return -1
+		return 0
+	}
 	if(a.order > b.order) return 1
 	if(a.order < b.order) return -1
 	return 0
@@ -398,7 +403,7 @@ painter.Todo = class Todo extends require('base/class'){
 		if(order) this.orderSort = true
 		if(this.orderStart<0) this.orderStart = this.length
 		if(prop) props.push(prop)
-		ordering.push({order:order, start:this.length})
+		ordering.push({order:order, index:ordering.length, start:this.length})
 	}
 
 	endOrder(order){
@@ -901,7 +906,7 @@ painter.Texture = class Texture extends require('base/class'){
 		textureIds.free(this.textureId)
 		service.batchMessage({
 			fn:'destroyTexture',
-			textureId:textureId
+			textureId:this.textureId
 		})
 		this.textureId = undefined
 	}
@@ -1221,7 +1226,7 @@ painter.Framebuffer = class Framebuffer extends require('base/class'){
 		framebufferIds.free(this.fbId)
 		service.batchMessage({
 			fn:'destroyFramebuffer',
-			fbId:fbId
+			fbId:this.fbId
 		})
 		this.fbId = undefined
 	}

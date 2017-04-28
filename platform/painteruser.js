@@ -401,7 +401,7 @@ module.exports = function painterUser(proto){
 	proto.user_destroyUbo = function(msg){
 		//console.log("DESTROY", msg.uboId)
 		var ubo = this.uboIds[msg.uboId]
-		if(!ubo) return console.log("Destroy ubo already deleted ")
+		if(!ubo) return console.log("Destroy ubo already deleted "+msg.uboId)
 		this.uboIds[msg.uboId] = undefined
 	}
 
@@ -492,9 +492,10 @@ module.exports = function painterUser(proto){
 		var last = 0
 		var repaint = false
 		var todofn = this.todofn
+		var argc = 0
 		for(let o = 0; o < len; o += argc + 2){
 			var fnid = i32[o]
-			var argc = i32[o + 1]
+			argc = i32[o + 1]
 			var fn = vaofn[fnid]
 			if(!fn) console.error('cant find vao '+fnid)
 			else fn.call(this, vao, i32, o)
