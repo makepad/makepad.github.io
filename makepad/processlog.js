@@ -323,6 +323,7 @@ module.exports = class Log extends require('base/view'){
 
 	onTailToggle(btn){
 		this.tail = btn.toggled
+		this.redraw()
 	}
 
 	onDraw() {
@@ -337,7 +338,7 @@ module.exports = class Log extends require('base/view'){
 			id:'play',
 			icon:'trash-o',
 			align:[1,0],
-			onClick:this.onTrash
+			onClick:this.onTrash.bind(this)
 		})
 
 		this.drawButton({
@@ -348,7 +349,7 @@ module.exports = class Log extends require('base/view'){
 			margin:[0,10,0,0],
 			toggle:true,
 			toggled:this.tail,
-			onClick:this.onTailToggle
+			onClick:this.onTailToggle.bind(this)
 		})
 
 		//this.beginBg()	
@@ -382,13 +383,14 @@ module.exports = class Log extends require('base/view'){
 			if(this.tail){
 				// how do we scroll to the bottom?
 				scroll = (logs.length+1)* lineHeight- this.turtle.height
+				//console.log(logs.length, scroll / lineHeight)
 				this.scrollTo(undefined,scroll, -1)
 			}
 
 			if(this.scrollAtDraw){
 				this.scrollIntoView(
 					undefined,
-					this.selectedRow * this.lineHeight + this.shiftY,
+					scroll =this.selectedRow * this.lineHeight + this.shiftY,
 					0,
 					this.lineHeight,
 					1.
@@ -403,9 +405,9 @@ module.exports = class Log extends require('base/view'){
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
 
-			this.turtle.pushShift(this.shiftX, this.shiftY)
+			this.turtle.pushShift(this.shiftX, iStart * lineHeight + this.shiftY)
 			// how do we see if a scrollbar is at the bottom?
-			this.turtle.wy = iStart * lineHeight + this.turtle.sy
+			//this.turtle.wy = this.turtle.sy
 			// set scroll area for async scrolling
 			this.scrollArea(
 				0,
@@ -419,7 +421,7 @@ module.exports = class Log extends require('base/view'){
 				this.drawSelectedRow({
 					align:[0,0],
 					x:0,
-					y:this.selectedRow * lineHeight + this.turtle.sy,
+					y:this.selectedRow * lineHeight + this.shiftY,// + this.turtle.sy,
 					w:charWidth*1000,
 					h:lineHeight
 				})
@@ -429,6 +431,7 @@ module.exports = class Log extends require('base/view'){
 			// lets write callstack position here
 			for(var i = iStart; i < iEnd; i++){
 				var log = logs[i]
+
 				if(!log || !log.data) continue
 				// lets draw what we logged
 				// all primitive values instead of object
@@ -451,52 +454,12 @@ module.exports = class Log extends require('base/view'){
 				}
 				this.deserializeLog(buf)
 				this.writeText('\n', this.styles.Value.undefined)
-				//this.turtle.wx = this.turtle.sx + this.shiftX
 			}
 		}
 
 		this.turtle.popShift()
-		//this.endBg()
 	}
 }
-/*
-module.exports = class extends require('base/view'){
-	prototype(){
-		this.tools = {
-			Log:Log,
-			Button: require('views/button').extend({
-				order:4,
-			}),
-			Bg:require('shaders/quad').extend({
-				w:'100%',
-				padding:[0,5,0,5],
-				wrap:false,
-				color:module.style.colors.bgNormal
-			})
-		}
-		this.props = {
-			w:'100%',
-			h:'100%',
-			tail:true,
-			resource:null,
-		}
-	}
-
-	constructor(...args){
-		super(...args)
-		this.log = new this.Log(this,{resource:this.resource})
-	}
-	
-
-	onDraw(){
-		//this.beginBg({
-		//})
-	
-		//this.endBg()
-		//this.lineBreak()
-		this.log.draw(this,{x:0,y:0,tail:this.tail})
-	}
-}*/
 
 var CharMap = {
 	9:'\\t',

@@ -81,7 +81,7 @@ module.exports = class View extends require('base/class'){
 				if(!this.$views) this.$views = {}
 				var view = this.$views[id]
 				if(!view){
-					this.$views[id] = view = new this.NAME(this, overload)
+					this.$views[id] = view = new this.NAME(this,overload)
 				}
 				else if(view.constructor !== this.NAME) throw new Error('View id collision detected' + id)
 				
@@ -99,16 +99,11 @@ module.exports = class View extends require('base/class'){
 		super()
 		// ok how do i get the 'name' of the thing
 		//console.log(this.constructor.name)
-
+		if(this.onStyle) this.onStyle(overload)
 		if(overload){
 			for(var key in overload){
 				var value = overload[key]
-				if(this.__lookupSetter__(key)){
-					this['_'+key] = value
-				}
-				else {
-					this[key] = value
-				}
+				this[key] = value
 			}
 		}
 

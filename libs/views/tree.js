@@ -301,7 +301,7 @@ module.exports = class Tree extends require('base/view'){
 			//this.setPickId(textPick)
 			this.allocPickId({node:node, type:'text'}, true)
 			if(this.selected === node) {
-				//this.scrollIntoView(0,this.turtle.wy,1,10)
+				this.scrollIntoView(0,this.turtle.wy,1,20)
 			}
 			
 			this.beginCursor({

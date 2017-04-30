@@ -190,13 +190,14 @@ module.exports = class Button extends require('base/view'){
 		}
 	}
 	
-	constructor(args) {
-		super(args)
+	constructor(...args) {
+		super(...args)
 	}
 	
 	onStyle(args) {
 		if(args) {
-			if(this.toggle && 'toggled'  in  args) {
+			if((this.toggle || args.toggle) && 'toggled'  in  args) {
+
 				if(args.toggled && !this.toggled) {
 					if(this.isOver) this.state = 'toggledOver'
 					else this.state = 'toggled'
