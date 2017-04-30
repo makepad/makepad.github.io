@@ -61,7 +61,7 @@ module.exports = class App extends View{
 		// lets do our first redraw
 		this.app = app
 		// we are the default focus
-		this.focusView = app
+		this.$focusView = app
 		// the main app has a todo
 
 		function fingerMessage(event, todoId, pickId, msg, isOut){
@@ -93,7 +93,7 @@ module.exports = class App extends View{
 		fingers.onFingerDown = function(msg, localId){
 			if(localId){
 				Worker.setFocus(localId)
-				var focusView = app.focusView
+				var focusView = app.$focusView
 				if(focusView) focusView.clearFocus()
 				return
 			}
@@ -169,7 +169,7 @@ module.exports = class App extends View{
 		}
 
 		function keyboardMessage(name, msg){
-			var iter = app.focusView
+			var iter = app.$focusView
 			while(iter){
 				if(iter[name] && iter[name](msg)) break
 				iter = iter.parent
@@ -209,7 +209,7 @@ module.exports = class App extends View{
 		var appBlur
 		keyboard.onAppBlur = function(msg, localId){
 			if(localId) return
-			appBlur = app.focusView
+			appBlur = app.$focusView
 			if(appBlur) appBlur.clearFocus()
 		}
 

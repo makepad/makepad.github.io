@@ -154,6 +154,7 @@ module.exports = class Button extends require('base/view'){
 	}
 	
 	onFingerDown(e) {
+		this.setFocus()
 		//if(this.onTap) this.onTap.call(this.view, this, e)
 		if(this.toggle) {
 			this.toggled = !this.toggled

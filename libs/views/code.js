@@ -5,7 +5,6 @@ module.exports = class Code extends require('views/edit'){
 
 	// mixin the formatter
 	prototype() {
-		this.blarp = true
 		this.mixin(require('parsers/jsastformat'))
 		this.mixin(require('parsers/jstokenformat'))
 		this.lazyUniforms = {
@@ -655,7 +654,7 @@ module.exports = class Code extends require('views/edit'){
 		// lets draw em
 
 
-		if(this.hasFocus) { // draw cursors
+		if(this.hasFocus()) { // draw cursors
 
 			var cursors = this.cs.cursors 
 			for(var i = 0; i < cursors.length; i++) {

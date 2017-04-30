@@ -34,7 +34,7 @@ module.exports = class extends require('base/app'){
 				h:'100%',
 				onDraw(){
 					this.drawQuad({color:'red',w:'100%',h:'100',down:1})
-					console.log(this.turtle.dump())
+					//console.log(this.turtle.dump())
 					this.subview.draw(this)
 				}
 			})

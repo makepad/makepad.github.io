@@ -23,7 +23,8 @@ module.exports = class Scrollbar extends require('base/view'){
 
 		this.props = {
 			vertical:0.,
-			moveScroll:0.
+			moveScroll:0.,
+			scrollBarSize:8
 		},
 		this.cursor = 'default',
 		this.tools = {

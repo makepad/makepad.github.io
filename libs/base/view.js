@@ -36,14 +36,13 @@ module.exports = class View extends require('base/class'){
 			order:0,
 			xOverflow:'scroll',
 			yOverflow:'scroll',
-			clip:true,
 			xCenter:0.5,
 			yCenter:0.5,
 			xScale:1,
 			yScale:1,
+			clip:true,
 			rotate:0,
 			time:0,
-			hasFocus:false,
 			wrapped:true,
 			frameId:0,
 			margin:[0,0,0,0],
@@ -75,8 +74,6 @@ module.exports = class View extends require('base/class'){
 			})
 		}
 
-		this.$scrollBarSize = 8
-		this.$scrollBarBg = '#0000'
 	
 		this.verbs = {
 			draw:function(overload){
@@ -88,14 +85,12 @@ module.exports = class View extends require('base/class'){
 				}
 				else if(view.constructor !== this.NAME) throw new Error('View id collision detected' + id)
 				
-				if(view.onStyle) view.onStyle(overload)
-				
 				view.draw(this, overload)
 				return view
 			}
 		}
 
-		this.blending = [painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
+		this.blendingEquation = [painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA, painter.ONE, painter.FUNC_ADD, painter.ONE_MINUS_SRC_ALPHA]
 		this.constantColor = undefined
 		this.depthFunction =  painter.GREATER
 	}
@@ -149,7 +144,7 @@ module.exports = class View extends require('base/class'){
 		if(set) this.turtle._pickId = pickId
 		return pickId
 	}
-
+	
 	freePickIds(){
 		var pickFree = this.app.$pickFree
 		for(var key in this.pickIds){
@@ -384,7 +379,7 @@ module.exports = class View extends require('base/class'){
 
 		// set up our stuff
 		todo.clearTodo()
-		todo.blending(ref.blending, ref.constantColor)
+		todo.blending(ref.blendingEquation, ref.constantColor)
 		todo.depthTest(ref.depthFunction, true)
 		if(todoCt === 0 && this.app === this){
 			todo.clearColor(0.2, 0.2, 0.2, 1)
@@ -504,10 +499,9 @@ module.exports = class View extends require('base/class'){
 		this.frameId = this.app.frameId
 		//this._order = 0.
 		this.$todoCounter = 0
-		// verify if we need this
-		var oldPick = this.turtle._pickId
-		this.turtle._pickId = this.pickId
-
+		
+		if(this.onStyle) this.onStyle(overload)
+				
 		if(overload){
 			for(var key in overload){
 				var value = overload[key]
@@ -582,6 +576,11 @@ module.exports = class View extends require('base/class'){
 				this.beginTurtle(this)
 			}
 		}
+
+		// set our pickid
+		var oldPick = this.turtle._pickId
+		this.turtle._pickId = this.pickId
+
 		// store our main todo
 		this.$mainTodo = this.todo
 		this.$writeStart = this.todo.$writes.length
@@ -614,7 +613,6 @@ module.exports = class View extends require('base/class'){
 
 		this.todo = undefined
 		this.turtle._pickId = oldPick
-
 	}
 
 	$allocShader(classname, order){
@@ -680,22 +678,25 @@ module.exports = class View extends require('base/class'){
 	}
 
 	$drawScrollBars(wx, wy, vx, vy, ref){
+		if(!this.ScrollBar) this.ScrollBar = this.app.ScrollBar
+
 		// store the draw width and height for layout if needed
 		var tw = wx//this.$wDraw = turtle._w
 		var th = wy//this.$hDraw = turtle._h
 		var xOverflow = ref.xOverflow
 		var yOverflow = ref.yOverflow
 		var addHor, addVer
+		var sbSize = this.ScrollBar.prototype.scrollBarSize
 		// lets compute if we need scrollbars
 		if(vy > th){
 			addVer = true
-			if(xOverflow === 'scroll') tw -= ref.$scrollBarSize
-			if(vx > tw) th -= ref.$scrollBarSize, addHor=true // add vert scrollbar
+			if(xOverflow === 'scroll') tw -= sbSize
+			if(vx > tw) th -= sbSize, addHor=true // add vert scrollbar
 		}
 		else if(vx > tw){
 			addHor = true
-			if(yOverflow === 'scroll') th -= ref.$scrollBarSize
-			if(vy > th) tw -= ref.$scrollBarSize, addVer = true
+			if(yOverflow === 'scroll') th -= sbSize
+			if(vy > th) tw -= sbSize, addVer = true
 		}
 
 		// view heights for scrolling on the todo
@@ -713,7 +714,6 @@ module.exports = class View extends require('base/class'){
 		if(xOverflow === 'scroll'){
 			if(addHor){//th < this.$hDraw){
 				this.lineBreak()
-				if(!this.ScrollBar) this.ScrollBar = this.app.ScrollBar
 				
 				if(!this.$xScroll) this.$xScroll = new this.ScrollBar(this,{
 					id:'hscroll',
@@ -722,7 +722,7 @@ module.exports = class View extends require('base/class'){
 					x:'0',
 					y:'@0',
 					w:'100%',
-					h:this.$scrollBarSize,// / painter.pixelRatio,
+					h:sbSize,// / painter.pixelRatio,
 				})
 				this.$xScroll.draw(this)
 				
@@ -746,7 +746,7 @@ module.exports = class View extends require('base/class'){
 					vertical:true,
 					x:'@0',
 					y:'0',
-					w:this.$scrollBarSize,// / painter.pixelRatio,
+					w:sbSize,// / painter.pixelRatio,
 					h:'100%',
 				})
 				
@@ -917,8 +917,11 @@ module.exports = class View extends require('base/class'){
 		this.todo = this.$todoStack.pop()
 	}
 
-	transferFingerMove(digit, stamp){
-		this.app.transferFingerMove(digit, this.$mainTodo.todoId, typeof stamp === 'object'?stamp.$pickId:stamp)
+	transferFingerMove(digit){
+		this.app.transferFingerMove(
+			digit, 
+			this.pickId
+		)
 	}
 
 
@@ -1048,22 +1051,26 @@ module.exports = class View extends require('base/class'){
 		this.setFocus()
 	}
 
+	hasFocus(){
+		return this === this.app.$focusView
+	}
+
 	setFocus(){
-		var old = this.app.focusView
+		var old = this.app.$focusView
 		//this.app.setWorkerKeyboardFocus()
 		if(old !== this){
-			this.app.focusView = this
-			if(old) old.hasFocus = false
-			this.hasFocus = true
+			this.app.$focusView = this
+			if(old && old.onClearFocus) old.onClearFocus(this)
+			if(this.onSetFocus) this.onSetFocus(old)
 			if(this.app.onFocusChange) this.app.onFocusChange(this, old)
 		}
 	}
 
 	clearFocus(){
-		var old = this.app.focusView		
-		this.app.focusView = undefined
-		if(old){
-			old.hasFocus = false
+		var old = this.app.$focusView		
+		this.app.$focusView = undefined
+		if(old && old.onClearFocus){
+			old.onClearFocus(undefined)
 		}
 		if(this.app.onFocusChange) this.app.onFocusChange(undefined, old)
 	}
