@@ -562,9 +562,9 @@ module.exports = class Edit extends require('base/view'){
 	
 	onFingerDown(f){
 		this.$lastKeyPress = undefined
+		console.log("HERE")
 		if(f.digit!== 1 || f.button !== 1  || this.isScrollBar(f.pickId)) return
 		if(f.touch && f.tapCount < 1) return// && this.cs.cursors[0].hasSelection()) return
-
 		this.setFocus()
 
 		if(f.meta){

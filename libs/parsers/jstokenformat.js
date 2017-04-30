@@ -337,7 +337,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.writeText("}", style.curly, parenId)
 			let lineh = this.turtle.mh
 			let blockh = this.turtle.wy
-			let pickId = this.pickIdCounter++
+			let pickId = this.allocPickId(tok)//this.pickIdCounter++
 			//this.pickIds[pickId] = node 
 			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 			if(yPos !== this.turtle.wy){
@@ -407,7 +407,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.$parenRanges.push({start:blStart, end:blEnd, id:parenId})
 
 			if(style === this.styles.Array && yPos !== this.turtle.wy){
-				let pickId = this.pickIdCounter++
+				let pickId = this.allocPickId(tok)
 				this.$blockRanges.push({start:blStart, end:blEnd, id:pickId})
 				// lets draw a block with this information
 				this.fastBlock(

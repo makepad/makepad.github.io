@@ -1,6 +1,6 @@
 var types = require('base/log').types
 
-class Log extends require('base/view'){
+module.exports = class Log extends require('base/view'){
 	
 	prototype() {
 		this.props = {
@@ -8,15 +8,19 @@ class Log extends require('base/view'){
 			h:'100#',
 			padding:0,
 			resource:null,
-			overflow:'scroll',
-			tail:true
+			tail:true,
+			order:2,
+			shiftX:5,
+			shiftY:5,
+			selectedRow:-1
 		}
+
 		var colors = module.style.colors
-		this.order = 2
-		this.shiftX = 5
-		this.shiftY = 5
-		this.selectedRow = 0
+
 		this.tools = {
+			Button: require('views/button').extend({
+				order:4,
+			}),
 			Bg:require("shaders/bg").extend({
 				color:module.style.colors.bgNormal
 			}),
@@ -282,17 +286,6 @@ class Log extends require('base/view'){
 		var newRow = clamp(row,0,logs.length-1)
 		if(newRow!==this.selectedRow){
 			this.selectedRow = newRow
-			// lets scroll it into view
-			/*if(this.scrollIntoView(
-				undefined,
-				this.selectedRow * this.lineHeight + this.shiftY,
-				0,
-				this.lineHeight,
-				1.
-			)){
-				this.doScroll = true
-				this.redraw()
-			}*/
 			this.scrollAtDraw = true
 			this.onSelectedChange()
 		}
@@ -321,12 +314,43 @@ class Log extends require('base/view'){
 		this.selectRow(row)
 	}
 
+	onTrash(){
+		// send new init message to worker
+		this.app.store.act("clearLog",store=>{
+			this.resource.processes[0].logs.length = 0
+		})
+	}
+
+	onTailToggle(btn){
+		this.tail = btn.toggled
+	}
+
 	onDraw() {
 		this.drawBg({
 			w:'100%',
 			h:'100%',
 			moveScroll:0
 		})
+
+		this.drawButton({
+			heavy:true,
+			id:'play',
+			icon:'trash-o',
+			align:[1,0],
+			onClick:this.onTrash
+		})
+
+		this.drawButton({
+			heavy:true,
+			id:'close',
+			align:[1,0],
+			icon:'level-down',
+			margin:[0,10,0,0],
+			toggle:true,
+			toggled:this.tail,
+			onClick:this.onTailToggle
+		})
+
 		//this.beginBg()	
 		this.$fastTextChunks = []
 		this.$fastTextStyles = []
@@ -378,11 +402,10 @@ class Log extends require('base/view'){
 			this.safeHeight = safeWin * lineHeight
 			var iStart = max(0,floor(scroll / lineHeight)-safeWin)
 			var iEnd = min(iStart + ceil(height / lineHeight)+2*safeWin, logs.length)
-			
-			this.turtle.wx = this.turtle.sx + this.shiftX
+
+			this.turtle.pushShift(this.shiftX, this.shiftY)
 			// how do we see if a scrollbar is at the bottom?
-			this.turtle.wy = iStart * lineHeight + this.turtle.sy + this.shiftY
-			
+			this.turtle.wy = iStart * lineHeight + this.turtle.sy
 			// set scroll area for async scrolling
 			this.scrollArea(
 				0,
@@ -390,14 +413,18 @@ class Log extends require('base/view'){
 				charWidth*1000,
 				(iEnd-iStart)*lineHeight
 			)
-
 			// lets draw a cursor
-			this.drawSelectedRow({
-				x:0,
-				y:this.selectedRow * lineHeight + this.turtle.sy + this.shiftY,
-				w:charWidth*1000,
-				h:lineHeight
-			})
+			if(this.selectedRow>=0){
+				this.turtle.$debug = 1
+				this.drawSelectedRow({
+					align:[0,0],
+					x:0,
+					y:this.selectedRow * lineHeight + this.turtle.sy,
+					w:charWidth*1000,
+					h:lineHeight
+				})
+				this.turtle.$debug = 0
+			}
 
 			// lets write callstack position here
 			for(var i = iStart; i < iEnd; i++){
@@ -424,13 +451,15 @@ class Log extends require('base/view'){
 				}
 				this.deserializeLog(buf)
 				this.writeText('\n', this.styles.Value.undefined)
-				this.turtle.wx = this.turtle.sx + this.shiftX
+				//this.turtle.wx = this.turtle.sx + this.shiftX
 			}
 		}
+
+		this.turtle.popShift()
 		//this.endBg()
 	}
 }
-
+/*
 module.exports = class extends require('base/view'){
 	prototype(){
 		this.tools = {
@@ -458,42 +487,16 @@ module.exports = class extends require('base/view'){
 		this.log = new this.Log(this,{resource:this.resource})
 	}
 	
-	onTrash(){
-		// send new init message to worker
-		this.app.store.act("clearLog",store=>{
-			this.resource.processes[0].logs.length = 0
-		})
-	}
-
-	onTailToggle(btn){
-		this.tail = btn.toggled
-	}
 
 	onDraw(){
 		//this.beginBg({
 		//})
-		
-		this.drawButton({
-			id:'play',
-			icon:'trash-o',
-			align:[1,0],
-			onClick:this.onTrash
-		})
-
-		this.drawButton({
-			id:'close',
-			align:[1,0],
-			icon:'level-down',
-			margin:[2,10,0,0],
-			toggle:true,
-			toggled:this.tail,
-			onClick:this.onTailToggle
-		})
+	
 		//this.endBg()
 		//this.lineBreak()
 		this.log.draw(this,{x:0,y:0,tail:this.tail})
 	}
-}
+}*/
 
 var CharMap = {
 	9:'\\t',

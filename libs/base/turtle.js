@@ -35,6 +35,20 @@ module.exports = class Turtle extends require('base/class'){
 			h:this._h
 		}
 	}
+
+	pushShift(sx, sy){
+		if(!this.$pushShift) this.$pushShift = []
+		this.$pushShift.push(this.sx, this.sy)
+		this.sx = sx, 
+		this.sy = sy
+		this.wx = this.sx
+		this.wy = this.sy		
+	}
+
+	popShift(){
+		this.sy = this.$pushShift.pop()
+		this.sx = this.$pushShift.pop()
+	}
 	
 	begin(outer, walkZero) {
 		

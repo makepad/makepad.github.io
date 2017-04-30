@@ -126,7 +126,6 @@ module.exports = class CodeBlock extends require('base/shader'){
 	}
 
 	pixel(){$
-		if(this.pickId == 0.) return 'red'
 
 		//return 'red'
 		//return this.color*0.5
