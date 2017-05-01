@@ -394,7 +394,7 @@ module.exports = class extends require('/platform/service'){
 
 	onCheckMacForce(e){
 		// lets reuse our mouse
-		var fingers = touchToFinger(touchPollEvent)
+		var fingers = touchToFinger(this.touchPollEvent)
 		for(let i = 0; i < fingers.length; i++){
 			fingers[i].force = e.webkitForce / 3.0
 		}

@@ -42,7 +42,7 @@ module.exports = function painterUser(proto){
 		//	this.shaderIds[shaderid] = shader
 		//	return
 		//}
-		shader = gl.globalShaderCache[cacheid] 
+		var shader = gl.globalShaderCache[cacheid] 
 		if(!shader){
 			shader = gl.globalShaderCache[cacheid] = this.compileShader(vertexcode, pixelcode)
 		}
@@ -213,6 +213,7 @@ module.exports = function painterUser(proto){
 	
 	proto.user_destroyTexture = function(msg){
 		// drop it
+		var gl = this.gl
 		var tex = this.textureIds[msg.texId]
 		if(!tex) return console.log("Destroy texture already deleted ")
 		this.textureIds[msg.texId] = undefined
@@ -567,9 +568,9 @@ module.exports = function painterUser(proto){
 		for(let i =0 ; i < args.length; i++){
 			var s = '' + args[i]
 			if(s.length > 1024){
-				out = ''
+				var out = ''
 				var a = s.split('\n')
-				for(j = 0; j < a.length; j++){
+				for(var j = 0; j < a.length; j++){
 					out += a[j] + '\n'
 					if(out.length>512){
 						console.log(out)
@@ -598,7 +599,7 @@ module.exports = function painterUser(proto){
 			return logShaderError(gl.getShaderInfoLog(pixelshader), addLineNumbers(pixelcode))
 		}
 
-		shader = gl.createProgram()
+		var shader = gl.createProgram()
 		gl.attachShader(shader, vertexshader)
 		gl.attachShader(shader, pixelshader)
 		gl.linkProgram(shader)

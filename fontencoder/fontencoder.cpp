@@ -5,13 +5,14 @@ using namespace msdfgen;
 
 int main(int argc, const char **argv) {
 
-    if(argc != 6){
-        printf("fontencoder font.ttf <start unicode> <end unicode> <scale: 2.5 is decent default> out.font\n");
+
+    if(argc < 6){
+        printf("fontencoder font.ttf out.font <scale 2.5> <start unicode> <end unicode> <unicodeset> out.font\n");
         return -1;
     }
 
     const char *fontFile = argv[1];
-    const char *outFile = argv[5];
+    const char *outFile = argv[2];
 
     FreetypeHandle *ft = initializeFreetype();
     if (!ft) {
@@ -28,13 +29,30 @@ int main(int argc, const char **argv) {
 
     // output buffer
 
-    int start = strtol(argv[2], NULL,10);
-    int end = strtol(argv[3], NULL,10);
-    double scale = strtod(argv[4], NULL);
+    double scale = strtod(argv[3], NULL);
 
     int outWidth = 4096;
     int outHeight = 4096;
-    int len = end-start;
+    //int len = end-start;
+    //var 
+
+    int maxInput = 65536;
+    unsigned char *inputSet = new unsigned char[maxInput];
+    memset(inputSet, maxInput, 0);
+
+    if(argc == 6){
+        int start = strtol(argv[4], NULL,16);
+        int end = strtol(argv[5], NULL,16);
+        for(int c = start;c<end;c++){
+            inputSet[c] = 1;
+        }
+    }
+    else{
+        for(int c = 4; c < argc; c++){
+            int item = strtol(argv[c], NULL,16);
+            inputSet[item] = 1;
+        }
+    }
 
     //int outputLen = outWidth*outHeight*3;
     //unsigned char *output = new unsigned char[outputLen];
@@ -50,17 +68,17 @@ int main(int argc, const char **argv) {
     memset(output4, outputLen, 0);    
    // memset(output, outputLen, 0);    
 
-    float* glyph_x1 = new float[len];
-    float* glyph_y1 = new float[len];
-    float* glyph_x2 = new float[len];
-    float* glyph_y2 = new float[len];
-    float* glyph_advance = new float[len];
-    int* glyph_unicode = new int[len];
+    float* glyph_x1 = new float[maxInput];
+    float* glyph_y1 = new float[maxInput];
+    float* glyph_x2 = new float[maxInput];
+    float* glyph_y2 = new float[maxInput];
+    float* glyph_advance = new float[maxInput];
+    int* glyph_unicode = new int[maxInput];
     
-    int* glyph_toffset = new int[len];
-    int* glyph_tsingle = new int[len];
-    int* glyph_tw = new int[len];
-    int* glyph_th = new int[len];
+    int* glyph_toffset = new int[maxInput];
+    int* glyph_tsingle = new int[maxInput];
+    int* glyph_tw = new int[maxInput];
+    int* glyph_th = new int[maxInput];
 
     int bitmapW = ceil(64 * scale);
     int bitmapH = ceil(64 * scale);
@@ -72,15 +90,14 @@ int main(int argc, const char **argv) {
 
     double fontScale = 0;
     getFontScale(fontScale, font);
-    int skipped = 0;
 
     int o1 = 0;
     int o2 = 0;
     int slot = 0;
-    for(int i = start; i < end; i++){
+    for(int i = 0; i < maxInput; i++){
         Shape shape;
         double advance = 0.;
-        if(!getCharIndex(font, i)){
+        if(inputSet[i] == 0 || !getCharIndex(font, i)){
             continue;
         }
         if (loadGlyph(shape, font, i, &advance)) {
@@ -191,7 +208,7 @@ int main(int argc, const char **argv) {
         finalHeight *= 2;
     }
 
-    int headerLen = (len-skipped)*10*4+4*5;
+    int headerLen = (slot)*10*4+4*5;
     char* header = new char[headerLen];
     unsigned short *u16 = (unsigned short*)header;
     unsigned int *u32 = (unsigned int*)header;
@@ -216,7 +233,7 @@ int main(int argc, const char **argv) {
     u32[0] = 0x03F01175;
     u16[2] = outWidth;
     u16[3] = finalHeight;
-    u32[2] = len - skipped;
+    u32[2] = slot;
     u32[3] = o1;
     u32[4] = kernsize / 3;
     // write out font table
@@ -259,7 +276,7 @@ int main(int argc, const char **argv) {
     
     deinitializeFreetype(ft);
     
-    printf("Written %dx%d %d glyphs as %s\n", outWidth, finalHeight, len-skipped, outFile);
+    printf("Written %dx%d %d glyphs as %s\n", outWidth, finalHeight, slot, outFile);
 
     return 0;
 }

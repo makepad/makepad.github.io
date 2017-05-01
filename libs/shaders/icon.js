@@ -1,7 +1,7 @@
 module.exports = class Icon extends require('shaders/text'){
 
 	prototype(){
-		this.font = require('fonts/fontawesome.font')
+		this.font = require('fonts/fontawesome_makepad.font')
 		this.aaFactor = 0.004
 		this.verbs = {
 			lookup:{

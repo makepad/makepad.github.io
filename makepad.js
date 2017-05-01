@@ -8,7 +8,9 @@ var projectFile = "/makepad.json"
 var currentFile = "./examples/windtree.js"
 var ProjectStore = require('base/store')
 var matchCache = {}
-
+// ICON list
+// search copy exchange play archive filter close gear info puzzle television
+// f002 f0c5 f0ec f04b f187 f0b0 f00d f013 f129 f12e f26c
 module.exports = class Makepad extends require('base/app'){
 	
 	prototype() {
@@ -273,7 +275,7 @@ module.exports = class Makepad extends require('base/app'){
 			'/platform/painteruser.js',
 			'/platform/service.js'
 		]
-		var traceMap = trace.process.trace
+		var traceMap = trace && trace.process && trace.process.trace
 		var deps = {}
 		for(var i = 0;i < list.length;i++){
 			var path = list[i]
@@ -314,7 +316,7 @@ module.exports = class Makepad extends require('base/app'){
 			// lets parse and minimize the resource
 			var ast = parser.parse(value)
 			if(key.indexOf('/libs/base/types.js') == 0) {
-				ast.body[ast.body.length - 1] = {type:'Identifier', value:''}
+				//ast.body[ast.body.length - 1] = {type:'Identifier', value:''}
 			}
 			if(key.indexOf('/platform/boot.js') == 0) {
 				//ast.body[ast.body.length - 1] = {type:'Identifier',value:''}
@@ -327,7 +329,7 @@ module.exports = class Makepad extends require('base/app'){
 				
 				min.jsASTStrip(ast, traceMap, key, value, stats)
 			}
-			console.log(key, min.text)
+			//console.log(key, min.text)
 			
 			deps[key] = min.text
 			data += min.text
@@ -348,7 +350,8 @@ module.exports = class Makepad extends require('base/app'){
 			return 0
 		})
 		console.log(statsort)
-		//console.log(data)
+		//console.log(Object.keys(deps))
+		console.log(data.length)
 		var zip = deflate.gzip(data)
 		var b64 = base64.fromByteArray(zip)
 		var b85 = base85.encode(zip)
@@ -357,6 +360,9 @@ module.exports = class Makepad extends require('base/app'){
 		console.log(b85.length)
 		var zip2 = deflate.gzip(b64)
 		console.log(b64.length)
+		// alright lets generate a single HTML file.
+		// non packed. including everything.
+
 	}
 	
 	// create uniquely identifyable tab titles

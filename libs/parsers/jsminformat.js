@@ -101,7 +101,9 @@ module.exports = class JSMinimizer extends require('base/class'){
 			// declare function
 			// declare variables
 			if(statement.type === 'FunctionDeclaration') {
-				this.scope[statement.id.name] = this.scope['%']++
+				if(!this.scope[statement.id.name]){
+					this.scope[statement.id.name] = this.scope['%']++
+				}
 			}
 			if(statement.type === 'VariableDeclaration'){
 				// put the vars on the scope
@@ -111,14 +113,18 @@ module.exports = class JSMinimizer extends require('base/class'){
 					var decl = decls[j]
 					var id = decl.id
 					if(id.type === 'Identifier') {
-						this.scope[id.name] = this.scope['%']++
+						if(!this.scope[id.name]){
+							this.scope[id.name] = this.scope['%']++
+						}
 					}
 				}
 			}
 			if(statement.type === 'ClassDeclaration'){
 				var id = statement.id
 				if(id) {
-					this.scope[id.name] = this.scope['%']++
+					if(!this.scope[id.name]){
+						this.scope[id.name] = this.scope['%']++
+					}
 				}
 			}
 		}
@@ -269,6 +275,7 @@ module.exports = class JSMinimizer extends require('base/class'){
 		
 	mapId(name){
 		var id = this.scope[name]
+		if(id === 'global') return name
 		var str = ''
 		while(id){
 			var step = id%(this.lut.length-1)
@@ -393,24 +400,25 @@ module.exports = class JSMinimizer extends require('base/class'){
 			if(param.type === 'Identifier') {
 				var name = param.name
 				if(name.charAt(0)==='_'){
-					this.scope[name] = 'notouch'
+					this.scope[name] = name//'notouch'
 					this.text += name
 				}
 				else{
-					this.scope[name] = this.scope['%']++
+					if(!this.scope[name]) this.scope[name] = this.scope['%']++
 					this.text += this.mapId(name)
 				}
 			}
 			else if(param.type === 'AssignmentPattern'){
 				if(param.left.type === 'Identifier'){
 					var name = param.left.name
-					this.scope[name] = this.scope['%']++
+					if(!this.scope[name]) this.scope[name] = this.scope['%']++
 				}
 				this[param.type](param, path+'('+i+')')
 			}
 			else {
 				if(param.type === 'RestElement') {
-					this.scope[param.argument.name] = 'arg'
+					var name = param.argument.name
+					if(!this.scope[name]) this.scope[name] = this.scope['%']++
 				}
 				this[param.type](param, path+'('+i+')')
 			}
@@ -450,6 +458,7 @@ module.exports = class JSMinimizer extends require('base/class'){
 		
 		if(id.type === 'Identifier') {
 			if(!this.scope[id.name]) this.scope[id.name] = this.scope['%']++
+			if(this.mapId(id.name) === 'undefined') debugger
 			this.text += this.mapId(id.name)
 		}
 		else this[id.type](id, path)
@@ -772,12 +781,13 @@ module.exports = class JSMinimizer extends require('base/class'){
 			var param = params[i]
 			if(param.type === 'Identifier') {
 				var name = param.name
-				this.scope[name] = 'arg'
-				this.text += name
+				if(!this.scope[name]) this.scope[name] = this.scope['%']++
+				this.text += this.mapId(name)
 			}
 			else {
 				if(param.type === 'RestElement') {
-					this.scope[param.argument.name] = 'arg'
+					var name = param.argument.name
+					if(!this.scope[name]) this.scope[name] = this.scope['%']++
 				}
 				this[param.type](param,path+'('+i+')')
 			}

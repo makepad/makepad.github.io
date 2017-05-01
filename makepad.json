@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
 	"open":["/examples/windtree.js"],
-	"run":["/examples/windtree.js"],
+	"run":[],
 	"name":"",
 	"folder":[
 		{"name":"platform","folder":[
@@ -60,7 +60,7 @@
 				{"name":"view.js"}
 			]},
 			{"name":"fonts","folder":[
-				{"name":"fontawesome.font"},
+				{"name":"fontawesome_makepad.font"},
 				{"name":"ubuntu_regular_256.font"},
 				{"name":"ubuntu_monospace_256.font"}
 			]},

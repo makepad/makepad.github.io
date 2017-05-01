@@ -193,6 +193,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 	//ParenthesizedExpression:{expression:1}
 	ParenthesizedExpression(node){
 		var exp = node.expression
+		if(!this[exp.type]) debugger
 		var ret = '(' + this[exp.type](exp) + ')'
 		node.infer = node.expression.infer
 		return ret
@@ -502,7 +503,6 @@ module.exports = class ShaderInfer extends require('base/class'){
 
 				var value = this.root[propname]
 				var fullname = 'thisDOT' + propname
-
 				// its a function
 				if(typeof value === 'function'){
 					this.root.$methodDeps[propname] = value
@@ -519,7 +519,6 @@ module.exports = class ShaderInfer extends require('base/class'){
 				if(typeof value === 'object' && value.constructor === Object || 
 					typeof value === 'number' || typeof value === 'string' ||
 					Array.isArray(value)){
-					if(propname === 'mesh') console.log("WHAT")
 					this.root.$defineProp(propname, value)
 				}
 
@@ -649,6 +648,7 @@ module.exports = class ShaderInfer extends require('base/class'){
 				}
 
 				if(value === undefined){ // something undefined
+
 					// its already defined
 					var prev = this.varyOut[fullname] || this.varyIn && this.varyIn[fullname]
 					

@@ -280,6 +280,7 @@ module.exports = class Log extends require('base/view'){
 	}
 
 	selectRow(row){
+		if(this.scrollAtDraw) return
 		var logs = this.resource && this.resource.processes && this.resource.processes[0].logs.__unwrap__
 		if(!logs) return
 		if(row<0) row = logs.length - row
@@ -378,11 +379,10 @@ module.exports = class Log extends require('base/view'){
 			// be sure to start at yScroll and stop when > size
 			var ypos = 0
 			var height = this.turtle.height
-			var scroll = this.todo.yScroll
-
+			
 			if(this.tail){
 				// how do we scroll to the bottom?
-				scroll = (logs.length+1)* lineHeight- this.turtle.height
+				var scroll = (logs.length+1)* lineHeight- this.turtle.height
 				//console.log(logs.length, scroll / lineHeight)
 				this.scrollTo(undefined,scroll, -1)
 			}
@@ -390,7 +390,7 @@ module.exports = class Log extends require('base/view'){
 			if(this.scrollAtDraw){
 				this.scrollIntoView(
 					undefined,
-					scroll =this.selectedRow * this.lineHeight + this.shiftY,
+					this.selectedRow * this.lineHeight + this.shiftY,
 					0,
 					this.lineHeight,
 					1.
@@ -398,7 +398,7 @@ module.exports = class Log extends require('base/view'){
 				this.scrollAtDraw=false
 			}
 
-
+			var scroll = this.todo.yScroll
 			// compute the start i and end i
 			var safeWin = 5
 			this.safeHeight = safeWin * lineHeight

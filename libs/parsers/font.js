@@ -20,7 +20,7 @@ module.exports = function(font){
 		var oG = off + header
 		var oB = off*2 + header
 		var oS = off*3 + header
-		if(len > 30000) throw new Error('Font length incorrect')
+		if(len > 30000) throw new Error('Font length incorrect:'+ len)
 		var o = 5
 		var ox = 0
 		var oy = 0
