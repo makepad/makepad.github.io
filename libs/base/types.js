@@ -393,8 +393,9 @@ types.colorFromStringPacked = function(str, alpha, ar, o){
 	return false
 }
 
+
 types.colormap = {
-	// wikipedia
+	// CSS
 	AliceBlue:0xF0F8FF,
 	AntiqueWhite:0xFAEBD7,
 	Aqua:0x00FFFF,
@@ -836,6 +837,7 @@ types.colormap = {
 	BlueGrey800:0x37474F,
 	BlueGrey900:0x263238
 }
+
 for(var key in types.colormap){
 	types.colormap[key.toLowerCase()] = types.colormap[key]
 }
