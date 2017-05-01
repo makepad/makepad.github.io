@@ -59,7 +59,7 @@ var workerSrc =
 	promiseLib.toString() +'\n' + 
 	createOnMessage.toString() + '\n'+
 	decodeException.toString() + '\n' + 
-	workerBoot.toString() + ';workerBoot(worker, global);\n' 
+	'('+workerBoot.toString() + ')(worker, global);\n' 
 
 
 root.createMainWorker = root.makeWorkerCreator(workerSrc, false)//root.hardwareConcurrency>=4?false:true)
@@ -77,7 +77,6 @@ root.workerIdsAlloc = 1
 root.startWorker = function(serviceList, platform, parent){
 
 	var worker = parent?root.createSubWorker():root.createMainWorker()
-
 	worker.workerId = root.workerIdsAlloc++
 	worker.serviceList = serviceList
 	worker.platform = platform

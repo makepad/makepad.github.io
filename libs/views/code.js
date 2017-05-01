@@ -375,6 +375,8 @@ module.exports = class Code extends require('views/edit'){
 			Array: 'global', 
 			Int8Array: 'global', 
 			Uint8Array: 'global', 
+			MouseEvent:'global',
+			WebSocket:'global',
 			Uint8ClampedArray: 'global', 
 			Int16Array: 'global', 
 			Uint16Array: 'global', 

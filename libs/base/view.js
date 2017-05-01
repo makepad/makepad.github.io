@@ -329,7 +329,7 @@ module.exports = class View extends require('base/class'){
 
 		if(!todo){ // make a new todo
 			todo = this.$todos[todoCt] = new painter.Todo()
-			todo.onFinalizeTodoOrder = this.onFinalizeTodoOrder.bind(this)
+			todo.onFinalizeTodoOrder = this.onFinalizeTodoOrder && this.onFinalizeTodoOrder.bind(this)
 			var todoUboDef = this.Pass.prototype.$compileInfo.uboDefs.todo
 			todo.todoUbo = new painter.Ubo(todoUboDef)//this.$todoUboDef)
 
@@ -863,7 +863,7 @@ module.exports = class View extends require('base/class'){
 			})
 			var todo = new painter.Todo()
 
-			todo.onFinalizeTodoOrder = this.onFinalizeTodoOrder.bind(this)
+			todo.onFinalizeTodoOrder = this.onFinalizeTodoOrder && this.onFinalizeTodoOrder.bind(this)
 			var todoUboDef = this.Pass.prototype.$compileInfo.uboDefs.todo
 			todo.todoUbo = new painter.Ubo(todoUboDef)
 			pass.todo = todo

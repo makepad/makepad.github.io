@@ -1,4 +1,4 @@
-let colors = module.style.colors
+let colors = module.style && module.style.colors
 module.exports = class Scrollbar extends require('base/view'){
 	prototype(){
 		this.heavy = false
@@ -15,7 +15,7 @@ module.exports = class Scrollbar extends require('base/view'){
 				to:{
 					ScrollBar:{
 						bgColor:'#0000',
-						handleColor:colors.accentNormal
+						handleColor:colors && colors.accentNormal || '#7'
 					}
 				}
 			}

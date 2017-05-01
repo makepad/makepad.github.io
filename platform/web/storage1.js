@@ -8,7 +8,7 @@ module.exports = class extends require('/platform/service'){
 
 	user_load(msg){
 		// if its already in the root cache, dont load it
-		var cache = this.root.resourceCache[msg.path]
+		var cache = this.root.cache[msg.path]
 		if(cache){
 			this.postMessage({
 				fn:'onLoad',
@@ -80,5 +80,16 @@ module.exports = class extends require('/platform/service'){
 		//!TODO add domain checks to url
 		req.open("POST", location.origin+msg.path, true)
 		req.send(msg.data)
+	}
+
+	user_saveAs(msg){
+		var link  = window.document.createElementNS("http://www.w3.org/1999/xhtml", "a")
+		var blob = new Blob([msg.data], {type:msg.encoding})
+		var url = URL.createObjectURL(blob)
+		link.href = url
+		link.download = msg.name
+		var event = new MouseEvent("click")
+		link.dispatchEvent(event)
+		URL.revokeObjectURL(url)
 	}
 }

@@ -1,3 +1,4 @@
+require('base/log')
 var Styles = require('base/styles')
 module.exports = class Style extends require('base/class'){
 

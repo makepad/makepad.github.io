@@ -1,3 +1,4 @@
+require('base/log')
 //var painter = require('painter')
 //var fingers = require('fingers')
 var painter = require('services/painter')
@@ -8,7 +9,6 @@ var Worker = require('services/worker')
 var mat4 = require('base/mat4')
 var vec4 = require('base/vec4')
 var View = require('base/view')
-
 module.exports = class App extends View{
 	
 	// lets define some props

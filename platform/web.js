@@ -1,6 +1,4 @@
-(function(){
-	// the loader provides the platform interfaces for web.
-	var root = {}
+(function(root){
 	root.platformPath = '/platform/'
 	root.platform = 'web'
 	root.isWindows = typeof navigator !== 'undefined' && navigator.appVersion.indexOf("Win") > -1
@@ -95,7 +93,7 @@
 			'	var worker = {postMessage:self.postMessage.bind(self)}\n'+
 			'	self.onmessage = function(msg){worker.onMessage(msg.data)}\n'+
 			getJsGlobals.toString()+
-			cleanWebWorker.toString()+';cleanWebWorker();\n'+
+			'('+cleanWebWorker.toString()+')()\n'+
 			source+'\n'+
 			'})()'
 
@@ -124,10 +122,19 @@
 	}
 
 	// downloads a resource
-	root.resourceCache = {}
+	if(!root.cache) root.cache = {}
 
 	root.downloadResource = function(localFile, isBinary, appProgress){
 		return new Promise(function(resolve, reject){
+
+			var ret = root.cache[localFile]
+			if(ret){
+				if(Array.isArray(ret)){
+					root.cache[localFile] = ret = toByteArray(ret[0]).buffer
+				}
+				resolve(ret)
+				return
+			}
 			var req = new XMLHttpRequest()
 			
 			// lets add this node to the canvas tag
@@ -165,7 +172,7 @@
 				if(req.status !== 200){
 					return reject(req.status)
 				}
-				root.resourceCache[localFile] = req.response
+				root.cache[localFile] = req.response
 				resolve(req.response)
 			})
 			req.open("GET", location.origin+localFile)
@@ -256,6 +263,61 @@
 	if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.indexOf('10.') === 0)
 		watchFileChange()
 
+	var lookup = []
+	var revLookup = []
+
+	var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+	for (var i = 0, len = code.length; i < len; ++i) {
+		lookup[i] = code[i]
+		revLookup[code.charCodeAt(i)] = i
+	}
+
+	revLookup['-'.charCodeAt(0)] = 62
+	revLookup['_'.charCodeAt(0)] = 63
+
+	function placeHoldersCount (b64) {
+		var len = b64.length
+		if (len % 4 > 0) {
+			throw new Error('Invalid string. Length must be a multiple of 4')
+		}
+		return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+	}
+
+	function byteLength (b64) {
+		return (b64.length * 3 / 4) - placeHoldersCount(b64)
+	}
+
+	function toByteArray (b64) {
+		var i, j, l, tmp, placeHolders, arr
+		var len = b64.length
+		placeHolders = placeHoldersCount(b64)
+
+		arr = new Uint8Array((len * 3 / 4) - placeHolders)
+
+		// if there are placeholders, only get up to the last complete 4 chars
+		l = placeHolders > 0 ? len - 4 : len
+
+		var L = 0
+
+		for (i = 0, j = 0; i < l; i += 4, j += 3) {
+			tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+			arr[L++] = (tmp >> 16) & 0xFF
+			arr[L++] = (tmp >> 8) & 0xFF
+			arr[L++] = tmp & 0xFF
+		}
+
+		if (placeHolders === 2) {
+			tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+			arr[L++] = tmp & 0xFF
+		} else if (placeHolders === 1) {
+			tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+			arr[L++] = (tmp >> 8) & 0xFF
+			arr[L++] = tmp & 0xFF
+		}
+		return arr
+	}
+
+
 	function cleanWebWorker(){
 		var deprecated = [
 			'webkitIDBTransaction','webkitIDBRequest','webkitIDBObjectStore','webkitIDBKeyRange','webkitIDBIndex','webkitIDBFactory',
@@ -296,4 +358,4 @@
 		}
 		self = undefined
 	}
-})()
+})({})

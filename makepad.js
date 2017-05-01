@@ -9,8 +9,8 @@ var currentFile = "./examples/windtree.js"
 var ProjectStore = require('base/store')
 var matchCache = {}
 // ICON list
-// search copy exchange play archive filter close gear info puzzle television
-// f002 f0c5 f0ec f04b f187 f0b0 f00d f013 f129 f12e f26c
+// search copy exchange play archive filter close gear info-circle puzzle television trash-o level-down pencil
+// f002 f0c5 f0ec f04b f187 f0b0 f00d f013 f05a f12e f26c f014 f149 f040
 module.exports = class Makepad extends require('base/app'){
 	
 	prototype() {
@@ -254,18 +254,17 @@ module.exports = class Makepad extends require('base/app'){
 		var rm = this.app.store.resourceMap
 		var list = [
 			'/platform/web/audio1.js',
-			// '/platform/web/cameras1.js',
-			//'/platform/web/debug1.js',
+			'/platform/web/cameras1.js',
+			'/platform/web/debug1.js',
 			// '/platform/web/dropfiles1.js',
 			'/platform/web/fingers1.js',
-			//'/platform/web/gamepad1.js',
-			// '/platform/web/http1.js',
+			'/platform/web/gamepad1.js',
+			'/platform/web/http1.js',
 			'/platform/web/keyboard1.js',
 			'/platform/web/painter1.js',
-			//'/platform/web/socket1.js',
+			'/platform/web/socket1.js',
 			'/platform/web/storage1.js',
 			'/platform/web/worker1.js',
-			//'/libs/base/compiler.min.js',
 			'/platform/boot.js',
 			'/platform/web.js',
 			'/platform/painterpaint.js',
@@ -277,6 +276,8 @@ module.exports = class Makepad extends require('base/app'){
 		]
 		var traceMap = trace && trace.process && trace.process.trace
 		var deps = {}
+		deps[resource.path] = resource.data
+		var pkgd = {}
 		for(var i = 0;i < list.length;i++){
 			var path = list[i]
 			var thing = rm.get(path)
@@ -285,9 +286,9 @@ module.exports = class Makepad extends require('base/app'){
 		var code = require('views/code')
 		var parser = require('parsers/js')
 		var min = new require('parsers/jsminformat')
-		var deflate = require('parsers/deflate')
+		// var deflate = require('parsers/deflate')
 		var base64 = require('parsers/base64')
-		var base85 = require('parsers/base85')
+		// var base85 = require('parsers/base85')
 		min.defaultScope = Object.create(code.prototype.defaultScope)
 		min.defaultScope.window = 'global'
 		min.defaultScope.navigator = 'global'
@@ -302,37 +303,30 @@ module.exports = class Makepad extends require('base/app'){
 		min.defaultScope.Worker = 'global'
 		
 		this.findResourceDeps(resource, deps)
-		
 		// lets package the resources
 		var data = ''
 		var sizes = []
 		var stats = {}
+		var pack = {}
 		for(var key in deps){
 			var value = deps[key]
-			// if(key === '/libs/base/infer.js')continue
-			// if(key.indexOf('/libs/parsers') === 0) continue
-			// if(key === '/libs/base/compiler.js') continue
-			if(typeof value !== 'string') continue
+
+			if(typeof value !== 'string'){
+				pack[key] = value
+				continue
+			}
 			// lets parse and minimize the resource
 			var ast = parser.parse(value)
-			if(key.indexOf('/libs/base/types.js') == 0) {
-				//ast.body[ast.body.length - 1] = {type:'Identifier', value:''}
-			}
-			if(key.indexOf('/platform/boot.js') == 0) {
-				//ast.body[ast.body.length - 1] = {type:'Identifier',value:''}
-				//ast.body[ast.body.length - 2] = {type:'Identifier',value:''}
-			}
+
 			if(key.indexOf('/platform') == 0) {
 				min.jsASTMinimize(ast, null, key, value, stats)
 			}
 			else {
-				
 				min.jsASTStrip(ast, traceMap, key, value, stats)
 			}
-			//console.log(key, min.text)
 			
 			deps[key] = min.text
-			data += min.text
+			pack[key] = min.text
 			sizes.push({key:key, size:min.text.length})
 		}
 		var statsort = []
@@ -349,20 +343,70 @@ module.exports = class Makepad extends require('base/app'){
 			if(a.size > b.size) return 1
 			return 0
 		})
-		console.log(statsort)
-		//console.log(Object.keys(deps))
-		console.log(data.length)
-		var zip = deflate.gzip(data)
-		var b64 = base64.fromByteArray(zip)
-		var b85 = base85.encode(zip)
-		console.log(zip.length)
-		console.log(b64.length)
-		console.log(b85.length)
-		var zip2 = deflate.gzip(b64)
-		console.log(b64.length)
-		// alright lets generate a single HTML file.
-		// non packed. including everything.
+		
+		var out = 'var cache = {\n'
+		var last 
+		for(var key in pack){
+			//if(key === '/platform/web.js') continue
+			if(last) out += ',\n'
+			out += '"'+key+'":'
+			var value = pack[key]
+			if(typeof value !== 'string'){
+				out += '["'+base64.fromByteArray(new Uint8Array(value))+'"]'
+			}
+			else{
+				out += '"'+pack[key].replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n')+'"'
+			}
+			last = key
+		}
+		// lets include a makepad.json for the fun of it
+		var json = {project:'Makepad',open:['/makepad.js'],run:[]}
+		for(var key in pack){
+			var paths = key.split('/')
+			var iter = json
+			for(var i = 1; i < paths.length;i++){
+				var seg = paths[i]
+				if(!iter.folder) iter.folder = []
+				for(var j = 0, fl = iter.folder.length; j < fl;j++){
+					var item = iter.folder[j]
+					if(item.name === seg){
+						iter = item
+						break
+					}
+				}
+				if(j === fl){
+					var nw = {name:seg}
+					iter.folder.push(nw)
+					iter = nw
+				}
+			}
+		}
 
+		out += ',\n"/makepad.json":\''+JSON.stringify(json)+'\''
+		out += '\n}\n'
+		out += 'new Function("cache",cache["/platform/web.js"].slice(0,-5)+"(cache)")({cache:cache})\n'
+
+		var html = 
+		'<html lang="en">\n'+
+		'	<head>\n'+
+		'		<meta charset="utf8"/>\n'+
+		'		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n'+
+		'		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">\n'+
+		'		<meta name="apple-mobile-web-app-capable" content="yes">\n'+
+		'		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'+
+		'		<meta name="format-detection" content="telephone=no">\n'+
+		'		<title>'+resource.path+'</title>\n'+
+		'		<script type="text/javascript">//<!'+'[CDATA[\n'+
+				out+
+		'		//]'+']></'+'script>\n'+
+		'	</head>\n'+
+		'	<body style="margin:0;overflow:hidden;height:100%;-ms-touch-action:none;user-select:none;background-color:#666969">\n'+
+		'		<canvas class="makepad"  main="'+resource.path+'" fullpage="true"></canvas>\n'+
+		'	</body>\n'+
+		'</html>'
+		var name = resource.path.slice(resource.path.lastIndexOf('/')+1,resource.path.lastIndexOf('.'))+'.html'
+		storage.saveAs(name,html,"binary/octet-stream")
+		
 	}
 	
 	// create uniquely identifyable tab titles

@@ -4,7 +4,7 @@ module.exports = class extends require('/platform/service'){
 	constructor(...args){
 		super(...args)
 		this.name = 'socket1'
-
+		if(location.href.indexOf('file://') === 0) return
 		let proto = location.protocol === 'https:'?'wss:':'ws:'
 		let sock = this.socket = new WebSocket(proto+'//'+location.host)
 
@@ -27,6 +27,7 @@ module.exports = class extends require('/platform/service'){
 	}
 
 	user_postMessage(msg){
+		if(!this.socket) return
 		this.socket.send(msg.data)
 	}
 }

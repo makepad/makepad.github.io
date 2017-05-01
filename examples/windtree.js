@@ -1,4 +1,4 @@
-new require('styles/dark')
+//new require('styles/dark')
 module.exports = class extends require('base/app'){
 	prototype() {
 		this.props = {autumn:0},this.tools = {
@@ -110,7 +110,7 @@ module.exports = class extends require('base/app'){
 	}
 	onDraw() {
 		var p = this
-		
+		console.log("DRAWING")
 		//this.drawRect(this.viewGeom)
 		function recur(path, depth) {
 			p.drawBranch({

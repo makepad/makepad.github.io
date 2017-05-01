@@ -70,28 +70,27 @@ module.exports = class JSMinimizer extends require('base/class'){
 			// 	// skip it
 			// 	this.text += '}'
 			// 	return
+			// // }
+			// if(node.body.length>0 && 
+			// 	node.body[0].type === 'ExpressionStatement' &&
+			// 	node.body[0].expression.type === 'Identifier' && 
+			// 	node.body[0].expression.name === '$_'){
+			// 	// skip it
+			// 	start = 1
 			// }
-			if(node.body.length>0 && 
-				node.body[0].type === 'ExpressionStatement' &&
-				node.body[0].expression.type === 'Identifier' && 
-				node.body[0].expression.name === '$_'){
-				// skip it
-				start = 1
+			// else{
+			if(this.stripSet){
+				if(!noblk && !this.stripSet.has(path)){
+					this.text+='}'
+					return true
+				}
 			}
-			else{
-				if(this.stripSet){
-					if(!noblk && !this.stripSet.has(path)){
-						this.text+='}'
-						return true
-					}
-				}
-				else {
-					this.tracePaths[path] = node
-					if(!noblk) this.text += '_$="'+path+'";'
-				}
+			else {
+				this.tracePaths[path] = node
+				if(!noblk) this.text += '_$="'+path+'";'
 			}
 		}
-		//this.newLine()
+		this.newLine()
 
 		var body = node.body
 		var bodylen = body.length - 1
@@ -133,7 +132,8 @@ module.exports = class JSMinimizer extends require('base/class'){
 			var statement = body[i]
 		
 			var ret = this[statement.type](statement, path+'['+i+']')
-			if(!ret && i!==bodylen)this.newLine()	
+			//if(!ret && i!==bodylen)this.newLine()	
+			if(!ret)this.newLine()	
 		}
 		if(!noblk) this.text += '}'
 		//this.newLine()
@@ -566,12 +566,10 @@ module.exports = class JSMinimizer extends require('base/class'){
 		var cq = node.consequent
 		var alt = node.alternate
 
-		if(this[cq.type](cq,path+'cons') && !alt){
-			this.text = old
-			return true
-		}
+		this[cq.type](cq,path+'cons')
 
 		if(alt) {
+			var old = this.text
 			this.text += '\nelse '
 			this[alt.type](alt,path+'alt')
 		}
