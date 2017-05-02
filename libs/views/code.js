@@ -32,7 +32,7 @@ module.exports = class Code extends require('views/edit'){
 				color:colors.codeBg
 			}),
 			Text: require('shaders/codetext').extend({
-				font: module.style.fonts.mono,
+				font: require('fonts/ubuntu_monospace_256.font'),//module.style.fonts.mono,
 				order:3,
 				groupHighlightId:{kind:'uniform', value:0},
 				vertexStyle:function(){$

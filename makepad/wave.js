@@ -1,5 +1,6 @@
 var audio = require('services/audio') 
-var wav = require('parsers/wav') 
+var wavdecoder = require('codecs/wavdecoder') 
+var wavencoder = require('codecs/wavencoder') 
 var painter = require('services/painter') 
 var storage = require('services/storage')
 
@@ -74,7 +75,7 @@ module.exports = class Wave extends require('views/draw'){
 			} 
 		}) 
 		
-		var out = wav.parse(this.resource.data, true)
+		var out = wavdecoder(this.resource.data, true)
 		this.recording.push(out.data)
 		this.samples = out.data[0].length
 		
@@ -173,7 +174,7 @@ module.exports = class Wave extends require('views/draw'){
 			this.editWave(this.samples, sam=>sam, true)
 		}
 		//write it
-		var wavout = wav.serialize16(this.recording[0])
+		var wavout = wavencoder(this.recording[0])
 
 		this.app.store.act('changeWave', store=>{
 			this.resource.data = wavout

@@ -173,6 +173,8 @@ module.exports = class Makepad extends require('base/app'){
 			var resourceMap = new Map()
 			function walk(node, base) {
 				node.folder = node.folder.sort((a, b) =>{
+					if(a.folder && !b.folder) return -1
+					if(b.folder && !a.folder) return 1
 					if(a.name < b.name) return -1
 					if(a.name > b.name) return 1
 					return 0
@@ -286,8 +288,8 @@ module.exports = class Makepad extends require('base/app'){
 		var code = require('views/code')
 		var parser = require('parsers/js')
 		var min = new require('parsers/jsminformat')
+		var base64encoder = require('codecs/base64encoder')
 		// var deflate = require('parsers/deflate')
-		var base64 = require('parsers/base64')
 		// var base85 = require('parsers/base85')
 		min.defaultScope = Object.create(code.prototype.defaultScope)
 		min.defaultScope.window = 'global'
@@ -310,21 +312,27 @@ module.exports = class Makepad extends require('base/app'){
 		var pack = {}
 		for(var key in deps){
 			var value = deps[key]
-
-			if(typeof value !== 'string'){
+			
+			if(typeof value !== 'string') {
 				pack[key] = value
 				continue
 			}
 			// lets parse and minimize the resource
 			var ast = parser.parse(value)
-
+			if(key === '/libs/base/types.js'){
+				// ast.body[ast.body.length-2]= {
+					// type:'Literal',
+					// raw:''
+				// }
+				//console.log(ast)
+			}
+			//min.mapId = name=>name
 			if(key.indexOf('/platform') == 0) {
 				min.jsASTMinimize(ast, null, key, value, stats)
 			}
 			else {
 				min.jsASTStrip(ast, traceMap, key, value, stats)
 			}
-			
 			deps[key] = min.text
 			pack[key] = min.text
 			sizes.push({key:key, size:min.text.length})
@@ -334,79 +342,113 @@ module.exports = class Makepad extends require('base/app'){
 			statsort.push({key:key, size:stats[key]})
 		}
 		statsort = statsort.sort((a, b) =>{
-			if(a.size < b.size) return -1
-			if(a.size > b.size) return 1
+			if(a.size < b.size) return 1
+			if(a.size > b.size) return -1
 			return 0
 		})
 		sizes = sizes.sort((a, b) =>{
-			if(a.size < b.size) return -1
-			if(a.size > b.size) return 1
+			if(a.size < b.size) return 1
+			if(a.size > b.size) return -1
 			return 0
 		})
-		
+		console.log(statsort,sizes)
 		var out = 'var cache = {\n'
-		var last 
+		var last
 		for(var key in pack){
 			//if(key === '/platform/web.js') continue
 			if(last) out += ',\n'
-			out += '"'+key+'":'
+			out += '"' + key + '":'
 			var value = pack[key]
-			if(typeof value !== 'string'){
-				out += '["'+base64.fromByteArray(new Uint8Array(value))+'"]'
+			if(typeof value !== 'string') {
+				out += '["' + base64encoder.fromByteArray(new Uint8Array(value)) + '"]'
 			}
-			else{
-				out += '"'+pack[key].replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n')+'"'
+			else {
+				out += '"' + pack[key].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"'
 			}
 			last = key
 		}
 		// lets include a makepad.json for the fun of it
-		var json = {project:'Makepad',open:['/makepad.js'],run:[]}
+		var json = {project:'Makepad', open:['/makepad.js'], run:[]}
 		for(var key in pack){
 			var paths = key.split('/')
 			var iter = json
-			for(var i = 1; i < paths.length;i++){
+			for(var i = 1;i < paths.length;i++){
 				var seg = paths[i]
 				if(!iter.folder) iter.folder = []
-				for(var j = 0, fl = iter.folder.length; j < fl;j++){
+				for(var j = 0, fl = iter.folder.length;j < fl;j++){
 					var item = iter.folder[j]
-					if(item.name === seg){
+					if(item.name === seg) {
 						iter = item
 						break
 					}
 				}
-				if(j === fl){
+				if(j === fl) {
 					var nw = {name:seg}
 					iter.folder.push(nw)
 					iter = nw
 				}
 			}
 		}
-
-		out += ',\n"/makepad.json":\''+JSON.stringify(json)+'\''
+		
+		out += ',\n"/makepad.json":\'' + JSON.stringify(json) + '\''
 		out += '\n}\n'
 		out += 'new Function("cache",cache["/platform/web.js"].slice(0,-5)+"(cache)")({cache:cache})\n'
-
-		var html = 
-		'<html lang="en">\n'+
-		'	<head>\n'+
-		'		<meta charset="utf8"/>\n'+
-		'		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n'+
-		'		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">\n'+
-		'		<meta name="apple-mobile-web-app-capable" content="yes">\n'+
-		'		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'+
-		'		<meta name="format-detection" content="telephone=no">\n'+
-		'		<title>'+resource.path+'</title>\n'+
-		'		<script type="text/javascript">//<!'+'[CDATA[\n'+
-				out+
-		'		//]'+']></'+'script>\n'+
-		'	</head>\n'+
-		'	<body style="margin:0;overflow:hidden;height:100%;-ms-touch-action:none;user-select:none;background-color:#666969">\n'+
-		'		<canvas class="makepad"  main="'+resource.path+'" fullpage="true"></canvas>\n'+
-		'	</body>\n'+
-		'</html>'
-		var name = resource.path.slice(resource.path.lastIndexOf('/')+1,resource.path.lastIndexOf('.'))+'.html'
-		storage.saveAs(name,html,"binary/octet-stream")
 		
+		var html = 
+		'<html lang="en">\n' + 
+			'	<head>\n' + 
+			'		<meta charset="utf8"/>\n' + 
+			'		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n' + 
+			'		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">\n' + 
+			'		<meta name="apple-mobile-web-app-capable" content="yes">\n' + 
+			'		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n' + 
+			'		<meta name="format-detection" content="telephone=no">\n' + 
+			'		<title>' + resource.path + '</title>\n' + 
+			'		<script type="text/javascript">//<!' + '[CDATA[\n' + 
+			out + 
+			'		//]' + ']></' + 'script>\n' + 
+			'	</head>\n' + 
+			'	<body style="margin:0;overflow:hidden;height:100%;-ms-touch-action:none;user-select:none;background-color:#666969">\n' + 
+			'		<canvas class="makepad"  main="' + resource.path + '" fullpage="true"></canvas>\n' + 
+			'	</body>\n' + 
+			'</html>'
+		var fileName = resource.path.slice(resource.path.lastIndexOf('/') + 1, resource.path.lastIndexOf('.')) + '.html'
+/*		
+		var set = {}
+		html.replace(/\\n/g,'').replace(/\w[\w0-9][\w0-9]+/g, function(m){
+			if(!set[m]) set[m] = 1
+			else set[m]++
+		})
+		var sort = []
+		for(var key in set){
+			sort.push({key:key,size:set[key]})
+		}
+		sort = sort.sort((a, b) =>{
+			if(a.size < b.size) return 1
+			if(a.size > b.size) return -1
+			return 0
+		})
+		var map = {}
+		for(var i = 0;;i++){
+			var name = '@'+i.toString(16)
+			//var t = i
+			if(name.length>=sort[i].key.length) continue
+			console.log(sort[i].key,name)
+			map[sort[i].key] = name
+			if(sort[i].size<3) break
+		}
+		// html = html.replace(/\\n/g,'\n').replace(/\w[\w0-9][\w0-9]+/g, function(m){
+		// 	if(map[m]) return map[m]
+		// 	return m
+		// }).replace(/\n/g,'\\n')
+		// html += Object.keys(map).join('@')
+		//console.log(map)
+		var deflate = require('parsers/deflate')
+		console.log(deflate.gzip(html).length)
+	*/
+		var zlibencoder = require('codecs/zlibencoder')
+		console.log("Over the wire size:",zlibencoder(html).length)
+		storage.saveAs(fileName, html, "binary/octet-stream")
 	}
 	
 	// create uniquely identifyable tab titles

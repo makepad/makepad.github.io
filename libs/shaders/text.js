@@ -1,6 +1,6 @@
 var types = require('base/types')
 var painter = require('services/painter')
-var fontloader = require('parsers/font')
+var fontdecoder = require('codecs/fontdecoder')
 
 module.exports = class Text extends require('base/shader'){
 	
@@ -396,7 +396,7 @@ module.exports = class Text extends require('base/shader'){
 		super.onCompileVerbs()
 		if(this.font) {
 			if(!this.font.fontmap) {
-				var map = this.font.fontmap = fontloader(this.font)
+				var map = this.font.fontmap = fontdecoder(this.font)
 				//this.font.fontSampler = new painter.Texture(painter.LUMINANCE, painter.UNSIGNED_BYTE, painter.TRANSFER_DATA, map.texw, map.texh, map.textureArray)
 				this.font.fontSampler = new painter.Texture({
 					format:painter.RGBA,

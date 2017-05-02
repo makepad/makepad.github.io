@@ -133,7 +133,7 @@ module.exports = class Button extends require('base/view'){
 			Text:require('shaders/text').extend({
 				color   :colors.textMed,
 				fontSize:10,
-				font    :require('fonts/ubuntu_monospace_256.font')
+				font    :require('fonts/ubuntu_regular_256.font')
 			}),
 			Icon:require('shaders/icon').extend({
 				color   :colors.textMed,

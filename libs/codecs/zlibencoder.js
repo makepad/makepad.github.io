@@ -393,8 +393,8 @@ function gzip(input, options) {
   return deflate(input, options);
 }
 
-
-exports.Deflate = Deflate;
-exports.deflate = deflate;
-exports.deflateRaw = deflateRaw;
-exports.gzip = gzip;
+module.exports = deflate
+module.exports.Deflate = Deflate;
+module.exports.deflate = deflate;
+module.exports.deflateRaw = deflateRaw;
+module.exports.gzip = gzip;

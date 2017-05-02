@@ -411,8 +411,8 @@ function inflateRaw(input, options) {
  * by header.content. Done for convenience.
  **/
 
-
-exports.Inflate = Inflate;
-exports.inflate = inflate;
-exports.inflateRaw = inflateRaw;
-exports.ungzip  = inflate;
+module.exports = inflate
+module.exports.Inflate = Inflate;
+module.exports.inflate = inflate;
+module.exports.inflateRaw = inflateRaw;
+module.exports.ungzip  = inflate;

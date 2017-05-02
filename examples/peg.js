@@ -52,9 +52,14 @@ var defQLS = {
 }
 
 new require('styles/dark')
-module.exports = class extends require('base/drawapp'){ //top
+module.exports = class extends require('base/app'){ //top
 	prototype() {
 		this.tools = {
+			Bg    :require('shaders/bg'),
+			Button:require('views/button'),
+			Text  :require('shaders/text').extend({
+				font:require('fonts/ubuntu_regular_256.font')
+			}),
 			Slider:require('views/slider.js')
 		}
 	}

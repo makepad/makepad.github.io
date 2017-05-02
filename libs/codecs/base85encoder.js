@@ -1,6 +1,6 @@
 'use strict'
 
-exports.encode = function encodeBuffer(buffer, encoding)
+module.exports = function encodeBuffer(buffer, encoding)
 {
   var padding = (buffer.length % 4 === 0) ? 0 : 4 - buffer.length % 4;
 
