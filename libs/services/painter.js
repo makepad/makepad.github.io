@@ -422,6 +422,8 @@ painter.Todo = class Todo extends require('base/class'){
 	}
 
 	sampler(nameId, texture, sam){
+		if(!texture) return
+
 		var o = (this.last = this.length)
 		if((this.length += 5) > this.allocated) this.resize()
 		var i32 = this.i32

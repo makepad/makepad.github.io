@@ -171,6 +171,8 @@ module.exports = class Text extends require('base/shader'){
 			this.PROPLEN = 0
 			},*/
 			draw       :function(overload) {
+				var font = this.NAME.prototype.font
+				if(!font) return
 				var turtle = this.turtle
 				
 				this.STYLEPROPS(overload, 1)
@@ -184,7 +186,7 @@ module.exports = class Text extends require('base/shader'){
 				this.ALLOCDRAW(overload, len)
 				
 				// lets fetch the font
-				var glyphs = this.NAME.prototype.font.fontmap.glyphs
+				var glyphs = font.fontmap.glyphs
 				var lineSpacing = this.NAME.prototype.lineSpacing
 				var wrapping = turtle._wrapping
 				var fontSize = turtle._fontSize
@@ -409,6 +411,7 @@ module.exports = class Text extends require('base/shader'){
 			}
 			// make the texture.
 			this.fontSampler = this.font.fontSampler
+			console.log("FONTSAMPLER", this.fontSampler)
 			this.fontTextureSize = [this.font.fontmap.texw, this.font.fontmap.texh]
 		}
 	}

@@ -73,6 +73,7 @@
 				{"name":"grid.js"},
 				{"name":"hover.js"},
 				{"name":"icon.js"},
+				{"name":"image.js"},
 				{"name":"line.js"},
 				{"name":"quad.js"},
 				{"name":"rounded.js"},
@@ -183,6 +184,7 @@
 			{"name":"peg.js"},
 			{"name":"present.js"},
 			{"name":"sliders.js"},
+			{"name":"shop1.js"},
 			{"name":"treegraph.js"},
 			{"name":"windtree.js"}
 		]},

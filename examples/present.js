@@ -32,6 +32,7 @@ module.exports = class extends require('base/drawapp'){ //top
 						}
 					}),
 					Text:require('shaders/text').extend({
+						font        :require('fonts/ubuntu_monospace_256.font'),
 						fontSize    :62,
 						align       :[0.5, 0.5],
 						boldness    :0.,

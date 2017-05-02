@@ -326,7 +326,7 @@ module.exports = class Makepad extends require('base/app'){
 				// }
 				//console.log(ast)
 			}
-			//min.mapId = name=>name
+			min.mapId = name=>name
 			if(key.indexOf('/platform') == 0) {
 				min.jsASTMinimize(ast, null, key, value, stats)
 			}
@@ -360,7 +360,7 @@ module.exports = class Makepad extends require('base/app'){
 			out += '"' + key + '":'
 			var value = pack[key]
 			if(typeof value !== 'string') {
-				out += '["' + base64encoder.fromByteArray(new Uint8Array(value)) + '"]'
+				out += '["' + base64encoder(new Uint8Array(value)) + '"]'
 			}
 			else {
 				out += '"' + pack[key].replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"'
