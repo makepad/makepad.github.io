@@ -234,6 +234,7 @@ module.exports = class JSMinimizer extends require('base/class'){
 	//ParenthesizedExpression:{expression:1}
 	ParenthesizedExpression(node, path) {
 		var exp = node.expression
+		if(this.text[this.text.length -1] === '\n')this.text +=';'
 		this.text += '('
 		this[exp.type](exp, path)
 		this.text += ')'

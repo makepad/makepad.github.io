@@ -127,11 +127,13 @@
 	root.downloadResource = function(localFile, isBinary, appProgress){
 		return new Promise(function(resolve, reject){
 
+
 			var ret = root.cache[localFile]
 			if(ret){
 				if(Array.isArray(ret)){
 					root.cache[localFile] = ret = toByteArray(ret[0]).buffer
 				}
+				console.log("resolving",localFile, root.cache)
 				resolve(ret)
 				return
 			}
