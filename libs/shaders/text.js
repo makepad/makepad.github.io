@@ -411,7 +411,6 @@ module.exports = class Text extends require('base/shader'){
 			}
 			// make the texture.
 			this.fontSampler = this.font.fontSampler
-			console.log("FONTSAMPLER", this.fontSampler)
 			this.fontTextureSize = [this.font.fontmap.texw, this.font.fontmap.texh]
 		}
 	}

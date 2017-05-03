@@ -866,7 +866,7 @@ painter.Texture = class Texture extends require('base/class'){
 			}
 			transfer.push(sendbuffer)
 		}
-		return [{
+		var ret = [{
 			fn:'newTexture',
 			format:this.format,
 			type:this.type,
@@ -877,6 +877,7 @@ painter.Texture = class Texture extends require('base/class'){
 			array:sendbuffer,
 			texId:this.texId
 		}, transfer]
+		return ret
 	}
 
 	constructor(options){

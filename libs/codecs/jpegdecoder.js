@@ -977,9 +977,7 @@ function decode(jpegData, useTArray) {
   var image = {
     width: decoder.width,
     height: decoder.height,
-    data: useTArray ?
-      new Uint8Array(decoder.width * decoder.height * 4) :
-      new Buffer(decoder.width * decoder.height * 4)
+    data: new Uint8Array(decoder.width * decoder.height * 4)
   };
 
   decoder.copyToImageData(image);

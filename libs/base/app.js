@@ -34,6 +34,7 @@ module.exports = class App extends View{
 	constructor(){
 		super()
 		// create app
+		this.module = module
 		this.store = Store.create()
 
 		var app = this.app = this

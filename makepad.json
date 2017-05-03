@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/windtree.js"],
-	"run":[],
+	"open":["/examples/shop1.js"],
+	"run":["/examples/shop1.js"],
 	"name":"",
 	"folder":[
 		{"name":"platform","folder":[
@@ -31,6 +31,7 @@
 		{"name":"libs","folder":[
 			{"name":"base","folder":[
 				{"name":"app.js"},
+				{"name":"atlas.js"},
 				{"name":"log.js"},
 				{"name":"noise.js"},
 				{"name":"class.js"},
@@ -177,7 +178,14 @@
 				{"name":"sample2.wav"}
 			]},
 			{"name":"images","folder":[
-				{"name":"plant.jpg"}
+				{"name":"plant.jpg"},
+				{"name":"shop1.jpg"},
+				{"name":"shop2.jpg"},
+				{"name":"shop3.jpg"},
+				{"name":"shop4.jpg"},
+				{"name":"shop5.jpg"},
+				{"name":"shop6.jpg"},
+				{"name":"shop7.jpg"}
 			]},
 			{"name":"camera.js"},
 			{"name":"gameshow.js"},

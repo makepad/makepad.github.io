@@ -21,24 +21,46 @@ module.exports = class extends require('base/app'){ //top
 	constructor() {
 		super()
 		this.products = [
-			{name:'test', image:require('./images/plant.jpg')}
+			{name:'Item1', price:50, image:require('./images/shop1.jpg')},
+			{name:'Item2', price:70, image:require('./images/shop2.jpg')},
+			{name:'Item2', price:70, image:require('./images/shop3.jpg')},
+			{name:'Item2', price:70, image:require('./images/shop4.jpg')},
+			{name:'Item2', price:70, image:require('./images/shop5.jpg')},
+			{name:'Item2', price:70, image:require('./images/shop6.jpg')},
 		]
 	}
 	
 	onDraw() {
 		this.beginBg({
-			w:'100%',
-			h:'100%'
+			w         :'100%',
+			h         :'100%',
+			moveScroll:0
 		})
 		for(var i = 0;i < this.products.length;i++){
 			var product = this.products[i]
 			this.drawText({
-				text:product.name
+				margin:[40, 10, 0, 10],
+				text  :product.name
 			})
 			this.drawImage({
-				image:product.image
+				margin:5,
+				image :product.image,
+				w     :100,
+				h     :100
 			})
+			this.drawText({
+				text:'$' + product.price
+			})
+			this.drawButton({
+				text   :'Buy!',
+				id     :'btn' + i,
+				onClick:_=>{
+					
+				}
+			})
+			
+			this.lineBreak()
 		}
-		this.endBg()
+		this.endBg(true)
 	}
 }

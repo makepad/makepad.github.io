@@ -245,7 +245,7 @@ module.exports = class UserProcess extends require('views/draw'){
 			})
 		}
 
-		this.worker.ping(40000)
+		this.worker.ping(140000)
 		this.worker.onPingTimeout = ()=>{
 			console.log("TERMINATING")
 			this.worker.terminate()

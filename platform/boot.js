@@ -439,8 +439,11 @@ function workerRequire(absParent, worker, modules, args){
 		if(typeof module.exports === 'function'){
 			Object.defineProperty(module.exports, '__module__', {value:module})
 		}
-		else if(loader && module.exports instanceof ArrayBuffer){
-			module.exports = loader(module.exports)
+		else if(module.exports instanceof ArrayBuffer){
+			module.exports.module = module
+			if(loader){
+				module.exports = loader(module.exports)
+			}
 		}
 		if(module.exports.onRequire){
 			return module.exports.onRequire(arguments, absParent)
