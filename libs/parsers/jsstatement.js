@@ -522,10 +522,6 @@ pp.parseVar = function(node, isFor, kind) {
 	node.kind = kind
 	for (;;) {
 		var decl = this.startNode()
-		if(this.type === tt.prefix && this.value === '@'){
-			this.eat(tt.prefix)
-			decl.probe = true
-		}
 
 		this.parseVarId(decl)
 

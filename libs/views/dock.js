@@ -6,13 +6,19 @@ module.exports=class Dock extends require('base/view'){
 				w:'100%',
 				h:'100%'
 			}),
-			Tabs:require('views/tabs').extend({
-				w:'100%',
-				h:'100%',
+			Tabs:class extends require('views/tabs'){
+				prototype(){
+					this.w = '100%'
+					this.h = '100%'
+				}
 				onTabRip(e){
 					this.owner.onTabRip(this, e)
 				}
-			}),
+				onTabSelect(e){
+					super.onTabSelect(e)
+					this.owner.onTabSelect(e)
+				}
+			},
 			Tab:require('views/tab').extend({
 
 			}),

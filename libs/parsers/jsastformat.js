@@ -588,19 +588,7 @@ module.exports = class JSFormatter extends require('base/class'){
 	//CallExpression:{callee:1, arguments:2},
 	CallExpression(node, lhs) {
 		var callee = node.callee
-		
-		if(callee.type === 'MemberExpression' && callee.object.name === 'module' && node.arguments && node.arguments.length === 2) {
-			if(callee.property.name === 'log') {
-				// lets store our log in the annotator
-				this.onProbeExpression('log', node.arguments[1], lhs)
-				return
-			}
-			else if(callee.property.name === 'probe') {
-				this.onProbeExpression('probe', node.arguments[1], lhs)
-				return
-			}
-		}
-		
+				
 		var args = node.arguments
 		
 		//if(this.traceMap) this.trace += '$T(' + this.traceMap.push(node)+','
@@ -829,15 +817,7 @@ module.exports = class JSFormatter extends require('base/class'){
 			this.fastText('=', this.styles.Operator['='] || this.styles.Operator.default)
 			var around2 = node.around2
 			if(around2) this.fastText(around2, this.styles.Comment.around) //, this.trace += around2
-			if(node.probe) {
-				var id = this.onProbe(init, id)
-				//this.trace += '$P('+id+','
-				this[init.type](init, id)
-				//this.trace += ')'
-			}
-			else {
-				this[init.type](init, id)
-			}
+			this[init.type](init, id)
 		}
 	}
 	
@@ -952,39 +932,6 @@ module.exports = class JSFormatter extends require('base/class'){
 		this[alt.type](alt)
 		this.$fastTextIndent--
 		
-	}
-	
-	onProbeExpression(op, arg, lhs) {
-		if(op === 'probe') {
-			var id = this.onProbe(arg, lhs)
-			//this.trace += 'module.probe('+id+','
-			var style = Object.create(this.styles.Operator['#'])
-			style.probeId = id
-			this.fastText('#', style)
-			// store ID in fontsize
-			//this.ann[this.ann.length-2] = id
-			// allright lets store in ann some metadata on our probe
-			var argtype = arg.type
-			this[argtype](arg)
-			//this.trace += ')'
-			this.fastText('', style)
-		}
-		if(op === 'log') {
-			var id = this.onLog(arg, lhs)
-			//this.trace += 'module.log('+id+','
-			var style = Object.create(this.styles.Operator['@'])
-			style.probeId = id
-			this.fastText('@', style)
-			var argtype = arg.type
-			this[argtype](arg)
-			//this.trace += ')'
-			this.fastText('', style)
-		}
-	}
-	
-	ProbeExpression(node, lhs) {
-		var op = node.operator
-		this.onProbeExpression(op === '#'?'probe':'log', node.argument, lhs)
 	}
 	
 	//UnaryExpression:{operator:0, prefix:0, argument:1},

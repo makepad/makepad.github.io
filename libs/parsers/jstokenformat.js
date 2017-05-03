@@ -498,11 +498,7 @@ module.exports = class JSFormatter extends require('base/class'){
 		this["<</>>"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}
-		
-		this["probe"] = function(tok){
-			this.writeText(tok.value, this.styles.Operator.default)
-		}
-		
+				
 		this["prefix"] = function(tok){
 			this.writeText(tok.value, this.styles.Operator.default)
 		}

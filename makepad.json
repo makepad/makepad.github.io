@@ -1,6 +1,6 @@
 {
 	"project":"Makepad",
-	"open":["/examples/shop1.js"],
+	"open":["/examples/shop1.js","/examples/shop2.js"],
 	"run":["/examples/shop1.js"],
 	"name":"",
 	"folder":[
@@ -192,6 +192,7 @@
 			{"name":"present.js"},
 			{"name":"sliders.js"},
 			{"name":"shop1.js"},
+			{"name":"shop2.js"},
 			{"name":"treegraph.js"},
 			{"name":"windtree.js"}
 		]},

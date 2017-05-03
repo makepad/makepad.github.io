@@ -226,7 +226,7 @@ pp.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
 	if (this.type.prefix) {
 		var node = this.startNode()
 		var update = this.type === tt.incDec
-		var probe = this.type === tt.probe
+
 		node.operator = this.value
 		node.prefix = true
 		this.next()
@@ -237,7 +237,7 @@ pp.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
 						 node.argument.type === "Identifier")
 			this.raiseRecoverable(node.start, "Deleting local variable in strict mode")
 		else sawUnary = true
-		expr = this.finishNode(node, update ? "UpdateExpression" : probe?"ProbeExpression" : "UnaryExpression")
+		expr = this.finishNode(node, update ? "UpdateExpression" : "UnaryExpression")
 	} else {
 		expr = this.parseExprSubscripts(refDestructuringErrors)
 		if (this.checkExpressionErrors(refDestructuringErrors)) return expr

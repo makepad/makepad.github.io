@@ -16,6 +16,17 @@ module.exports = class Makepad extends require('base/app'){
 	prototype() {
 		this.tools = {
 			Dock       :require('views/dock').extend({
+				onTabSelect:function(tab){
+					if(!tab.text) return
+					// lets select all tabs with the same name in unison
+					var set =this.app.findAll(new RegExp(tab.text.replace('.','\\.')))
+					for(var i =0; i < set.length; i++){
+						var tab = set[i]
+						if(!(tab instanceof this.Tabs.prototype.Tab)){
+							if(tab.parent && tab.parent.selectTab) tab.parent.selectTab(tab)
+						}
+					}
+				},
 				w              :'100%',
 				h              :'100%',
 				deserializeView:function(node) {

@@ -57,11 +57,7 @@ module.exports = class extends require('base/app'){ //top
 	
 	onFingerHoverGlobal(e) {
 		var l = this.toLocal(e)
-		var mx = (l.x / this.xmap) * this.heatmap.w
-		var my = (l.y / this.ymap) * this.heatmap.h
-		var idx = parseInt(mx) + parseInt(my) * this.heatmap.w
-		_=idx
-		this.heatmap.array[idx]++
+		// --- Fill heatmap here! --- 
 		this.heatmap.update()
 	}
 	
@@ -127,7 +123,8 @@ module.exports = class extends require('base/app'){ //top
 				id     :'btn' + i,
 				item   :i,
 				onClick:btn=>{
-					this.cart.push(product)
+					// --- Add product to cart here ---
+					
 					this.redraw()
 				}
 			})
@@ -192,15 +189,15 @@ module.exports = class extends require('base/app'){ //top
 				text   :'Remove',
 				icon   :'close',
 				onClick:btn=>{
-					var i = this.cart.indexOf(product)
-					this.cart.splice(i, 1)
+					// --- Remove product from cart here ---
+					
 					this.redraw()
 				}
 			})
 			this.endBg({})
 		}
-		this.endBg()
 		
+		this.endBg()
 		this.endBg(true)
 		this.xmap = this.turtle.x2
 		this.ymap = this.turtle.y2

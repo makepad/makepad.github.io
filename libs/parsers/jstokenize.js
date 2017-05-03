@@ -454,10 +454,6 @@ pp.getTokenFromCode = function(code) {
 	case 61: case 33: // '=!'
 		return this.readToken_eq_excl(code)
 
-	case 35:
-	case 64:
-		return this.finishOp(tt.probe, 1)
-
 	case 126: // '~'
 		return this.finishOp(tt.prefix, 1)
 	}
