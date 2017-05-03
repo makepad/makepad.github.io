@@ -1,29 +1,38 @@
 new require('styles/dark')
-
+var painter = require('services/painter')
 module.exports = class extends require('base/app'){ //top
 	prototype() {
 		this.tools = {
-			Bg    :require("shaders/bg").extend({
+			Bg     :require("shaders/bg").extend({
 				borderRadius:5,
 				color       :'#ffffffff'
 			}),
-			Image :require("shaders/image").extend({
+			HeatMap:require("shaders/image").extend({
+				pickAlpha   :1.,
+				imageSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
+				pixel       :function() {
+					var col = texture2D(this.imageSampler, this.mesh.xy)
+					var f = clamp(col.x * 10., 0., 1.)
+					return mix('#0000', mix('#00ff0fd4', '#ff060082', f), f)
+				}
 			}),
-			Text  :require('shaders/text').extend({
+			Image  :require("shaders/image").extend({
+			}),
+			Text   :require('shaders/text').extend({
 				color   :'#3d3d3dff',
 				wrapping:'word',
 				fontSize:24,
 				font    :require('fonts/ubuntu_regular_256.font')
 			}),
-			Icon  :require('shaders/text').extend({
+			Icon   :require('shaders/text').extend({
 				color   :'#3d3d3dff',
 				fontSize:24,
 				font    :require('fonts/fontawesome_makepad.font')
 			}),
-			Line  :require('shaders/line').extend({
+			Line   :require('shaders/line').extend({
 				color:'black'
 			}),
-			Button:require('views/button').extend({
+			Button :require('views/button').extend({
 			})
 		}
 	}
@@ -40,6 +49,20 @@ module.exports = class extends require('base/app'){ //top
 		]
 		
 		this.cart = module.worker.cart || (module.worker.cart = [])
+		this.heatmap = this.createTexture({
+			w:16,
+			h:16
+		})
+	}
+	
+	onFingerHoverGlobal(e) {
+		var l = this.toLocal(e)
+		var mx = (l.x / this.xmap) * this.heatmap.w
+		var my = (l.y / this.ymap) * this.heatmap.h
+		var idx = parseInt(mx) + parseInt(my) * this.heatmap.w
+		_=idx
+		this.heatmap.array[idx]++
+		this.heatmap.update()
 	}
 	
 	onDraw() {
@@ -48,12 +71,21 @@ module.exports = class extends require('base/app'){ //top
 			h         :'100%',
 			moveScroll:0
 		})
+		
 		this.beginBg({
 			w      :'100%',
 			margin :[2, 0, 0, 0],
 			padding:5,
 			color  :'#d7d7d7ff'
 		})
+		
+		this.Bg2 = _=>{
+			w:'100%'
+			margin:[2, 0, 0, 0]
+			padding:5
+			color:'#d7d7d7ff'
+		}
+		
 		this.drawText({
 			align:[0.5, 0],
 			color:'#949494ff',
@@ -68,7 +100,6 @@ module.exports = class extends require('base/app'){ //top
 				color  :'#d7d7d7ff'
 			})
 			this.drawImage({
-				
 				image:product.image,
 				w    :100,
 				h    :100
@@ -171,5 +202,15 @@ module.exports = class extends require('base/app'){ //top
 		this.endBg()
 		
 		this.endBg(true)
+		this.xmap = this.turtle.x2
+		this.ymap = this.turtle.y2
+		this.drawHeatMap({
+			order:2,
+			x    :0,
+			y    :0,
+			w    :this.xmap,
+			h    :this.ymap,
+			image:this.heatmap
+		})
 	}
 }

@@ -850,6 +850,11 @@ painter.TRANSFER_DATA = 1<<4
 
 painter.Texture = class Texture extends require('base/class'){
 	
+	prototype(){
+		this.size = [1,1]
+		this.offset = [0,0]
+	}
+
 	toMessage(){
 
 		var transfer = []
@@ -887,7 +892,7 @@ painter.Texture = class Texture extends require('base/class'){
 		this.format = options.format || painter.RGBA
 		this.type = options.type || painter.UNSIGNED_BYTE
 		this.external = options.external
-		this.flags = options.flags 
+		this.flags = options.flags || 0
 		this.w = options.w 
 		this.h = options.h
 		this.array = options.array
@@ -896,13 +901,14 @@ painter.Texture = class Texture extends require('base/class'){
 	}
 
 	update(options){
+		service.batchMessage(this)
+		if(!options) return
 		if(options.format !== undefined) this.format = options.format
 		if(options.type !== undefined) this.type = options.type
 		if(options.flags !== undefined) this.flags = options.flags
 		if(options.w !== undefined) this.w = options.w
 		if(options.h !== undefined) this.h = options.h
 		if(options.array !== undefined) this.array = options.array
-		service.batchMessage(this)
 	}
 
 	destroyTexture(){

@@ -17,7 +17,9 @@ module.exports = class extends require('/platform/service'){
 	user_load(msg){
 		// if its already in the root cache, dont load it
 		var cache = this.root.cache[msg.path]
-		if(!cache) cache = localStorage.getItem('storage1:'+msg.path)
+		if(!cache && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
+			cache = localStorage.getItem('storage1:'+msg.path)
+		}
 
 		if(cache){
 			this.postMessage({

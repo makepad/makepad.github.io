@@ -77,7 +77,7 @@ module.exports = class App extends View{
 			if(!view) return				
 
 			if(view[event]) view[event](msg)
-
+			if(app[event+'Global']) app[event+'Global'](msg)
 			var iter = view
 			while(iter){
 				var state = iter.states && iter.states[iter.state]

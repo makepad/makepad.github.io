@@ -315,7 +315,15 @@ module.exports = class View extends require('base/class'){
 		this.turtle.lineBreak()
 	}
 
-
+	createTexture(opts){
+		if(!this.$textures){
+			this.$textures = []
+		}
+		var tex = new painter.Texture(opts)
+		this.$textures.push(tex)
+		tex.array = new Uint32Array(opts.w*opts.h)
+		return tex
+	}
 
 	// todo mgmt
 

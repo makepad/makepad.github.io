@@ -10,19 +10,27 @@ module.exports = class Image extends require('shaders/quad'){
 			offset:[0,0],
 			opacity:1,
 			size:[0,0],
-			colorSampler:{kind:'sampler', sampler:painter.SAMPLER2DNEAREST},
+			imageSampler:{kind:'sampler', sampler:painter.SAMPLER2DLINEAR},
 		}
 
 		this.verbs = {
 			draw:function(overload){ 
 				var img = overload.image
-				var worker = this.app.module.worker
-				var $atlasses = worker.$atlasses
-				if(!$atlasses) $atlasses = worker.$atlasses = {}
-				var $atlas = $atlasses[img.atlas || 0]
-				if(!$atlas) $atlas = $atlasses[img.atlas || 0] = new this.NAME.prototype.Atlas()
-				var index = $atlas.lookupImage(img)
-				overload.colorSampler = $atlas.texture
+				var index
+				if(img.texId){
+					overload.imageSampler = img
+					index = img
+				}
+				else{
+					var worker = this.app.module.worker
+					var $atlasses = worker.$atlasses
+					if(!$atlasses) $atlasses = worker.$atlasses = {}
+					var $atlas = $atlasses[img.atlas || 0]
+					if(!$atlas) $atlas = $atlasses[img.atlas || 0] = new this.NAME.prototype.Atlas()
+					var index = $atlas.lookupImage(img)
+					overload.imageSampler = $atlas.texture
+				}
+
 				if(!('w' in overload)) overload.w = index.w
 				if(!('h' in overload)) overload.h = index.h
 				this.STYLEPROPS(overload, 1)
@@ -49,7 +57,7 @@ module.exports = class Image extends require('shaders/quad'){
 
 	pixel(){$
 		var pos = this.mesh.xy*this.size+this.offset
-		var col = texture2D(this.colorSampler, pos)
+		var col = texture2D(this.imageSampler, pos)
 		return col *col.a * this.opacity
 	}
 }
