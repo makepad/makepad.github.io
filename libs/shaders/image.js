@@ -50,6 +50,6 @@ module.exports = class Image extends require('shaders/quad'){
 	pixel(){$
 		var pos = this.mesh.xy*this.size+this.offset
 		var col = texture2D(this.colorSampler, pos)
-		return col
+		return col *col.a * this.opacity
 	}
 }
