@@ -15,6 +15,14 @@ module.exports = class extends require('base/app'){ //top
 				fontSize:24,
 				font    :require('fonts/ubuntu_regular_256.font')
 			}),
+			Icon  :require('shaders/text').extend({
+				color   :'#3d3d3dff',
+				fontSize:24,
+				font    :require('fonts/fontawesome_makepad.font')
+			}),
+			Line  :require('shaders/line').extend({
+				color:'black'
+			}),
 			Button:require('views/button').extend({
 			})
 		}
@@ -28,8 +36,10 @@ module.exports = class extends require('base/app'){ //top
 			{name:'Lake superior agate', price:70, image:require('./images/shop3.jpg')},
 			{name:'Binghamite', price:70, image:require('./images/shop4.jpg')},
 			{name:'Imperial jasper red', price:50, image:require('./images/shop5.jpg')},
-			{name:'Titanium ring Cube', price:150, image:require('./images/shop6.jpg')},
+			{name:'Titanium ring cube', price:150, image:require('./images/shop6.jpg')},
 		]
+		
+		this.cart = module.worker.cart || (module.worker.cart = [])
 	}
 	
 	onDraw() {
@@ -51,7 +61,7 @@ module.exports = class extends require('base/app'){ //top
 		})
 		this.endBg()
 		for(var i = 0;i < this.products.length;i++){
-			var product = this.products[i]
+			let product = this.products[i]
 			this.beginBg({
 				margin :[2, 0, 0, 0],
 				padding:5,
@@ -84,16 +94,82 @@ module.exports = class extends require('base/app'){ //top
 			this.drawButton({
 				icon   :'shopping-basket',
 				id     :'btn' + i,
-				onClick:_=>{
-					
+				item   :i,
+				onClick:btn=>{
+					this.cart.push(product)
+					this.redraw()
 				}
 			})
 			this.endBg()
-			
-			
-			
 			this.lineBreak()
 		}
+		this.beginBg({
+			margin :[2, 0, 0, 0],
+			y      :45,
+			w      :100,
+			align  :[0.97, 0],
+			padding:5,
+			color  :'#d7d7d7ff'
+		})
+		this.drawText({
+			color   :'#949494ff',
+			fontSize:20,
+			text    :'Cart'
+		})
+		var total = 0
+		for(var i = 0;i < this.cart.length;i++){
+			total += this.cart[i].price
+		}
+		this.lineBreak()
+		this.drawText({
+			color   :'#949494ff',
+			fontSize:10,
+			text    :'Total:' + total + ' Euros'
+		})
+		this.lineBreak()
+		
+		for(var i = 0;i < this.cart.length;i++){
+			let product = this.cart[i]
+			this.beginBg({
+				color  :'#a9a9a9ff',
+				w      :90,
+				padding:8
+			})
+			
+			this.drawImage({
+				image :product.image,
+				margin:[0, 0, 5, 0],
+				w     :50,
+				h     :50
+			})
+			this.lineBreak()
+			this.drawText({
+				color   :'#000000ff',
+				fontSize:10,
+				wrapping:'word',
+				text    :product.name
+			})
+			this.drawText({
+				color   :'#000000ff',
+				fontSize:10,
+				wrapping:'word',
+				text    :'\nEuro: ' + product.price
+			})
+			this.lineBreak()
+			this.drawButton({
+				id     :'rem' + i,
+				text   :'Remove',
+				icon   :'close',
+				onClick:btn=>{
+					var i = this.cart.indexOf(product)
+					this.cart.splice(i, 1)
+					this.redraw()
+				}
+			})
+			this.endBg({})
+		}
+		this.endBg()
+		
 		this.endBg(true)
 	}
 }
