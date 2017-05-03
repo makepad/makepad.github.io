@@ -5,8 +5,8 @@ var jpegdecoder = require('codecs/jpegdecoder')
 
 module.exports = class Atlas extends require('base/class'){
 	prototype(){
-		this.width = 4096
-		this.height = 4096
+		this.width = 1024
+		this.height = 1024
 		this.buffer = new Uint32Array(this.width*this.height)
 		this.wx = 0
 		this.mh = 0
@@ -18,7 +18,6 @@ module.exports = class Atlas extends require('base/class'){
 			format:painter.RGBA,
 			type:painter.UNSIGNED_BYTE,
 			flags:0,
-			//flags:painter.TRANSFER_DATA,
 			w:this.width,
 			h:this.height
 		})
