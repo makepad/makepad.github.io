@@ -521,6 +521,8 @@ module.exports = class Icon extends require('shaders/text'){
 				'ship':'\uf21a',
 				'shirtsinbulk':'\uf214',
 				'shopping-cart':'\uf07a',
+				'shopping-basket':'\uf291',
+				'shopping-bag':'\uf290',
 				'sign-in':'\uf090',
 				'sign-out':'\uf08b',
 				'signal':'\uf012',

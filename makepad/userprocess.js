@@ -39,17 +39,31 @@ module.exports = class UserProcess extends require('views/draw'){
 			this.worker = undefined
 		}
 		this.app.closeTab(this)
+		// lets find the log tab and close it too
+		var log = this.app.find('Log'+this.resource.path)
+		if(log) this.app.closeTab(log)
+	}
+
+	onRefresh(){
+		// lets refresh this worker
+		this.worker.onPingTimeout()
 	}
 
 	onDraw() { 
 		this.beginBg({
 		})
 		this.drawButton({
-			id:2,
+			id:'max',
 			icon:'arrows-alt'
 		})
 		this.drawButton({
-			id:3,
+			id:'refresh',
+			align:[1,0],
+			onClick:this.onRefresh.bind(this),
+			icon:'refresh'
+		})
+		this.drawButton({
+			id:'close',
 			align:[1,0],
 			onClick:this.onClose.bind(this),
 			icon:'close'

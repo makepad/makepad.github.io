@@ -305,6 +305,7 @@ function workerBoot(worker, global){
 
 			worker.onError = function(e){
 				console.log('worker exception', e)
+				_=e
 				worker.postMessage({
 					$:'worker1',
 					msg:{
@@ -347,6 +348,7 @@ function workerBoot(worker, global){
 			}
 		}
 
+		worker.main = msg.main
 		// lets boot it up
 		var module = modules[msg.main]
 		module.exports = {}

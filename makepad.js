@@ -9,8 +9,8 @@ var currentFile = "./examples/windtree.js"
 var ProjectStore = require('base/store')
 var matchCache = {}
 // ICON list
-// search copy exchange play archive filter close gear info-circle puzzle television trash-o level-down pencil
-// f002 f0c5 f0ec f04b f187 f0b0 f00d f013 f05a f12e f26c f014 f149 f040
+// search copy exchange play archive filter close gear info-circle puzzle television trash-o level-down pencil refresh arrows-alt shopping-cart shoppign-basket
+// f002 f0c5 f0ec f04b f187 f0b0 f00d f013 f05a f12e f26c f014 f149 f040 f021 f0b2 f07a f291 f290
 module.exports = class Makepad extends require('base/app'){
 	
 	prototype() {

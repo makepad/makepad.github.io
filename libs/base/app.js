@@ -229,6 +229,7 @@ module.exports = class App extends View{
 		}
 		
 		painter.onResize()
+		_="Application "+module.worker.main+" started at "+Date().toString() 
 	}
 
 	transferFingerMove(digit, pickId){

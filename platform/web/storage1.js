@@ -62,7 +62,7 @@ module.exports = class extends require('/platform/service'){
 	}
 
 	user_save(msg){
-		if(true){//location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
+		if(location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
 			localStorage.setItem('storage1:'+msg.path, msg.data)
 			this.postMessage({
 				fn:'onSave',
