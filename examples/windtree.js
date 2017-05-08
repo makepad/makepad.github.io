@@ -2,6 +2,9 @@
 module.exports = class extends require('base/app'){
 	prototype() {
 		this.props = {autumn:0},this.tools = {
+			Slider:require('views/slider').extend({
+				
+			}),
 			Branch:require('shaders/quad').extend({
 				path    :0,
 				depth   :0,
@@ -124,5 +127,8 @@ module.exports = class extends require('base/app'){
 			recur(path + pow(2, depth), depth + 1)
 		}
 		recur(0, 0)
+		this.drawSlider({
+			id:1
+		})
 	}
 }

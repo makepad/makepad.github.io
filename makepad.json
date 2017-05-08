@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/shop1.js"],
-	"run":["/examples/shop1.js"],
+	"open":["/examples/circles.js"],
+	"run":["/examples/circles.js"],
 	"name":"",
 	"folder":[
 		{"name":"platform","folder":[
@@ -192,6 +192,7 @@
 			{"name":"present.js"},
 			{"name":"present2.js"},
 			{"name":"sliders.js"},
+			{"name":"circles.js"},
 			{"name":"shop1.js"},
 			{"name":"shop2.js"},
 			{"name":"treegraph.js"},
