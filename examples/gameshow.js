@@ -1,7 +1,7 @@
 new require('styles/dark')
 let audio = require('services/audio')
 let socket = require('services/socket')
-let wav = require('parsers/wav')
+let wav = require('codecs/wavdecoder')
 
 class Base{
 	constructor() {}
@@ -226,15 +226,15 @@ module.exports = class extends require('base/drawapp'){ //top
 		super()
 		audio.reset()
 		
-		this.coinUp = new audio.Flow({buffer1:{data:require('/examples/cash.wav', wav.parse)}})
-		this.coinDown = new audio.Flow({buffer1:{data:require('/examples/sad.wav', wav.parse)}})
+		this.coinUp = new audio.Flow({buffer1:{data:require('/examples/audio/cash.wav', wav)}})
+		this.coinDown = new audio.Flow({buffer1:{data:require('/examples/audio/sad.wav', wav)}})
 		this.snds = [
-			new audio.Flow({buffer1:{data:require('/examples/horn.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/baby.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/bicycle.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/chicken.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/fart.wav', wav.parse)}}),
-			new audio.Flow({buffer1:{data:require('/examples/cow.wav', wav.parse)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/horn.wav', wav)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/baby.wav', wav)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/bicycle.wav', wav)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/chicken.wav', wav)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/fart.wav', wav)}}),
+			new audio.Flow({buffer1:{data:require('/examples/audio/cow.wav', wav)}}),
 		]
 		
 		var flen = .1 * 44100

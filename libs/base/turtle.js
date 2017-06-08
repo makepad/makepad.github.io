@@ -357,7 +357,7 @@ module.exports = class Turtle extends require('base/class'){
 			var code = 'turtle.sx + ' + str
 				.replace(/\@/g, 'turtle.width - turtle._w -')
 				.replace(/\#/g, '*0.01*(turtle.width - (turtle.wx - turtle.sx) - turtle.$alignDx) - turtle._margin[1] - turtle._margin[3]')
-				.replace(/\%/g, '*0.01*(turtle.width) - turtle._margin[1] - turtle._margin[3]')
+				.replace(/\%/g, '*0.01*(turtle.width) - (Array.isArray(turtle._margin)?(turtle._margin[1] - turtle._margin[3]):turtle._margin*2)')
 			cache = xcache[str] = new Function('turtle', 'return ' + code)
 		}
 		var ret = cache.call(view, this)
@@ -371,8 +371,8 @@ module.exports = class Turtle extends require('base/class'){
 			if(str == pf) return this.sy + pf
 			var code = 'turtle.sy + ' + str
 				.replace(/\@/g, 'turtle.height - turtle._h -')
-				.replace(/\#/g, '*0.01*(turtle.height - (turtle.wy-turtle.sy) - turtle.$alignDy)- turtle._margin[0] - turtle._margin[2]')
-				.replace(/\%/g, '*0.01*(turtle.height)- turtle._margin[0] - turtle._margin[2]')
+				.replace(/\#/g, '*0.01*(turtle.height - (turtle.wy-turtle.sy) - turtle.$alignDy)- (Array.isArray(turtle._margin)?(turtle._margin[0] - turtle._margin[2]):turtle._margin*2)')
+				.replace(/\%/g, '*0.01*(turtle.height)- (Array.isArray(turtle._margin)?(turtle._margin[0] - turtle._margin[2]):turtle._margin*2)')
 			cache = ycache[str] = new Function('turtle', 'return ' + code)
 		}
 		return cache.call(view, this)
@@ -389,8 +389,8 @@ module.exports = class Turtle extends require('base/class'){
 			var pf = parseFloat(str)
 			if(str == pf) return pf
 			var code = str
-			.replace(/\#/g, '*0.01*(turtle.width - (turtle.wx - turtle.sx) - turtle.$alignDx) - turtle._margin[1] - turtle._margin[3]')
-			.replace(/\%/g, '*0.01*(turtle.width) - turtle._margin[1] - turtle._margin[3]')
+			.replace(/\#/g, '*0.01*(turtle.width - (turtle.wx - turtle.sx) - turtle.$alignDx) - (Array.isArray(turtle._margin)?(turtle._margin[1] - turtle._margin[3]):turtle._margin*2)')
+			.replace(/\%/g, '*0.01*(turtle.width) - (Array.isArray(turtle._margin)?(turtle._margin[1] - turtle._margin[3]):turtle._margin*2)')
 			//var code = str.replace(/\%/g, '*0.01*(turtle.width ) - turtle.margin[1] - turtle.margin[3]')
 			cache = wcache[str] = new Function('turtle', 'return ' + code)
 		}
@@ -403,8 +403,8 @@ module.exports = class Turtle extends require('base/class'){
 			var pf = parseFloat(str)
 			if(str == pf) return pf
 			var code = str
-			.replace(/\#/g, '*0.01*(turtle.height - (turtle.wy-turtle.sy) - turtle.$alignDy)- turtle._margin[0] - turtle._margin[2]')
-			.replace(/\%/g, '*0.01*(turtle.height)- turtle._margin[0] - turtle._margin[2]')
+			.replace(/\#/g, '*0.01*(turtle.height - (turtle.wy-turtle.sy) - turtle.$alignDy)- (Array.isArray(turtle._margin)?(turtle._margin[0] - turtle._margin[2]):turtle._margin*2)')
+			.replace(/\%/g, '*0.01*(turtle.height)- (Array.isArray(turtle._margin)?(turtle._margin[0] - turtle._margin[2]):turtle._margin*2)')
 			cache = hcache[str] = new Function('turtle', 'return ' + code)
 		}
 		var r = cache.call(view, this)

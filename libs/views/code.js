@@ -5,7 +5,7 @@ module.exports = class Code extends require('views/edit'){
 
 	// mixin the formatter
 	prototype() {
-		this.mixin(require('parsers/jsastformat'))
+		this.mixin(require('parsers/astfastformat'))
 		this.mixin(require('parsers/jstokenformat'))
 		this.lazyUniforms = {
 			groupHighlightId: true,

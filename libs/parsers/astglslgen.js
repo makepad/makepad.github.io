@@ -3,7 +3,7 @@ var parser = require('parsers/js')
 var parsecache = {}
 var painter = require('services/painter')
 
-module.exports = class ShaderInfer extends require('base/class'){
+module.exports = class AstGlslGen extends require('base/class'){
 
 	static generateGLSL(root, fn, varyIn, mapexception, litFloats, litInts){
 		var gen = new this()

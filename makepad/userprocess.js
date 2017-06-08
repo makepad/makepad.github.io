@@ -135,7 +135,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		if(this.trace){
 			var code = require('views/code')
 			var parser = require('parsers/js')
-			var min = new require('parsers/jsminformat')
+			var min = new require('parsers/astminformat')
 			//var deflate = require('parsers/deflate')
 			min.defaultScope = code.prototype.defaultScope
 			var deps = this.deps

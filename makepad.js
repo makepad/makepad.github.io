@@ -298,7 +298,7 @@ module.exports = class Makepad extends require('base/app'){
 		}
 		var code = require('views/code')
 		var parser = require('parsers/js')
-		var min = new require('parsers/jsminformat')
+		var min = new require('parsers/astminformat')
 		var base64encoder = require('codecs/base64encoder')
 		// var deflate = require('parsers/deflate')
 		// var base85 = require('parsers/base85')

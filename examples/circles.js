@@ -10,7 +10,7 @@ module.exports = class extends require('base/drawapp'){
 					var s = w * abs(sin(this.index + this.index * 3.5 * this.time))
 					
 					var f1 = this.fingerPos(0)
-					s = s * abs(f1.x - this.x) * 0.003
+					s = s * (800 - 4. * length(f1 - vec2(this.x, this.y))) * 0.003
 					this.x -= .5 * s
 					this.y -= .5 * s
 					this.w = this.h = s

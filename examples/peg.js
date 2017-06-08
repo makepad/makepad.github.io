@@ -1,4 +1,4 @@
-var LOG = 1
+var LOG = 0
 // GRAMMAR
 var defQL = {
 	Start   :o=>o.Form,
@@ -118,7 +118,6 @@ module.exports = class extends require('base/app'){ //top
 		this.astQL = this.parserQL.parse(this.form)
 		this.parserQLS = makeParser(defQLS)
 		this.astQLS = this.parserQLS.parse(this.style)
-		
 		this.wrap = false
 	}
 	onDraw() {
@@ -375,10 +374,12 @@ module.exports = class extends require('base/app'){ //top
 		//processQL.Form(this.astQL.n[0])
 		this.endBg()
 		this.turtle.mh = 0
+		this.turtle._wrap = false
 		//this.lineBreak()
 		var px = this.turtle.wx + 5
 		var dumpAst = (node, d) =>{
 			this.turtle.wx = px + d * 10
+			//_=this.turtle
 			this.drawText({
 				color   :'#a',
 				fontSize:8,

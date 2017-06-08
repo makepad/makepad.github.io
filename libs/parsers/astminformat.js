@@ -6,9 +6,9 @@ module.exports = class JSMinimizer extends require('base/class'){
 	
 	prototype() {
 		this.glslGlobals = {$:1}
-		for(var glslKey in require('base/infer').prototype.glsltypes)this.glslGlobals[glslKey] = 1
-		for(var glslKey in require('base/infer').prototype.glslfunctions)this.glslGlobals[glslKey] = 1
-		for(var glslKey in require('base/infer').prototype.glslvariables)this.glslGlobals[glslKey] = 1
+		for(var glslKey in require('parsers/astglslgen').prototype.glsltypes)this.glslGlobals[glslKey] = 1
+		for(var glslKey in require('parsers/astglslgen').prototype.glslfunctions)this.glslGlobals[glslKey] = 1
+		for(var glslKey in require('parsers/astglslgen').prototype.glslvariables)this.glslGlobals[glslKey] = 1
 
 		this.lut = [
 			'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',

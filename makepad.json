@@ -1,7 +1,7 @@
 {
 	"project":"Makepad",
-	"open":["/examples/circles.js"],
-	"run":["/examples/circles.js"],
+	"open":["/examples/present.js"],
+	"run":["/examples/present.js"],
 	"name":"",
 	"folder":[
 		{"name":"platform","folder":[
@@ -35,11 +35,10 @@
 				{"name":"log.js"},
 				{"name":"noise.js"},
 				{"name":"class.js"},
-				{"name":"compiler.js"},
+				{"name":"glslcompiler.js"},
 				{"name":"drawapp.js"},
 				{"name":"glmatrix.js"},
 				{"name":"idalloc.js"},
-				{"name":"infer.js"},
 				{"name":"mat2.js"},
 				{"name":"mat2d.js"},
 				{"name":"mat3.js"},
@@ -141,6 +140,10 @@
 				{"name":"zlibzstream.js"}
 			]},
 			{"name":"parsers","folder":[
+				{"name":"astbytecodegen.js"},
+				{"name":"astfastformat.js"},
+				{"name":"astglslgen.js"},
+				{"name":"astminformat.js"},
 				{"name":"js.js"},
 				{"name":"jscomments.js"},
 				{"name":"jsdefinitions.js"},
@@ -188,10 +191,12 @@
 			]},
 			{"name":"camera.js"},
 			{"name":"gameshow.js"},
+			{"name":"gameshow2.js"},
 			{"name":"peg.js"},
 			{"name":"present.js"},
 			{"name":"present2.js"},
 			{"name":"sliders.js"},
+			{"name":"synth.js"},
 			{"name":"circles.js"},
 			{"name":"shop1.js"},
 			{"name":"shop2.js"},

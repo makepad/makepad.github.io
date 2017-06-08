@@ -2,12 +2,12 @@ var logNonexisting = function(node) {
 	console.log(node.type)
 }
 
-module.exports = class JSFormatter extends require('base/class'){
+module.exports = class Js2FastFormat extends require('base/class'){
 	
 	prototype() {
 		this.glslGlobals = {$:1}
-		for(var glslKey in require('base/infer').prototype.glsltypes)this.glslGlobals[glslKey] = 1
-		for(var glslKey in require('base/infer').prototype.glslfunctions)this.glslGlobals[glslKey] = 1
+		for(var glslKey in require('parsers/astglslgen').prototype.glsltypes)this.glslGlobals[glslKey] = 1
+		for(var glslKey in require('parsers/astglslgen').prototype.glslfunctions)this.glslGlobals[glslKey] = 1
 	}
 	
 	jsASTFormat(indentSize, ast) {

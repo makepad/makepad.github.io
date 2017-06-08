@@ -1,13 +1,13 @@
 var painter = require('services/painter')
 var types = require('base/types')
 var parser = require('parsers/js')
-var ShaderInfer = require('base/infer')
+var AstGlslGen = require('parsers/astglslgen')
 
 for(let i = 0; i < 16; i++) painter.nameId('ATTR_'+i)
 
 const compName = ['x','y','z','w']
 
-module.exports = class Compiler extends require('base/class'){
+module.exports = class GLSLCompiler extends require('base/class'){
 
 	prototype(){
 		this.$mapExceptions = true
@@ -141,8 +141,8 @@ module.exports = class Compiler extends require('base/class'){
 			litFloats = []
 			litInts = []
 		}
-		var vtx = ShaderInfer.generateGLSL(this, this.vertexMain, null, this.$mapExceptions, litFloats, litInts)
-		var pix = ShaderInfer.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions, litFloats, litInts)
+		var vtx = AstGlslGen.generateGLSL(this, this.vertexMain, null, this.$mapExceptions, litFloats, litInts)
+		var pix = AstGlslGen.generateGLSL(this, this.pixelMain, vtx.varyOut, this.$mapExceptions, litFloats, litInts)
 
 		if(vtx.exception || pix.exception) return
 

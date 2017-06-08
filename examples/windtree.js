@@ -1,4 +1,4 @@
-//new require('styles/dark')
+new require('styles/dark')
 module.exports = class extends require('base/app'){
 	prototype() {
 		this.props = {autumn:0},this.tools = {
@@ -127,8 +127,6 @@ module.exports = class extends require('base/app'){
 			recur(path + pow(2, depth), depth + 1)
 		}
 		recur(0, 0)
-		this.drawSlider({
-			id:1
-		})
+		
 	}
 }

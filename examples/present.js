@@ -9,6 +9,9 @@ module.exports = class extends require('base/drawapp'){ //top
 			page:_=module.worker.page || 0
 		}
 		this.tools = {
+			Bg    :{
+				padding:[10, 0, 0, 10]
+			},
 			Splash:require('base/view').extend({
 				props :{text:'HI'},
 				tools :{
@@ -39,10 +42,10 @@ module.exports = class extends require('base/drawapp'){ //top
 						outlineWidth:0.04,
 						color       :'#ffffffff',
 						shadowColor :'#00000099',
-						shadowBlur  :1.0,
+						shadowBlur  :8.0,
 						shadowSpread:0.,
 						shadowOffset:[2., 2],
-						dy          :-4.1,
+						dy          :-14.1,
 						lineSpacing :0.9,
 						outlineColor:'#000000ff',
 						vertexStyle :function() {$
@@ -76,10 +79,10 @@ module.exports = class extends require('base/drawapp'){ //top
 		
 		*/
 		this.pages = [
-			{h:"Demos", q:"- Sliders\n- Windtree\n- Peg\n"},
-			{h:"Overview", q:"- All in web-browser\n- Multithreaded\n- Type Inference JS to shaders\n- AST Code editor\n- Class composition\n- Layout\n- Future\n"},
-			{h:"Multithreading", q:"- Main browser thread: renderer\n- Worker 1: Editor\n- Worker 2: User programs\n\nUses commandbuffer trees cross thread\nCan recover from user process\n\nMain thread implements services\nworkers get message passing\nservice interface"},
-			{h:"Type inferencing JS", q:"- JS class backbone with pixel and vertex methods\n- Use type information to generate JS as well\n", c:'vec4 thisDOTpixel_T(){\n' + 
+			{h:"Why webGL", q:"- Sliders\n- Windtree\n- Circles\n"},
+			{h:"Overview", q:"- All in web-browser, mobile\n- Multithreaded\n- Type Inference JS to shaders\n- AST Code editor\n- Class composition\n- Layout\n- Main UI\n- Future\n"},
+			{h:"Multithreading", q:"- Main browser thread: renderer\n- Worker 1: Editor\n- Worker 2: User programs\n\n- Commandbuffer trees\n- Recover process\n- Main thread is msg based services\n"},
+			{h:"Type inferencing JS", q:"- Class based shaders\n- Typed JS\n", c:'vec4 thisDOTpixel_T(){\n' + 
 				'  thisDOTviewport_T_vec2(thisDOTmesh.xy);\n' + 
 				'  thisDOTtranslate_T_float_float(0.5,0.5);\n' + 
 				'  thisDOTcircle_T_float_float_float(0.0,0.0,0.35);\n' + 
@@ -93,10 +96,11 @@ module.exports = class extends require('base/drawapp'){ //top
 				'  thisDOTglow_T_vec4_float(vec4(1,1,1,1),0.1);\n' + 
 				'  return thisDOTresult;\n' + 
 				'}'},
-			{h:"AST Code editor", q:"- Cycles on-key-down through parser and formatter\n- Parse error handled gracefully\n- 1K base editor\n  - Draw primitives\n  - Keyboard handling\n  - Cursor sets\n- 1K code editor\n  - Code spec. draw primitives\n  - Formatting colors\n  - Draw function w format call\n- 1K Formatter\n  - Simple AST matcher"},
+			{h:"AST Code editor", q:"- On key down cycle\n- Parse and runtime errors\n- AST editing tools"},
 			{h:"Class composition", q:"- Nested classes compose everything\n- Replacement for CSS\n- GPU animation engine"},
-			{h:"Layout engine", q:"- Inline layout engine, in drawflow\n- Can move after, not resize"},
-			{h:"Future", q:"- Finish UI kit\n- Visual editors for AST\n- Alternate media\n- Online service makepad.io\n\nTwitter:@rikarends\nAll apache2/MIT at github: github.com/makepad"},
+			{h:"Layout engine", q:"- Shop\n- Inline layout engine, in drawflow\n- Can move after, not resize"},
+			{h:"Main UI", q:"- PEG code flow\n- Audio editor\n- Packager\n- Recursive\n"},
+			{h:"Future", q:"- Finish UI kit\n- Visual editors for AST\n- Audio API\n- Online service makepad.io\n\nTwitter:@rikarends\ngithub: github.com/makepad\nAll apache2/MIT"},
 		]
 	}
 	
@@ -128,7 +132,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			
 			this.drawText({
 				fontSize:50 * scale,
-				margin  :[0, 0, 0, 40],
+				margin  :[0, 0, 0, 0],
 				align   :[0., 0],
 				text    :this.pages[this.page - 1].h
 			})
@@ -136,16 +140,25 @@ module.exports = class extends require('base/drawapp'){ //top
 			this.turtle.wy += 40
 			this.drawText({
 				fontSize:32 * scale,
-				margin  :[0, 0, 0, 40],
+				margin  :[0, 0, 0, 0],
 				text    :this.pages[this.page - 1].q
 			})
 			this.turtle.wy += 20
 			this.drawText({
 				fontSize:20 * scale,
-				margin  :[0, 0, 0, 40],
+				margin  :[0, 0, 0, 0],
 				text    :this.pages[this.page - 1].c
+			})
+			var end = new Date(2017, 5, 7, 13, 55, 0)
+			var t = end.getTime() - Date.now()
+			this.drawText({
+				fontSize:20 * scale,
+				margin  :[0, 10, 10, 40],
+				align   :[1., 1.],
+				text    :'' + floor((t / 60000) * 10) / 10,
 			})
 		}
 		this.endBg()
+		setTimeout(_=>{this.redraw()}, 1000)
 	}
 }

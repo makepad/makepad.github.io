@@ -1,7 +1,7 @@
 function extend(body) { 
 	
-	class ExtendClass extends this{ 
-	} 
+	class ExtendClass extends this{
+	}
 	
 	var Constructor = ExtendClass 
 	var proto = ExtendClass.prototype 
@@ -29,7 +29,7 @@ function extend(body) {
 		} 
 	} 
 	
-	if(proto.constructor !== Constructor) { 
+	if(proto.constructor !== Constructor) {
 		throw new Error("Please use ES6 constructor syntax") 
 	} 
 	
@@ -43,45 +43,53 @@ module.exports = class RootClass{
 	} 
 } 
 
-Object.defineProperty(module.exports.prototype, 'mixin', { 
-	enumerable: false, 
-	configurable: true, 
-	writable: true, 
-	value: function mixin(...args) { 
-		for(var a = 0; a < args.length; a++) { 
-			var proto = args[a] 
-			if(!proto) continue 
-			if(typeof proto === 'function') { 
-				// passed in a class
-				if(proto.prototype && proto.prototype !== Object) { 
-					proto = proto.prototype 
-				}
-				else { 
-					proto.call(this, this) 
-					continue 
-				} 
+function mixin(...args) { 
+	for(var a = 0; a < args.length; a++) { 
+		var proto = args[a] 
+		if(!proto) continue 
+		if(typeof proto === 'function') { 
+			// passed in a class
+			if(proto.prototype && proto.prototype !== Object) { 
+				proto = proto.prototype 
+			}
+			else { 
+				proto.call(this, this) 
+				continue 
 			} 
-			
-			if(!protoReady.get(proto) && proto.__initproto__) proto.__initproto__() 
-			
-			var props = Object.getOwnPropertyNames(proto) 
-			for(var i = 0; i < props.length; i++) { 
-				var key = props[i] 
-				var desc = Object.getOwnPropertyDescriptor(proto, key) 
-				if(key === '__inheritable__') { // copying inheritable is different
-					var value = proto[key] 
-					for(var j = 0; j < value.length; j++) { 
-						var val = value[j] 
-						this.inheritable(val.name, val.cb) 
-					} 
-				}
-				else if(key !== 'constructor' && desc.configurable) { 
-					Object.defineProperty(this, key, desc) 
+		} 
+		
+		if(!protoReady.get(proto) && proto.__initproto__) proto.__initproto__() 
+		
+		var props = Object.getOwnPropertyNames(proto) 
+		for(var i = 0; i < props.length; i++) { 
+			var key = props[i] 
+			var desc = Object.getOwnPropertyDescriptor(proto, key) 
+			if(key === '__inheritable__') { // copying inheritable is different
+				var value = proto[key] 
+				for(var j = 0; j < value.length; j++) { 
+					var val = value[j] 
+					this.inheritable(val.name, val.cb) 
 				} 
+			}
+			else if(key !== 'constructor' && key !== 'prototype' && desc.configurable) { 
+				Object.defineProperty(this, key, desc) 
 			} 
 		} 
 	} 
+} 
+
+Object.defineProperty(module.exports.prototype, 'mixin', { 
+	enumerable: false, 
+	configurable: true, 
+	get:function(){
+		return mixin
+	},
+	set:function(arg){
+		if(Array.isArray(arg)) mixin.apply(this, arg)
+		else mixin.call(this, arg)
+	} 
 }) 
+
 var protoReady = new WeakMap() 
 var inheritReady = new WeakMap() 
 

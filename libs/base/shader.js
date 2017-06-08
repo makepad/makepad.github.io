@@ -1,7 +1,7 @@
 var painter = require('services/painter')
 var types = require('base/types')
 
-module.exports = class Shader extends require('base/compiler'){
+module.exports = class Shader extends require('base/glslcompiler'){
 	
 	prototype() {
 		
