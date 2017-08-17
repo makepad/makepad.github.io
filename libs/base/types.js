@@ -70,9 +70,20 @@ function Enum(enumSet){
 Enum.prototype = Object.create(Type.prototype)
 Enum.prototype.constructor = Enum
 
+function ObjectT(props){
+	var obj = this
+	if(!(obj instanceof ObjectT)){
+		obj = Object.create(ObjectT.prototype)
+	}
+	obj.props = props
+	obj.name = 'object'
+	return obj
+}
+
 types.Type = Type
 types.Struct = Struct
 types.Enum = Enum
+types.Object = ObjectT
 
 // generic types
 types.void = Type({
@@ -239,6 +250,10 @@ types.mat4 = Struct({
 	o:types.float,
 	p:types.float
 }, 'mat4')
+
+types.string = Type({
+	name:'string'
+})
 
 // value to type conversion, used for attribute mapping
 types.typeFromValue = function(value){

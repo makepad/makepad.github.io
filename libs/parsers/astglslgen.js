@@ -483,9 +483,9 @@ module.exports = class AstGlslGen extends require('base/class'){
 					if(proplen < 1 || proplen > 4) throw this.InferErr(node, 'Invalid property '+objectstr+'.'+propname)
 					var typename = type.name
 
-					proptype = types[proplen === 1? swizone[typename]: (swiztype[typename] + proplen)]
+					proptype = types[proplen === 1? this.swizone[typename]: (this.swiztype[typename] + proplen)]
 
-					var swiz = swizlut[typename]
+					var swiz = this.swizlut[typename]
 					if(!swiz) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
 					for(let i = 0, set = swiz.set[swiz.pick[propname.charCodeAt(0)]]; i < proplen; i++){
 						if(!set || !set[propname.charCodeAt(i)]) throw this.InferErr(node, 'Invalid swizzle '+objectstr+'.'+propname)
@@ -1133,9 +1133,9 @@ module.exports = class AstGlslGen extends require('base/class'){
 		if(leftinfer.kind !== 'value' || rightinfer.kind !== 'value'){
 			throw this.InferErr(node, 'Not a value type '+leftinfer.kind + " - " + rightinfer.kind+":"+leftstr+node.operator+rightstr)
 		}
-		var group = groupBinaryExpression[node.operator]
+		var group = this.groupBinaryExpression[node.operator]
 		if(group === 1){
-			var lt = tableBinaryExpression[leftinfer.type.name]
+			var lt = this.tableBinaryExpression[leftinfer.type.name]
 
 			if(!lt) throw this.InferErr(node, 'No production rule for type '+leftinfer.type.name+":"+leftstr)
 
@@ -1327,15 +1327,15 @@ module.exports = class AstGlslGen extends require('base/class'){
 
 	// Exceptions
 	ResolveErr(node, message){
-		return new Err(this, node, 'ResolveError', message)
+		return new this.Err(this, node, 'ResolveError', message)
 	}
 
 	SyntaxErr(node, message){
-		return new Err(this, node, 'SyntaxError', message)
+		return new this.Err(this, node, 'SyntaxError', message)
 	}
 
 	InferErr(node, message){
-		return new Err(this, node, 'InferenceError', message)
+		return new this.Err(this, node, 'InferenceError', message)
 	}
 
 
@@ -1484,39 +1484,50 @@ module.exports = class AstGlslGen extends require('base/class'){
 			texture2DProj:{return:types.vec4, params:[{n:'sampler', type:types.sampler2D}, {n:'coord', type:types.vec2}, {n:'bias', type:types.floatopt}]},
 			textureCube:{return:types.vec4, params:[{n:'sampler', type:types.samplerCube}, {n:'coord', type:types.vec3}, {n:'bias', type:types.floatopt}]},
 		}
+
+
+		function Err(state, node, type, message){
+			this.type = type
+			this.message = message
+			this.node = node
+			this.state = state
+		}
+
+		Err.prototype.toString = function(){
+			return this.message
+		}
+
+		this.Err = Err
+
+		this.tableBinaryExpression = {
+			float:{float:types.float, vec2:types.vec2, vec3:types.vec3, vec4:types.vec4},
+			int:{int:types.int, ivec2:types.ivec2, ivec3:types.ivec3, ivec4:types.ivec4},
+			vec2:{float:types.vec2, vec2:types.vec2, mat2:types.vec2},
+			vec3:{float:types.vec3, vec3:types.vec3, mat3:types.vec3},
+			vec4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
+			ivec2:{int:types.ivec2, ivec2:types.ivec2},
+			ivec3:{int:types.ivec3, ivec3:types.ivec3},
+			ivec4:{int:types.ivec4, ivec4:types.ivec4},
+			mat2:{vec2:types.vec2, mat2:types.mat2},
+			mat3:{vec3:types.vec3, mat3:types.mat3},
+			mat4:{vec4:types.vec4, mat4:types.mat4},
+		}
+
+		this.groupBinaryExpression = {
+			'+':1,'-':1,'*':1,'/':1,
+			'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
+			'===':3,'!==':3,
+		}
+
+		// the swizzle lookup tables
+		var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
+		var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
+		var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
+		var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
+		this.swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
+		this.swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
+		this.swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
 	}
-}
-
-function Err(state, node, type, message){
-	this.type = type
-	this.message = message
-	this.node = node
-	this.state = state
-}
-
-Err.prototype.toString = function(){
-	return this.message
-}
-
-
-var tableBinaryExpression = {
-	float:{float:types.float, vec2:types.vec2, vec3:types.vec3, vec4:types.vec4},
-	int:{int:types.int, ivec2:types.ivec2, ivec3:types.ivec3, ivec4:types.ivec4},
-	vec2:{float:types.vec2, vec2:types.vec2, mat2:types.vec2},
-	vec3:{float:types.vec3, vec3:types.vec3, mat3:types.vec3},
-	vec4:{float:types.vec4, vec4:types.vec4, mat4:types.vec4},
-	ivec2:{int:types.ivec2, ivec2:types.ivec2},
-	ivec3:{int:types.ivec3, ivec3:types.ivec3},
-	ivec4:{int:types.ivec4, ivec4:types.ivec4},
-	mat2:{vec2:types.vec2, mat2:types.mat2},
-	mat3:{vec3:types.vec3, mat3:types.mat3},
-	mat4:{vec4:types.vec4, mat4:types.mat4},
-}
-
-var groupBinaryExpression = {
-	'+':1,'-':1,'*':1,'/':1,
-	'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
-	'===':3,'!==':3,
 }
 
 function recursiveDependencyUpdate(genfn, dep, key){
@@ -1554,12 +1565,3 @@ var literalComponents = ['x','y','z','w']
 function litComp(i){
 	return (i>>2)+'.'+literalComponents[i&3]
 }
-
-// the swizzle lookup tables
-var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
-var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
-var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
-var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
-var swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
-var swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
-var swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}

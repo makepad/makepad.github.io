@@ -1,3 +1,4 @@
+// devserver is MIT licensed, copyright Makepad
 "use strict" 
 var Https = require('https')
 var Http = require('http')
@@ -6,7 +7,7 @@ var Url = require('url')
 var Os = require('os')
 var NodeWebSocket = require('./devwebsocket')
 var server_port = 2001
-var server_interface = '0.0.0.0'
+var server_interface = '127.0.0.1'
 
 var mimetable = {
 	'.map':'application/json',
@@ -195,7 +196,9 @@ server.listen(server_port, server_interface, function(err){
 		for(let i = 0; i < iface.length; i++){
 			var subiface = iface[i]
 			if(subiface.family !== 'IPv4') continue
-			console.log('Server is listening on http://'+subiface.address+':'+server_port+'/')
+			if(server_interface === '0.0.0.0' || server_interface == subiface.address){
+				console.log('Server is listening on http://'+subiface.address+':'+server_port+'/')
+			}
 		}
 	}
 	// start the filewatcher

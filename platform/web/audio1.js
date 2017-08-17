@@ -1,3 +1,14 @@
+// define a node class
+class AudioNode extends require('/platform/bytecoderun'){
+	
+	prototype(){
+	}
+
+	constructor(){
+		super()
+	}
+}
+
 module.exports = class extends require('/platform/service'){
 	
 	constructor(...args){
@@ -7,11 +18,20 @@ module.exports = class extends require('/platform/service'){
 		this.parentAudio = this.parent && this.parent.services[this.name]
 		this.context = this.parentAudio && this.parentAudio.addChild(this) || new (window.AudioContext || window.webkitAudioContext)()
 
-		this.ids = {}
+		this.flows = {}
 		this.queue = []
 		this.children = []
 		if(!this.root.isIOSDevice){
 			this.initialized = true
+		}
+
+		// dummy audionode to fetch API
+		var bc = AudioNode.prototype.$ByteCodeCompiler.prototype
+		// pass in the ByteCode API
+		this.args.audioByteCode = {
+			codeIds:bc.codeIds,
+			typeIds:bc.typeIds,
+			builtinIds:bc.builtinIds
 		}
 	}
 
@@ -48,271 +68,18 @@ module.exports = class extends require('/platform/service'){
 		}
 		else super.onMessage(msg)
 	}
-	
-	user_reset(){
-		for(let key in this.ids){
-			var flow = this.ids[key]
-			stopFlow(flow)
-			delete this.ids[key]
+
+	user_compileClass(data){
+		// lets make a new class
+		class AudioClass extends AudioNode{
 		}
-	}
+		AudioClass.prototype.$classId = data.classId
+		AudioClass.prototype.$compileClass(data)
 
-	user_init(msg){
-		this.ids[msg.id] = {
-			id:msg.id,
-			config:msg.config
-		}
-	}
-
-	user_destroy(msg){
-		var flow = this.ids[msg.id]
-		if(flow){
-			stopFlow(flow)
-			delete this.ids[msg.id]
-		}
-	}
-
-	spawnFlow(flow, overlay){
-		
-		// lets spawn all the nodes
-		var nodes = flow.nodes = {}
-		var flowConfig = flow.config
-		for(let name in flowConfig){
-			var conf = flowConfig[name]
-			// overlay config vars
-			var nodeOverlay = overlay[name]
-			if(nodeOverlay){
-				conf = Object.create(conf)
-				for(let key in nodeOverlay){
-					conf[key] = nodeOverlay[key]
-				}
-			}
-			// rip off the number of a node name
-			for(var j = 0, l = name.length; j < l; j++){
-				var code = name.charCodeAt(j)
-				if(code>=48 && code <=57) break
-			}
-
-			var type =   name.slice(0,j)
-			var node
-
-			if(type === 'gain'){
-				node = {config:conf, type:'gain', audioNode:this.context.createGain()}
-			}
-			else if(type === 'recorder'){
-				node = {config:conf, type:'recorder', audioNode:this.context.createScriptProcessor(
-					conf.chunk || 2048,
-					conf.channels || 2,
-					conf.channels || 2
-				)}
-				node.audioNode.onaudioprocess = recorderOnAudioProcess.bind(this, flow, name)
-			}
-			else if(type === 'input'){
-				node = {config:conf, type:'input'}
-
-				navigator.mediaDevices.enumerateDevices().then(function(flow, node, infos){
-					for(let i = 0; i < infos.length; i++){
-						let info = infos[i]
-						if(info.kind === 'audioinput' && info.label === node.config.device){
-							navigator.mediaDevices.getUserMedia({audio:{deviceId: {exact: info.deviceId}}}).then(function(flow, node, stream){
-								node.audioNode = this.context.createMediaStreamSource(stream)
-								//console.log(node.audioNode)
-								// connect it lazily
-								node.stream = stream
-								var to = flow.nodes[node.config.to]
-								if(!to) console.log("input cannot connect to "+node.config.to)
-								else{
-									try{
-										node.audioNode.connect(to.audioNode)
-									}
-									catch(e){
-										 console.log("input "+node.config.device+" cannot connect to "+node.config.to)
-									}
-								}
-
-							}.bind(this, flow, node)).catch(function(err){
-								// error opening input. todo . fix.
-							}.bind(this))
-						}
-					}
-				}.bind(this, flow, node))
-			}
-			else if(type === 'buffer'){
-				var bufsrc = this.context.createBufferSource()
-				node = {
-					config:conf, 
-					start:conf.start || 0, 
-					type:'buffer', 
-					audioNode:bufsrc
-				}
-
-				// unwrap loaded wav file
-				var data = conf.data
-				if(data.data){
-					if(!conf.rate) conf.rate = data.rate
-					data = data.data
-				}
-				if(!conf.rate) conf.rate = 44100
-				// load it up into a buffer
-				if(data && data.length && data[0].length){
-					// lets copy the data into an audiobuffer
-					var buffer = this.context.createBuffer(data.length, data[0].length, Math.max(Math.min(conf.rate,192000),3000))
-					for(let i = 0; i < data.length; i++){
-						var out = buffer.getChannelData(i)
-						var inp = data[i]
-						for (var c = 0, cl = inp.length; c < cl; c++){
-							out[c] = inp[c]
-						}
-					}
-					bufsrc.buffer = buffer
-				}
-				if(conf.loop !== undefined) bufsrc.loop = conf.loop
-				if(conf.loopStart !== undefined) bufsrc.loopStart = conf.loopStart
-				if(conf.loopEnd !== undefined) bufsrc.loopEnd = conf.loopEnd
-				if(conf.playbackRate !== undefined) bufsrc.playbackRate.value = conf.playbackRate 
-			}
-			else if(type === 'biquad'){
-
-			}
-			else if(type === 'oscillator'){
-
-			}
-			else if(type === 'delay'){
-				node = {config:conf, type:'gain', audioNode:this.context.createDelay()}
-				if(conf.delayTime !== undefined) node.audioNode.delayTime.value = conf.delayTime
-			}
-
-			nodes[name] = node
-		}
-		// then connect and config them all
-		for(let name in nodes){
-			var node = nodes[name]
-			var audioNode = node.audioNode
-			if(!audioNode) continue
-			// lets apply config vars
-			var config = node.config
-			var nodeParams = nodeParamDefs[node.type]
-
-			for(let key in nodeParams){
-				var value = config[key]
-				if(value === undefined) continue
-				// set the value. TODO add node param sequencing
-				audioNode[key].value = value
-			}
-
-			if(config.to === undefined || config.to === 'output'){
-				audioNode.connect(this.context.destination)
-			}
-			else{
-				var toStr = config.to
-				var idx = toStr.indexOf('.')
-				var prop = null
-				if(idx !== -1){
-					var prop = toStr.slice(idx+1)
-					toStr = toStr.slice(0,idx)
-				}
-				var to = nodes[toStr]
-				if(!to) console.log(name + " cannot connect to "+config.to)
-				else{
-					if(prop){
-						//console.log("CONNECT TO", audioNode, to.audioNode, prop)
-						audioNode.connect(to.audioNode[prop])
-					}
-					else audioNode.connect(to.audioNode)
-				}
-			}
-		}
-		// we need to start the nodes we are supposed to start
-		for(let name in nodes){
-			var node = nodes[name]
-			if(node.start !== undefined){
-				node.audioNode.start(node.start)
-			}
-		}
-
-		flow.started = true
-	}
-
-	// lets spawn a flow
-	user_start(msg){
-		var flow = this.ids[msg.id]
-		//console.log("STARTING", msg.id, this.ids)
-
-		if(flow.started){
-			stopFlow(flow)
-		}
-		this.spawnFlow(flow, msg.overlay)
-	}
-
-	// ok how do we stop this thing?
-	user_stop(msg){
-		var flow = this.ids[msg.id]
-		if(!flow.started) return
-		stopFlow(flow)
-	}
-
-	user_trigger(msg){
-		var flow = this.ids[msg.id]
-		this.spawnFlow(flow, msg.overlay)
-	}
-}
-
-var getUserMedia = (navigator.getUserMedia ||
-				navigator.webkitGetUserMedia ||
-				navigator.mozGetUserMedia)
-
-function recorderOnAudioProcess(flow, name, e){
-	var inBuf = e.inputBuffer
-	var outBuf = e.outputBuffer
-	// Loop through the output channels (in this case there is only one)
-	var data = []
-	for (var c = 0; c < outBuf.numberOfChannels; c++) {
-		var inp = inBuf.getChannelData(c)
-		var outp = outBuf.getChannelData(c)
-		var cpy = new Float32Array(inBuf.length)
-		for (var s = inBuf.length-1; s>=0; s--){
-			cpy[s] = outp[s] = inp[s]
-		}
-		data.push(cpy)
-	}
-	
-	// we have to sync this thing to the renderer
-
-	this.postMessage({
-		fn:'onRecorderData',
-		pileupTime:Date.now(),
-		id:flow.id,
-		node:name,
-		data:data
-	})
-}
-
-function stopFlow(flow){
-	// lets terminate the whole thing
-	for(let name in flow.nodes){
-		var node = flow.nodes[name]
-		if(node.stream){
-			// stop any running streams
-			var tracks = node.stream.getAudioTracks()
-			for(let i = 0;i < tracks.length; i++){
-				tracks[i].stop()
-			}
-		}
-		if(node.audioNode && node.audioNode.disconnect){
-			node.audioNode.disconnect()
-			node.audioNode = undefined
-		}
-	}
-	flow.started = false
-}
-
-
-var nodeParamDefs = {
-	gain:{
-		gain:1
-	},
-	buffer:{
-		detune:1,
-		playbackRate:1
+		var x = new AudioClass()
+		//debugger
+		console.log(x._start(10))
+		// compile a class
+		// each class has a symbol and a type map
 	}
 }

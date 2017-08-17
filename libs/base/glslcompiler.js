@@ -112,7 +112,7 @@ module.exports = class GLSLCompiler extends require('base/class'){
 				return // shaders are class things
 			}
 			var deps = this.$compileInfo.methodDeps
-
+			this.$methodDeps = deps
 			if(this._states !== deps.states){
 				this.$compileShader()
 				return

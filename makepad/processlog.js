@@ -31,7 +31,7 @@ module.exports = class Log extends require('base/view'){
 			SelectedRow:require('shaders/quad').extend({
 				color:colors.accentNormal
 			})
-		} 
+		}
 
 		this.styles = {
 			$boldness: 0.,
@@ -371,7 +371,7 @@ module.exports = class Log extends require('base/view'){
 		}
 
 		if(logs){
-		//console.log(logs)
+			//console.log(logs)
 			//this.turtle.sx = this.shiftX
 			//this.turtle.sy = this.shiftY
 			// lets set the viewspace

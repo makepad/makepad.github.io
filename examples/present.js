@@ -149,7 +149,7 @@ module.exports = class extends require('base/drawapp'){ //top
 				margin  :[0, 0, 0, 0],
 				text    :this.pages[this.page - 1].c
 			})
-			var end = new Date(2017, 5, 7, 13, 55, 0)
+			var end = new Date(2017, 5, 8, 14, 45, 0)
 			var t = end.getTime() - Date.now()
 			this.drawText({
 				fontSize:20 * scale,

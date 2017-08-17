@@ -5,11 +5,12 @@ function extend(body) {
 	
 	var Constructor = ExtendClass 
 	var proto = ExtendClass.prototype 
-	
-	var parentProto = this.prototype 
-	if(!protoReady.get(parentProto)) parentProto.__initproto__() 
-	
-	Object.defineProperty(Constructor, 'extend', {writable: true, value: extend}) 
+	var parentProto = this.prototype
+
+	// TODO figure out why this is needed
+	if(!protoReady.get(parentProto)) parentProto.__initproto__()
+
+	//Object.defineProperty(Constructor, 'extend', {writable: true, value: extend}) 
 	
 	// apply all args
 	for(let i = 0; i < arguments.length; i++) { 
@@ -36,8 +37,8 @@ function extend(body) {
 	return Constructor 
 } 
 
-module.exports = class RootClass{ 
-	constructor() { 
+module.exports = class RootClass{
+	constructor() {
 		var proto = Object.getPrototypeOf(this) 
 		if(!protoReady.get(proto)) proto.__initproto__() 
 	} 
@@ -47,7 +48,7 @@ function mixin(...args) {
 	for(var a = 0; a < args.length; a++) { 
 		var proto = args[a] 
 		if(!proto) continue 
-		if(typeof proto === 'function') { 
+		if(typeof proto === 'function') {
 			// passed in a class
 			if(proto.prototype && proto.prototype !== Object) { 
 				proto = proto.prototype 

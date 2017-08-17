@@ -1,4 +1,4 @@
-
+// devwebsocket is MIT licensed, copyright Makepad
 let Url = require('url')
 let Crypto = require('crypto')
 let Http = require('http')
