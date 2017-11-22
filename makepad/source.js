@@ -21,7 +21,7 @@ module.exports = class Source extends require('base/view'){
 			resource:null,
 		} 
 
-		this.tools = {
+		this.nest = {
 			Button: require('views/button').extend({
 				heavy:true
 			}),

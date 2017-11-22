@@ -6,7 +6,7 @@ module.exports=class Tabs extends require('base/view'){
 		this.yOverflow = 'none'
 		this.selected = 0
 		this.wrap = false
-		this.tools = {
+		this.nest = {
 			Tab:require('views/tab').extend({
 			}),
 			Bg:require('shaders/bg').extend({

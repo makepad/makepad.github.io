@@ -42,7 +42,7 @@ module.exports=class Splitter extends require('base/view'){
 			}
 		}
 
-		this.tools = {
+		this.nest = {
 			Bar:require('shaders/quad').extend({
 				vertical:0,
 				order:2,

@@ -558,8 +558,9 @@ pp.parseFunction = function(node, isStatement, allowExpressionBody) {
 		node.generator = this.eat(tt.star)
 	var oldInGen = this.inGenerator
 	this.inGenerator = node.generator
-	if (this.type === tt.name)
+	if (this.type === tt.name){
 		node.id = this.parseIdent()
+	}
 	this.parseFunctionParams(node)
 	this.parseFunctionBody(node, allowExpressionBody)
 	this.inGenerator = oldInGen

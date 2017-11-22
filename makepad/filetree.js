@@ -6,7 +6,7 @@ module.exports = class FileTree extends require('base/view'){
 		}
 		this.xOverflow='none'
 		this.yOverflow='none'
-		this.tools = {
+		this.nest = {
 			Tree: require('views/tree').extend({
 				onNodeSelect: function(...args) {
 					this.parent.onNodeSelect(...args)

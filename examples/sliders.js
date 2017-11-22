@@ -1,11 +1,8 @@
 new require('styles/dark')
 module.exports = class extends require('base/drawapp'){
 	prototype() {
-		
-		this.tools = {
-		}
-		
-		this.tools = {
+	
+		this.nest = {
 			Slider:require('views/slider').extend({
 				Slider:{
 					method   :function(v) {

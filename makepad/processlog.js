@@ -17,7 +17,7 @@ module.exports = class Log extends require('base/view'){
 
 		var colors = module.style.colors
 
-		this.tools = {
+		this.nest = {
 			Button: require('views/button').extend({
 				order:4,
 			}),

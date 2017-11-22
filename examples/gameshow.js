@@ -164,7 +164,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			winner:-1,
 			page  :0
 		}
-		this.tools = {
+		this.nest = {
 			Splash:require('base/view').extend({
 				props :{text:'HI'},
 				tools :{

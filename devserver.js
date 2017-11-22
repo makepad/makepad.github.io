@@ -39,6 +39,7 @@ function pollWatchlist(){
 		for(let i = 0; i < results.length; i++){
 			var result = results[i]
 			result.stat.atime = null
+			result.stat.atimeMs = null
 			var newtag = JSON.stringify(result.stat)
 			var oldtag = tags[result.filename]
 			if(oldtag === -1) continue
@@ -46,12 +47,15 @@ function pollWatchlist(){
 
 			if(oldtag !== newtag){
 				tags[result.filename] = newtag
-				filechanges.push(result.filename.slice(httproot.length))
+				filechanges.push(
+					result.filename.slice(httproot.length),
+					{old:oldtag, new:newtag})
 			}
 		}
 		if(filechanges.length){ // signal all listeners
 			for(let i = 0; i < watchresponses.length; i++){
 				var res = watchresponses[i]
+				//console.log(JSON.stringify(filechanges))
 				res.writeHead(200, {'Content-type':'text/json'})
 				res.end(JSON.stringify(filechanges))
 			}
@@ -164,7 +168,7 @@ function requestHandler(req, res){
 	})
 }
 
-try{
+/*try{
 	// simple https test certificates to test getUserMedia, google how to create / set up a self signed https cert for node.js
 	const options = {
 		key: Fs.readFileSync('./devserver-key.test'),
@@ -172,9 +176,9 @@ try{
 	}
 	var server = Https.createServer(options, requestHandler)
 } 
-catch(x){
+catch(x){*/
 	var server = Http.createServer(requestHandler)
-}
+//}
 
 if(process.argv.length === 3){
 	var hostModule = require(process.argv[2])

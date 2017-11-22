@@ -2,7 +2,7 @@ new require('styles/dark')
 var audio = require('services/audio')
 module.exports = class extends require('base/drawapp'){
 	prototype() {
-		this.tools = {
+		this.nest = {
 			audio.Node.extend({
 				play(){
 					1+2

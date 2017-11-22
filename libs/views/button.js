@@ -111,7 +111,7 @@ module.exports = class Button extends require('base/view'){
 		
 		this.toggled = false
 		
-		this.tools = {
+		this.nest = {
 			Bg  :require('shaders/quad').extend({
 				padding     :[6, 14, 6, 14],
 				borderRadius:6.5,

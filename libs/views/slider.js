@@ -58,7 +58,7 @@ module.exports = class Slider extends require('base/view'){
 
 		//this.wrapped = false
 		this.dragOffset = -1
-		this.tools = {
+		this.nest = {
 			Slider:require('shaders/quad').extend({
 				vertical   :0,
 				value      :0,

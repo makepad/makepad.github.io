@@ -92,7 +92,7 @@ module.exports = require('base/view').extend({
 			}
 		}					
 	},
-	tools:{
+	nest:{
 		Bg:require('shaders/quad').extend({
 			queue:false,
 			borderRadius:4,

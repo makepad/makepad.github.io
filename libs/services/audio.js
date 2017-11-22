@@ -17,7 +17,15 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 				
 				node.$start(this, overload)
 				return node
+			},
+			play:function(notes){
+				// process notes into a typed array
+				// then pass that sequence to the other side.
+				
 			}
+		}
+		this.props = {
+			output:{kind:'output'}
 		}
 	}
 
@@ -28,8 +36,16 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 		this.stop(0.)
 	}
 
-	$start(overload){
-		// do something
+	init(){
+	}
+
+	start(t=0.){
+	}
+
+	stop(t=0.){		
+	}
+	
+	$start(){
 	}
 
 	$compileByteCode(){
@@ -41,22 +57,7 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 			fn:'compileClass',
 			classId: this.$classId,
 			idToName:this.$idToName,
-			methods:this.$methods
+			methods:this.$byteMethods
 		})
 	}
 }
-/*
-// store the Osc type
-exports.Node.prototype.Osc = class Osc extends exports.AudioNode{
-	prototype(){
-		this.props = {
-			output:{kind:'output'},
-			frequency:{kind:'sample', value:440},
-			detune:{kind:'sample', value:0.},
-			type:{kind:'control', type:types.enum},
-		}
-		// this is a system device, use OscillatorNode
-		this.system = 'OscillatorNode'
-	}
-}
-*/

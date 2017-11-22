@@ -1,9 +1,11 @@
-var trace = false
+var trace = true
+var Type = module.globals.Type
 
 class ByteCodeCompiler{
 	prototype(){
+
 		var o = 1
-		var codeIds = this.codeIds = {
+		var astIds = this.astIds = {
 			BLOCK_STATEMENT:o++,
 			ARRAY_EXPRESSION:o++,
 			EXPRESSION_STATEMENT:o++,
@@ -13,15 +15,22 @@ class ByteCodeCompiler{
 			LITERAL_BOOL:o++,
 			ARGUMENT:o++,
 			VARIABLE:o++,
+
+			// call types
+			THIS_CALL:o++,
+			OBJECT_CALL:o++,
+			NEW_OBJECT:o++,
+			BUILTIN_CALL:o++,
+
+			// property accesses
+			THIS_MEMBER:o++,
+			OBJECT_MEMBER:o++,
+			STRUCT_FIELD:o++,
+			VEC_SWIZZLE:o++,
+			ARRAY_INDEX:o++,
+
 			THIS_EXPRESSION:o++,
-			MEMBER_EXPRESSION:o++,
-			MEMBER_COMPUTED:o++,
-			MEMBER_OBJECT:o++,
-			CALL_BUILTIN:o++,
-			CALL_TYPE:o++,
-			CALL_THIS:o++,
-			CALL_OBJECT:o++,
-			NEW_EXPRESSION:o++,
+
 			RETURN_VALUE:o++,
 			RETURN_VOID:o++,
 			VARIABLE_DECLARATION:o++,
@@ -34,167 +43,196 @@ class ByteCodeCompiler{
 			UPDATE_EXPRESSION:o++,
 			IF_STATEMENT:o++,
 			FOR_STATEMENT:o++,
+			FOR_OF_STATEMENT:o++,
 			WHILE_STATEMENT:o++,
 			DOWHILE_STATEMENT:o++,
 			BREAK_STATEMENT:o++,
 			CONTINUE_STATEMENT:o++,
-			YIELD_EXPRESSION:o++,
+			//YIELD_EXPRESSION:o++,
 			SWITCH_STATEMENT:o++,
 			SWITCH_CASE:o++
-		}
-		var t = 1
-		var typeIds = this.typeIds = {
-			void:t++,
-			float:t++,
-			int:t++,
-			bool:t++,
-			vec2:t++,
-			vec3:t++,
-			vec4:t++,
-			ivec2:t++,
-			ivec3:t++,
-			ivec4:t++,
-			mat2:t++,
-			mat3:t++,
-			mat4:t++
-		}
-
-		var typeSizes  = {
-			void:0,
-			float:1,
-			int:1,
-			bool:1,
-			vec2:2,
-			vec3:3,
-			vec4:4,
-			ivec2:2,
-			ivec3:3,
-			ivec4:4,
-			mat2:4,
-			mat3:9,
-			mat4:16
-		}
-		this.typeIdToSize = Object.create(null)
-		
-		for(var key in typeIds){
-			this.typeIdToSize[typeIds[key]] = typeSizes[key]
-		}
-
-		// create reverse mapping
-		var typeIdToName = Object.create(null)
-		for(var key in typeIds){
-			typeIdToName[typeIds[key]] = key
 		}
 
 		var s = 1
 		// default symbols for global functions
-		var fns = this.builtinIds = {
-			sin:s++,
-			cos:s++,
-			tan:s++,
-			asin:s++,
-			acos:s++,
-			atan:s++,
-			pow:s++,
-			exp:s++,
-			log:s++,
-			exp2:s++,
-			log2:s++,
-			sqrt:s++,
-			inversesqrt:s++,
-			abs:s++,
-			sign:s++,
-			floor:s++,
-			ceil:s++,
-			fract:s++,
-			mod:s++,
-			min:s++,
-			max:s++,
-			clamp:s++,
-			mix:s++,
-			step:s++,
-			smoothstep:s++,
-			length:s++,
-			distance:s++,
-			dot:s++,
-			cross:s++,
-			normalize:s++
+		var builtinIds = this.builtinIds = {
+			sin:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			cos:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			tan:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			asin:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			acos:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			atan:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}, {name:'y', typeId:Type.genFloat.id, opt:true}]},
+			
+			radians:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+			degrees:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
+
+			pow:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			exp:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			log:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			exp2:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			log2:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			
+			sqrt:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			inversesqrt:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			
+			abs:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			sign:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			floor:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			ceil:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			fract:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			
+			mod:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			min:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			max:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			clamp:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'min', typeId:Type.genFloat.id},{name:'max', typeId:Type.genFloat.id}]},
+			
+			mix:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'a', typeId:Type.genFloat.id},{name:'b', typeId:Type.genFloat.id},{name:'t', typeId:Type.genFloat.id}]},
+			step:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'edge', typeId:Type.genFloat.id},{name:'x', typeId:Type.genFloat.id}]},
+			smoothstep:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'edge0', typeId:Type.genFloat.id},{name:'edge1', typeId:Type.genFloat.id},{name:'x', typeId:Type.genFloat.id}]},
+			
+			length:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			distance:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			dot:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
+			cross:{id:s++, returnTypeId:Type.vec3.id, params:[{name:'x', typeId:Type.vec3.id},{name:'y', typeId:Type.vec3.id}]},
+			normalize:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+
+			faceforward:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'n', typeId:Type.genFloat.id},{name:'i', typeId:Type.genFloat.id},{name:'nref', typeId:Type.genFloat.id}]},
+			reflect:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'i', typeId:Type.genFloat.id},{name:'n', typeId:Type.genFloat.id}]},
+			refract:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'i', typeId:Type.genFloat.id},{name:'n', typeId:Type.genFloat.id},{name:'eta', typeId:Type.genFloat.id}]},
+			matrixCompMult:{returnTypeId:Type.mat4.id,params:[{name:'a', typeId:Type.mat4.id},{name:'b', typeId:Type.mat4.id}]},
+
+			dFdx:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			dFdy:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+			fwidth:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
+
+			texture2DLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'lod', typeId:Type.float.id}]},
+			texture2DProjLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'lod', typeId:Type.float.id}]},
+			textureCubeLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.samplerCube.id}, {name:'coord', typeId:Type.vec3.id}, {name:'lod', typeId:Type.float.id}]},
+			texture2D:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
+			texture2DProj:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
+			textureCube:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.samplerCube.id}, {name:'coord', typeId:Type.vec3.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
+
+			sleep:{id:s++, returnTypeId:Type.void.id, params:[{name:'timeMs', typeId:Type.float.id}]}
+
+			// do we really need these
+			/*
+			lessThan:s++,
+			lessThanEqual:s++,
+			greaterThan:s++,
+			greaterThanEqual:s++,
+			equal:s++,
+			notEqual:s++,
+			any:s++,
+			all:s++,
+			not:s++,
+			*/
 		}
 
+		var o = 1
+		var opIds = this.opIds = {
+			'+':o++,
+			'-':o++,
+			'/':o++,
+			'*':o++,
+			'>>':o++,
+			'<<':o++,
+			'|':o++,
+			'&':o++,
+			'++':o++,
+			'--':o++,
+			'<':o++,
+			'>':o++,
+			'<=':o++,
+			'>=':o++,
+			'==':o++,
+			'||':o++,
+			'&&':o++
+		}
 
-		this[codeIds.LITERAL_INT] = function LITERAL_INT(){
+		var opToId = {}
+		for(var key in opIds){
+			opToId[opIds[key]] = key
+		}
+
+		var builtinIdToName = this.builtinIdToName = {}
+		for(var key in builtinIds){
+			var fn = builtinIds[key]
+			builtinIdToName[fn.id] = key
+		}
+
+		this[astIds.LITERAL_INT] = function LITERAL_INT(){
 			var type = this.i32[this.o++]
 			var value = this.i32[this.o++]
 			return String(value)
 		}
 
-		this[codeIds.LITERAL_FLOAT] = function LITERAL_FLOAT(){
+		this[astIds.LITERAL_FLOAT] = function LITERAL_FLOAT(){
 			var type = this.i32[this.o++]
 			return this.literalStack.push(this.f32[this.o++]) - 1
 		}
 
-		this[codeIds.LITERAL_BOOL] = function LITERAL_BOOL(){
+		this[astIds.LITERAL_BOOL] = function LITERAL_BOOL(){
 			var type = this.i32[this.o++]
 			var value = this.i32[this.o++]
 			return value!=0?'true':'false'
 		}
 
-		this[codeIds.ARGUMENT] = function ARGUMENT(){
+		this[astIds.ARGUMENT] = function ARGUMENT(){
 			var type = this.i32[this.o++]
 			var id = this.i32[this.o++]
 			return 'a'+id
 		}
 
-		this[codeIds.VARIABLE] = function VARIABLE(){
+		this[astIds.VARIABLE] = function VARIABLE(){
 			var type = this.i32[this.o++]
 			var id = this.i32[this.o++]
 			return 'v'+id
 		}
 
 		// plug the node types on a recursive compiler
-		this[codeIds.BLOCK_STATEMENT] = function BLOCK_STATEMENT(){
+		this[astIds.BLOCK_STATEMENT] = function BLOCK_STATEMENT(){
 			// block statement!. ok now what.
 			var stmtlen = this.i32[this.o++]
 			var s = ''
 			for(var i = 0;i <= stmtlen; i++){
 				if(this.o > this.size) throw this.SizeError()
 				var op = this.i32[this.o++]
-				if(trace) this.opTrace(codeIds.BLOCK_STATEMENT,op)
+				if(trace) this.opTrace(astIds.BLOCK_STATEMENT,op)
 				if(!this[op]) throw this.OpError(op)
 				s += this[op]() + '\n'
 			}
 			return s
 		}
 
-		this[codeIds.EXPRESSION_STATEMENT] = function EXPRESSION_STATEMENT(){
+		this[astIds.EXPRESSION_STATEMENT] = function EXPRESSION_STATEMENT(){
 			var op = this.i32[this.o++]
-			if(trace) this.opTrace(codeIds.EXPRESSION_STATEMENT,op)
+			if(trace) this.opTrace(astIds.EXPRESSION_STATEMENT,op)
 			if(!this[op]) throw this.OpError(op)
 			return this[op]()
 		}
 
-		this[codeIds.ARRAY_EXPRESSION] = function ARRAY_EXPRESSION(){
+		this[astIds.ARRAY_EXPRESSION] = function ARRAY_EXPRESSION(){
 		}
 
-		this[codeIds.VARIABLE_DECLARATION] = function VARIABLE_DECLARATION(){
+		this[astIds.VARIABLE_DECLARATION] = function VARIABLE_DECLARATION(){
 			var declslen = this.i32[this.o++]
 			var s = ''
 			for(var i = 0;i <= declslen; i++){
 				if(this.o > this.size) throw this.SizeError()
 				var op = this.i32[this.o++]
-				if(op !== codeIds.VARIABLE_DECLARATOR) throw this.OpError(op)
+				if(op !== astIds.VARIABLE_DECLARATOR) throw this.OpError(op)
 				if(i !== 0) s += ', '
 				s += this[op]()
 			}
 			return s
 		}
 
-		this[codeIds.VARIABLE_DECLARATOR] = function VARIABLE_DECLARATOR(){
+		this[astIds.VARIABLE_DECLARATOR] = function VARIABLE_DECLARATOR(){
 			var varId = this.i32[this.o++]
 			//var type = this.i32[this.o++]
 			// we have a scopeId
 			var s = ''//'v'+scopeId +' = '
-			if(trace) this.opTrace(codeIds.VARIABLE_DECLARATOR, op)
+			if(trace) this.opTrace(astIds.VARIABLE_DECLARATOR, op)
 			// our init can be all sorts of things
 			// if its a binary expression it will need us as write target
 			var op = this.i32[this.o++]
@@ -209,45 +247,84 @@ class ByteCodeCompiler{
 			4:'div'
 		}
 
-		this[codeIds.BINARY_EXPRESSION] = function BINARY_EXPRESSION(target){
+		this[astIds.BINARY_EXPRESSION] = function BINARY_EXPRESSION(target){
 			// types
 			var outType = this.i32[this.o++]
 			var op = this.i32[this.o++]
 			var lop = this.i32[this.o++]
-			var ltype = this.i32[this.o]
-			if(trace) this.opTrace(codeIds.BINARY_EXPRESSION, lop)
+			var ltypeId = this.i32[this.o]
+
+			if(trace) this.opTrace(astIds.BINARY_EXPRESSION, lop)
 			if(!this[lop]) throw this.OpError(lop)
 			var sl = this[lop]()
 			// right part
 			var rop = this.i32[this.o++]
-			var rtype = this.i32[this.o]
-			if(trace) this.opTrace(codeIds.BINARY_EXPRESSION, rop)
+			var rtypeId = this.i32[this.o]
+			if(trace) this.opTrace(astIds.BINARY_EXPRESSION, rop)
 			if(!this[rop]) throw this.OpError(rop)
 			var sr = this[rop]()
 
 			// ok we have to either allocate a new slot on the stack
 			if(!target){ // allocate a target address
 				var sz = this.stackSize
-				this.stackSize += this.typeIdToSize[outType]
+				this.stackSize += Type.idToType[outType].slots//this.typeIdToSize[outType]
 				target = 's+'+sz
 			}
-
-			return 'this.$'+opToName[op]+'_'+typeIdToName[ltype]+'_'+typeIdToName[rtype]+'('+target+','+sl+','+sr+')'
+			var ltype = Type.idToType[ltypeId]
+			var rtype = Type.idToType[rtypeId]
+			return 'this.$'+opToName[op]+'_'+ltype.name+'_'+rtype.name+'('+target+','+sl+','+sr+')'
 		}
 
 
-		this[codeIds.RETURN_VOID] = function RETURN_VOID(){
+		this[astIds.RETURN_VOID] = function RETURN_VOID(){
 			return 'return'
 		}
 
-		this[codeIds.RETURN_VALUE] = function RETURN_VALUE(){
+		this[astIds.RETURN_VALUE] = function RETURN_VALUE(){
 			var type = this.i32[this.o++]
 			var op = this.i32[this.o++]
-			if(trace) this.opTrace(codeIds.RETURN_VALUE, op)
+			if(trace) this.opTrace(astIds.RETURN_VALUE, op)
 			if(!this[op]) throw this.OpError(op)
 			return 'return '+this[op]('r')
 		}
 
+		this[astIds.BUILTIN_CALL] = function BUILTIN_CALL(){
+			var type = this.i32[this.o++]
+			var builtinId = this.i32[this.o++]
+			var argslen = this.i32[this.o++]
+
+			var name = 'this.$' + builtinIdToName[builtinId]+'_T'
+			var args = ''
+			for(var i = 0; i < argslen; i++){
+				var op = this.i32[this.o++]
+				var typeId = this.i32[this.o]
+				name += '_'+Type.idToType[typeId].name
+				if(trace) this.opTrace(astIds.BUILTIN_CALL,op)
+				if(!this[op]) throw this.OpError(op)
+				if(i) args += ','
+				args += this[op]()
+			}
+			return name + '(' + args + ')'
+		}
+
+		this[astIds.NEW_OBJECT] = function NEW_OBJECT(){
+			var classId = this.i32[this.o++]
+			var argslen = this.i32[this.o++]
+			var args = ''
+			for(var i = 0; i < argslen; i++){
+				var op = this.i32[this.o++]
+				var typeId = this.i32[this.o]
+				if(trace) this.opTrace(astIds.NEW_OBJECT,op)
+				if(!this[op]) throw this.OpError(op)
+				if(i) args += ','
+				args += this[op]()
+			}
+			return ''
+		}
+
+		this[astIds.FOR_OF_STATEMENT] = function FOR_OF_STATEMENT(){
+
+		}
 	}
 
 	SizeError(){
@@ -255,8 +332,8 @@ class ByteCodeCompiler{
 	}
 
 	opToName(op){
-		for(var key in this.codeIds){
-			if(this.codeIds[key] === op){
+		for(var key in this.astIds){
+			if(this.astIds[key] === op){
 				return key
 			}
 		}
@@ -292,14 +369,14 @@ class ByteCodeCompiler{
 			// and allocate all the vars we need
 			var stackSize = 0
 			var stackOffsets = this.stackOffsets = []
-			var varTypes = method.varTypes
+			var varTypeIds = method.varTypeIds
 
-			var retSize = this.typeIdToSize[method.returnType]
+			var retSize = Type.idToType[method.returnTypeId].slots//this.typeIdToSize[method.returnType]
 			if(retSize>0){
 				stackSize += retSize
 			}
 
-			for(var i = 0; i < varTypes.length; i++){
+			for(var i = 0; i < varTypeIds.length; i++){
 				// allocate stackspace
 				var type = varTypes[i]
 				s += 'var v'+i+' = s+'+stackSize+'\n'
@@ -323,17 +400,17 @@ class ByteCodeCompiler{
 			var wrapCode = '', mainArgStr = ''
 			var wrapArgs = []
 			var mainArgs = ['s','r']
-			var argTypes = method.argTypes
+			var argTypeIds = method.argTypeIds
 			var argSize = 0
-			for(var i = 0; i < argTypes.length; i++){
+			for(var i = 0; i < argTypeIds.length; i++){
 				var arg = 'a'+i
 				mainArgs.push(arg)
 				wrapArgs.push(arg)
 				mainArgStr += ',s+'+argSize
-				var type = argTypes[i]
-				var props = this.typeIdToSize[type]
-				if(props > 1){
-					for(var j = 0; j < props; j++){
+				var typeId = argTypeIds[i]
+				var slots = Type.idToType[typeId].slots
+				if(slots > 1){
+					for(var j = 0; j < slots; j++){
 						wrapCode += '$s[s+'+argSize+'] = '+arg+'['+j+']\n'
 						argSize++
 					}
@@ -366,7 +443,7 @@ class ByteCodeCompiler{
 			target['_$' + methodName] = main
 			// do we make a wrapper fn?.. lets just do it
 			var wrap = Function.apply(null, wrapArgs)
-			target['_'+methodName.slice(0,methodName.indexOf('_T'))] = wrap
+			target['_'+methodName] = wrap
 		}
 		// build literalStack storage
 
@@ -397,6 +474,10 @@ module.exports = class ByteCodeRun{
 			protoInit.initialize(proto)
 		}
 		
+	}
+
+	$sleep_T_float(a){
+		var t = a<0?this.$f32[((-a&0x7fffffff)+a)/-0x100000000][(-a&0x7fffffff)]:this.$s[a]
 	}
 
 	// resize our stack.

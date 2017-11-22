@@ -50,7 +50,7 @@ module.exports = class Tree extends require('base/view'){
 				}
 			}
 		}
-		this.tools = {
+		this.nest = {
 			Bg      :require('shaders/quad').extend({
 				queue  :false,
 				wrap   :false,

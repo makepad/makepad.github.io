@@ -8,10 +8,10 @@ module.exports = class extends require('base/drawapp'){ //top
 		this.props = {
 			page:_=module.worker.page || 0
 		}
-		this.tools = {
+		this.nest = {
 			Splash:require('base/view').extend({
 				props :{text:'HI'},
-				tools :{
+				nest :{
 					Bg  :require('shaders/quad').extend({
 						padding  :130,
 						fillColor:'orange',

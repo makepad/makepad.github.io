@@ -14,7 +14,7 @@ var matchCache = {}
 module.exports = class Makepad extends require('base/app'){
 	
 	prototype() {
-		this.tools = {
+		this.nest = {
 			Dock       :require('views/dock').extend({
 				onTabSelect:function(tab){
 					if(!tab.text) return

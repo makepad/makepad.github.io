@@ -5,7 +5,7 @@ module.exports = class DrawApp extends require('base/app'){
 	}
 
 	prototype(){
-		this.tools = {
+		this.nest = {
 			Bg:require('shaders/bg'),
 			Rounded:require('shaders/rounded'),
 			Quad:require('shaders/quad'),

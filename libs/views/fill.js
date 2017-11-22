@@ -4,7 +4,7 @@ module.exports=class Fill extends require('base/view'){
 		this.props = {
 			color:'red'
 		}
-		this.tools = {
+		this.nest = {
 			Bg:require('shaders/quad').extend({
 				color:''
 			})

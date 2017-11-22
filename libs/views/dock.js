@@ -1,7 +1,7 @@
 let painter = require('services/painter')
 module.exports=class Dock extends require('base/view'){
 	prototype(){
-		this.tools = {
+		this.nest = {
 			Splitter:require('views/splitter').extend({
 				w:'100%',
 				h:'100%'

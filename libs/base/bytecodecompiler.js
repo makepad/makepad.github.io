@@ -1,4 +1,5 @@
 var service = require('$audio1')
+var types = require('base/types')
 var AstByteCodeGen = require('parsers/astbytecodegen')
 var IdAlloc = require('base/idalloc')
 var flowIds = new IdAlloc()
@@ -7,7 +8,7 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 
 	prototype(){
 		this.mixin(
-			require('base/tools')
+			require('base/nest')
 		)
 
 		this.inheritable('props', function(){
@@ -16,6 +17,10 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 				this.$defineProp(key, props[key])
 			}
 		})
+		// lets define the compiler
+		//this.$compiler = AstByteCodeGen.generateCompiler(
+		//	module.worker.args.audioByteCode
+		//)
 	}
 
 	$defineProp(key, value){
@@ -53,6 +58,7 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 			if(this.hasOwnProperty('$compiled')){
 				return
 			}
+
 			this.$compiled = this.$compiled
 			for(var key in this.$compiled){
 				if(this.$compiled[key] !== this[key]){
@@ -64,30 +70,26 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 
 	$compileByteCode(){
 		// lets compile it!
-		var code = this.init.toString()
+		var bc = AstByteCodeGen.compileMethod(module.worker.args.audioByteCode, this, this.compile)
 
-		var bc = AstByteCodeGen.generateByteCode(
-			module.worker.args.audioByteCode,
-			this,
-			this.compile
-		)
-
-		var inputs = bc.methods
-		var methods = {}
-		for(var key in inputs){
+		var inputMethods = bc.methods
+		var byteMethods = {}
+		for(var key in inputMethods){
 			if(key === 'compile') continue
-			var input = inputs[key]
-			var ret = input.return
-			methods[key] = {
+			var input = inputMethods[key]
+			var returnType = input.returnType
+
+			byteMethods[key] = {
 				buffer:input.f32.buffer,
 				size:input.o,
-				varTypes:input.varTypes,
-				argTypes:input.argTypes,
-				returnType:ret?bc.typeIds[ret.name]:bc.typeIds.void
+				varTypeIds:input.varTypeIds,
+				argTypeIds:input.argTypeIds,
+				returnTypeId:returnType?returnType.id:Type.void.id
 			}
 		}
+		this.$methods = inputMethods
 		this.$idToName = bc.idToName
-		this.$methods = methods
+		this.$byteMethods = byteMethods
 	}
 }
 /*

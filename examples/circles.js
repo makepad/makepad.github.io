@@ -1,7 +1,7 @@
 new require('styles/dark')
 module.exports = class extends require('base/drawapp'){
 	prototype() {
-		this.tools = {
+		this.nest = {
 			Circle:require('shaders/quad').extend({
 				index      :0,
 				radius     :7,

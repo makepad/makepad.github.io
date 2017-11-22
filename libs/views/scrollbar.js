@@ -27,7 +27,7 @@ module.exports = class Scrollbar extends require('base/view'){
 			scrollBarSize:8
 		},
 		this.cursor = 'default',
-		this.tools = {
+		this.nest = {
 			ScrollBar: require('shaders/quad').extend({
 				props:{
 					x:NaN,

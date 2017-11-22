@@ -23,7 +23,7 @@ module.exports = class Code extends require('views/edit'){
 		}
 		var colors = module.style.colors
 
-		this.tools = {
+		this.nest = {
 			Bg:require('shaders/quad').extend({
 				moveScroll:0,
 				padding:[0,0,0,4],

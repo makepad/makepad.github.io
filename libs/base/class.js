@@ -25,7 +25,9 @@ function extend(body) {
 		}
 		else if(typeof iter === 'object') { 
 			for(let key in iter) { 
-				proto[key] = iter[key] 
+				//copy a property whole
+				Object.defineProperty(proto, key, 
+					Object.getOwnPropertyDescriptor(iter, key))
 			} 
 		} 
 	} 

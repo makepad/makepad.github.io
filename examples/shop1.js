@@ -2,7 +2,7 @@ new require('styles/dark')
 var painter = require('services/painter')
 module.exports = class extends require('base/app'){ //top
 	prototype() {
-		this.tools = {
+		this.nest = {
 			Bg     :require("shaders/bg").extend({
 				borderRadius:5,
 				color       :'#ffffffff'

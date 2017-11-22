@@ -18,7 +18,7 @@ module.exports = class Edit extends require('base/view'){
 		//
 		//
 		let colors = module.style.colors
-		this.tools = {
+		this.nest = {
 			Bg:require('shaders/bg').extend({
 				borderRadius:0,
 				padding:2,

@@ -54,7 +54,7 @@ var defQLS = {
 new require('styles/dark')
 module.exports = class extends require('base/app'){ //top
 	prototype() {
-		this.tools = {
+		this.nest = {
 			Bg    :require('shaders/bg'),
 			Button:require('views/button'),
 			Text  :require('shaders/text').extend({

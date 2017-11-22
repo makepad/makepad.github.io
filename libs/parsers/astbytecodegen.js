@@ -1,70 +1,109 @@
-var types = require('base/types')
+//var types = require('base/types')
 var jsparser = require('parsers/js')
-var AstGlslGen = require('./astglslgen')
 
 module.exports = class AstByteCodeGen extends require('base/class'){
 	
-	static generateByteCode(props, root, fn){
-		var bc = new this()
+	constructor(idTables, root){
+		super()
+		this.idToName = {}
+		this.nameToId = {}
+		this.nameIds = 1
+
+		this.astIds = idTables.astIds
+		this.builtinIds = idTables.builtinIds
+		this.opIds = idTables.opIds
 		
-		// external ops/types/symbols
-		bc.codeIds = props.codeIds
-		bc.typeIds = props.typeIds
-		bc.builtin = props.builtin
-		bc.idToName = {}
-		bc.nameToId = {}
-		bc.ids = 1
-
-		// compiler limits (differentiate gpu/bytecode)
-		bc.limits = {}
-
-		bc.root = root
-		bc.context = root
-
-		bc.methods = {}
+		this.root = root
+		this.context = root
 		
-		// lets build type info
-		root._type = types.Object(root._props)
-
-		bc.compileMethod('compile', fn, [])
-		
-		// return our generator
-		return bc
+		this.methods = {}
 	}
 
+
+	static compileMethod(idTables, root, fn, name = 'compile'){
+		var compiler = new this(idTables, root)
+		compiler.compileMethod(name, fn, [])
+		return compiler
+	}
+	
 	prototype(){
-		var ag = new AstGlslGen()
-		this.tableBinaryExpression = ag.tableBinaryExpression
-		this.groupBinaryExpression = ag.groupBinaryExpression
-		this.swizlut = ag.swizlut
-		this.swiztype = ag.swiztype
-		this.swizone = ag.swizone
-		this.Err = ag.Err
-		this.glslfunctions = ag.glslfunctions
+		
+		this.groupBinaryExpression = {
+			'+':1,'-':1,'*':1,'/':1,
+			'==':2,'!=':2,'>=':2,'<=':2,'<':2,'>':2,
+			'===':3,'!==':3,
+		}
+
+		// the swizzle lookup tables
+		var swiz1 = {pick:{120:0,114:1,115:2,}, set:[{120:1},{114:1},{115:1}]}
+		var swiz2 = {pick:{120:0, 121:0, 114:1, 103:1, 115:2, 116:2}, set:[{120:1, 121:1}, {114:1, 103:1}, {115:1, 116:1}]}
+		var swiz3 = {pick:{120:0, 121:0, 122:0, 114:1, 103:1, 98:1, 115:2, 116:2, 117:2}, set:[{120:1, 121:1, 122:1}, {114:1, 103:1, 98:1}, {115:1, 116:1, 117:1}]}
+		var swiz4 = {pick:{120:0, 121:0, 122:0, 119:0, 114:1, 103:1, 98:1, 97:1, 115:2, 116:2, 117:2, 118:2}, set:[{120:1, 121:1, 122:1, 119:1}, {114:1, 103:1, 98:1, 97:1}, {115:1, 116:1, 117:1, 118:1}]}
+		this.swizlut = {float:swiz1, int:swiz1, bool:swiz1,vec2:swiz2, ivec2:swiz2, bvec2:swiz2,vec3:swiz3, ivec3:swiz3, bvec3:swiz3,vec4:swiz4, ivec4:swiz4, bvec4:swiz4}
+		this.swiztype = {float:'vec', int:'ivec', bool:'bvec',vec2:'vec', ivec2:'ivec', bvec2:'bvec',vec3:'vec', ivec3:'ivec', bvec3:'bvec',vec4:'vec', ivec4:'ivec', bvec4:'bvec'}
+		this.swizone = {float:'float', int:'int', bool:'bool',vec2:'float', ivec2:'int', bvec2:'bool',vec3:'float', ivec3:'int', bvec3:'bool',vec4:'float', ivec4:'int', bvec4:'bool'}
+
+		this.tableBinaryExpression = {
+			float:{float:Type.float, vec2:Type.vec2, vec3:Type.vec3, vec4:Type.vec4},
+			int:{int:Type.int, ivec2:Type.ivec2, ivec3:Type.ivec3, ivec4:Type.ivec4},
+			vec2:{float:Type.vec2, vec2:Type.vec2, mat2:Type.vec2},
+			vec3:{float:Type.vec3, vec3:Type.vec3, mat3:Type.vec3},
+			vec4:{float:Type.vec4, vec4:Type.vec4, mat4:Type.vec4},
+			ivec2:{int:Type.ivec2, ivec2:Type.ivec2},
+			ivec3:{int:Type.ivec3, ivec3:Type.ivec3},
+			ivec4:{int:Type.ivec4, ivec4:Type.ivec4},
+			mat2:{vec2:Type.vec2, mat2:Type.mat2},
+			mat3:{vec3:Type.vec3, mat3:Type.mat3},
+			mat4:{vec4:Type.vec4, mat4:Type.mat4}
+		}
+
+		function Err(state, node, type, message){
+			this.type = type
+			this.message = message
+			this.node = node
+			this.state = state
+		}
+
+		Err.prototype.toString = function(){
+			return this.message
+		}
+
+		this.Err = Err
 	}
 
-	getId(name){
+	// allocate a struct typeID 
+	allocStructType(){
+
+	}
+
+	allocObjectType(){
+
+	}
+
+	getNameId(name){
 		var id = this.nameToId[name]
 		if(id !== undefined) return id
-		id = this.ids++
+		id = this.nameIds++
 		this.nameToId[name] = id
 		this.idToName[id] = name
 		return id
 	}
 
-	compileMethod(name, fn, args){
+	compileMethod(name, fn){
 		var currentMethod = this.methodName
+
 		this.methodName = name
+
 		var m = this.method = this.methods[name] = {
 			vars:Object.create(null),
 			args:Object.create(null),
-			varTypes:[],
-			argTypes:[],
+			varTypeIds:[],
+			argTypeIds:[],
 			varId:0,
 			o:0,
 			f32:null,
 			i32:null,
-			return:null,
+			returnType:null,
 			alloc:0
 		}
 
@@ -76,34 +115,54 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		// lets build the type info for 'this' from our props
 		var ast = jsparser.parse(source)
 
-		var node = ast.body[0].body
+		var body = ast.body[0].body
 		var params = ast.body[0].params
 
-		// set up args scope stuff
-		var argslen = args.length - 1
+		// lets parse our args, store the defaults on our method
+		// the caller side can use it to fill in missing args
+
 		var paramslen = params.length -1
-		for(var i = 0;i <= argslen;i++){
-			var arg = args[i]
+		for(var i = 0;i <= paramslen;i++){
+			//var arg = args[i]
 			var param = params[i]
 			var name
-			if(param.type === 'Identifier') name = param.name
-			else if(param.type === 'AssignmentPattern') name = param.left.name
-			else throw new this.InferErr(param, 'Unknown parameter type')
+			// error if a param is not an assignmentpattern
+			if(param.type !== 'AssignmentPattern') throw this.InferErr(param, 'Untyped parameter defined')
+
+			// just call the init to typeinfer it
+			var init = param.right
+			this[init.type](init)
+
+			// reset the output
+			m.o = 0
+
 			// pass in the inference info
 			m.args[name] = {
+				initNode:init,
 				isArg:true,
-				type:arg.infer.type,
-				id:i
+				type:init.infer.type,
+				argId:i
 			}
-			m.argTypes[i] = this.typeIds[arg.infer.type.name]
-			// lets store it in args
-			if(i > paramslen) throw new this.InferErr(arg, 'Too many args for function')
+
+			m.argTypeIds[i] = init.infer.type.id
+			
 		}
+
+		// execute body
+		this[body.type](body)
+
+		// pop old one
+		this.method = this.methods[currentMethod]
+		this.methodName = currentMethod
+		
+		/*
+		
+
 		// just variable declare the default args
 		if(i <= paramslen){
 			var o = m.o
 			if((m.o += 2) > m.alloc) this.resize()
-			m.i32[o++] = this.codeIds.VARIABLE_DECLARATION
+			m.i32[o++] = this.astIds.VARIABLE_DECLARATION
 			m.i32[o++] = (paramslen - i) + 1
 			for(;i <= paramslen;i++){
 				var param = params[i]
@@ -113,22 +172,19 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 				// ok now what we need to turn it into a variable declaration
 				var o = m.o
 				if((m.o += 2) > m.alloc) this.resize()
-				m.i32[o++] = this.codeIds.VARIABLE_DECLARATOR
+				m.i32[o++] = this.astIds.VARIABLE_DECLARATOR
 				// lets run the init
 				var init = param.right
 				this[init.type](init)
 				var varId = m.varId++
 				m.i32[o++] = m.vars[param.left.name] = {
-					type:init.infer.type.name,
-					id:varId
+					type:init.infer.type,
+					varId:varId
 				}
-				m.varTypes[varId] = this.typeIds[init.infer.type.name]
+				m.varTypes[varId] = init.infer.type
 			}
-		}
+		}*/
 
-		this[node.type](node)
-		this.method = this.methods[currentMethod]
-		this.methodName = currentMethod
 		return m
 	}
 
@@ -138,12 +194,6 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 
 	InferErr(node, message){
 		return new this.Err(this, node, 'InferenceError', message)
-	}
-	
-	constructor(ops){
-		super()
-		this.codeIds = ops
-		this.alloc = 0
 	}
 		
 	resize(){
@@ -174,7 +224,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var o = m.o
 		if((m.o += 2) > m.alloc) this.resize()
 
-		m.i32[o++] = this.codeIds.BLOCK_STATEMENT
+		m.i32[o++] = this.astIds.BLOCK_STATEMENT
 		m.i32[o++] = bodylen
 		// do the statements
 		for(var i = 0;i <= bodylen;i++){
@@ -194,7 +244,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var o = m.o
 		if((m.o += 3) > m.alloc) this.resize()
 
-		m.i32[o++] = this.codeIds.ARRAY_EXPRESSION
+		m.i32[o++] = this.astIds.ARRAY_EXPRESSION
 		m.i32[o++] = elemslen
 		for(var i = 0;i <= elemslen;i++){
 			var elem = elems[i]
@@ -207,7 +257,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			}
 		}
 		// the type of the thing
-		m.i32[o++] = this.typeIds[infer?infer.name:'void']
+		m.i32[o++] = this.Type[infer?infer.name:'void']
 	}
 	
 	//ObjectExpression:{properties:3},
@@ -256,7 +306,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var o = m.o
 		if((m.o += 1) > m.alloc) this.resize()
 
-		m.i32[o++] = this.codeIds.EXPRESSION_STATEMENT
+		m.i32[o++] = this.astIds.EXPRESSION_STATEMENT
 		this[exp.type](exp)
 		node.infer = exp.infer
 	}
@@ -267,7 +317,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var m = this.method
 		var o = m.o
 		if((m.o += 3) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.SEQUENCE_EXPRESSION
+		m.i32[o++] = this.astIds.SEQUENCE_EXPRESSION
 		
 		var exps = node.expressions
 		var expslength = exps.length - 1
@@ -276,9 +326,9 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			if(exp) this[exp.type](exp)
 		}
 		// pass along the inference
-		node.infer = exp?exp.infer:{kind:'void',infer:types.void}
+		node.infer = exp?exp.infer:{kind:'void',type:Type.void}
 
-		m.i32[o++] = this.typeIds[node.infer.type.name]
+		m.i32[o++] = node.infer.type.id//this.Type[node.infer.type.name]
 		m.i32[o++] = expslength
 	}
 	
@@ -287,11 +337,11 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var m = this.method
 		var o = m.o
 		if((m.o += 2) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.PARENTHESIZED_EXPRESSION
+		m.i32[o++] = this.astIds.PARENTHESIZED_EXPRESSION
 
 		var exp = node.expression
 		this[exp.type](exp)
-		m.i32[o++] = this.typeIds[exp.infer.type.name]
+		m.i32[o++] = exp.infer.type.id//this.Type[exp.infer.type.name]
 		// pass along inference
 		node.infer = exp.infer
 	}
@@ -305,26 +355,26 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var o = m.o
 		if(node.kind === 'num'){
 			if(node.raw.indexOf('.')!==-1){
-				node.infer = {kind:'value', type:types.float}
+				node.infer = {kind:'value', type:Type.float}
 				if((m.o += 3) > m.alloc) this.resize()
-				m.i32[o++] = this.codeIds.LITERAL_FLOAT
-				m.i32[o++] = this.typeIds.float
+				m.i32[o++] = this.astIds.LITERAL_FLOAT
+				m.i32[o++] = Type.float.id
 				m.f32[o++] = v
 			}
 			else {
-				node.infer = {kind:'value', type:types.int}
+				node.infer = {kind:'value', type:Type.int}
 				if((m.o += 3) > m.alloc) this.resize()
-				m.i32[o++] = this.codeIds.LITERAL_INT
-				m.i32[o++] = this.typeIds.int
+				m.i32[o++] = this.astIds.LITERAL_INT
+				m.i32[o++] = Type.int.id
 				m.i32[o++] = v
 			}
 			// lets push our type
 		}
 		else if(node.kind === 'bool'){
-			node.infer = {kind:'bool', type:types.bool}
+			node.infer = {kind:'bool', type:Type.bool}
 			if((m.o += 3) > m.alloc) this.resize()
-			m.i32[o++] = this.codeIds.LITERAL_BOOL
-			m.i32[o++] = this.typeIds.bool
+			m.i32[o++] = this.astIds.LITERAL_BOOL
+			m.i32[o++] = Type.bool.id
 			m.i32[o++] = v
 		}
 		else if(node.kind === 'string'){ // do we support these?
@@ -343,20 +393,22 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		// resolve symbol on scope
 		// or throw an error
 		var infer
+		var builtin
 		var o = m.o
-		if((m.o += 3) > m.alloc) this.resize()		
 		if(infer = m.args[name]){
-			m.i32[o++] = this.codeIds.ARGUMENT
-			m.i32[o++] = this.typeIds[infer.type.name]
-			m.i32[o++] = infer.id
+			if((m.o += 3) > m.alloc) this.resize()		
+			m.i32[o++] = this.astIds.ARGUMENT
+			m.i32[o++] = infer.type.id//this.Type[infer.type.name]
+			m.i32[o++] = infer.argId
 		}
 		else if(infer = m.vars[name]){
-			m.i32[o++] = this.codeIds.VARIABLE
-			m.i32[o++] = this.typeIds[infer.type.name]
-			m.i32[o++] = infer.id
+			if((m.o += 3) > m.alloc) this.resize()		
+			m.i32[o++] = this.astIds.VARIABLE
+			m.i32[o++] = infer.type.id//this.Type[infer.type.name]
+			m.i32[o++] = infer.varId
 		}
 		else{
-			throw this.InferErr(node, "Invalid identifier"+name)
+			throw this.InferErr(node, "Invalid identifier: "+name)
 		}
 		// we have an identifier, so we need to use the id map
 		node.infer = infer
@@ -367,10 +419,10 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var m = this.method
 		var o = m.o
 		if((m.o += 1) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.THIS_EXPRESSION
+		m.i32[o++] = this.astIds.THIS_EXPRESSION
 		node.infer = {
 			kind:'value',
-			type:this.root._type,
+			type:Type.object,
 			object:this.root,
 			isThis:true
 		}
@@ -385,16 +437,45 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 
 		this[obj.type](obj)
 		var prop = node.property
+
 		// lets check the type of the thing we need a memberexpression on
 		var objinfer = obj.infer
 		if(objinfer.kind === 'type' || objinfer.kind === 'function'){ // its a Type
 			// error we dont have member expressions on types
 			throw this.InferErr(node, 'No members on type or function')
 		}
+		else if(objinfer.kind === 'this'){ // its this
+			// ho
+		}
 		else if(objinfer.kind === 'value'){ // its a value
-			// but what kind of value?
+			// so this thing must become a struct member
+
+
+
+			// its a value.
 			var type = objinfer.type
-			if(type.name === 'object'){
+			if(type === Type.object){
+				// we are accessing a property on a JS object.
+				if(node.computed) throw this.InferErr(node, 'Dont support [] on object')
+				if(prop.type !== 'Identifier')  throw this.InferErr(node, 'Dont support non Identifier on object')
+				// its an Object. so, 
+				var obj = objinfer.object
+				var value = obj[prop.name]
+				if(typeof value === 'function'){
+					node.infer = {
+						kind:'function',
+						callee:value,
+						name:prop.name,
+						object:obj,
+						isThis:objinfer.isThis
+					}
+				}
+				// ok so what do we serialize.
+
+			}
+			// ok so, wwhat are we accessing on our value.
+			// but what kind of value?
+			if(type === Type.object){
 				if(node.computed) throw this.InferErr(node, 'Dont support [] on object')
 				if(prop.type !== 'Identifier')  throw this.InferErr(node, 'Dont support non Identifier on object')
 				// its an Object. so, 
@@ -415,22 +496,22 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 				// ok so what are we writing here.
 				// its a fn call, the object is in there
 				// so we need a symbol.
-				m.i32[o++] = this.codeIds.THIS_MEMBER_OBJECT
-				m.i32[o++] = this.getId(prop.name)
+				m.i32[o++] = this.astIds.THIS_MEMBER_OBJECT
+				m.i32[o++] = this.getNameId(prop.name)
 				return 
 			}
 			else{ // lets see if we have this member on struct
 				if(node.computed) {
-					m.i32[o++] = this.codeIds.THIS_MEMBER_COMPUTED
+					m.i32[o++] = this.astIds.THIS_MEMBER_COMPUTED
 					this[prop.type](prop)
 					// figure out computed typed
 					// which member are we accessing?
-					m.i32[o++] = this.typeIds[infer.type.name]
+					m.i32[o++] = type.id//this.Type[infer.type.name]
 				}
 				else{
-					m.i32[o++] = this.codeIds.THIS_MEMBER_EXPRESSION
+					m.i32[o++] = this.astIds.THIS_MEMBER_EXPRESSION
 					// figure out member type
-					m.i32[o++] = this.typeIds[infer.type.name]
+					m.i32[o++] = type.id//this.Type[infer.type.name]
 					this[prop.type](prop)
 				}
 			}
@@ -442,71 +523,231 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			this[prop.type](prop)
 		}
 	}
-	
-	//CallExpression:{callee:1, arguments:2},
-	CallExpression(node) {
+
+	builtinCall(node){
 		var m = this.method
 		var o = m.o
-		if((m.o += 3) > m.alloc) this.resize()
+		if((m.o += 4) > m.alloc) this.resize()
 
-		// TEMPLATE-EXPAND INTO A CALL
 		var callee = node.callee
 		var args = node.arguments
 
-		// type infer callee
-		this[callee.type](callee)
-		var infer = callee.infer
-
-		// process args
 		var argslen = args.length - 1
 		for(var i = 0;i <= argslen;i++){
 			var arg = args[i]
 			this[arg.type](arg)
 		}
 
-		if(infer.kind === 'builtin'){
-			// call a builtin fn
-			m.i32[o++] = this.codeIds.CALL_BUILTIN
-			m.i32[o++] = argslen
+
+		// resolve callee to builtin id
+		var builtin = this.builtinIds[callee.name]
+		if(builtin === undefined) throw this.InferErr(node, "Cannot resolve builtin "+callee.name)
+
+		var genSpecialise
+
+		// ok so first, we figure out if our arguments fit.
+		var params = builtin.params
+
+		if(params.length !== args.length){
+			throw this.InferErr(node, "Not the right number of args")
 		}
-		else if(infer.kind === 'method'){
 
-			if(infer.isThis){ // method call on this
-				m.i32[o++] = this.codeIds.CALL_THIS
-				m.i32[o++] = argslen
+		for(var i = 0; i < args.length; i++){
+			var arg = args[i]
+			var param = params[i]
+			var argType = arg.infer.type
+			var paramType = Type.idToType[param.typeId]
+			
+			if(paramType.isGen && argType.gen === paramType){
+				if(genSpecialise && genSpecialise !== argType.gen) throw this.InferErr(node, "Gentype mix fail")
+				genSpecialise = argType
+			}
+			else if(paramType !== argType){
+				throw this.InferErr(node, "Argument is wrong type")
+			}
+		}
+		
+		var returnType = Type.idToType[builtin.returnTypeId]
+		if(returnType.isGen){
+			if(!genSpecialise) throw this.InferErr(node, "genType return but no argument passed")
+			if(genSpecialise.gen !== returnType) throw this.InferErr(node, "genType return fails to match arg")
+			returnType = genSpecialise
+		}
 
-				var methodName = infer.name + '_T'
-				var argslen = args.length - 1
-				for(var i = 0;i <= argslen;i++){
-					var arg = args[i]
-					methodName += '_' + arg.infer.type.name
+		node.infer = {
+			kind:'value',
+			type:returnType
+		}
+
+		m.i32[o++] = this.astIds.BUILTIN_CALL
+		m.i32[o++] = node.infer.type.id
+		m.i32[o++] = argslen + 1
+		m.i32[o++] = builtinId	
+		return 
+	}
+
+	newObject(node, proto){
+		var m = this.method
+		var o = m.o
+		if((m.o += 3) > m.alloc) this.resize()
+
+		var callee = node.callee
+		var args = node.arguments
+
+		var argslen = args.length - 1
+		for(var i = 0;i <= argslen;i++){
+			var arg = args[i]
+			this[arg.type](arg)
+		}
+		
+		var compiled = proto.$methods.init
+
+		// check arg type
+		var argslen = args.length - 1
+		var argTypeIds = compiled.argTypeIds
+		for(var i = 0;i <= argslen;i++){
+			var arg = args[i]
+			if(arg.infer.type.id !== argTypeIds[i]){
+				// error
+				throw new this.InferErr(node, "Method"+methodName+" invalid argument type")
+			}
+		}
+
+		// ok so well, we have a classId/
+		node.infer = {
+			kind:'value',
+			infer:Type.object,
+			classId: proto.$classId
+		}
+
+		var compiled = proto.$methods.init
+		if(!compiled){
+			throw new this.InferErr(node, "Class "+methodName+" does not have an init function"+argTypes)
+		}
+
+		m.i32[o++] = this.astIds.NEW_OBJECT
+		m.i32[o++] = proto.$classId
+		m.i32[o++] = argslen + 1
+		return
+	}
+
+	thisCall(node, methodName){
+		var m = this.method
+		var o = m.o
+		if((m.o += 4) > m.alloc) this.resize()
+
+		var methodFn = this.root[methodName]
+
+		// its a normal method call
+		var compiled = this.methods[methodName]
+
+		if(!compiled){ // switch over to do this method
+			compiled = this.compileMethod(methodName, methodFn)
+		}
+
+		var args = node.arguments
+		var argslen = args.length - 1
+		for(var i = 0;i <= argslen;i++){
+			var arg = args[i]
+			this[arg.type](arg)
+		}
+
+		// check arg type
+		var argslen = args.length - 1
+		var argTypeIds = compiled.argTypeIds
+		for(var i = 0;i <= argslen;i++){
+			var arg = args[i]
+			if(arg.infer.type.id !== argTypeIds[i]){
+				// error
+				throw new this.InferErr(node, "Method"+methodName+" invalid argument type")
+			}
+		}
+
+		node.infer = {
+			kind:'value',
+			infer:compiled.returnType
+		}
+
+		var returnType = compiled.returnType
+
+		// lets get the method name
+		m.i32[o++] = this.astIds.THIS_CALL
+		m.i32[o++] = returnType?returnType.id:Type.void.id
+		m.i32[o++] = this.getNameId(methodName)
+		m.i32[o++] = argslen + 1
+		// its a THIS_CALL		
+	}
+
+	objectCall(node){
+		var m = this.method
+		var o = m.o
+		if((m.o += 4) > m.alloc) this.resize()
+
+		var callee = node.callee
+		var args = node.arguments
+
+		var argslen = args.length - 1
+		for(var i = 0;i <= argslen;i++){
+			var arg = args[i]
+			this[arg.type](arg)
+		}
+
+		// type infer the callee, it acn only be an object call
+		this[callee.type](callee)
+		var infer = callee.infer
+
+		if(infer.type !== Type.object){
+			throw this.InferErr(node, "Non object callee not supported")
+		}
+		
+		m.i32[o++] = this.astIds.OBJECT_CALL
+		m.i32[o++] = // return type
+		m.i32[o++] = argslen + 1 // no args
+		m.i32[o++] = infer.objectClass.$classId//0//this.getNameId(methodName)
+	}
+
+	//CallExpression:{callee:1, arguments:2},
+	CallExpression(node) {
+		var callee = node.callee
+
+		if(callee.type === 'Identifier'){
+			return this.builtinCall(node)
+		}
+
+		if(callee.type !== 'MemberExpression'){
+			// unsupported callee type
+			throw this.InferErr(node, "Callee not supported")
+		}
+
+		if(callee.object.type === 'ThisExpression'){
+			
+			var property = callee.property
+			if(property.type !== 'Identifier') throw this.InferErr(node, "Call not on method on this")
+
+			var methodName = property.name
+			var methodFn = this.root[methodName]
+
+			if(typeof methodFn !== 'function')  throw this.InferErr(node, "Calling "+property.name+" but its not a function")
+
+			var proto = methodFn.prototype
+
+			// its a class constructor!
+			if(proto && Object.getPrototypeOf(proto) !== Object.prototype){
+				if(proto.$classId == undefined){
+					throw this.InferErr(node, "Class "+methodName+' not a compiled class')
 				}
-				
-				var compiled = this.methods[methodName]
-				m.i32[o++] = this.getId(methodName)
-				if(!compiled){ // switch over to do this method
-					compiled = this.compileMethod(methodName, infer.callee, args)
-				}
-				node.infer = {
-					kind:'value',
-					infer:compiled.return
-				}
-			}			
-			else{ // method call on object
-				
-				m.i32[o++] = this.codeIds.CALL_OBJECT
-				m.i32[o++] = argslen
+				return this.newObject(node, proto)
 			}
 
+			return this.thisCall(node, methodName)
 		}
-		else throw this.InferErr(node, "Call not a method or a builtin")
 
+		return this.objectCall(node)
 	}
 	
 	//NewExpression:{callee:1, arguments:2},
 	NewExpression(node) {
-		var callee = node.callee
-		var args = node.arguments
+		// new is optional
 		this.CallExpression(node)		
 	}
 	
@@ -518,38 +759,36 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var arg = node.argument
 		if(arg) {
 			if((m.o += 2) > m.alloc) this.resize()
-			m.i32[o++] = this.codeIds.RETURN_VALUE
+			m.i32[o++] = this.astIds.RETURN_VALUE
 			this[arg.type](arg)
 			var infer = arg.infer
-			if(m.return){
-				if(m.return.name !== infer.type.name){
+			if(m.returnType){
+				if(m.returnType !== infer.type){
 					throw this.InferErr(node, "Return uses mixed types")
 				}
 			}
-			else m.return = infer.type
-			m.i32[o++] = this.typeIds[arg.infer.type.name]
+			else m.returnType = infer.type
+			m.i32[o++] = infer.type.id
 		}
 		else{
 			if((m.o += 1) > m.alloc) this.resize()
-			m.i32[o++] = this.codeIds.RETURN_VOID
-			if(m.return){
-				if(m.return.name !== 'void'){
-					throw this.InferErr(node, "Return uses mixed types")
-				}
+			m.i32[o++] = this.astIds.RETURN_VOID
+			if(m.returnType !== Type.void){
+				throw this.InferErr(node, "Return uses mixed types")
 			}
-			else m.return = types.void
+			else m.returnType = Type.void
 		}
 	}
 	
 	//FunctionExpression:{id:1, params:2, generator:0, expression:0, body:1},
 	FunctionExpression(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//FunctionDeclaration: {id:1, params:2, expression:0, body:1},
 
 	FunctionDeclaration(node, method) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//VariableDeclaration:{declarations:2, kind:0},
@@ -562,7 +801,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var decls = node.declarations
 		var declslen = decls.length - 1
 
-		m.i32[o++] = this.codeIds.VARIABLE_DECLARATION
+		m.i32[o++] = this.astIds.VARIABLE_DECLARATION
 		m.i32[o++] = declslen
 
 		for(var i = 0;i <= declslen;i++){
@@ -576,14 +815,13 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var m = this.method
 		var o = m.o
 		if((m.o += 2) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.VARIABLE_DECLARATOR
+		m.i32[o++] = this.astIds.VARIABLE_DECLARATOR
 
 		var id = node.id
 		
 		if(id.type !== 'Identifier') {
 			throw this.InferErr(node, 'Variable can only be simple identifier')
 		}
-
 
 		var init = node.init
 		if(!init) {
@@ -595,11 +833,11 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var varId = m.varId++
 
 		m.i32[o++] = m.vars[id.name] = {
-			id:varId,
+			varId:varId,
 			type:init.infer.type
 		}
 
-		m.varTypes[varId] =  this.typeIds[init.infer.type.name]
+		m.varTypeIds[varId] =  init.infer.type.id
 	}
 	
 	//LogicalExpression:{left:1, right:1, operator:0},
@@ -607,7 +845,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		var m = this.method
 		var o = m.o
 		if((m.o += 2) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.LOGICAL_EXPRESSION
+		m.i32[o++] = this.astIds.LOGICAL_EXPRESSION
 
 		var left = node.left
 		var right = node.right
@@ -639,22 +877,24 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			else if(op === '*') r = a * b
 			else if(op === '/') r = a / b
 
-			if((m.o += 2) > m.alloc) this.resize()
+			if((m.o += 3) > m.alloc) this.resize()
 			if(left.raw.indexOf('.') !== -1 || right.raw.indexOf('.') !== -1){
-				m.i32[o++] = this.codeIds.LITERAL_FLOAT
+				m.i32[o++] = this.astIds.LITERAL_FLOAT
+				m.i32[o++] = Type.float.id
 				m.f32[o++] = r
-				node.infer = {kind:'value', type:types.float}
+				node.infer = {kind:'value', type:Type.float}
 			}
 			else{
-				m.i32[o++] = this.codeIds.LITERAL_INT
+				m.i32[o++] = this.astIds.LITERAL_INT
+				m.i32[o++] = Type.int.id
 				m.i32[o++] = r
-				node.infer = {kind:'value', type:types.int}
+				node.infer = {kind:'value', type:Type.int}
 			}
 			return
 		}
 
 		if((m.o += 3) > m.alloc) this.resize()
-		m.i32[o++] = this.codeIds.BINARY_EXPRESSION
+		m.i32[o++] = this.astIds.BINARY_EXPRESSION
 
 		this[left.type](left)
 		this[right.type](right)
@@ -687,19 +927,21 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		}
 		
 		// lets output the left/right/result types
-		m.i32[o++] = this.typeIds[type.name]
-		//m.i32[o++] = this.typeIds[left.infer.type.name]
-		//m.i32[o++] = this.typeIds[right.infer.type.name]
+		m.i32[o++] = type.id//this.Type[type.name].id
+		//m.i32[o++] = this.Type[left.infer.type.name]
+		//m.i32[o++] = this.Type[right.infer.type.name]
 		if(op === '+') m.i32[o++] = 1
 		else if(op === '-') m.i32[o++] = 2
 		else if(op === '*') m.i32[o++] = 3
 		else if(op === '/') m.i32[o++] = 4
-		else throw new Error('Binary expression not supported '+op )
-
+		else throw this.InferError(node, 'Binary expression not supported '+op )
 	}
 	
 	//AssignmentExpression: {left:1, operator:0, right:1},
 	AssignmentExpression(node) {
+		// lets output an assignment expression.
+
+
 		var old = this.text
 		var left = node.left
 		var right = node.right
@@ -779,16 +1021,47 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		this[body.type](body)
 	}
 	
-	//ForInStatement:{left:1, right:1, body:1},
-	ForInStatement(node) {
-		throw this.Supporterr(node)
-	}
-	
 	//ForOfStatement:{left:1, right:1, body:1},
 	ForOfStatement(node) {
-		throw this.Supporterr(node)
+		var m = this.method
+		var o = m.o
+		if((m.o += 2) > m.alloc) this.resize()
+		m.i32[o++] = this.astIds.FOR_OF_STATEMENT
+
+		// as left we only support var x
+		// so lets allocate it and write it in
+		// then we do right hand side
+		// which needs to return an array
+		// essentially this must be a var x / let x
+		var left = node.left 
+		if(left.type !== 'VariableDeclaration') throw this.InferErr(node, 'Only support var decl in or of')
+
+		if(left.declarations.length !== 1 ||
+			left.declarations[0].id.type !== 'Identifier') throw this.InferErr(node, 'Only support single var def in for of')
+		var declId = left.declarations[0].id
+
+		// ok so 
+		//this[left.type](left)
+		
+		// lets process right hand side
+		var right = node.right
+		this[right.type](right)
+
+		console.log(right)
+
+		// and then we have the body
+		var bod = node.body
+		this[body.type](body)
+
+		throw this.SupportErr(node)
 	}
 	
+
+	//ForInStatement:{left:1, right:1, body:1},
+	ForInStatement(node) {
+		throw this.SupportErr(node)
+	}
+
 	//WhileStatement:{body:1, test:1},
 	WhileStatement(node) {
 		var test = node.test
@@ -839,27 +1112,27 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 	
 	//ThrowStatement:{argument:1},
 	ThrowStatement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//TryStatement:{block:1, handler:1, finalizer:1},
 	TryStatement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//CatchClause:{param:1, body:1},
 	CatchClause(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//SpreadElement
 	SpreadElement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//RestElement:{argument:1}
 	RestElement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//Super:{},
@@ -873,29 +1146,29 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 	
 	//MetaProperty:{meta:1, property:1},
 	MetaProperty(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 		
 	//ObjectPattern:{properties:3},
 	ObjectPattern(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	
 	//ObjectPattern:{properties:3},
 	ArrayPattern(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	// AssignmentPattern
 	AssignmentPattern(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	
 	//ArrowFunctionExpression:{params:2, expression:0, body:1},
 	ArrowFunctionExpression(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//SwitchStatement:{discriminant:1, cases:2},
@@ -929,70 +1202,70 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 	
 	//TaggedTemplateExpression:{tag:1, quasi:1},
 	TaggedTemplateExpression(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//TemplateElement:{tail:0, value:0},
 	TemplateElement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//TemplateLiteral:{expressions:2, quasis:2},
 	TemplateLiteral(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//ClassDeclaration:{id:1,superClass:1},
 	ClassDeclaration(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//ClassExpression:{id:1,superClass:1},
 	ClassExpression(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//MethodDefinition:{value:1, kind:0, static:0},
 	MethodDefinition(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//ExportAllDeclaration:{source:1},
 	ExportAllDeclaration(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	
 	//ExportDefaultDeclaration:{declaration:1},
 	ExportDefaultDeclaration(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ExportNamedDeclaration:{declaration:1, source:1, specifiers:2},
 	ExportNamedDeclaration(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ExportSpecifier:{local:1, exported:1},
 	ExportSpecifier(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ImportDeclaration:{specifiers:2, source:1},
 	ImportDeclaration(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ImportDefaultSpecifier:{local:1},
 	ImportDefaultSpecifier(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ImportNamespaceSpecifier:{local:1},
 	ImportNamespaceSpecifier(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//ImportSpecifier:{imported:1, local:1},
 	ImportSpecifier(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//DebuggerStatement:{},
 	DebuggerStatement(node) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 	//LabeledStatement:{label:1, body:1},
 	LabeledStatement(node) {
@@ -1003,7 +1276,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 	}
 	// WithStatement:{object:1, body:1}
 	WithStatement(node, path) {
-		throw this.Supporterr(node)
+		throw this.SupportErr(node)
 	}
 }
 

@@ -1,7 +1,7 @@
 var types = require('base/types')
 module.exports = class extends require('base/view'){
 	prototype(){
-		this.tools = {
+		this.nest = {
 			Button: require('views/button').extend({
 				order:4,
 			}),

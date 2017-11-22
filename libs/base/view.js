@@ -11,7 +11,7 @@ module.exports = class View extends require('base/class'){
 	prototype(){
 		this.mixin(
 			require('base/states'),
-			require('base/tools'),
+			require('base/nest'),
 			require('base/styles')
 		)
 		
@@ -52,7 +52,7 @@ module.exports = class View extends require('base/class'){
 			wrap:1
 		}
 
-		this.tools = {
+		this.nest = {
 			Debug:require('shaders/quad'),
 			Pass:require('shaders/quad').extend({
 				props:{

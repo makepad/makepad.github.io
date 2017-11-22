@@ -7,7 +7,7 @@ module.exports = class UserProcess extends require('views/draw'){
 		this.props = {
 			resource:null
 		}
-		this.tools = {
+		this.nest = {
 			Button: require('views/button').extend({
 				heavy:true
 			}),

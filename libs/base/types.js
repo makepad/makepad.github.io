@@ -8,6 +8,7 @@ function getPrimary(fields){
 		if(type) return type
 	}
 }
+
 function getArray(fields){
 	for(let key in fields){
 		var type = fields[key]
@@ -66,7 +67,7 @@ function Enum(enumSet){
 	enm.array = Float32Array
 	return enm
 }
-
+                                             
 Enum.prototype = Object.create(Type.prototype)
 Enum.prototype.constructor = Enum
 

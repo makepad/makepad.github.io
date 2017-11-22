@@ -165,7 +165,7 @@ module.exports = class extends require('base/drawapp'){ //top
 			if(shift < 0) thirdwalk(v, -shift)
 		}
 		
-		this.tools = {
+		this.nest = {
 			Quad:{
 				depth:0,
 				pixel:function() {$

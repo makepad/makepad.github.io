@@ -3,7 +3,7 @@ var cameras = require('services/cameras')
 var painter = require('services/painter')
 module.exports = class extends require('base/drawapp'){ //top
 	prototype() {
-		this.tools = {
+		this.nest = {
 			Cam:require('shaders/quad').extend({
 				dead :0,
 				col  :'red',

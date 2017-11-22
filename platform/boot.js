@@ -15,7 +15,6 @@ var loadServices = [
 //	"dropfiles1",
 ]
 
-
 //
 //
 // Recursive downloader with dependencies
@@ -54,6 +53,7 @@ var workerSrc =
 	buildPath.toString() + '\n' +
 	workerRequire.toString() + '\n' +
 	mathLib.toString() + '\n' +
+	typeLib.toString() + '\n' + 
 	traceLib.toString() + '\n' + 
 	timerLib.toString() + '\n' + 
 	promiseLib.toString() +'\n' + 
@@ -170,6 +170,10 @@ var serviceResults = {}
 var servicePaths = {}
 var serviceModules = {}
 
+var serviceGlobals = {}
+typeLib(serviceGlobals)
+mathLib(serviceGlobals)
+
 for(let i = 0; i < loadServices.length; i++){
 	var name = loadServices[i]
 	var path = servicePaths[name] = root.platformPath+root.platform+'/'+name+'.js'
@@ -199,6 +203,7 @@ allApps.push(Promise.all(allServices).then(function(){
 		try{
 			serviceModules[path] = {
 				factory: new Function("require", "exports","module", source+ '\n//# sourceURL='+path+'\n'),
+				globals:serviceGlobals,
 				source: source
 			}
 		}
@@ -295,6 +300,7 @@ function workerBoot(worker, global){
 	}
 
 	worker.services.init.onMessage = function(msg){
+		typeLib(global, msg)
 		var resources = msg.resources
 		worker.resources = resources
 		worker.args = msg.args
@@ -713,6 +719,135 @@ function timerLib(g, worker){
 		worker.afterEntryCallbacks.push(fn)
 		return worker.afterEntryCallbacks.length
 	}
+}
+
+function typeLib(g, msg){
+
+	function Type(config){
+		var type = this
+		if(!(type instanceof Type)){
+			type = Object.create(Type.prototype)
+			type.constructor = Type
+		}
+		for(let key in config){
+			type[key] = config[key]
+		}
+		// create an array subtype
+		var array = Object.create(Type.prototype)
+		array.constructor = Type
+		array.isArray = true
+		array.type = type
+		type.array = array
+		return type
+	}
+
+	Type.prototype.getPrimary = function(){
+		for(let key in this.fields){
+			var type = this.fields[key]
+			if(type.constructor === Type) return type
+			type = getPrimary(type.fields)
+			if(type) return type
+		}
+	}
+
+	Type.prototype.getStorage = function(){
+		for(let key in this.fields){
+			var type = this.fields[key]
+			if(type.storage) return type.storage
+		}
+	}
+
+	Type.prototype.getSlots = function(){
+		var total = 0
+		for(let key in this.fields){
+			var type = this.fields[key]
+			total += type.slots
+		}
+		return total || 1
+	}
+
+	Type.fromId = function(id){
+		// look up a type from an Id
+	}
+
+	function TypeStruct(fields, name){
+		var struct = this
+
+		if(!(struct instanceof TypeStruct)){
+			struct = Object.create(TypeStruct.prototype)
+			struct.constructor = TypeStruct
+		}
+		struct.fields = fields
+		struct.name = name
+		// lets precompute the slots and array
+		struct.storage = struct.getStorage()
+		struct.primary = struct.getPrimary()
+		struct.slots = struct.getSlots()
+		struct.isStruct = true
+
+		// create an array subtype
+		struct.array = new Type.array(struct)
+		return struct
+	}
+	TypeStruct.prototype = Object.create(Type.prototype)
+	TypeStruct.prototype.constructor = TypeStruct
+
+	function TypeArray(type){
+		var array = this
+
+		if(!(array instanceof TypeArray)){
+			array = Object.create(TypeArray.prototype)
+			array.constructor = TypeArray
+		}
+		array.type = type
+		array.isArray = true
+
+		return array
+	}
+
+	TypeArray.prototype = Object.create(Type.prototype)
+	TypeArray.prototype.constructor = TypeArray
+	
+	Type.struct = TypeStruct
+	Type.array = TypeArray
+
+	// shared execution typeId set
+	var typeId = 1
+	Type.genFloat = Type({name:'genFloat',slots:0, id:typeId++, isGen:true})
+	Type.genInt = Type({name:'genInt',slots:0, id:typeId++, isGen:true})
+	Type.genBool = Type({name:'genBool',slots:0, id:typeId++, isGen:true})
+	Type.genMat = Type({name:'genMat',slots:0, id:typeId++, isGen:true})
+	Type.void = Type({name:'void',slots:0, id:typeId++})
+	Type.float = Type({name:'float',slots:1, storage:Float32Array, id:typeId++, gen:Type.genFloat})
+	Type.int = Type({name:'int',slots:1, storage:Int32Array, id:typeId++, gen:Type.genInt})
+	Type.bool = Type({name:'bool',slots:1, storage:Int32Array, id:typeId++, gen:Type.genBool})
+	Type.vec2 = Type({name:'vec2',slots:2, storage:Float32Array, id:typeId++, gen:Type.genFloat})
+	Type.vec3 = Type({name:'vec3',slots:3, storage:Float32Array, id:typeId++, gen:Type.genFloat})
+	Type.vec4 = Type({name:'vec4',slots:4, storage:Float32Array, id:typeId++, gen:Type.genFloat})
+	Type.ivec2 = Type({name:'ivec2',slots:2, storage:Int32Array, id:typeId++, gen:Type.genInt})
+	Type.ivec3 = Type({name:'ivec3',slots:3, storage:Int32Array, id:typeId++, gen:Type.genInt})
+	Type.ivec4 = Type({name:'ivec4',slots:4, storage:Int32Array, id:typeId++, gen:Type.genInt})
+	Type.bvec2 = Type({name:'bvec2',slots:2, storage:Int32Array, id:typeId++, gen:Type.genBool})
+	Type.bvec3 = Type({name:'bvec3',slots:3, storage:Int32Array, id:typeId++, gen:Type.genBool})
+	Type.bvec4 = Type({name:'bvec4',slots:4, storage:Int32Array, id:typeId++, gen:Type.genBool})
+	Type.mat2 = Type({name:'mat2',slots:4, storage:Float32Array, id:typeId++})
+	Type.mat3 = Type({name:'mat3',slots:9, storage:Float32Array, id:typeId++})
+	Type.mat4 = Type({name:'mat4',slots:16, storage:Float32Array, id:typeId++})
+	//Type.object = Type({name:'object',slots:0, id:typeId++})
+	Type.sampler2D = Type({name:'sampler2D',slots:0, id:typeId++})
+	Type.samplerCube = Type({name:'samplerCube',slots:0, id:typeId++})
+	
+	Type.object = Type({name:'object', slots:0, id:typeId++})
+
+	var idToType = Type.idToType = Object.create(null)
+	for(var key in Type){
+		var type = Type[key]
+		if(type instanceof Type){
+			idToType[type.id] = type
+		}
+	}
+
+	g.Type = Type
 }
 
 //
