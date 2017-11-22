@@ -145,7 +145,6 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			}
 
 			m.argTypeIds[i] = init.infer.type.id
-			
 		}
 
 		// execute body
@@ -538,7 +537,6 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			this[arg.type](arg)
 		}
 
-
 		// resolve callee to builtin id
 		var builtin = this.builtinIds[callee.name]
 		if(builtin === undefined) throw this.InferErr(node, "Cannot resolve builtin "+callee.name)
@@ -930,24 +928,44 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		m.i32[o++] = type.id//this.Type[type.name].id
 		//m.i32[o++] = this.Type[left.infer.type.name]
 		//m.i32[o++] = this.Type[right.infer.type.name]
-		if(op === '+') m.i32[o++] = 1
-		else if(op === '-') m.i32[o++] = 2
-		else if(op === '*') m.i32[o++] = 3
-		else if(op === '/') m.i32[o++] = 4
-		else throw this.InferError(node, 'Binary expression not supported '+op )
+		var opId = this.opIds[op]
+		if(opId === undefined) throw this.InferError(node, 'Binary expression not supported '+op )
+		m.i32[o++] = opId
 	}
 	
 	//AssignmentExpression: {left:1, operator:0, right:1},
 	AssignmentExpression(node) {
-		// lets output an assignment expression.
+		var m = this.method
+		var o = m.o
+		if((m.o += 2) > m.alloc) this.resize()
+		m.i32[o++] = this.astIds.ASSIGNMENT_EXPRESSION
+		var opId = this.opIds[node.operator]
+		if(opId === undefined) throw this.InferError(node, 'Assignment expression operator not supported '+node.operator )
+		m.i32[o++] = opId
 
-
+		// also, if the LHS is this.something
+		// we need to create it
+		// or atleast typecheck it
 		var old = this.text
 		var left = node.left
 		var right = node.right
 		var lefttype = left.type
-		this[lefttype](left)
+
+		// figure out rhs type first
 		this[right.type](right)
+
+		left.assignType = right.infer
+		// pass it to the lhs
+		//if(lefttype === 'MemberExpression' && left.object === 'ThisExpression'){
+			// just mark it with that its an assignment
+			// the memberexpression will check assignType
+			// to see if its valid
+		//	left.assignType = right.infer
+		//}
+		this[lefttype](left)
+		
+		// check if the lhs infer fits the rhs
+		
 	}
 	
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},

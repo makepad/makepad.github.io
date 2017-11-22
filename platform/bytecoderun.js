@@ -130,6 +130,11 @@ class ByteCodeCompiler{
 
 		var o = 1
 		var opIds = this.opIds = {
+			'=':o++,
+			'+=':o++,
+			'-=':o++,
+			'/=':o++,
+			'*=':o++,
 			'+':o++,
 			'-':o++,
 			'/':o++,
@@ -149,9 +154,9 @@ class ByteCodeCompiler{
 			'&&':o++
 		}
 
-		var opToId = {}
+		var opIdToName = {}
 		for(var key in opIds){
-			opToId[opIds[key]] = key
+			opIdToName[opIds[key]] = key
 		}
 
 		var builtinIdToName = this.builtinIdToName = {}
@@ -241,16 +246,16 @@ class ByteCodeCompiler{
 		}
 
 		var opToName = {
-			1:'add',
-			2:'sub',
-			3:'mul',
-			4:'div'
+			'+':'add',
+			'-':'sub',
+			'*':'mul',
+			'/':'div'
 		}
 
 		this[astIds.BINARY_EXPRESSION] = function BINARY_EXPRESSION(target){
 			// types
 			var outType = this.i32[this.o++]
-			var op = this.i32[this.o++]
+			var op = opIdToName[this.i32[this.o++]]
 			var lop = this.i32[this.o++]
 			var ltypeId = this.i32[this.o]
 

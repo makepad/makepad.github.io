@@ -99,7 +99,7 @@ module.exports=class Splitter extends require('base/view'){
 						}
 					}
 				},
-				tools:{
+				nest:{
 					Bg:require('shaders/rounded').extend({
 						color:'#7'
 					}),
@@ -138,7 +138,7 @@ module.exports=class Splitter extends require('base/view'){
 				order:3,
 				w:16,
 				h:16,
-				tools:{
+				nest:{
 					Bg:require('shaders/rounded').extend({
 						color:'#7'
 					}),
