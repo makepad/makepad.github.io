@@ -1,17 +1,17 @@
 //var types = require('base/types')
 var jsparser = require('parsers/js')
 
-module.exports = class AstByteCodeGen extends require('base/class'){
+module.exports = class KernelClassCompiler extends require('base/class'){
 	
-	constructor(idTables, root){
+	constructor(kernelClassIds, root){
 		super()
 		this.idToName = {}
 		this.nameToId = {}
 		this.nameIds = 1
 
-		this.astIds = idTables.astIds
-		this.builtinIds = idTables.builtinIds
-		this.opIds = idTables.opIds
+		this.astIds = kernelClassIds.astIds
+		this.builtinIds = kernelClassIds.builtinIds
+		this.opIds = kernelClassIds.opIds
 		
 		this.root = root
 		this.context = root
@@ -20,8 +20,8 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 	}
 
 
-	static compileMethod(idTables, root, fn, name = 'compile'){
-		var compiler = new this(idTables, root)
+	static compileMethod(kernelClassIds, root, fn, name = 'compile'){
+		var compiler = new this(kernelClassIds, root)
 		compiler.compileMethod(name, fn, [])
 		return compiler
 	}
@@ -443,17 +443,30 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 			// error we dont have member expressions on types
 			throw this.InferErr(node, 'No members on type or function')
 		}
-		else if(objinfer.kind === 'this'){ // its this
-			// ho
-		}
 		else if(objinfer.kind === 'value'){ // its a value
-			// so this thing must become a struct member
-
-
-
 			// its a value.
 			var type = objinfer.type
 			if(type === Type.object){
+
+
+				// alright so, if we are reading form isThis
+				// and the property is not defined.
+
+				// and we dont have assignLeft
+
+				// alright we are reading/writing from an object.
+				// if we are not assigning to it
+				// we should error out
+
+
+				
+				// lets look it up
+				objinfer.object
+
+
+				// alright we are accessing an Object
+				// which means we have a classId
+
 				// we are accessing a property on a JS object.
 				if(node.computed) throw this.InferErr(node, 'Dont support [] on object')
 				if(prop.type !== 'Identifier')  throw this.InferErr(node, 'Dont support non Identifier on object')
@@ -943,9 +956,6 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		if(opId === undefined) throw this.InferError(node, 'Assignment expression operator not supported '+node.operator )
 		m.i32[o++] = opId
 
-		// also, if the LHS is this.something
-		// we need to create it
-		// or atleast typecheck it
 		var old = this.text
 		var left = node.left
 		var right = node.right
@@ -965,7 +975,7 @@ module.exports = class AstByteCodeGen extends require('base/class'){
 		this[lefttype](left)
 		
 		// check if the lhs infer fits the rhs
-		
+
 	}
 	
 	//ConditionalExpression:{test:1, consequent:1, alternate:1},

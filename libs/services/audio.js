@@ -1,8 +1,8 @@
 var service = require('$audio1')
 var IdAlloc = require('base/idalloc')
 var classIds = new IdAlloc()
-
-exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
+var KernelClass = require('base/kernelclass')
+class AudioNode extends KernelClass{
 
 	prototype(){
 		this.verbs = {
@@ -17,16 +17,32 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 				
 				node.$start(this, overload)
 				return node
-			},
-			play:function(notes){
-				// process notes into a typed array
-				// then pass that sequence to the other side.
-				
 			}
 		}
+
+		this.nest = {
+			Osc:Osc
+		}
+
+		// declare props on this thing
 		this.props = {
 			output:{kind:'output'}
 		}
+
+		// import libraries, either as object or into the scope
+		this.imports = [
+			//require('base/mylib')
+		]
+
+		this.$kernelClassIDs = module.worker.args.audio1.kernelClassIds
+	}
+
+	// someone is newing us
+	constructor(args){
+		super()
+		// cool, so lets map ourselves to something on the other side.
+		// and call start on it
+
 	}
 
 	// root methods to ship over
@@ -39,17 +55,16 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 	init(){
 	}
 
-	start(t=0.){
+	start(t = 0.){
 	}
 
-	stop(t=0.){		
+	stop(t = 0.){		
 	}
-	
-	$start(){
-	}
+	       
+	onCompileVerbs(target){
+		var ret = super.onCompileVerbs(target)
+		// ok so, we should have a set of methods to communicate
 
-	$compileByteCode(){
-		super.$compileByteCode()
 		// transmit this class to the main 
 		this.$classId = classIds.alloc()
 		// lets send this.$compiled over to the mainthread
@@ -59,5 +74,46 @@ exports.AudioNode = class AudioNode extends require('base/bytecodecompiler'){
 			idToName:this.$idToName,
 			methods:this.$byteMethods
 		})
+		return ret
 	}
 }
+
+// typedecl for system api
+class AudioParam extends AudioNode{
+	prototype(){
+		this.props = {
+			defaultValue:{readOnly:true, type:float}
+		}
+		this.$systemClassId = module.worker.args.AudioParamID
+	}
+
+	get defaultValue(){
+		return float
+	}
+
+	get maxValue(){
+		return float
+	}
+
+	get minValue(){
+		return float
+	}
+
+	setValueAtTime(value = float, startTime = float){
+	}
+
+	connect(to = AudioNode){
+	}
+}
+
+class Osc extends AudioNode{
+	prototype(){
+		this.props = {
+			frequency:{type:AudioParam}
+		}
+	}
+}
+
+exports.AudioNode = AudioNode
+exports.AudioParam = AudioParam
+exports.Osc = Osc

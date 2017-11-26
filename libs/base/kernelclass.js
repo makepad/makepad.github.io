@@ -1,10 +1,9 @@
-var service = require('$audio1')
-var types = require('base/types')
-var AstByteCodeGen = require('parsers/astbytecodegen')
-var IdAlloc = require('base/idalloc')
-var flowIds = new IdAlloc()
 
-module.exports = class ByteCodeCompiler extends require('base/class'){
+var KernelClassCompiler = require('base/kernelclasscompiler')
+var IdAlloc = require('base/idalloc')
+var infer = require('base/infer')
+
+module.exports = class KernelClass extends require('base/class'){
 
 	prototype(){
 		this.mixin(
@@ -17,11 +16,8 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 				this.$defineProp(key, props[key])
 			}
 		})
-		// lets define the compiler
-		//this.$compiler = AstByteCodeGen.generateCompiler(
-		//	module.worker.args.audioByteCode
-		//)
 	}
+
 
 	$defineProp(key, value){
 		if(!this.hasOwnProperty('_props')){
@@ -42,35 +38,45 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 
 		this._props[key] = config
 		if(config.value !== undefined) this[key] = config.value
-		if(!config.type) config.type = types.typeFromValue(config.value)
+		if(!config.type) config.type = infer.typeFromValue(config.value)
 	}
 
 	constructor(config) {
 		super()
 	}
 
-	onCompileVerbs(){
+	onCompileVerbs(target){
 		this.__initproto__()
-		if(!this.$compiled){
-			this.$compileByteCode()
-		}
-		else{
-			if(this.hasOwnProperty('$compiled')){
-				return
-			}
 
-			this.$compiled = this.$compiled
-			for(var key in this.$compiled){
-				if(this.$compiled[key] !== this[key]){
-					this.$compileByteCode()
+		// lets make alist of keys we have
+		var keys = Object.keys(this)
+
+		for(var i = 0; i < keys.length; i++){
+			var key = keys[i]
+			if(key.charCodeAt(0) === 36 || key === 'prototype') continue // starts with $
+			var getter = this.__lookupGetter__(key)
+			if(getter !== undefined){ // we have a getter
+				console.log('getter', key)
+
+			}
+			else{
+				var fn = this[key]
+				if(typeof fn !== 'function') continue
+				// what if our property is a class?
+				if(fn.prototype && Object.getPrototypeOf(fn.prototype) !== Object.prototype){
+					// its a class, lets skip it
+					continue
 				}
+				// compile our method
+				console.log('compile', key)
+
 			}
 		}
-	}
 
-	$compileByteCode(){
 		// lets compile it!
-		var bc = AstByteCodeGen.compileMethod(module.worker.args.audioByteCode, this, this.compile)
+		var bc = KernelClassCompiler.compileMethod(
+			this.$kernelClassIDs, this, this.compile
+		)
 
 		var inputMethods = bc.methods
 		var byteMethods = {}
@@ -90,6 +96,8 @@ module.exports = class ByteCodeCompiler extends require('base/class'){
 		this.$methods = inputMethods
 		this.$idToName = bc.idToName
 		this.$byteMethods = byteMethods
+
+		if(target instanceof KernelClass) return true
 	}
 }
 /*

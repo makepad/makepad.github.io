@@ -9,7 +9,7 @@ module.exports = class extends require('base/app'){
 				nest:{
 					Blip:audio.AudioNode.extend({
 						init(){
-
+							
 						}
 						/*
 						init(){
@@ -34,12 +34,12 @@ module.exports = class extends require('base/app'){
 					vel:Type.float,
 					len:Type.float
 				}).array,
-	
 				start(t = 0.){
-					// ok so lets expand default args in the callsite.
-					// 
+					// what do we do with this.
 					this.t = this.Blip()
 
+					// it should define a property t on this
+					// with type Blip
 					// THIS_SET+nameId + operator + value 
 					//this.b.prop = 10
 					

@@ -1,22 +1,11 @@
 // define a node class
-class AudioNode extends require('/platform/bytecoderun'){
+class AudioNode extends require('/platform/kernelclassjs'){
 	
 	prototype(){
 	}
 
 	constructor(){
 		super()
-
-	}
-
-	// implementations
-	_frequency_T_float(s, r, value){
-	}
-
-	_connect_T_object(s, r, to){
-		// we should make the thing call itself
-		// ok so to is .. the actual object
-		// which is an audio node
 	}
 }
 
@@ -37,13 +26,9 @@ module.exports = class extends require('/platform/service'){
 			this.initialized = true
 		}
 
-		// dummy audionode to fetch API
-		var bc = AudioNode.prototype.$ByteCodeCompiler.prototype
-		// pass in the ByteCode API
-		this.args.audioByteCode = {
-			astIds:bc.astIds,
-			opIds:bc.opIds,
-			builtinIds:bc.builtinIds
+		// pass in the ByteCode API we use
+		this.args.audio1 = {
+			kernelClassIds:AudioNode.JSCompiler.prototype.kernelClassIds
 		}
 	}
 
@@ -85,9 +70,11 @@ module.exports = class extends require('/platform/service'){
 		// lets make a new class
 		class AudioClass extends AudioNode{
 		}
+	
 		AudioClass.prototype.$classId = data.classId
 		AudioClass.prototype.$compileClass(data)
 
+		// do something with it
 		var x = new AudioClass()
 		console.log(x)
 		//console.log(x._start(15))

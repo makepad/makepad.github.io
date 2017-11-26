@@ -1,169 +1,10 @@
 var trace = true
 var Type = module.globals.Type
 
-class ByteCodeCompiler{
+class JSCompiler extends require('/platform/kernelclassids'){
 	prototype(){
-
-		var o = 1
-		var astIds = this.astIds = {
-			BLOCK_STATEMENT:o++,
-			ARRAY_EXPRESSION:o++,
-			EXPRESSION_STATEMENT:o++,
-			SEQUENCE_EXPRESSION:o++,
-			LITERAL_INT:o++,
-			LITERAL_FLOAT:o++,
-			LITERAL_BOOL:o++,
-			ARGUMENT:o++,
-			VARIABLE:o++,
-
-			// call types
-			THIS_CALL:o++,
-			OBJECT_CALL:o++,
-			NEW_OBJECT:o++,
-			BUILTIN_CALL:o++,
-
-			// property accesses
-			THIS_MEMBER:o++,
-			OBJECT_MEMBER:o++,
-			STRUCT_FIELD:o++,
-			VEC_SWIZZLE:o++,
-			ARRAY_INDEX:o++,
-
-			THIS_EXPRESSION:o++,
-
-			RETURN_VALUE:o++,
-			RETURN_VOID:o++,
-			VARIABLE_DECLARATION:o++,
-			VARIABLE_DECLARATOR:o++,
-			LOGICAL_EXPRESSION:o++,
-			BINARY_EXPRESSION:o++,
-			ASSIGNMENT_EXPRESSION:o++,
-			CONDITIONAL_EXPRESSION:o++,
-			UNARY_EXPRESSION:o++,
-			UPDATE_EXPRESSION:o++,
-			IF_STATEMENT:o++,
-			FOR_STATEMENT:o++,
-			FOR_OF_STATEMENT:o++,
-			WHILE_STATEMENT:o++,
-			DOWHILE_STATEMENT:o++,
-			BREAK_STATEMENT:o++,
-			CONTINUE_STATEMENT:o++,
-			//YIELD_EXPRESSION:o++,
-			SWITCH_STATEMENT:o++,
-			SWITCH_CASE:o++
-		}
-
-		var s = 1
-		// default symbols for global functions
-		var builtinIds = this.builtinIds = {
-			sin:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			cos:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			tan:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			asin:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			acos:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			atan:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}, {name:'y', typeId:Type.genFloat.id, opt:true}]},
-			
-			radians:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-			degrees:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'angle', typeId:Type.genFloat.id}]},
-
-			pow:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			exp:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			log:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			exp2:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			log2:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			
-			sqrt:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			inversesqrt:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			
-			abs:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			sign:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			floor:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			ceil:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			fract:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			
-			mod:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			min:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			max:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			clamp:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'min', typeId:Type.genFloat.id},{name:'max', typeId:Type.genFloat.id}]},
-			
-			mix:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'a', typeId:Type.genFloat.id},{name:'b', typeId:Type.genFloat.id},{name:'t', typeId:Type.genFloat.id}]},
-			step:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'edge', typeId:Type.genFloat.id},{name:'x', typeId:Type.genFloat.id}]},
-			smoothstep:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'edge0', typeId:Type.genFloat.id},{name:'edge1', typeId:Type.genFloat.id},{name:'x', typeId:Type.genFloat.id}]},
-			
-			length:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			distance:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			dot:{id:s++, returnTypeId:Type.float.id, params:[{name:'x', typeId:Type.genFloat.id},{name:'y', typeId:Type.genFloat.id}]},
-			cross:{id:s++, returnTypeId:Type.vec3.id, params:[{name:'x', typeId:Type.vec3.id},{name:'y', typeId:Type.vec3.id}]},
-			normalize:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-
-			faceforward:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'n', typeId:Type.genFloat.id},{name:'i', typeId:Type.genFloat.id},{name:'nref', typeId:Type.genFloat.id}]},
-			reflect:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'i', typeId:Type.genFloat.id},{name:'n', typeId:Type.genFloat.id}]},
-			refract:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'i', typeId:Type.genFloat.id},{name:'n', typeId:Type.genFloat.id},{name:'eta', typeId:Type.genFloat.id}]},
-			matrixCompMult:{returnTypeId:Type.mat4.id,params:[{name:'a', typeId:Type.mat4.id},{name:'b', typeId:Type.mat4.id}]},
-
-			dFdx:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			dFdy:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-			fwidth:{id:s++, returnTypeId:Type.genFloat.id, params:[{name:'x', typeId:Type.genFloat.id}]},
-
-			texture2DLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'lod', typeId:Type.float.id}]},
-			texture2DProjLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'lod', typeId:Type.float.id}]},
-			textureCubeLod:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.samplerCube.id}, {name:'coord', typeId:Type.vec3.id}, {name:'lod', typeId:Type.float.id}]},
-			texture2D:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
-			texture2DProj:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.sampler2D.id}, {name:'coord', typeId:Type.vec2.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
-			textureCube:{returnTypeId:Type.vec4.id, params:[{name:'sampler', typeId:Type.samplerCube.id}, {name:'coord', typeId:Type.vec3.id}, {name:'bias', typeId:Type.float.id, opt:true}]},
-
-			sleep:{id:s++, returnTypeId:Type.void.id, params:[{name:'timeMs', typeId:Type.float.id}]}
-
-			// do we really need these
-			/*
-			lessThan:s++,
-			lessThanEqual:s++,
-			greaterThan:s++,
-			greaterThanEqual:s++,
-			equal:s++,
-			notEqual:s++,
-			any:s++,
-			all:s++,
-			not:s++,
-			*/
-		}
-
-		var o = 1
-		var opIds = this.opIds = {
-			'=':o++,
-			'+=':o++,
-			'-=':o++,
-			'/=':o++,
-			'*=':o++,
-			'+':o++,
-			'-':o++,
-			'/':o++,
-			'*':o++,
-			'>>':o++,
-			'<<':o++,
-			'|':o++,
-			'&':o++,
-			'++':o++,
-			'--':o++,
-			'<':o++,
-			'>':o++,
-			'<=':o++,
-			'>=':o++,
-			'==':o++,
-			'||':o++,
-			'&&':o++
-		}
-
-		var opIdToName = {}
-		for(var key in opIds){
-			opIdToName[opIds[key]] = key
-		}
-
-		var builtinIdToName = this.builtinIdToName = {}
-		for(var key in builtinIds){
-			var fn = builtinIds[key]
-			builtinIdToName[fn.id] = key
-		}
+		var astIds = this.astIds
+		// AST walkter implementation for JS
 
 		this[astIds.LITERAL_INT] = function LITERAL_INT(){
 			var type = this.i32[this.o++]
@@ -464,21 +305,18 @@ class ByteCodeCompiler{
 	}
 }
 
+JSCompiler.prototype.__initproto__()
 
-module.exports = class ByteCodeRun{
+class KernelClassJS extends require('/platform/class'){
 	
 	prototype() {
-		this.$ByteCodeCompiler = ByteCodeCompiler
 		this.$maxStack = 1024*1024
 		this.$initStack = 1024
 	}
 	
-	constructor(){
-		var proto = Object.getPrototypeOf(this)
-		if(!protoInit.get(proto)){
-			protoInit.initialize(proto)
-		}
-		
+	$compileClass(data){
+		var compiler = new this.constructor.JSCompiler()
+		compiler.compileClass(data, this)
 	}
 
 	$sleep_T_float(a){
@@ -497,11 +335,6 @@ module.exports = class ByteCodeRun{
 		} 
 		this.$size = newSize
 		this.$s = newStack
-	}
-
-	$compileClass(data){
-		var compiler = new this.$ByteCodeCompiler()
-		compiler.compileClass(data, this)
 	}
 
 	// casting assignments
@@ -1603,26 +1436,7 @@ module.exports = class ByteCodeRun{
 	}
 }
 
-var protoInit = new WeakMap()
-protoInit.initialize = function(proto){
-	var stack = []
-	while(proto){
-		if(!this.get(proto)){
-			stack.push(proto)
-		}
-		else break
-		proto = Object.getPrototypeOf(proto)
-	}
-	if(stack.length){
-		for(var i = stack.length-1; i >= 0; i--){
-			proto = stack[i]
-			if(proto.hasOwnProperty('prototype')){
-				proto.prototype()
-			}
-			this.set(proto, true)
-		}
-	}
-}
+KernelClassJS.JSCompiler = JSCompiler
+KernelClassJS.prototype.__initproto__()
 
-protoInit.initialize(ByteCodeCompiler.prototype)
-protoInit.initialize(module.exports.prototype)
+module.exports = KernelClassJS

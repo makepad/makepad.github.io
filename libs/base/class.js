@@ -95,6 +95,7 @@ Object.defineProperty(module.exports.prototype, 'mixin', {
 
 var protoReady = new WeakMap() 
 var inheritReady = new WeakMap() 
+var recurBlock = Object.create(null)
 
 Object.defineProperty(module.exports.prototype, 'inheritable', { 
 	enumerable: false, 
@@ -163,14 +164,15 @@ Object.defineProperty(module.exports.prototype, '__initproto__', {
 			var cb = inherit.cb 
 			for(let i = stack.length - 1; i >= 0; i--) { 
 				proto = stack[i]
-				//inheritReady.set(proto, true) 
-				cb.call(proto) 
+				if(recurBlock[key] !== proto){
+					recurBlock[key] = proto
+					cb.call(proto) 
+				}
 			} 
 		} 
 		proto = this 
 		while(proto && !inheritReady.get(proto)){ 
 			inheritReady.set(proto, true) 
-			// freeze it
 			proto = Object.getPrototypeOf(proto) 
 		} 
 	} 

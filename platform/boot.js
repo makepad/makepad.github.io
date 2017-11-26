@@ -146,16 +146,17 @@ root.onInitApps = function(apps){
 		)
 	}
 
-	Promise.all(allApps).then(function(){
+	Promise.all(allApps).then(_=>setTimeout(function(){
+		// initialize services
+		initializeServices()
+
 		// start the apps
 		for(let i = 0; i < apps.length; i++){
 			var app = apps[i]
 			var worker = root.startWorker(loadServices, app.platform)
 			root.initWorker(worker, app.main, app.resources, undefined)
 		}
-	}, function(error){
-		//console.error("Error starting up")
-	})
+	},0))
 }
 
 //
@@ -182,7 +183,9 @@ for(let i = 0; i < loadServices.length; i++){
 	)
 }
 
-allApps.push(Promise.all(allServices).then(function(){
+allApps.push(Promise.all(allServices))
+
+function initializeServices(){
 
 	function serviceRequire(absParent){
 		return function(path){
@@ -221,9 +224,8 @@ allApps.push(Promise.all(allServices).then(function(){
 			if(ret !== undefined) module.exports = ret
 		}
 	}
+}
 
-	return Promise.resolve()
-}))
 
 //
 //
@@ -843,6 +845,7 @@ function typeLib(g, msg){
 	for(var key in Type){
 		var type = Type[key]
 		if(type instanceof Type){
+			g[key] = type
 			idToType[type.id] = type
 		}
 	}
