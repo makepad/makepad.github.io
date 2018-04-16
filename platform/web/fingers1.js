@@ -418,6 +418,7 @@ module.exports = class extends require('/platform/service'){
 	}
 
 	onTouchMove(e){
+		e.preventDefault()
 		this.onFingerMove(touchToFinger(e))
 		this.worker.onAfterEntry()
 	}
