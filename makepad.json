@@ -203,7 +203,7 @@
 			{"name":"treegraph.js"},
 			{"name":"windtree.js"}
 		]},
-		{"name":"makepad","folder":[
+		{"name":"mkp","folder":[
 			{"name":"processlog.js"},
 			{"name":"source.js"},
 			{"name":"filetree.js"},
