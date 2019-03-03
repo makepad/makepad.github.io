@@ -42,13 +42,13 @@ module.exports = class Makepad extends require('base/app'){
 					})
 				}
 			}),
-			Source     :require('./makepad/source'),
-			Wave       :require('./makepad/wave'),
-			FileTree   :require('./makepad/filetree'),
-			HomeScreen :require('./makepad/homescreen'),
-			UserProcess:require('./makepad/userprocess'),
-			ProcessLog :require('./makepad/processlog'),
-			VisualEdit :require('./makepad/visualedit')
+			Source     :require('./mkp/source'),
+			Wave       :require('./mkp/wave'),
+			FileTree   :require('./mkp/filetree'),
+			HomeScreen :require('./mkp/homescreen'),
+			UserProcess:require('./mkp/userprocess'),
+			ProcessLog :require('./mkp/processlog'),
+			VisualEdit :require('./mkp/visualedit')
 			//Settings: require('./makepad/settings'),
 		}
 	}
