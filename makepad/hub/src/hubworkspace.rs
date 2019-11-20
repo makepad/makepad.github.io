@@ -40,7 +40,7 @@ pub enum HubWsError {
 
 const INCLUDED_FILES: &[&'static str] = &[".json", ".toml", ".js", ".rs", ".txt", ".text", ".ron", ".html"];
 const EXCLUDED_FILES: &[&'static str] = &["key.ron","makepad_state.ron"];
-const EXCLUDED_DIRS: &[&'static str] = &["target",".git","edit_repo"];
+const EXCLUDED_DIRS: &[&'static str] = &["target",".git",".github","edit_repo"];
 
 impl HubWorkspace {
     

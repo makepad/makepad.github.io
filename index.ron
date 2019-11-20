@@ -3,17 +3,6 @@ Folder(
     digest: None,
     folder: [
         Folder(
-            name: ".github",
-            digest: None,
-            folder: [
-                Folder(
-                    name: "workflows",
-                    digest: None,
-                    folder: [],
-                ),
-            ],
-        ),
-        Folder(
             name: "examples",
             digest: None,
             folder: [
