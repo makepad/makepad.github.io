@@ -3,36 +3,22 @@ Folder(
     digest: None,
     folder: [
         Folder(
-            name: "bin",
+            name: ".github",
             digest: None,
-            folder: [],
+            folder: [
+                Folder(
+                    name: "workflows",
+                    digest: None,
+                    folder: [],
+                ),
+            ],
         ),
         Folder(
             name: "examples",
             digest: None,
             folder: [
                 Folder(
-                    name: "mandelbrot_example",
-                    digest: None,
-                    folder: [
-                        Folder(
-                            name: "src",
-                            digest: None,
-                            folder: [
-                                File(
-                                    name: "main.rs",
-                                    digest: None,
-                                ),
-                                File(
-                                    name: "mandelbrot.rs",
-                                    digest: None,
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                Folder(
-                    name: "text_example",
+                    name: "bare_example",
                     digest: None,
                     folder: [
                         Folder(
@@ -52,7 +38,7 @@ Folder(
                     ],
                 ),
                 Folder(
-                    name: "ui_example",
+                    name: "cmdline_example",
                     digest: None,
                     folder: [
                         Folder(
@@ -71,34 +57,102 @@ Folder(
                         ),
                     ],
                 ),
-            ],
-        ),
-        Folder(
-            name: "io",
-            digest: None,
-            folder: [
                 Folder(
-                    name: "capture",
+                    name: "old",
                     digest: None,
                     folder: [
                         Folder(
-                            name: "src",
+                            name: "capture",
                             digest: None,
                             folder: [
-                                File(
-                                    name: "capture_winmf.rs",
+                                Folder(
+                                    name: "src",
                                     digest: None,
+                                    folder: [
+                                        File(
+                                            name: "capture_winmf.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "lib.rs",
+                                            digest: None,
+                                        ),
+                                    ],
                                 ),
-                                File(
-                                    name: "lib.rs",
+                            ],
+                        ),
+                        Folder(
+                            name: "gamepad",
+                            digest: None,
+                            folder: [
+                                Folder(
+                                    name: "src",
                                     digest: None,
+                                    folder: [
+                                        File(
+                                            name: "gamepad_winxinput.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "lib.rs",
+                                            digest: None,
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        Folder(
+                            name: "mandelbrot_example",
+                            digest: None,
+                            folder: [
+                                Folder(
+                                    name: "src",
+                                    digest: None,
+                                    folder: [
+                                        File(
+                                            name: "main.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "mandelbrot.rs",
+                                            digest: None,
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        Folder(
+                            name: "process",
+                            digest: None,
+                            folder: [
+                                Folder(
+                                    name: "src",
+                                    digest: None,
+                                    folder: [
+                                        File(
+                                            name: "lib.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "process_conpty.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "process_dummy.rs",
+                                            digest: None,
+                                        ),
+                                        File(
+                                            name: "process_forkpty.rs",
+                                            digest: None,
+                                        ),
+                                    ],
                                 ),
                             ],
                         ),
                     ],
                 ),
                 Folder(
-                    name: "gamepad",
+                    name: "widget_example",
                     digest: None,
                     folder: [
                         Folder(
@@ -106,39 +160,7 @@ Folder(
                             digest: None,
                             folder: [
                                 File(
-                                    name: "gamepad_winxinput.rs",
-                                    digest: None,
-                                ),
-                                File(
-                                    name: "lib.rs",
-                                    digest: None,
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                Folder(
-                    name: "process",
-                    digest: None,
-                    folder: [
-                        Folder(
-                            name: "src",
-                            digest: None,
-                            folder: [
-                                File(
-                                    name: "lib.rs",
-                                    digest: None,
-                                ),
-                                File(
-                                    name: "process_conpty.rs",
-                                    digest: None,
-                                ),
-                                File(
-                                    name: "process_dummy.rs",
-                                    digest: None,
-                                ),
-                                File(
-                                    name: "process_forkpty.rs",
+                                    name: "main.rs",
                                     digest: None,
                                 ),
                             ],
@@ -333,10 +355,6 @@ Folder(
                 ),
                 File(
                     name: "Cargo.toml",
-                    digest: None,
-                ),
-                File(
-                    name: "rustcompiler.rs",
                     digest: None,
                 ),
             ],
@@ -879,40 +897,7 @@ Folder(
         Folder(
             name: "tools",
             digest: None,
-            folder: [
-                Folder(
-                    name: "csvproc",
-                    digest: None,
-                    folder: [
-                        Folder(
-                            name: "src",
-                            digest: None,
-                            folder: [
-                                File(
-                                    name: "main.rs",
-                                    digest: None,
-                                ),
-                            ],
-                        ),
-                        File(
-                            name: "Cargo.toml",
-                            digest: None,
-                        ),
-                    ],
-                ),
-                File(
-                    name: "build_index.js",
-                    digest: None,
-                ),
-                File(
-                    name: "devserver.js",
-                    digest: None,
-                ),
-                File(
-                    name: "devwebsocket.js",
-                    digest: None,
-                ),
-            ],
+            folder: [],
         ),
         Folder(
             name: "widget",
@@ -1023,11 +1008,11 @@ Folder(
             digest: None,
         ),
         File(
-            name: "index.ron",
+            name: "makepad_settings.ron",
             digest: None,
         ),
         File(
-            name: "makepad_settings.ron",
+            name: "todo.txt",
             digest: None,
         ),
     ],
