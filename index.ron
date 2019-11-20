@@ -1008,6 +1008,10 @@ Folder(
             digest: None,
         ),
         File(
+            name: "index.ron",
+            digest: None,
+        ),
+        File(
             name: "makepad_settings.ron",
             digest: None,
         ),
